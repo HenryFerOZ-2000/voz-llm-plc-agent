@@ -40,6 +40,9 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 - `16_integracion_tia_openness_v18.md`
   Documenta la conexion controlada con TIA Portal Openness V18.
 
+- `17_copias_de_seguridad.md`
+  Registra los puntos de restauracion (`git tag`) del repositorio y como volver a ellos.
+
 - `CHANGELOG_TESIS.md`
   Mantiene un registro cronologico de los avances del proyecto.
 
@@ -59,7 +62,8 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 9. `10_generacion_de_pou_y_proyectos.md`
 10. `16_integracion_tia_openness_v18.md`
 11. `07_registro_pruebas.md`
-12. `CHANGELOG_TESIS.md`
+12. `17_copias_de_seguridad.md`
+13. `CHANGELOG_TESIS.md`
 
 ## Criterio de uso en tesis
 
