@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-08-20T14:17:46",
+  "target_platform": "SIEMENS_SCL_V18",
+  "parser_mode_requested": "hybrid",
+  "parser_mode_used": "rule_based",
+  "decision_reason": "El parser por reglas supero el umbral de confianza y no presento ambiguedades.",
+  "llm_usage": {},
+  "agreement": false,
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false
+  },
+  "retrieved_context_count": 0,
+  "transcription": {},
+  "generation_mode": "CONTROLLED_DETERMINISTIC_POU",
+  "generation_status": "GENERATED",
+  "semantic_status": "SEMANTIC_VALIDATED",
+  "verification_status": "STATICALLY_VERIFIED",
+  "compilation_status": "COMPILATION_NOT_EXECUTED",
+  "simulation_status": "SIMULATION_NOT_EXECUTED",
+  "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+  "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY",
+  "is_fully_validated": false
+}

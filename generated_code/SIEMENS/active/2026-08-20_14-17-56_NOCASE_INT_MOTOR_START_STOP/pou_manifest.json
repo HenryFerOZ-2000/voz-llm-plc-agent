@@ -1,0 +1,120 @@
+{
+  "name": "PLC_PRG",
+  "type": "PROGRAM",
+  "language": "ST",
+  "variables": [
+    {
+      "name": "I_Start",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "location": "%IX0.0",
+      "initial_value": "FALSE",
+      "description": "Pulsador de arranque.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "I_Stop",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "location": "%IX0.1",
+      "initial_value": "FALSE",
+      "description": "Pulsador de paro.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "I_Emergency",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "location": "%IX0.2",
+      "initial_value": "FALSE",
+      "description": "Paro de emergencia.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "I_Reset",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "location": "%IX0.3",
+      "initial_value": "FALSE",
+      "description": "Pulsador de reinicio de fallas.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "Q_Motor_Enable",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "location": "%QX0.0",
+      "initial_value": "FALSE",
+      "description": "Habilitacion principal del motor.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "Q_Alarm",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "location": "%QX0.1",
+      "initial_value": "FALSE",
+      "description": "Salida de alarma.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "Q_Pilot_Run",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "location": "%QX0.2",
+      "initial_value": "FALSE",
+      "description": "Piloto luminoso de marcha.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "Q_Pilot_Fault",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "location": "%QX0.3",
+      "initial_value": "FALSE",
+      "description": "Piloto luminoso de falla.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "M_RunLatch",
+      "data_type": "BOOL",
+      "var_class": "internal",
+      "location": null,
+      "initial_value": "FALSE",
+      "description": "Memoria de enclavamiento de marcha.",
+      "source": "io_map",
+      "is_standard_block": false
+    },
+    {
+      "name": "M_FaultLatch",
+      "data_type": "BOOL",
+      "var_class": "internal",
+      "location": null,
+      "initial_value": "FALSE",
+      "description": "Memoria de falla.",
+      "source": "io_map",
+      "is_standard_block": false
+    }
+  ],
+  "function_blocks": [],
+  "implementation_file": "implementation.st",
+  "declarations_file": "declarations.st",
+  "full_program_file": "full_program.st",
+  "task_binding": "MainTask",
+  "generation_status": "GENERATED",
+  "compilation_status": "COMPILATION_NOT_EXECUTED",
+  "simulation_status": "SIMULATION_NOT_EXECUTED",
+  "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+  "semantic_status": "SEMANTIC_VALIDATED",
+  "verification_status": "STATICALLY_VERIFIED",
+  "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY",
+  "is_fully_validated": false
+}

@@ -1,0 +1,268 @@
+{
+  "naming_convention": {
+    "inputs": "I_",
+    "outputs": "Q_",
+    "internal_memory": "M_",
+    "timers": "T_",
+    "counters": "C_",
+    "auxiliary": "R_"
+  },
+  "variables": [
+    {
+      "name": "I_Start",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.0",
+      "initial_value": "FALSE",
+      "description": "Pulsador de arranque."
+    },
+    {
+      "name": "I_Stop",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.1",
+      "initial_value": "FALSE",
+      "description": "Pulsador de paro."
+    },
+    {
+      "name": "I_Emergency",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.2",
+      "initial_value": "FALSE",
+      "description": "Paro de emergencia."
+    },
+    {
+      "name": "I_Reset",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.3",
+      "initial_value": "FALSE",
+      "description": "Pulsador de reinicio de fallas."
+    },
+    {
+      "name": "I_Sensor1",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.4",
+      "initial_value": "FALSE",
+      "description": "Sensor digital principal."
+    },
+    {
+      "name": "I_Mode_Manual",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.5",
+      "initial_value": "FALSE",
+      "description": "Selector de modo manual."
+    },
+    {
+      "name": "I_Mode_Auto",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.6",
+      "initial_value": "FALSE",
+      "description": "Selector de modo automatico."
+    },
+    {
+      "name": "I_Maintenance",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.7",
+      "initial_value": "FALSE",
+      "description": "Indicador de modo mantenimiento."
+    },
+    {
+      "name": "Q_Motor_Enable",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.0",
+      "initial_value": "FALSE",
+      "description": "Habilitacion principal del motor."
+    },
+    {
+      "name": "Q_Alarm",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.1",
+      "initial_value": "FALSE",
+      "description": "Salida de alarma."
+    },
+    {
+      "name": "Q_Pilot_Run",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.2",
+      "initial_value": "FALSE",
+      "description": "Piloto luminoso de marcha."
+    },
+    {
+      "name": "Q_Pilot_Fault",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.3",
+      "initial_value": "FALSE",
+      "description": "Piloto luminoso de falla."
+    },
+    {
+      "name": "Q_Aux_Output",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.4",
+      "initial_value": "FALSE",
+      "description": "Salida auxiliar."
+    },
+    {
+      "name": "Q_Contactor_A",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.5",
+      "initial_value": "FALSE",
+      "description": "Contactor A."
+    },
+    {
+      "name": "Q_Contactor_B",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.6",
+      "initial_value": "FALSE",
+      "description": "Contactor B."
+    },
+    {
+      "name": "M_RunLatch",
+      "class": "internal",
+      "type": "BOOL",
+      "location": "",
+      "initial_value": "FALSE",
+      "description": "Memoria de enclavamiento de marcha."
+    },
+    {
+      "name": "M_FaultLatch",
+      "class": "internal",
+      "type": "BOOL",
+      "location": "",
+      "initial_value": "FALSE",
+      "description": "Memoria de falla."
+    },
+    {
+      "name": "M_AutoMode",
+      "class": "internal",
+      "type": "BOOL",
+      "location": "",
+      "initial_value": "FALSE",
+      "description": "Memoria de modo automatico."
+    },
+    {
+      "name": "M_ManualMode",
+      "class": "internal",
+      "type": "BOOL",
+      "location": "",
+      "initial_value": "FALSE",
+      "description": "Memoria de modo manual."
+    },
+    {
+      "name": "M_Step",
+      "class": "internal",
+      "type": "INT",
+      "location": "",
+      "initial_value": "0",
+      "description": "Paso actual de una secuencia automatica."
+    },
+    {
+      "name": "M_StopDelayActive",
+      "class": "internal",
+      "type": "BOOL",
+      "location": "",
+      "initial_value": "FALSE",
+      "description": "Bandera de apagado retardado en progreso."
+    },
+    {
+      "name": "M_SensorLastState",
+      "class": "internal",
+      "type": "BOOL",
+      "location": "",
+      "initial_value": "FALSE",
+      "description": "Ultimo estado conocido del sensor."
+    },
+    {
+      "name": "T_Pulse5s",
+      "class": "timer",
+      "type": "TP",
+      "location": "",
+      "initial_value": "",
+      "description": "Temporizador de pulso."
+    },
+    {
+      "name": "T_DelayStart",
+      "class": "timer",
+      "type": "TON",
+      "location": "",
+      "initial_value": "",
+      "description": "Temporizador de retardo al arranque."
+    },
+    {
+      "name": "T_OperationLimit",
+      "class": "timer",
+      "type": "TON",
+      "location": "",
+      "initial_value": "",
+      "description": "Temporizador de limite de operacion."
+    },
+    {
+      "name": "T_SensorTimeout",
+      "class": "timer",
+      "type": "TON",
+      "location": "",
+      "initial_value": "",
+      "description": "Temporizador de timeout de sensor."
+    },
+    {
+      "name": "T_StopDelay",
+      "class": "timer",
+      "type": "TON",
+      "location": "",
+      "initial_value": "",
+      "description": "Temporizador de apagado retardado."
+    },
+    {
+      "name": "T_CycleOn",
+      "class": "timer",
+      "type": "TON",
+      "location": "",
+      "initial_value": "",
+      "description": "Temporizador de fase encendida del motor ciclico."
+    },
+    {
+      "name": "T_CycleOff",
+      "class": "timer",
+      "type": "TON",
+      "location": "",
+      "initial_value": "",
+      "description": "Temporizador de fase apagada del motor ciclico."
+    },
+    {
+      "name": "C_PulseCount",
+      "class": "counter",
+      "type": "CTU",
+      "location": "",
+      "initial_value": "",
+      "description": "Contador de pulsos."
+    },
+    {
+      "name": "R_SensorPulse",
+      "class": "auxiliary",
+      "type": "R_TRIG",
+      "location": "",
+      "initial_value": "",
+      "description": "Detector de flanco ascendente del sensor."
+    },
+    {
+      "name": "R_CycleStart",
+      "class": "auxiliary",
+      "type": "R_TRIG",
+      "location": "",
+      "initial_value": "",
+      "description": "Detector de flanco ascendente para iniciar el motor ciclico."
+    }
+  ]
+}

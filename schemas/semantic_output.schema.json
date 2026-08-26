@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SemanticOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "intent_id",
+    "case_id",
+    "command_text",
+    "normalized_command",
+    "parameters",
+    "confidence",
+    "ambiguities",
+    "requires_clarification",
+    "clarification_question",
+    "assumptions",
+    "recognized_tags",
+    "unrecognized_terms"
+  ],
+  "properties": {
+    "intent_id": {
+      "type": "string",
+      "enum": [
+        "INT_TIMED_PULSE",
+        "INT_DIRECT_OUTPUT",
+        "INT_MOTOR_START_STOP",
+        "INT_MOTOR_LATCH",
+        "INT_EMERGENCY_PRIORITY",
+        "INT_SAFE_START_ALARM",
+        "INT_DELAYED_START",
+        "INT_DELAYED_STOP",
+        "INT_AUTO_STOP_TIMER",
+        "INT_COUNTER_PULSES",
+        "INT_COUNTER_RESET",
+        "INT_MUTUAL_INTERLOCK",
+        "INT_VFD_ENABLE_NO_ALARM",
+        "INT_MANUAL_AUTO_MODE",
+        "INT_SEQUENCE_THREE_STEPS",
+        "INT_SENSOR_TIMEOUT_ALARM",
+        "INT_MAINTENANCE_BLOCK",
+        "INT_STATUS_PILOTS",
+        "INT_CYCLIC_MOTOR",
+        "INT_AUTO_CYCLE",
+        "INT_UNKNOWN"
+      ]
+    },
+    "case_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "command_text": {
+      "type": "string"
+    },
+    "normalized_command": {
+      "type": "string"
+    },
+    "parameters": {
+      "type": "object"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "ambiguities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_clarification": {
+      "type": "boolean"
+    },
+    "clarification_question": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recognized_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "I_Start",
+          "I_Stop",
+          "I_Emergency",
+          "I_Reset",
+          "I_Sensor1",
+          "I_Mode_Manual",
+          "I_Mode_Auto",
+          "I_Maintenance",
+          "Q_Motor_Enable",
+          "Q_Alarm",
+          "Q_Pilot_Run",
+          "Q_Pilot_Fault",
+          "Q_Aux_Output",
+          "Q_Contactor_A",
+          "Q_Contactor_B",
+          "M_RunLatch",
+          "M_FaultLatch",
+          "M_AutoMode",
+          "M_ManualMode",
+          "M_Step",
+          "M_StopDelayActive",
+          "M_SensorLastState",
+          "T_Pulse5s",
+          "T_DelayStart",
+          "T_OperationLimit",
+          "T_SensorTimeout",
+          "T_StopDelay",
+          "T_CycleOn",
+          "T_CycleOff",
+          "C_PulseCount",
+          "R_SensorPulse",
+          "R_CycleStart"
+        ]
+      }
+    },
+    "unrecognized_terms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

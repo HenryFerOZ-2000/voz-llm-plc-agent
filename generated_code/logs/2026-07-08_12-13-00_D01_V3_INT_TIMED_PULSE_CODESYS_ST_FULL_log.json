@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-07-08T12:13:00",
+  "case_id": "D01_V3",
+  "target_platform": "CODESYS_ST_FULL",
+  "command_text": "Genera un pulso de 10 s con Start",
+  "semantic_output": {
+    "intent_id": "INT_TIMED_PULSE",
+    "command_text": "Genera un pulso de 10 s con Start",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Aux_Output",
+      "duration": "T#10s",
+      "timer": "T_Pulse5s",
+      "fault_indicator": "Q_Pilot_Fault"
+    },
+    "confidence": 0.91
+  },
+  "generated_code": "PROGRAM PLC_PRG\nVAR\n    I_Start : BOOL;\n    I_Emergency : BOOL;\n\n    Q_Aux_Output : BOOL;\n\n    T_Pulse5s : TP;\nEND_VAR\n\n(* Código generado *)\n(* Pulso temporizado con protección por emergencia *)\nT_Pulse5s(IN := I_Start AND NOT I_Emergency, PT := T#10s);\nQ_Aux_Output := T_Pulse5s.Q AND NOT I_Emergency;\n",
+  "verification_result": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Asegure que este caso quede registrado tambien como prueba funcional basica."
+    ]
+  },
+  "artifact_name": "2026-07-08_12-13-00_D01_V3_INT_TIMED_PULSE_CODESYS_ST_FULL",
+  "st_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\active\\2026-07-08_12-13-00_D01_V3_INT_TIMED_PULSE_CODESYS_ST_FULL.st",
+  "metadata_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\logs\\2026-07-08_12-13-00_D01_V3_INT_TIMED_PULSE_CODESYS_ST_FULL_log.json"
+}

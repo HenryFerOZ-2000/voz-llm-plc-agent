@@ -1,0 +1,162 @@
+{
+  "INT_TIMED_PULSE": {
+    "description": "Activa una salida durante un tiempo determinado al recibir un disparo.",
+    "required_inputs": ["I_Start", "I_Emergency"],
+    "required_outputs": ["Q_Aux_Output"],
+    "required_internal": ["T_Pulse5s"],
+    "plc_blocks": ["TP"],
+    "related_cases": ["D01", "Pulso temporizado", "Salida por tiempo"]
+  },
+  "INT_DIRECT_OUTPUT": {
+    "description": "Activa una salida directa controlada por una entrada y protegida por emergencia.",
+    "required_inputs": ["I_Start", "I_Emergency"],
+    "required_outputs": ["Q_Aux_Output"],
+    "required_internal": [],
+    "plc_blocks": ["Asignacion booleana"],
+    "related_cases": ["D02", "Salida directa", "Seguimiento de entrada"]
+  },
+  "INT_MOTOR_START_STOP": {
+    "description": "Arranque y parada de motor con Start, Stop, emergencia y reset de falla.",
+    "required_inputs": ["I_Start", "I_Stop", "I_Emergency", "I_Reset"],
+    "required_outputs": ["Q_Motor_Enable", "Q_Alarm", "Q_Pilot_Run", "Q_Pilot_Fault"],
+    "required_internal": ["M_RunLatch", "M_FaultLatch"],
+    "plc_blocks": ["IF", "Latch"],
+    "related_cases": ["D03", "Arranque y paro de motor"]
+  },
+  "INT_MOTOR_LATCH": {
+    "description": "Mantiene el motor enclavado hasta recibir paro o emergencia.",
+    "required_inputs": ["I_Start", "I_Stop", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": ["M_RunLatch"],
+    "plc_blocks": ["IF", "Latch"],
+    "related_cases": ["D04", "Memoria de marcha"]
+  },
+  "INT_EMERGENCY_PRIORITY": {
+    "description": "Paro de emergencia con prioridad absoluta sobre salidas criticas.",
+    "required_inputs": ["I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable", "Q_Aux_Output", "Q_Alarm"],
+    "required_internal": [],
+    "plc_blocks": ["IF"],
+    "related_cases": ["D05", "Paro de emergencia"]
+  },
+  "INT_SAFE_START_ALARM": {
+    "description": "Permite arranque seguro y dispara alarma si la condicion de seguridad no existe.",
+    "required_inputs": ["I_Start", "I_Reset", "I_Emergency", "I_Sensor1"],
+    "required_outputs": ["Q_Motor_Enable", "Q_Alarm"],
+    "required_internal": ["M_FaultLatch"],
+    "plc_blocks": ["IF"],
+    "related_cases": ["D06", "Arranque seguro con alarma"]
+  },
+  "INT_DELAYED_START": {
+    "description": "Motor arranca despues de un retardo programado.",
+    "required_inputs": ["I_Start", "I_Stop", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": ["T_DelayStart"],
+    "plc_blocks": ["TON"],
+    "related_cases": ["D07", "Retardo de arranque"]
+  },
+  "INT_DELAYED_STOP": {
+    "description": "Motor arranca con Start y se apaga despues de un retardo al presionar Stop.",
+    "required_inputs": ["I_Start", "I_Stop", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": ["M_RunLatch", "M_StopDelayActive", "T_StopDelay"],
+    "plc_blocks": ["IF", "TON"],
+    "related_cases": ["D08B", "Apagado retardado"]
+  },
+  "INT_AUTO_STOP_TIMER": {
+    "description": "Detiene automaticamente el motor al vencer un tiempo de operacion.",
+    "required_inputs": ["I_Start", "I_Stop", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": ["M_RunLatch", "T_OperationLimit"],
+    "plc_blocks": ["IF", "TON"],
+    "related_cases": ["D08", "Paro automatico por tiempo"]
+  },
+  "INT_COUNTER_PULSES": {
+    "description": "Cuenta pulsos del sensor y activa una salida al llegar a un valor.",
+    "required_inputs": ["I_Sensor1", "I_Reset", "I_Emergency"],
+    "required_outputs": ["Q_Alarm"],
+    "required_internal": ["C_PulseCount", "R_SensorPulse"],
+    "plc_blocks": ["R_TRIG", "CTU"],
+    "related_cases": ["D09", "Conteo de pulsos"]
+  },
+  "INT_COUNTER_RESET": {
+    "description": "Reinicia el contador de pulsos.",
+    "required_inputs": ["I_Reset"],
+    "required_outputs": [],
+    "required_internal": ["C_PulseCount"],
+    "plc_blocks": ["CTU"],
+    "related_cases": ["D10", "Reset de contador"]
+  },
+  "INT_MUTUAL_INTERLOCK": {
+    "description": "Impide la activacion simultanea de dos contactores.",
+    "required_inputs": ["I_Start", "I_Stop", "I_Emergency"],
+    "required_outputs": ["Q_Contactor_A", "Q_Contactor_B"],
+    "required_internal": [],
+    "plc_blocks": ["IF", "NOT"],
+    "related_cases": ["D11", "Interlock de contactores"]
+  },
+  "INT_VFD_ENABLE_NO_ALARM": {
+    "description": "Habilita el motor solo si no existe alarma.",
+    "required_inputs": ["I_Start", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": [],
+    "plc_blocks": ["Asignacion booleana"],
+    "related_cases": ["D12", "Habilitacion sin alarma"]
+  },
+  "INT_MANUAL_AUTO_MODE": {
+    "description": "Diferencia los modos manual y automatico mediante memorias internas.",
+    "required_inputs": ["I_Mode_Manual", "I_Mode_Auto", "I_Start", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": ["M_ManualMode", "M_AutoMode"],
+    "plc_blocks": ["Asignacion booleana"],
+    "related_cases": ["D13", "Modo manual y automatico"]
+  },
+  "INT_SEQUENCE_THREE_STEPS": {
+    "description": "Gestiona una secuencia simple de tres pasos.",
+    "required_inputs": ["I_Start", "I_Reset"],
+    "required_outputs": ["Q_Aux_Output"],
+    "required_internal": ["M_Step"],
+    "plc_blocks": ["CASE"],
+    "related_cases": ["D14", "Secuencia de tres pasos"]
+  },
+  "INT_SENSOR_TIMEOUT_ALARM": {
+    "description": "Genera alarma si el sensor no cambia dentro del tiempo esperado.",
+    "required_inputs": ["I_Sensor1"],
+    "required_outputs": ["Q_Alarm"],
+    "required_internal": ["M_SensorLastState", "T_SensorTimeout"],
+    "plc_blocks": ["TON"],
+    "related_cases": ["D15", "Timeout de sensor"]
+  },
+  "INT_MAINTENANCE_BLOCK": {
+    "description": "Bloquea la habilitacion del motor cuando el sistema esta en mantenimiento.",
+    "required_inputs": ["I_Maintenance", "I_Start", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": [],
+    "plc_blocks": ["IF"],
+    "related_cases": ["D16", "Bloqueo por mantenimiento"]
+  },
+  "INT_STATUS_PILOTS": {
+    "description": "Actualiza los pilotos de marcha y falla.",
+    "required_inputs": ["I_Emergency"],
+    "required_outputs": ["Q_Pilot_Run", "Q_Pilot_Fault", "Q_Alarm", "Q_Motor_Enable"],
+    "required_internal": [],
+    "plc_blocks": ["Asignacion booleana"],
+    "related_cases": ["D17", "Pilotos de estado"]
+  },
+  "INT_CYCLIC_MOTOR": {
+    "description": "Alterna un motor entre tiempos de encendido y apagado hasta recibir Stop o emergencia.",
+    "required_inputs": ["I_Start", "I_Stop", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": ["M_RunLatch", "M_Step", "R_CycleStart", "T_CycleOn", "T_CycleOff"],
+    "plc_blocks": ["IF", "CASE", "TON", "R_TRIG"],
+    "related_cases": ["D19", "Motor ciclico temporizado", "Encendido y apagado en bucle"]
+  },
+  "INT_AUTO_CYCLE": {
+    "description": "Ejecuta un ciclo automatico basico por estados.",
+    "required_inputs": ["I_Mode_Auto", "I_Start", "I_Stop", "I_Reset", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable"],
+    "required_internal": ["M_Step"],
+    "plc_blocks": ["CASE", "IF"],
+    "related_cases": ["D18", "Ciclo automatico"]
+  }
+}

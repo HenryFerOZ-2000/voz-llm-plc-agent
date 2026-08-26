@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-07-08T12:13:00",
+  "case_id": "D17_V1",
+  "target_platform": "CODESYS_ST_FULL",
+  "command_text": "Enciende piloto de marcha cuando el motor este activo",
+  "semantic_output": {
+    "intent_id": "INT_STATUS_PILOTS",
+    "command_text": "Enciende piloto de marcha cuando el motor este activo",
+    "parameters": {
+      "run_indicator": "Q_Pilot_Run",
+      "fault_indicator": "Q_Pilot_Fault",
+      "motor_output": "Q_Motor_Enable",
+      "alarm_output": "Q_Alarm"
+    },
+    "confidence": 0.9
+  },
+  "generated_code": "PROGRAM PLC_PRG\nVAR\n    I_Emergency : BOOL;\n\n    Q_Motor_Enable : BOOL;\n    Q_Alarm : BOOL;\n    Q_Pilot_Run : BOOL;\n    Q_Pilot_Fault : BOOL;\nEND_VAR\n\n(* Código generado *)\n(* Señalización de pilotos de marcha y falla *)\nQ_Pilot_Run := Q_Motor_Enable AND NOT I_Emergency;\nQ_Pilot_Fault := Q_Alarm OR I_Emergency;\n",
+  "verification_result": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Asegure que este caso quede registrado tambien como prueba funcional basica."
+    ]
+  },
+  "artifact_name": "2026-07-08_12-13-00_D17_V1_INT_STATUS_PILOTS_CODESYS_ST_FULL",
+  "st_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\active\\2026-07-08_12-13-00_D17_V1_INT_STATUS_PILOTS_CODESYS_ST_FULL.st",
+  "metadata_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\logs\\2026-07-08_12-13-00_D17_V1_INT_STATUS_PILOTS_CODESYS_ST_FULL_log.json"
+}

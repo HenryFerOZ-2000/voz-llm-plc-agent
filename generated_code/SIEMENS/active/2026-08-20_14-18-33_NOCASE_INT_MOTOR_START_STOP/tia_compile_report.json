@@ -1,0 +1,74 @@
+{
+  "status": "TIA_OPENNESS_ERROR",
+  "timestamp": "2026-08-20T14:23:13",
+  "tia_version": "V18",
+  "errors": [
+    "Siemens.Engineering.EngineeringTargetInvocationException: Error when calling method 'Open' of type 'Siemens.Engineering.ProjectComposition'.\r\n\r\nUnable to open the project under path 'D:\\Documentos\\Automatizacion para la Industria 4.0\\PLC y Scada\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18'.\r\n\r\nAn error occurred while opening the project\r\nThe project/library D:\\Documentos\\Automatizacion para la Industria 4.0\\PLC y Scada\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18 cannot be accessed. It has already been opened by user Usuario on computer LENOVO-HENRY. Note: If the application was not correctly closed, the open projects and libraries can only be opened again after a 2 minute delay."
+  ],
+  "warnings": [],
+  "exception": "Siemens.Engineering.EngineeringTargetInvocationException: Error when calling method 'Open' of type 'Siemens.Engineering.ProjectComposition'.\r\n\r\nUnable to open the project under path 'D:\\Documentos\\Automatizacion para la Industria 4.0\\PLC y Scada\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18'.\r\n\r\nAn error occurred while opening the project\r\nThe project/library D:\\Documentos\\Automatizacion para la Industria 4.0\\PLC y Scada\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18 cannot be accessed. It has already been opened by user Usuario on computer LENOVO-HENRY. Note: If the application was not correctly closed, the open projects and libraries can only be opened again after a 2 minute delay.\r\n   en Siemens.Engineering.Private.Session.Siemens.Engineering.Private.IInstanceSession.InvokeFunc[T,TC](LifetimeContractHandle`1 lifetimeContractHandle, String name, IEnumerable`1 parameters, String fullName)\r\n   en Siemens.Engineering.Private.InternalInstanceAccess`2.InvokeFunc[T](String name, IEnumerable`1 parameters)\r\n   en Siemens.Engineering.ProjectComposition.Open(FileInfo path)\r\n   en VozLlmPlcAgent.TiaOpennessBridge.Program.ExecuteImportAndCompile(Dictionary`2 request)\r\n   en VozLlmPlcAgent.TiaOpennessBridge.Program.Main(String[] args)",
+  "executed": true,
+  "bridge_return_code": 1,
+  "bridge_stdout": "{\"status\":\"TIA_OPENNESS_ERROR\",\"timestamp\":\"2026-08-20T14:23:13\",\"tia_version\":\"V18\",\"errors\":[\"Siemens.Engineering.EngineeringTargetInvocationException: Error when calling method \\u0027Open\\u0027 of type \\u0027Siemens.Engineering.ProjectComposition\\u0027.\\r\\n\\r\\nUnable to open the project under path \\u0027D:\\\\Documentos\\\\Automatizacion para la Industria 4.0\\\\PLC y Scada\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18\\u0027.\\r\\n\\r\\nAn error occurred while opening the project\\r\\nThe project/library D:\\\\Documentos\\\\Automatizacion para la Industria 4.0\\\\PLC y Scada\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18 cannot be accessed. It has already been opened by user Usuario on computer LENOVO-HENRY. Note: If the application was not correctly closed, the open projects and libraries can only be opened again after a 2 minute delay.\"],\"warnings\":[],\"exception\":\"Siemens.Engineering.EngineeringTargetInvocationException: Error when calling method \\u0027Open\\u0027 of type \\u0027Siemens.Engineering.ProjectComposition\\u0027.\\r\\n\\r\\nUnable to open the project under path \\u0027D:\\\\Documentos\\\\Automatizacion para la Industria 4.0\\\\PLC y Scada\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18\\u0027.\\r\\n\\r\\nAn error occurred while opening the project\\r\\nThe project/library D:\\\\Documentos\\\\Automatizacion para la Industria 4.0\\\\PLC y Scada\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW\\\\Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18 cannot be accessed. It has already been opened by user Usuario on computer LENOVO-HENRY. Note: If the application was not correctly closed, the open projects and libraries can only be opened again after a 2 minute delay.\\r\\n   en Siemens.Engineering.Private.Session.Siemens.Engineering.Private.IInstanceSession.InvokeFunc[T,TC](LifetimeContractHandle`1 lifetimeContractHandle, String name, IEnumerable`1 parameters, String fullName)\\r\\n   en Siemens.Engineering.Private.InternalInstanceAccess`2.InvokeFunc[T](String name, IEnumerable`1 parameters)\\r\\n   en Siemens.Engineering.ProjectComposition.Open(FileInfo path)\\r\\n   en VozLlmPlcAgent.TiaOpennessBridge.Program.ExecuteImportAndCompile(Dictionary`2 request)\\r\\n   en VozLlmPlcAgent.TiaOpennessBridge.Program.Main(String[] args)\"}",
+  "bridge_stderr": "",
+  "request_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\SIEMENS\\active\\2026-08-20_14-18-33_NOCASE_INT_MOTOR_START_STOP\\tia_openness_request.json",
+  "result_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\SIEMENS\\active\\2026-08-20_14-18-33_NOCASE_INT_MOTOR_START_STOP\\tia_compile_report.json",
+  "request": {
+    "action": "import_compile",
+    "created_at": "2026-08-20T14:22:43",
+    "tia_version": "V18",
+    "project_path": "D:/Documentos/Automatizacion para la Industria 4.0/PLC y Scada/Practica_1_Henry_Ochoa_Entradas_Analogicas_IW/Practica_1_Henry_Ochoa_Entradas_Analogicas_IW.ap18",
+    "plc_name": "",
+    "source_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\SIEMENS\\active\\2026-08-20_14-18-33_NOCASE_INT_MOTOR_START_STOP\\siemens_source.scl",
+    "source_name": "siemens_source.scl",
+    "result_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\SIEMENS\\active\\2026-08-20_14-18-33_NOCASE_INT_MOTOR_START_STOP\\tia_compile_report.json",
+    "attach_to_running": true,
+    "with_user_interface": true,
+    "create_plc_tags": true,
+    "save_project_on_success": true,
+    "compile_after_import": true,
+    "tags": [
+      {
+        "name": "I_Start",
+        "data_type": "Bool",
+        "address": "%I0.0"
+      },
+      {
+        "name": "I_Stop",
+        "data_type": "Bool",
+        "address": "%I0.1"
+      },
+      {
+        "name": "I_Emergency",
+        "data_type": "Bool",
+        "address": "%I0.2"
+      },
+      {
+        "name": "I_Reset",
+        "data_type": "Bool",
+        "address": "%I0.3"
+      },
+      {
+        "name": "Q_Motor_Enable",
+        "data_type": "Bool",
+        "address": "%Q0.0"
+      },
+      {
+        "name": "Q_Alarm",
+        "data_type": "Bool",
+        "address": "%Q0.1"
+      },
+      {
+        "name": "Q_Pilot_Run",
+        "data_type": "Bool",
+        "address": "%Q0.2"
+      },
+      {
+        "name": "Q_Pilot_Fault",
+        "data_type": "Bool",
+        "address": "%Q0.3"
+      }
+    ],
+    "physical_download_allowed": false
+  }
+}

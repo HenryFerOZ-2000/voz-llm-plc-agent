@@ -1,0 +1,12 @@
+{
+  "tia_portal_version": "V18",
+  "source_file": "siemens_source.scl",
+  "source_name": "PLC_PRG.scl",
+  "pou_name": "PLC_PRG",
+  "instance_db": "DB_PLC_PRG",
+  "organization_block": "Main",
+  "create_plc_tags": true,
+  "compile_after_import": true,
+  "save_only_after_successful_compile": true,
+  "physical_download_allowed": false
+}

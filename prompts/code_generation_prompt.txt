@@ -1,0 +1,3 @@
+Genera codigo PLC en Structured Text a partir de una intencion estructurada.
+Incluye comentarios, prioriza emergencia y stop, y usa unicamente tags autorizados.
+Evita autoarranque al liberar emergencia y respeta enclavamientos criticos.

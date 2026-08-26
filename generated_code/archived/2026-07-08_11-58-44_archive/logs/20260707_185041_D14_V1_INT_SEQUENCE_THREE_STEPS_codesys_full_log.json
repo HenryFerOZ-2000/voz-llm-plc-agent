@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-07-07T18:50:41",
+  "case_id": "D14_V1",
+  "target_platform": "CODESYS_ST_FULL",
+  "command_text": "Haz una secuencia de tres pasos",
+  "semantic_output": {
+    "intent_id": "INT_SEQUENCE_THREE_STEPS",
+    "command_text": "Haz una secuencia de tres pasos",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "reset_input": "I_Reset",
+      "step_memory": "M_Step",
+      "output": "Q_Aux_Output"
+    },
+    "confidence": 0.89
+  },
+  "generated_code": "PROGRAM PLC_PRG\nVAR\n    Q_Aux_Output : BOOL;\nEND_VAR\n\n(* Código generado *)\n(* Intento detectado: INT_SEQUENCE_THREE_STEPS *)\n(* Plantilla ST aún no implementada. Se mantiene una salida segura. *)\nQ_Aux_Output := FALSE;\n",
+  "verification_result": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Asegure que este caso quede registrado tambien como prueba funcional basica."
+    ]
+  }
+}

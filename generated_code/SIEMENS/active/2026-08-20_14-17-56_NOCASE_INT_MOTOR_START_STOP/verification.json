@@ -1,0 +1,31 @@
+{
+  "is_valid": true,
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false
+  },
+  "generation_errors": [],
+  "ir_verification": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "package_verification": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "errors": [],
+  "warnings": [],
+  "generation_status": "GENERATED",
+  "semantic_status": "SEMANTIC_VALIDATED",
+  "verification_status": "STATICALLY_VERIFIED",
+  "compilation_status": "COMPILATION_NOT_EXECUTED",
+  "simulation_status": "SIMULATION_NOT_EXECUTED",
+  "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+  "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+}

@@ -1,0 +1,13 @@
+# GUI desktop interface
+customtkinter
+
+# LLM integration and secure configuration
+openai
+python-dotenv
+pydantic
+
+# Voice capture
+sounddevice
+
+# Local automated tests
+pytest

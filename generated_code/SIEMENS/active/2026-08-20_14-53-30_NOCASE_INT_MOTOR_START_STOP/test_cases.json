@@ -1,0 +1,85 @@
+[
+  {
+    "test_id": "MSS_01",
+    "description": "Arranque normal del motor con Start.",
+    "initial_state": {
+      "Q_Motor_Enable": false
+    },
+    "input_sequence": [
+      {
+        "I_Start": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": true
+    },
+    "safety_expectation": "I_Emergency=FALSE y I_Stop=FALSE."
+  },
+  {
+    "test_id": "MSS_02",
+    "description": "Paro normal con Stop.",
+    "initial_state": {
+      "Q_Motor_Enable": true
+    },
+    "input_sequence": [
+      {
+        "I_Stop": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": false
+    },
+    "safety_expectation": "I_Stop tiene prioridad sobre I_Start."
+  },
+  {
+    "test_id": "MSS_03",
+    "description": "La emergencia detiene el motor y activa la falla.",
+    "initial_state": {
+      "Q_Motor_Enable": true
+    },
+    "input_sequence": [
+      {
+        "I_Emergency": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": false,
+      "Q_Alarm": true
+    },
+    "safety_expectation": "La emergencia debe prevalecer sobre cualquier orden."
+  },
+  {
+    "test_id": "MSS_04",
+    "description": "Reset posterior a emergencia sin autoarranque.",
+    "initial_state": {
+      "Q_Alarm": true
+    },
+    "input_sequence": [
+      {
+        "I_Reset": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": false,
+      "Q_Alarm": false
+    },
+    "safety_expectation": "El motor no debe reencender solo."
+  },
+  {
+    "test_id": "MSS_05",
+    "description": "Start y Stop simultaneos deben privilegiar Stop.",
+    "initial_state": {
+      "Q_Motor_Enable": false
+    },
+    "input_sequence": [
+      {
+        "I_Start": true,
+        "I_Stop": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": false
+    },
+    "safety_expectation": "No debe existir arranque ambiguo."
+  }
+]

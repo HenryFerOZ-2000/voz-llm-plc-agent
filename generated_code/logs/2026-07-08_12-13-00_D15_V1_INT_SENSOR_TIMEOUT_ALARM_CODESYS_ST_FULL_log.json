@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-07-08T12:13:00",
+  "case_id": "D15_V1",
+  "target_platform": "CODESYS_ST_FULL",
+  "command_text": "Si el sensor no cambia en 5 segundos activa alarma",
+  "semantic_output": {
+    "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+    "command_text": "Si el sensor no cambia en 5 segundos activa alarma",
+    "parameters": {
+      "sensor_input": "I_Sensor1",
+      "alarm_output": "Q_Alarm",
+      "timeout": "T#5s",
+      "timer": "T_SensorTimeout"
+    },
+    "confidence": 0.9
+  },
+  "generated_code": "PROGRAM PLC_PRG\nVAR\n    Q_Aux_Output : BOOL;\nEND_VAR\n\n(* Código generado *)\n(* Intento detectado: INT_SENSOR_TIMEOUT_ALARM *)\n(* Plantilla ST aún no implementada. Se mantiene una salida segura. *)\nQ_Aux_Output := FALSE;\n",
+  "verification_result": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Asegure que este caso quede registrado tambien como prueba funcional basica."
+    ]
+  },
+  "artifact_name": "2026-07-08_12-13-00_D15_V1_INT_SENSOR_TIMEOUT_ALARM_CODESYS_ST_FULL",
+  "st_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\active\\2026-07-08_12-13-00_D15_V1_INT_SENSOR_TIMEOUT_ALARM_CODESYS_ST_FULL.st",
+  "metadata_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\generated_code\\logs\\2026-07-08_12-13-00_D15_V1_INT_SENSOR_TIMEOUT_ALARM_CODESYS_ST_FULL_log.json"
+}

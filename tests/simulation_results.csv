@@ -1,0 +1,6 @@
+test_id,command,detected_intent,verification_status,notes
+TC_001,"Activa una salida durante 5 segundos cuando presione Start",PENDING,PENDING,Inicializar simulacion futura
+TC_002,"Haz que el motor se encienda con Start y se apague con Stop",PENDING,PENDING,Inicializar simulacion futura
+TC_003,"El paro de emergencia debe apagar el motor siempre",PENDING,PENDING,Inicializar simulacion futura
+TC_004,"Arranca el motor despues de un retardo de 3 segundos",PENDING,PENDING,Inicializar simulacion futura
+TC_005,"Cuenta 5 pulsos del sensor y activa la alarma",PENDING,PENDING,Inicializar simulacion futura

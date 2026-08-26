@@ -1,0 +1,12 @@
+{
+  "tia_version": "V18",
+  "project_path": "D:/Documentos/Automatizacion para la Industria 4.0/TESIS/Software/voz_llm_plc_agent/tia_projects/TESIS_PRUEBA_1/TESIS_PRUEBA_1.ap18",
+  "plc_name": "",
+  "attach_to_running": true,
+  "with_user_interface": true,
+  "create_plc_tags": true,
+  "save_project_on_success": true,
+  "compile_after_import": true,
+  "timeout_seconds": 300,
+  "api_dll_path": "C:/Program Files/Siemens/Automation/Portal V18/PublicAPI/V18/Siemens.Engineering.dll"
+}

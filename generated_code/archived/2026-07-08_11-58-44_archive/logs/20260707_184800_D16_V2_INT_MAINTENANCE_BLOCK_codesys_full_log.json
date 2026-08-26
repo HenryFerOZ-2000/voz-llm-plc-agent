@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-07-07T18:48:00",
+  "case_id": "D16_V2",
+  "target_platform": "CODESYS_ST_FULL",
+  "command_text": "En modo mantenimiento no permitas encender el motor",
+  "semantic_output": {
+    "intent_id": "INT_MAINTENANCE_BLOCK",
+    "command_text": "En modo mantenimiento no permitas encender el motor",
+    "parameters": {
+      "maintenance_input": "I_Maintenance",
+      "motor_output": "Q_Motor_Enable",
+      "trigger_input": "I_Start"
+    },
+    "confidence": 0.91
+  },
+  "generated_code": "PROGRAM PLC_PRG\n        VAR\n    Q_Aux_Output : BOOL;\nEND_VAR\n\n        (* Código generado *)\n        (* Intento detectado: INT_MAINTENANCE_BLOCK *)\n(* Plantilla ST aún no implementada. Se mantiene una salida segura. *)\nQ_Aux_Output := FALSE;\n",
+  "verification_result": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Asegure que este caso quede registrado tambien como prueba funcional basica."
+    ]
+  }
+}

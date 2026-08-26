@@ -1,0 +1,11 @@
+{
+  "parser_mode": "hybrid",
+  "llm": {
+    "enabled": false,
+    "provider": "future_openai",
+    "model": "not_configured",
+    "allow_fallback_to_rules": true,
+    "mock_response_path": "",
+    "temperature": 0.0
+  }
+}
