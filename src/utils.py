@@ -69,6 +69,11 @@ def sanitize_filename(value: str | None) -> str:
     return normalized or "NOCASE"
 
 
+_ADVANCED_VARIABLE_FIELDS = (
+    "aliases", "semantic_role", "llm_allowed", "safety_level", "unit", "min", "max", "comments"
+)
+
+
 def iter_io_map_entries(io_map: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Return every PLC variable entry from io_map.
@@ -89,16 +94,18 @@ def iter_io_map_entries(io_map: dict[str, Any]) -> list[dict[str, Any]]:
         for entry in variables:
             if not isinstance(entry, dict) or "name" not in entry:
                 continue
-            normalized_entries.append(
-                {
-                    "name": entry.get("name", ""),
-                    "type": entry.get("type", "BOOL"),
-                    "class": entry.get("class", "internal"),
-                    "location": entry.get("location", ""),
-                    "initial_value": entry.get("initial_value", ""),
-                    "description": entry.get("description", "")
-                }
-            )
+            normalized_entry = {
+                "name": entry.get("name", ""),
+                "type": entry.get("type", "BOOL"),
+                "class": entry.get("class", "internal"),
+                "location": entry.get("location", ""),
+                "initial_value": entry.get("initial_value", ""),
+                "description": entry.get("description", "")
+            }
+            for advanced_field in _ADVANCED_VARIABLE_FIELDS:
+                if advanced_field in entry:
+                    normalized_entry[advanced_field] = entry[advanced_field]
+            normalized_entries.append(normalized_entry)
         return normalized_entries
 
     entries: list[dict[str, Any]] = []

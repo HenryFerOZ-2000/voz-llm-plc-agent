@@ -132,8 +132,10 @@ EXACT_TAG_ALIASES = {
     "t_sensortimeout": ("timer", "T_SensorTimeout"),
     "t_stopdelay": ("timer", "T_StopDelay"),
     "c_pulsecount": ("counter", "C_PulseCount"),
-    "r_sensorpulse": ("edge_detector", "R_SensorPulse")
+    "r_sensorpulse": ("edge_detector", "R_SensorPulse"),
 }
+
+TAG_TO_SLOT = {tag_name: slot_name for slot_name, tag_name in EXACT_TAG_ALIASES.values()}
 
 KNOWN_CONTEXT_TOKENS = {
     "activa",
@@ -290,7 +292,7 @@ def _extract_times(text: str) -> list[str]:
     return values
 
 
-def extract_tags(text: str) -> dict[str, str]:
+def extract_tags(text: str, alias_index: dict[str, str] | None = None) -> dict[str, str]:
     """Map user terminology to authorized PLC tags."""
     normalized = normalize_text(text)
     tags: dict[str, str] = {}
@@ -300,6 +302,14 @@ def extract_tags(text: str) -> dict[str, str]:
         if alias is not None:
             semantic_name, tag_name = alias
             tags[semantic_name] = tag_name
+
+    if alias_index:
+        for alias_phrase in sorted(alias_index, key=len, reverse=True):
+            if alias_phrase and re.search(rf"\b{re.escape(alias_phrase)}\b", normalized):
+                canonical_tag = alias_index[alias_phrase]
+                slot_name = TAG_TO_SLOT.get(canonical_tag)
+                if slot_name:
+                    tags[slot_name] = canonical_tag
 
     if _contains_any(normalized, ("start",)):
         tags["start"] = "I_Start"
@@ -785,12 +795,12 @@ def _build_assumptions(
     return assumptions
 
 
-def parse_command(command_text: str) -> dict[str, Any]:
+def parse_command(command_text: str, alias_index: dict[str, str] | None = None) -> dict[str, Any]:
     """Parse a natural-language industrial command into a structured semantic output."""
     normalized_text = normalize_text(command_text)
     time_values = _extract_times(command_text)
     time_value = time_values[0] if time_values else None
-    tags = extract_tags(command_text)
+    tags = extract_tags(command_text, alias_index=alias_index)
     pulse_count = _extract_pulse_count(command_text)
     intent_id, confidence = detect_intent(normalized_text, tags, time_value)
     parameters = _build_parameters(intent_id, tags, time_value, pulse_count, time_values)

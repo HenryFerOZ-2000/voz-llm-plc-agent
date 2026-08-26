@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from alias_resolver import build_alias_index
 from knowledge_retriever import retrieve_relevant_context
 from llm_client import PLCInterpretationLLMClient
 from llm_context_builder import build_llm_context
@@ -227,7 +228,9 @@ def _fallback_to_rules(
     intents_catalog: dict[str, Any],
     safety_rules: dict[str, Any]
 ) -> dict[str, Any]:
-    rule_result = _normalize_semantic_output(parse_command_rule_based(command_text), command_text)
+    rule_result = _normalize_semantic_output(
+        parse_command_rule_based(command_text, alias_index=build_alias_index(io_map)), command_text
+    )
     semantic_validation = _validate_result(rule_result, io_map, intents_catalog, safety_rules)
     return _annotate_result(
         rule_result,
@@ -278,7 +281,9 @@ def parse_with_mode(
     threshold = float(os.getenv("LLM_CONFIDENCE_THRESHOLD", settings.get("confidence_threshold", 0.85)))
     allow_rule_fallback = bool(settings.get("allow_rule_fallback", True))
 
-    rule_result = _normalize_semantic_output(parse_command_rule_based(command_text), command_text)
+    rule_result = _normalize_semantic_output(
+        parse_command_rule_based(command_text, alias_index=build_alias_index(runtime_io_map)), command_text
+    )
     rule_validation = _validate_result(rule_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
 
     if requested_mode == "rule_based":

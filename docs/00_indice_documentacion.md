@@ -40,6 +40,9 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 - `16_integracion_tia_openness_v18.md`
   Documenta la conexion controlada con TIA Portal Openness V18.
 
+- `18_mapa_maestro_plc.md`
+  Explica la biblioteca de mapas PLC versionados, su metadata semantica y la sincronizacion con TIA.
+
 - `17_copias_de_seguridad.md`
   Registra los puntos de restauracion (`git tag`) del repositorio y como volver a ellos.
 
@@ -61,9 +64,10 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 8. `09_representacion_intermedia_plc.md`
 9. `10_generacion_de_pou_y_proyectos.md`
 10. `16_integracion_tia_openness_v18.md`
-11. `07_registro_pruebas.md`
-12. `17_copias_de_seguridad.md`
-13. `CHANGELOG_TESIS.md`
+11. `18_mapa_maestro_plc.md`
+12. `07_registro_pruebas.md`
+13. `17_copias_de_seguridad.md`
+14. `CHANGELOG_TESIS.md`
 
 ## Criterio de uso en tesis
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from alias_resolver import filter_llm_allowed_entries
 from utils import build_io_map_index
 
 
@@ -157,7 +158,7 @@ def _summarize_intents(intents_catalog: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _summarize_io_map(io_map: dict[str, Any]) -> list[dict[str, Any]]:
-    io_index = build_io_map_index(io_map)
+    io_index = build_io_map_index(filter_llm_allowed_entries(io_map))
     summary: list[dict[str, Any]] = []
     for tag_name in sorted(io_index):
         entry = io_index[tag_name]
@@ -167,7 +168,9 @@ def _summarize_io_map(io_map: dict[str, Any]) -> list[dict[str, Any]]:
                 "class": entry.get("class", ""),
                 "type": entry.get("type", ""),
                 "location": entry.get("location", ""),
-                "description": entry.get("description", "")
+                "description": entry.get("description", ""),
+                "aliases": entry.get("aliases", []),
+                "semantic_role": entry.get("semantic_role", "")
             }
         )
     return summary
@@ -199,7 +202,7 @@ def build_llm_context(
         "command_text": command_text,
         "authorized_intents": _summarize_intents(intents_catalog),
         "authorized_io_map": _summarize_io_map(io_map),
-        "authorized_tags": sorted(build_io_map_index(io_map)),
+        "authorized_tags": sorted(build_io_map_index(filter_llm_allowed_entries(io_map))),
         "safety_rules": _summarize_safety_rules(safety_rules),
         "iec_time_format": {
             "description": "Use IEC 61131-3 TIME literals",

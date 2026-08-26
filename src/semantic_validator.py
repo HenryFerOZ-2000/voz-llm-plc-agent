@@ -206,12 +206,21 @@ def validate_semantic_output(
     recognized_tags = list(payload.get("recognized_tags", []))
     parameter_tags = _collect_parameter_tags(parameters)
 
+    llm_disallowed_tags: list[str] = []
     for tag_name in recognized_tags + parameter_tags:
         if tag_name not in authorized_tags and tag_name not in unauthorized_tags:
             unauthorized_tags.append(tag_name)
+        elif tag_name in io_index and io_index[tag_name].get("llm_allowed", True) is False and tag_name not in llm_disallowed_tags:
+            llm_disallowed_tags.append(tag_name)
 
     if unauthorized_tags:
         errors.append("Se detectaron tags no autorizados: " + ", ".join(unauthorized_tags))
+
+    if llm_disallowed_tags:
+        errors.append(
+            "Las siguientes variables existen en el mapa activo pero no estan autorizadas para uso por LLM "
+            "(llm_allowed=false): " + ", ".join(llm_disallowed_tags)
+        )
 
     if _requires_emergency(intent_id, parameters, safety_rules) and "I_Emergency" not in parameter_tags and parameters.get("emergency_input") != "I_Emergency":
         errors.append("La logica solicitada requiere incluir I_Emergency.")

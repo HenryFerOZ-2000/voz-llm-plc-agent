@@ -36,7 +36,27 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             try
             {
                 string action = GetString(request, "action", "import_compile");
-                report = action == "diagnose" ? Diagnose() : ExecuteImportAndCompile(request);
+                if (action == "diagnose")
+                {
+                    report = Diagnose();
+                }
+                else if (action == "import_compile")
+                {
+                    report = ExecuteImportAndCompile(request);
+                }
+                else if (action == "sync_map")
+                {
+                    report = ExecuteSyncMap(request);
+                }
+                else if (action == "read_tags")
+                {
+                    report = ExecuteReadTags(request);
+                }
+                else
+                {
+                    report = NewReport("TIA_OPENNESS_ERROR");
+                    AddError(report, "Unknown action: " + action);
+                }
             }
             catch (Exception exception)
             {
@@ -282,6 +302,260 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 { "created", created },
                 { "existing", existing }
             };
+        }
+
+        private static Dictionary<string, object> ExecuteSyncMap(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> report = NewReport("RUNNING");
+            string projectPath = GetString(request, "project_path", "");
+            string requestedPlcName = GetString(request, "plc_name", "");
+            bool attach = GetBool(request, "attach_to_running", true);
+            bool withUi = GetBool(request, "with_user_interface", true);
+
+            TiaPortal portal = null;
+            Project project = null;
+            bool attachedToExisting = false;
+            try
+            {
+                if (attach)
+                {
+                    TiaPortalProcess process = TiaPortal.GetProcesses().FirstOrDefault();
+                    if (process != null)
+                    {
+                        portal = process.Attach();
+                        attachedToExisting = true;
+                    }
+                }
+                if (portal == null)
+                {
+                    portal = new TiaPortal(withUi ? TiaPortalMode.WithUserInterface : TiaPortalMode.WithoutUserInterface);
+                }
+
+                project = portal.Projects.FirstOrDefault();
+                if (project == null)
+                {
+                    if (String.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                    {
+                        throw new FileNotFoundException("No TIA project is open and project_path is invalid.", projectPath);
+                    }
+                    project = portal.Projects.Open(new FileInfo(projectPath));
+                }
+
+                PlcSoftware plcSoftware = FindPlcSoftware(project, requestedPlcName);
+                if (plcSoftware == null)
+                {
+                    throw new InvalidOperationException("No PLC software was found in the TIA Portal project.");
+                }
+
+                report["attached_to_existing_tia"] = attachedToExisting;
+                report["project_path"] = project.Path.FullName;
+                report["plc_name"] = plcSoftware.Name;
+                report["physical_download_executed"] = false;
+
+                Dictionary<string, object> syncResult = SyncMap(plcSoftware, request);
+                foreach (KeyValuePair<string, object> pair in syncResult)
+                {
+                    report[pair.Key] = pair.Value;
+                }
+
+                List<object> conflicts = report["conflicts"] as List<object>;
+                report["status"] = (conflicts != null && conflicts.Count > 0)
+                    ? "TIA_SYNC_COMPLETED_WITH_CONFLICTS"
+                    : "TIA_SYNC_PASSED";
+            }
+            finally
+            {
+                if (!attachedToExisting && project != null)
+                {
+                    project.Close();
+                }
+                if (portal != null)
+                {
+                    portal.Dispose();
+                }
+            }
+            return report;
+        }
+
+        private static Dictionary<string, object> SyncMap(PlcSoftware plcSoftware, Dictionary<string, object> request)
+        {
+            string tableName = GetString(request, "table_name", "PLC_Agent_IO");
+            PlcTagTable table = plcSoftware.TagTableGroup.TagTables.Find(tableName);
+            if (table == null)
+            {
+                table = plcSoftware.TagTableGroup.TagTables.Create(tableName);
+            }
+
+            object rawTags;
+            IEnumerable tagItems = null;
+            if (request.TryGetValue("tags", out rawTags))
+            {
+                tagItems = rawTags as IEnumerable;
+            }
+            if (tagItems == null)
+            {
+                throw new InvalidOperationException("The TIA request does not contain a valid tag collection.");
+            }
+
+            List<object> created = new List<object>();
+            List<object> updated = new List<object>();
+            List<string> unchanged = new List<string>();
+            List<object> conflicts = new List<object>();
+            HashSet<string> requestedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int requested = 0;
+
+            foreach (object rawTag in tagItems)
+            {
+                Dictionary<string, object> tag = rawTag as Dictionary<string, object>;
+                if (tag == null)
+                {
+                    continue;
+                }
+                requested++;
+                string name = GetRequiredString(tag, "name");
+                string dataType = GetString(tag, "data_type", "Bool");
+                string address = GetRequiredString(tag, "address");
+                requestedNames.Add(name);
+
+                PlcTag existingTag = table.Tags.Find(name);
+                if (existingTag == null)
+                {
+                    table.Tags.Create(name, dataType, address);
+                    created.Add(new Dictionary<string, object> { { "name", name }, { "data_type", dataType }, { "address", address } });
+                    continue;
+                }
+
+                bool sameType = String.Equals(existingTag.DataTypeName, dataType, StringComparison.OrdinalIgnoreCase);
+                bool sameAddress = String.Equals(
+                    NormalizeAddress(existingTag.LogicalAddress),
+                    NormalizeAddress(address),
+                    StringComparison.OrdinalIgnoreCase
+                );
+                if (!sameType || !sameAddress)
+                {
+                    conflicts.Add(new Dictionary<string, object>
+                    {
+                        { "name", name },
+                        { "existing_data_type", existingTag.DataTypeName },
+                        { "existing_address", existingTag.LogicalAddress },
+                        { "requested_data_type", dataType },
+                        { "requested_address", address }
+                    });
+                    continue;
+                }
+                unchanged.Add(name);
+            }
+
+            List<string> extraInTia = new List<string>();
+            foreach (PlcTag existingTag in table.Tags)
+            {
+                if (!requestedNames.Contains(existingTag.Name))
+                {
+                    extraInTia.Add(existingTag.Name);
+                }
+            }
+
+            return new Dictionary<string, object>
+            {
+                { "table", table.Name },
+                { "requested", requested },
+                { "created", created },
+                { "updated", updated },
+                { "unchanged", unchanged },
+                { "conflicts", conflicts },
+                { "extra_in_tia", extraInTia }
+            };
+        }
+
+        private static Dictionary<string, object> ExecuteReadTags(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> report = NewReport("RUNNING");
+            string projectPath = GetString(request, "project_path", "");
+            string requestedPlcName = GetString(request, "plc_name", "");
+            bool attach = GetBool(request, "attach_to_running", true);
+            bool withUi = GetBool(request, "with_user_interface", true);
+
+            TiaPortal portal = null;
+            Project project = null;
+            bool attachedToExisting = false;
+            try
+            {
+                if (attach)
+                {
+                    TiaPortalProcess process = TiaPortal.GetProcesses().FirstOrDefault();
+                    if (process != null)
+                    {
+                        portal = process.Attach();
+                        attachedToExisting = true;
+                    }
+                }
+                if (portal == null)
+                {
+                    portal = new TiaPortal(withUi ? TiaPortalMode.WithUserInterface : TiaPortalMode.WithoutUserInterface);
+                }
+
+                project = portal.Projects.FirstOrDefault();
+                if (project == null)
+                {
+                    if (String.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                    {
+                        throw new FileNotFoundException("No TIA project is open and project_path is invalid.", projectPath);
+                    }
+                    project = portal.Projects.Open(new FileInfo(projectPath));
+                }
+
+                PlcSoftware plcSoftware = FindPlcSoftware(project, requestedPlcName);
+                if (plcSoftware == null)
+                {
+                    throw new InvalidOperationException("No PLC software was found in the TIA Portal project.");
+                }
+
+                report["project_path"] = project.Path.FullName;
+                report["plc_name"] = plcSoftware.Name;
+
+                List<object> tagTables = new List<object>();
+                int tagCount = 0;
+                foreach (PlcTagTable table in plcSoftware.TagTableGroup.TagTables)
+                {
+                    List<object> tags = new List<object>();
+                    foreach (PlcTag tag in table.Tags)
+                    {
+                        string comment = "";
+                        try
+                        {
+                            comment = tag.Comment != null ? tag.Comment.ToString() : "";
+                        }
+                        catch (Exception)
+                        {
+                            comment = "";
+                        }
+                        tags.Add(new Dictionary<string, object>
+                        {
+                            { "name", tag.Name },
+                            { "data_type", tag.DataTypeName },
+                            { "address", tag.LogicalAddress },
+                            { "comment", comment }
+                        });
+                        tagCount++;
+                    }
+                    tagTables.Add(new Dictionary<string, object> { { "table_name", table.Name }, { "tags", tags } });
+                }
+                report["tag_tables"] = tagTables;
+                report["tag_count"] = tagCount;
+                report["status"] = "TIA_READ_TAGS_PASSED";
+            }
+            finally
+            {
+                if (!attachedToExisting && project != null)
+                {
+                    project.Close();
+                }
+                if (portal != null)
+                {
+                    portal.Dispose();
+                }
+            }
+            return report;
         }
 
         private static List<Dictionary<string, object>> FlattenMessages(CompilerResultMessageComposition messages)

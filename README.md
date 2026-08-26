@@ -162,6 +162,8 @@ python -m pytest
 ```text
 voz_llm_plc_agent/
 |-- config/
+|-- data/
+|   `-- plc_maps/
 |-- docs/
 |-- experimental_results/
 |-- generated_code/
@@ -170,6 +172,8 @@ voz_llm_plc_agent/
 |-- schemas/
 |-- src/
 |   |-- platforms/
+|   |-- plc_maps/
+|   |-- alias_resolver.py
 |   |-- llm_client.py
 |   |-- llm_parser.py
 |   |-- semantic_validator.py
@@ -179,6 +183,10 @@ voz_llm_plc_agent/
 |-- CHANGELOG_TESIS.md
 `-- README.md
 ```
+
+## Mapa Maestro PLC
+
+El antiguo `config/io_map.json` evoluciono a una biblioteca de mapas PLC versionados en `data/plc_maps/` (no se versiona en git; se regenera automaticamente desde `config/io_map.json` en el primer arranque). Cada mapa puede tener metadata (nombre, version, plataforma, estado de sincronizacion) y cada variable puede llevar aliases en lenguaje natural, rol semantico, permiso de uso por LLM y nivel de seguridad. La GUI permite crear, cargar, guardar como, eliminar y cambiar de mapa activo, validar el mapa, y sincronizar/importar tags con TIA Portal. Detalle completo en `docs/18_mapa_maestro_plc.md`.
 
 ## Donde se guardan los paquetes PLC
 

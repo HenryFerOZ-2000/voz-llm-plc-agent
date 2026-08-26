@@ -27,3 +27,6 @@ tia_openness_bridge/bin/*
 !tia_openness_bridge/bin/.gitkeep
 
 tia_projects/
+
+data/plc_maps/
+.pytest_tmp/

@@ -12,8 +12,19 @@ from utils import iter_io_map_entries, load_json_file
 
 ALLOWED_IO_CLASSES = ["input", "output", "internal", "timer", "counter", "auxiliary"]
 ALLOWED_IO_TYPES = ["BOOL", "INT", "TON", "TP", "CTU", "R_TRIG", "F_TRIG"]
+ALLOWED_SAFETY_LEVELS = ["normal", "critical"]
 LOCATION_PATTERN = re.compile(r"^%[IQM][A-Z]*\d+(?:\.\d+)?$", re.IGNORECASE)
 IO_TREE_COLUMNS = ("name", "class", "type", "location", "initial_value", "description")
+ADVANCED_VARIABLE_DEFAULTS: dict[str, Any] = {
+    "aliases": [],
+    "semantic_role": "",
+    "llm_allowed": True,
+    "safety_level": "normal",
+    "unit": "",
+    "min": None,
+    "max": None,
+    "comments": ""
+}
 PLATFORM_UI_TO_TARGETS = {
     "Siemens + OpenPLC": ["SIEMENS_SCL_V18", "OPENPLC_ST"],
     "Siemens TIA V18": ["SIEMENS_SCL_V18"],
@@ -80,9 +91,9 @@ def normalize_parser_mode_selection(selection: str) -> str:
     return PARSER_UI_TO_MODE.get(selection, "rule_based")
 
 
-def load_io_map_variables(io_map_path: Path) -> list[dict[str, str]]:
+def load_io_map_variables(io_map_path: Path) -> list[dict[str, Any]]:
     io_map = load_json_file(io_map_path)
-    entries: list[dict[str, str]] = []
+    entries: list[dict[str, Any]] = []
 
     for entry in iter_io_map_entries(io_map):
         entries.append(normalize_variable_entry(entry))
@@ -90,8 +101,8 @@ def load_io_map_variables(io_map_path: Path) -> list[dict[str, str]]:
     return entries
 
 
-def normalize_variable_entry(entry: dict[str, Any]) -> dict[str, str]:
-    return {
+def normalize_variable_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    normalized: dict[str, Any] = {
         "name": str(entry.get("name", "")).strip(),
         "class": str(entry.get("class", "internal")).strip().lower(),
         "type": str(entry.get("type", "BOOL")).strip().upper(),
@@ -99,6 +110,33 @@ def normalize_variable_entry(entry: dict[str, Any]) -> dict[str, str]:
         "initial_value": str(entry.get("initial_value", "")).strip(),
         "description": str(entry.get("description", "")).strip()
     }
+    for field, default in ADVANCED_VARIABLE_DEFAULTS.items():
+        normalized[field] = _normalize_advanced_field(field, entry.get(field, default))
+    return normalized
+
+
+def _normalize_advanced_field(field: str, value: Any) -> Any:
+    if field == "aliases":
+        if isinstance(value, str):
+            return [alias.strip() for alias in value.split(",") if alias.strip()]
+        if isinstance(value, list):
+            return [str(alias).strip() for alias in value if str(alias).strip()]
+        return []
+    if field == "llm_allowed":
+        if isinstance(value, str):
+            return value.strip().lower() not in {"false", "0", "no"}
+        return bool(value)
+    if field in {"min", "max"}:
+        if value in (None, ""):
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+    if field == "safety_level":
+        normalized_level = str(value).strip().lower() or "normal"
+        return normalized_level
+    return str(value).strip() if value is not None else ""
 
 
 def validate_io_map_variables(variables: list[dict[str, str]]) -> list[str]:

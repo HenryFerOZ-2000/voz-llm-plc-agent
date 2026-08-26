@@ -24,8 +24,10 @@ except ImportError as error:
     ) from error
 
 from gui_helpers import (
+    ADVANCED_VARIABLE_DEFAULTS,
     ALLOWED_IO_CLASSES,
     ALLOWED_IO_TYPES,
+    ALLOWED_SAFETY_LEVELS,
     IO_TREE_COLUMNS,
     append_history_row,
     console_message,
@@ -50,6 +52,19 @@ from logger import (
 )
 from llm_client import PLCInterpretationLLMClient
 from llm_parser import parse_command, resolve_parser_mode
+from plc_maps import (
+    create_plc_map,
+    delete_plc_map,
+    ensure_plc_maps_library,
+    format_validation_report,
+    list_plc_maps,
+    load_plc_map,
+    resolve_active_map_path,
+    save_active_map_id,
+    save_plc_map,
+    validate_plc_variable_map
+)
+from plc_maps.tia_sync import import_tags_from_tia, sync_map_with_tia
 from project_packager import generate_project_package
 from speech_recognizer import SpeechRecognizer
 from tia_openness import (
@@ -72,16 +87,16 @@ _GUI_INSTANCE_SOCKET: socket.socket | None = None
 
 
 class VariableEditorDialog(ctk.CTkToplevel):
-    def __init__(self, parent: ctk.CTk, title: str, variable_data: dict[str, str] | None = None) -> None:
+    def __init__(self, parent: ctk.CTk, title: str, variable_data: dict[str, Any] | None = None) -> None:
         super().__init__(parent)
         self.title(title)
-        self.geometry("520x430")
+        self.geometry("560x780")
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
 
         data = variable_data or {}
-        self.result: dict[str, str] | None = None
+        self.result: dict[str, Any] | None = None
 
         self.name_var = tk.StringVar(value=data.get("name", ""))
         self.class_var = tk.StringVar(value=data.get("class", "internal"))
@@ -89,6 +104,14 @@ class VariableEditorDialog(ctk.CTkToplevel):
         self.location_var = tk.StringVar(value=data.get("location", ""))
         self.initial_value_var = tk.StringVar(value=data.get("initial_value", ""))
         self.description_var = tk.StringVar(value=data.get("description", ""))
+        self.aliases_var = tk.StringVar(value=", ".join(data.get("aliases", [])))
+        self.semantic_role_var = tk.StringVar(value=data.get("semantic_role", ""))
+        self.llm_allowed_var = tk.BooleanVar(value=bool(data.get("llm_allowed", True)))
+        self.safety_level_var = tk.StringVar(value=data.get("safety_level", "normal"))
+        self.unit_var = tk.StringVar(value=str(data.get("unit", "") or ""))
+        self.min_var = tk.StringVar(value="" if data.get("min") is None else str(data.get("min")))
+        self.max_var = tk.StringVar(value="" if data.get("max") is None else str(data.get("max")))
+        self.comments_var = tk.StringVar(value=data.get("comments", ""))
 
         self.grid_columnconfigure(1, weight=1)
 
@@ -117,10 +140,30 @@ class VariableEditorDialog(ctk.CTkToplevel):
             justify="left",
             wraplength=450
         )
-        helper.grid(row=7, column=0, columnspan=2, padx=20, pady=(6, 14), sticky="w")
+        helper.grid(row=7, column=0, columnspan=2, padx=20, pady=(6, 10), sticky="w")
+
+        advanced_label = ctk.CTkLabel(self, text="Avanzado (mapa maestro)", font=ctk.CTkFont(size=14, weight="bold"))
+        advanced_label.grid(row=8, column=0, columnspan=2, padx=20, pady=(4, 6), sticky="w")
+
+        self._build_form_row(9, "Aliases (separados por coma)", ctk.CTkEntry(self, textvariable=self.aliases_var))
+        self._build_form_row(10, "Rol semantico", ctk.CTkEntry(self, textvariable=self.semantic_role_var))
+        self._build_form_row(
+            11,
+            "Permitido para LLM",
+            ctk.CTkCheckBox(self, text="", variable=self.llm_allowed_var)
+        )
+        self._build_form_row(
+            12,
+            "Nivel de seguridad",
+            ctk.CTkOptionMenu(self, variable=self.safety_level_var, values=ALLOWED_SAFETY_LEVELS)
+        )
+        self._build_form_row(13, "Unidad", ctk.CTkEntry(self, textvariable=self.unit_var))
+        self._build_form_row(14, "Minimo", ctk.CTkEntry(self, textvariable=self.min_var))
+        self._build_form_row(15, "Maximo", ctk.CTkEntry(self, textvariable=self.max_var))
+        self._build_form_row(16, "Comentarios", ctk.CTkEntry(self, textvariable=self.comments_var))
 
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
-        button_frame.grid(row=8, column=0, columnspan=2, padx=20, pady=(0, 20), sticky="ew")
+        button_frame.grid(row=17, column=0, columnspan=2, padx=20, pady=(10, 20), sticky="ew")
         button_frame.grid_columnconfigure((0, 1), weight=1)
 
         cancel_button = ctk.CTkButton(button_frame, text="Cancelar", fg_color="#6B7280", hover_color="#4B5563", command=self._cancel)
@@ -134,8 +177,8 @@ class VariableEditorDialog(ctk.CTkToplevel):
 
     def _build_form_row(self, row_index: int, label_text: str, widget: ctk.CTkBaseClass) -> None:
         label = ctk.CTkLabel(self, text=label_text)
-        label.grid(row=row_index, column=0, padx=(20, 12), pady=8, sticky="w")
-        widget.grid(row=row_index, column=1, padx=(0, 20), pady=8, sticky="ew")
+        label.grid(row=row_index, column=0, padx=(20, 12), pady=6, sticky="w")
+        widget.grid(row=row_index, column=1, padx=(0, 20), pady=6, sticky="ew")
 
     def _confirm(self) -> None:
         self.result = normalize_variable_entry(
@@ -145,7 +188,15 @@ class VariableEditorDialog(ctk.CTkToplevel):
                 "type": self.type_var.get(),
                 "location": self.location_var.get(),
                 "initial_value": self.initial_value_var.get(),
-                "description": self.description_var.get()
+                "description": self.description_var.get(),
+                "aliases": self.aliases_var.get(),
+                "semantic_role": self.semantic_role_var.get(),
+                "llm_allowed": self.llm_allowed_var.get(),
+                "safety_level": self.safety_level_var.get(),
+                "unit": self.unit_var.get(),
+                "min": self.min_var.get(),
+                "max": self.max_var.get(),
+                "comments": self.comments_var.get()
             }
         )
         self.destroy()
@@ -270,9 +321,19 @@ class VozLLMPLCGUI(ctk.CTk):
         self.generated_dir = self.project_root / "generated_code"
         self.history_storage_path = self.generated_dir / "gui_history.json"
         self.env_path = get_env_path(self.project_root)
-        self.io_map_path = self.config_dir / "io_map.json"
         self.intents_catalog_path = self.config_dir / "intents_catalog.json"
         self.safety_rules_path = self.config_dir / "safety_rules.json"
+
+        try:
+            startup_safety_rules = load_json_file(self.safety_rules_path)
+        except (FileNotFoundError, ValueError):
+            startup_safety_rules = {}
+        self.plc_maps_dir = ensure_plc_maps_library(self.project_root, startup_safety_rules)
+        self.io_map_path = resolve_active_map_path(self.project_root)
+        self.io_variable_metadata: dict[str, dict[str, Any]] = {}
+        self._map_summaries_by_name: dict[str, dict[str, Any]] = {}
+        self.active_map_dirty = False
+        self.map_sync_status_var = tk.StringVar(value="Mapa PLC: -")
 
         self.title("Voz-LLM-PLC Agent")
         self.min_window_width = 1440
@@ -290,6 +351,9 @@ class VozLLMPLCGUI(ctk.CTk):
         # El backend y los adaptadores permanecen intactos para una reintegracion futura.
         self.platform_var = tk.StringVar(value="Siemens TIA V18")
         self.parser_mode_var = tk.StringVar(value=parser_ui_map.get(resolved_start_mode, "Hibrido"))
+        self.active_map_var = tk.StringVar(value="")
+        self._map_sync_worker_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
+        self._map_sync_worker_active = False
         self.status_var = tk.StringVar(value="Listo")
         self.llm_status_var = tk.StringVar(value="LLM en modo demo local")
         self.save_voice_evidence_var = tk.BooleanVar(value=False)
@@ -360,12 +424,14 @@ class VozLLMPLCGUI(ctk.CTk):
 
         ensure_generated_dirs(self.generated_dir)
         self.io_variables = load_io_map_variables(self.io_map_path)
+        self._load_active_map_metadata_shadow()
 
         self._configure_grid()
         self._configure_treeview_style()
         self._build_layout()
         self._bind_responsive_events()
         self._load_io_map_table()
+        self._refresh_map_selector_values()
         self._clear_results()
         self._load_history_state()
         self._refresh_llm_client_status()
@@ -684,8 +750,65 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.validate_tia_button.grid(row=1, column=0, columnspan=2, pady=4, sticky="ew")
 
+        map_library_frame = ctk.CTkFrame(self.left_panel, corner_radius=12)
+        map_library_frame.grid(row=8, column=0, padx=18, pady=(0, 8), sticky="ew")
+        map_library_frame.grid_columnconfigure(0, weight=1)
+        map_library_frame.grid_columnconfigure(1, weight=1)
+
+        map_library_label = ctk.CTkLabel(map_library_frame, text="Mapa PLC activo", font=self.section_label_font)
+        map_library_label.grid(row=0, column=0, columnspan=2, padx=12, pady=(10, 4), sticky="w")
+
+        self.map_selector = ctk.CTkOptionMenu(
+            map_library_frame,
+            variable=self.active_map_var,
+            values=[""],
+            command=self.on_active_map_selected,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.map_selector.grid(row=1, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        self.map_sync_status_label = ctk.CTkLabel(
+            map_library_frame,
+            textvariable=self.map_sync_status_var,
+            anchor="w",
+            font=self.body_font
+        )
+        self.map_sync_status_label.grid(row=2, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        map_crud_frame = ctk.CTkFrame(map_library_frame, fg_color="transparent")
+        map_crud_frame.grid(row=3, column=0, columnspan=2, padx=8, pady=(0, 4), sticky="ew")
+        map_crud_frame.grid_columnconfigure(0, weight=1)
+        map_crud_frame.grid_columnconfigure(1, weight=1)
+
+        self.new_map_button = ctk.CTkButton(map_crud_frame, text="Nuevo mapa", command=self.new_plc_map, font=self.button_font)
+        self.new_map_button.grid(row=0, column=0, padx=4, pady=2, sticky="ew")
+        self.save_map_as_button = ctk.CTkButton(map_crud_frame, text="Guardar como...", command=self.save_plc_map_as, font=self.button_font)
+        self.save_map_as_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
+        self.delete_map_button = ctk.CTkButton(
+            map_crud_frame,
+            text="Eliminar mapa",
+            fg_color="#C2410C",
+            hover_color="#9A3412",
+            command=self.delete_plc_map_active,
+            font=self.button_font
+        )
+        self.delete_map_button.grid(row=1, column=0, padx=4, pady=2, sticky="ew")
+        self.validate_map_button = ctk.CTkButton(map_crud_frame, text="Validar mapa", command=self.validate_plc_map, font=self.button_font)
+        self.validate_map_button.grid(row=1, column=1, padx=4, pady=2, sticky="ew")
+
+        map_tia_frame = ctk.CTkFrame(map_library_frame, fg_color="transparent")
+        map_tia_frame.grid(row=4, column=0, columnspan=2, padx=8, pady=(0, 8), sticky="ew")
+        map_tia_frame.grid_columnconfigure(0, weight=1)
+        map_tia_frame.grid_columnconfigure(1, weight=1)
+
+        self.sync_map_button = ctk.CTkButton(map_tia_frame, text="Sincronizar con TIA", command=self.sync_plc_map_with_tia, font=self.button_font)
+        self.sync_map_button.grid(row=0, column=0, padx=4, pady=2, sticky="ew")
+        self.import_map_button = ctk.CTkButton(map_tia_frame, text="Importar desde TIA", command=self.import_plc_map_from_tia, font=self.button_font)
+        self.import_map_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
+
         action_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent")
-        action_frame.grid(row=8, column=0, padx=18, pady=(0, 8), sticky="ew")
+        action_frame.grid(row=9, column=0, padx=18, pady=(0, 8), sticky="ew")
         action_frame.grid_columnconfigure(0, weight=1)
         action_frame.grid_columnconfigure(1, weight=1)
 
@@ -705,14 +828,14 @@ class VozLLMPLCGUI(ctk.CTk):
                 button.grid(row=index // 2, column=index % 2, padx=4, pady=4, sticky="ew")
             self.left_action_buttons.append(button)
 
-        self.table_label = ctk.CTkLabel(self.left_panel, text="Mapa I/O autorizado", font=self.section_label_font)
-        self.table_label.grid(row=9, column=0, padx=18, pady=(2, 6), sticky="w")
+        self.table_label = ctk.CTkLabel(self.left_panel, text="Mapa maestro PLC", font=self.section_label_font)
+        self.table_label.grid(row=10, column=0, padx=18, pady=(2, 6), sticky="w")
 
         self.io_tree_container = ctk.CTkFrame(self.left_panel, corner_radius=12)
-        self.io_tree_container.grid(row=10, column=0, padx=18, pady=(0, 8), sticky="nsew")
+        self.io_tree_container.grid(row=11, column=0, padx=18, pady=(0, 8), sticky="nsew")
         self.io_tree_container.grid_columnconfigure(0, weight=1)
         self.io_tree_container.grid_rowconfigure(0, weight=1)
-        self.left_panel.grid_rowconfigure(10, weight=1, minsize=230)
+        self.left_panel.grid_rowconfigure(11, weight=1, minsize=230)
 
         self.io_tree = ttk.Treeview(self.io_tree_container, columns=IO_TREE_COLUMNS, show="headings", height=10)
         self.io_tree.grid(row=0, column=0, sticky="nsew")
@@ -729,7 +852,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.io_tree.configure(yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set)
 
         manage_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent")
-        manage_frame.grid(row=11, column=0, padx=18, pady=(0, 8), sticky="ew")
+        manage_frame.grid(row=12, column=0, padx=18, pady=(0, 8), sticky="ew")
         manage_frame.grid_columnconfigure(0, weight=1)
         manage_frame.grid_columnconfigure(1, weight=1)
 
@@ -2300,8 +2423,57 @@ class VozLLMPLCGUI(ctk.CTk):
     def _load_io_map_table(self) -> None:
         load_rows_into_treeview(self.io_tree, self.io_variables, IO_TREE_COLUMNS)
 
-    def _collect_io_variables(self) -> list[dict[str, str]]:
-        return [normalize_variable_entry(entry) for entry in treeview_rows(self.io_tree, IO_TREE_COLUMNS)]
+    def _collect_io_variables(self) -> list[dict[str, Any]]:
+        merged: list[dict[str, Any]] = []
+        for entry in treeview_rows(self.io_tree, IO_TREE_COLUMNS):
+            advanced = self.io_variable_metadata.get(entry.get("name", ""), {})
+            merged.append(normalize_variable_entry({**entry, **advanced}))
+        return merged
+
+    def _load_active_map_metadata_shadow(self) -> None:
+        """Populate the advanced-fields shadow dict from the raw active map file."""
+        self.io_variable_metadata = {}
+        try:
+            raw_payload = load_json_file(self.io_map_path)
+        except (FileNotFoundError, ValueError):
+            return
+        for entry in raw_payload.get("variables", []):
+            name = entry.get("name")
+            if not name:
+                continue
+            self.io_variable_metadata[name] = {
+                field: entry.get(field, default) for field, default in ADVANCED_VARIABLE_DEFAULTS.items()
+            }
+
+    def _refresh_map_selector_values(self) -> None:
+        summaries = list_plc_maps(self.project_root)
+        self._map_summaries_by_name = {summary["name"]: summary for summary in summaries}
+        names = list(self._map_summaries_by_name) or [""]
+        self.map_selector.configure(values=names)
+        current_name = next(
+            (summary["name"] for summary in summaries if summary["path"] == self.io_map_path),
+            names[0]
+        )
+        self.active_map_var.set(current_name)
+        current_summary = self._map_summaries_by_name.get(current_name, {})
+        self._refresh_map_sync_status(current_summary.get("sync_status", "unknown"))
+
+    def _refresh_map_sync_status(self, last_known_status: str = "unknown") -> None:
+        map_name = self.active_map_var.get() or "-"
+        variable_count = len(self.io_variables)
+        if self.active_map_dirty:
+            status_text = "TIA: ⚠ Cambios pendientes"
+        elif last_known_status == "synced":
+            status_text = "TIA: ✓ Sincronizado"
+        elif last_known_status == "error":
+            status_text = "TIA: ✕ Error de sincronizacion"
+        else:
+            status_text = "TIA: ⚠ Cambios pendientes"
+        self.map_sync_status_var.set(f"Mapa PLC: {map_name}\n{variable_count} variables\n{status_text}")
+
+    def _mark_active_map_dirty(self) -> None:
+        self.active_map_dirty = True
+        self._refresh_map_sync_status()
 
     def _load_runtime_configuration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         io_map = load_json_file(self.io_map_path)
@@ -2326,7 +2498,7 @@ class VozLLMPLCGUI(ctk.CTk):
         values = self.io_tree.item(item_id, "values")
         return {column: str(values[index]) for index, column in enumerate(IO_TREE_COLUMNS)}
 
-    def _run_variable_dialog(self, title: str, variable_data: dict[str, str] | None = None) -> dict[str, str] | None:
+    def _run_variable_dialog(self, title: str, variable_data: dict[str, Any] | None = None) -> dict[str, Any] | None:
         dialog = VariableEditorDialog(self, title, variable_data)
         self.wait_window(dialog)
         return dialog.result
@@ -2334,32 +2506,36 @@ class VozLLMPLCGUI(ctk.CTk):
     def open_io_map(self) -> None:
         try:
             self.io_variables = load_io_map_variables(self.io_map_path)
+            self._load_active_map_metadata_shadow()
             self._load_io_map_table()
-            self._log("Mapa I/O cargado desde config/io_map.json.")
-            messagebox.showinfo("Mapa I/O", "Mapa I/O cargado correctamente.")
+            self._log(f"Mapa PLC cargado desde {self.io_map_path.name}.")
+            self._refresh_map_sync_status()
+            messagebox.showinfo("Mapa PLC", "Mapa PLC cargado correctamente.")
         except Exception as error:  # pragma: no cover - GUI feedback path
-            self._log(f"Error al abrir mapa I/O: {error}")
-            messagebox.showerror("Mapa I/O", f"No se pudo abrir el mapa I/O.\n\n{error}")
+            self._log(f"Error al abrir el mapa PLC: {error}")
+            messagebox.showerror("Mapa PLC", f"No se pudo abrir el mapa PLC.\n\n{error}")
 
     def save_io_map(self, show_success: bool = True) -> bool:
         variables = self._collect_io_variables()
         errors = validate_io_map_variables(variables)
         if errors:
-            self._log("Validacion del mapa I/O rechazada.")
-            messagebox.showerror("Mapa I/O", "\n".join(errors[:12]))
+            self._log("Validacion del mapa PLC rechazada.")
+            messagebox.showerror("Mapa PLC", "\n".join(errors[:12]))
             return False
 
         try:
-            save_io_map_variables(self.io_map_path, variables)
+            save_plc_map(self.io_map_path, variables, metadata_patch={"dirty": False})
             self.io_variables = variables
             self._load_io_map_table()
-            self._log("Mapa I/O guardado correctamente.")
+            self.active_map_dirty = False
+            self._refresh_map_selector_values()
+            self._log("Mapa PLC guardado correctamente.")
             if show_success:
-                messagebox.showinfo("Mapa I/O", "Mapa I/O guardado correctamente.")
+                messagebox.showinfo("Mapa PLC", "Mapa PLC guardado correctamente.")
             return True
         except Exception as error:  # pragma: no cover - GUI feedback path
-            self._log(f"Error al guardar mapa I/O: {error}")
-            messagebox.showerror("Mapa I/O", f"No se pudo guardar el mapa I/O.\n\n{error}")
+            self._log(f"Error al guardar el mapa PLC: {error}")
+            messagebox.showerror("Mapa PLC", f"No se pudo guardar el mapa PLC.\n\n{error}")
             return False
 
     def add_variable(self) -> None:
@@ -2367,6 +2543,8 @@ class VozLLMPLCGUI(ctk.CTk):
         if result is None:
             return
         self.io_tree.insert("", "end", values=[result[column] for column in IO_TREE_COLUMNS])
+        self.io_variable_metadata[result["name"]] = {field: result[field] for field in ADVANCED_VARIABLE_DEFAULTS}
+        self._mark_active_map_dirty()
         self._log(f"Variable agregada en tabla: {result['name']}.")
 
     def edit_variable(self) -> None:
@@ -2376,11 +2554,16 @@ class VozLLMPLCGUI(ctk.CTk):
             messagebox.showwarning("Editar variable", "Seleccione una variable para editar.")
             return
 
-        result = self._run_variable_dialog("Editar variable", selected_data)
+        merged_data = {**selected_data, **self.io_variable_metadata.get(selected_data["name"], {})}
+        result = self._run_variable_dialog("Editar variable", merged_data)
         if result is None:
             return
 
         self.io_tree.item(item_id, values=[result[column] for column in IO_TREE_COLUMNS])
+        if selected_data["name"] != result["name"]:
+            self.io_variable_metadata.pop(selected_data["name"], None)
+        self.io_variable_metadata[result["name"]] = {field: result[field] for field in ADVANCED_VARIABLE_DEFAULTS}
+        self._mark_active_map_dirty()
         self._log(f"Variable editada en tabla: {result['name']}.")
 
     def delete_variable(self) -> None:
@@ -2394,7 +2577,252 @@ class VozLLMPLCGUI(ctk.CTk):
             return
 
         self.io_tree.delete(item_id)
+        self.io_variable_metadata.pop(selected_data["name"], None)
+        self._mark_active_map_dirty()
         self._log(f"Variable eliminada de la tabla: {selected_data['name']}.")
+
+    def _confirm_discard_unsaved_map_changes(self) -> bool:
+        if not self.active_map_dirty:
+            return True
+        return messagebox.askyesno(
+            "Cambios sin guardar",
+            "El mapa activo tiene cambios sin guardar. ¿Desea continuar de todas formas y descartarlos?"
+        )
+
+    def on_active_map_selected(self, _choice: str | None = None) -> None:
+        selected_name = self.active_map_var.get()
+        summary = self._map_summaries_by_name.get(selected_name)
+        if summary is None or summary["path"] == self.io_map_path:
+            return
+        if not self._confirm_discard_unsaved_map_changes():
+            self._refresh_map_selector_values()
+            return
+
+        save_active_map_id(self.project_root, summary["map_id"])
+        self.io_map_path = summary["path"]
+        self.active_map_dirty = False
+        self.open_io_map()
+        self._refresh_map_selector_values()
+
+    def new_plc_map(self) -> None:
+        name = simpledialog.askstring("Nuevo mapa PLC", "Nombre del nuevo mapa:", parent=self)
+        if not name:
+            return
+        description = simpledialog.askstring("Nuevo mapa PLC", "Descripcion (opcional):", parent=self) or ""
+        try:
+            path = create_plc_map(self.project_root, name=name, description=description)
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"Error al crear el mapa PLC: {error}")
+            messagebox.showerror("Mapa PLC", f"No se pudo crear el mapa.\n\n{error}")
+            return
+
+        summaries = list_plc_maps(self.project_root)
+        map_id = next((summary["map_id"] for summary in summaries if summary["path"] == path), path.stem)
+        save_active_map_id(self.project_root, map_id)
+        self.io_map_path = path
+        self.active_map_dirty = False
+        self.open_io_map()
+        self._refresh_map_selector_values()
+        self._log(f"Mapa PLC creado: {name}.")
+
+    def save_plc_map_as(self) -> None:
+        name = simpledialog.askstring("Guardar mapa como", "Nombre del nuevo mapa:", parent=self)
+        if not name:
+            return
+        variables = self._collect_io_variables()
+        errors = validate_io_map_variables(variables)
+        if errors:
+            messagebox.showerror("Mapa PLC", "\n".join(errors[:12]))
+            return
+
+        try:
+            path = create_plc_map(self.project_root, name=name, variables=variables)
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"Error al guardar el mapa como {name}: {error}")
+            messagebox.showerror("Mapa PLC", f"No se pudo guardar el mapa.\n\n{error}")
+            return
+
+        summaries = list_plc_maps(self.project_root)
+        map_id = next((summary["map_id"] for summary in summaries if summary["path"] == path), path.stem)
+        save_active_map_id(self.project_root, map_id)
+        self.io_map_path = path
+        self.active_map_dirty = False
+        self.open_io_map()
+        self._refresh_map_selector_values()
+        self._log(f"Mapa PLC guardado como: {name}.")
+
+    def delete_plc_map_active(self) -> None:
+        summaries = list_plc_maps(self.project_root)
+        if len(summaries) <= 1:
+            messagebox.showwarning("Mapa PLC", "No se puede eliminar el unico mapa disponible.")
+            return
+        current_name = self.active_map_var.get()
+        if not messagebox.askyesno("Eliminar mapa", f"¿Confirma eliminar el mapa '{current_name}'? Esta accion no se puede deshacer."):
+            return
+
+        delete_plc_map(self.io_map_path)
+        self._log(f"Mapa PLC eliminado: {current_name}.")
+        remaining = [summary for summary in summaries if summary["path"] != self.io_map_path]
+        fallback = remaining[0]
+        save_active_map_id(self.project_root, fallback["map_id"])
+        self.io_map_path = fallback["path"]
+        self.active_map_dirty = False
+        self.open_io_map()
+        self._refresh_map_selector_values()
+
+    def validate_plc_map(self) -> None:
+        try:
+            safety_rules = load_json_file(self.safety_rules_path)
+        except (FileNotFoundError, ValueError):
+            safety_rules = {}
+        variables = self._collect_io_variables()
+        result = validate_plc_variable_map({"variables": variables}, safety_rules)
+        report_text = format_validation_report(result, len(variables))
+        self._log("Validacion de mapa PLC ejecutada.")
+        if result["is_valid"]:
+            messagebox.showinfo("Validar mapa", report_text)
+        else:
+            messagebox.showerror("Validar mapa", report_text)
+
+    def sync_plc_map_with_tia(self) -> None:
+        if self._map_sync_worker_active or self._tia_worker_active:
+            messagebox.showwarning("Sincronizar con TIA", "Ya existe una operacion TIA en curso.")
+            return
+
+        try:
+            safety_rules = load_json_file(self.safety_rules_path)
+        except (FileNotFoundError, ValueError):
+            safety_rules = {}
+        variables = self._collect_io_variables()
+        validation = validate_plc_variable_map({"variables": variables}, safety_rules)
+        if not validation["is_valid"]:
+            messagebox.showerror("Sincronizar con TIA", format_validation_report(validation, len(variables)))
+            return
+
+        diagnostic = diagnose_tia_openness(self.project_root)
+        if not diagnostic.get("is_ready"):
+            messagebox.showwarning(
+                "Sincronizar con TIA",
+                "TIA Openness aun no esta listo. Revise el diagnostico y la configuracion del proyecto."
+            )
+            return
+
+        if not messagebox.askyesno(
+            "Confirmar sincronizacion",
+            "Se crearan/actualizaran tags en TIA Portal a partir del mapa activo. Nunca se eliminan tags "
+            "existentes automaticamente; las diferencias se reportan.\n\n"
+            f"Proyecto: {diagnostic.get('project_path')}\n\nNo se descargara nada a un PLC fisico. ¿Continuar?"
+        ):
+            return
+
+        map_payload = {"variables": variables}
+        self._map_sync_worker_active = True
+        self.sync_map_button.configure(state="disabled")
+        self._log("Iniciando sincronizacion del mapa PLC con TIA Portal.")
+
+        def _worker() -> None:
+            try:
+                result = sync_map_with_tia(map_payload, self.project_root)
+                self._map_sync_worker_queue.put(("sync_success", result))
+            except Exception as error:  # pragma: no cover - external Siemens process
+                self._map_sync_worker_queue.put(("sync_error", str(error)))
+
+        threading.Thread(target=_worker, name="tia-map-sync", daemon=True).start()
+        self.after(250, self._poll_map_sync_worker)
+
+    def import_plc_map_from_tia(self) -> None:
+        if self._map_sync_worker_active or self._tia_worker_active:
+            messagebox.showwarning("Importar desde TIA", "Ya existe una operacion TIA en curso.")
+            return
+
+        diagnostic = diagnose_tia_openness(self.project_root)
+        if not diagnostic.get("is_ready"):
+            messagebox.showwarning(
+                "Importar desde TIA",
+                "TIA Openness aun no esta listo. Revise el diagnostico y la configuracion del proyecto."
+            )
+            return
+
+        if not messagebox.askyesno(
+            "Confirmar importacion",
+            "Se leeran las tablas de tags del proyecto TIA configurado y se fusionaran con el mapa activo, "
+            "preservando aliases/rol semantico/permisos ya definidos localmente.\n\n"
+            f"Proyecto: {diagnostic.get('project_path')}\n\n¿Continuar?"
+        ):
+            return
+
+        map_payload = {"variables": self._collect_io_variables()}
+        self._map_sync_worker_active = True
+        self.import_map_button.configure(state="disabled")
+        self._log("Iniciando importacion de tags desde TIA Portal.")
+
+        def _worker() -> None:
+            try:
+                result = import_tags_from_tia(map_payload, self.project_root)
+                self._map_sync_worker_queue.put(("import_success", result))
+            except Exception as error:  # pragma: no cover - external Siemens process
+                self._map_sync_worker_queue.put(("import_error", str(error)))
+
+        threading.Thread(target=_worker, name="tia-map-import", daemon=True).start()
+        self.after(250, self._poll_map_sync_worker)
+
+    def _poll_map_sync_worker(self) -> None:
+        try:
+            outcome, payload = self._map_sync_worker_queue.get_nowait()
+        except queue.Empty:
+            if self._map_sync_worker_active:
+                self.after(250, self._poll_map_sync_worker)
+            return
+
+        self._map_sync_worker_active = False
+        self.sync_map_button.configure(state="normal")
+        self.import_map_button.configure(state="normal")
+
+        if outcome in {"sync_error", "import_error"}:
+            self._log(f"Error de operacion TIA sobre el mapa PLC: {payload}")
+            messagebox.showerror("Mapa PLC / TIA", f"No se pudo completar la operacion.\n\n{payload}")
+            return
+
+        if outcome == "sync_success":
+            report = payload
+            conflicts = report.get("conflicts", [])
+            passed = report.get("status") == "TIA_SYNC_PASSED"
+            sync_status = "synced" if passed else "error"
+            try:
+                save_plc_map(self.io_map_path, self._collect_io_variables(), metadata_patch={"sync_status": sync_status, "dirty": False})
+                self.active_map_dirty = False
+            except Exception as error:  # pragma: no cover - GUI feedback path
+                self._log(f"No se pudo persistir el estado de sincronizacion: {error}")
+            self._refresh_map_selector_values()
+            self._log(f"Sincronizacion con TIA finalizada: {report.get('status')}.")
+            messagebox.showinfo("Sincronizar con TIA", format_json(report) if conflicts else "Sincronizacion completada sin conflictos.\n\n" + format_json(report))
+            return
+
+        if outcome == "import_success":
+            result = payload
+            report = result.get("report", {})
+            if report.get("status") != "TIA_READ_TAGS_PASSED":
+                self._log(f"Importacion desde TIA no se pudo completar: {report.get('status')}.")
+                messagebox.showerror("Importar desde TIA", format_json(report))
+                return
+
+            merged_variables = result["merged_map"]["variables"]
+            load_rows_into_treeview(self.io_tree, [normalize_variable_entry(v) for v in merged_variables], IO_TREE_COLUMNS)
+            self.io_variable_metadata = {
+                v["name"]: {field: v.get(field, default) for field, default in ADVANCED_VARIABLE_DEFAULTS.items()}
+                for v in merged_variables
+            }
+            self.io_variables = [normalize_variable_entry(v) for v in merged_variables]
+            self._mark_active_map_dirty()
+            self._log(
+                f"Importacion desde TIA completada: {result['new_count']} nuevas, "
+                f"{result['refreshed_count']} actualizadas. Revise y guarde el mapa."
+            )
+            messagebox.showinfo(
+                "Importar desde TIA",
+                f"{result['new_count']} variables nuevas y {result['refreshed_count']} actualizadas.\n\n"
+                "Revise la tabla y use 'Guardar mapa I/O' para persistir los cambios."
+            )
 
     def listen_command(self) -> None:
         self._refresh_voice_settings()
