@@ -51,3 +51,4 @@ git tag -l -n99
 | Tag | Fecha | Commit | Descripcion |
 |---|---|---|---|
 | `backup-2026-08-26-initial` | 2026-08-26 | `2be72ef378cdfd0d6e05960f6bb18aaef57c70ee` | Commit inicial subido a GitHub. Incluye parser reglas/LLM/hibrido, validacion semantica con io_map, generacion IEC 61131-3, integracion TIA Portal Openness V18 con compilacion `TIA_COMPILATION_PASSED` verificada. |
+| `backup-2026-08-26-mapa-maestro-plc` | 2026-08-26 | `981d4a1ba24b0b5b51f05f2788e809448990644e` | Mapa Maestro PLC: biblioteca de mapas versionados (`src/plc_maps/`), metadata semantica por variable, resolucion de alias, gate `llm_allowed`, y acciones nuevas `sync_map`/`read_tags` en el puente C# (conservadoras, sin tocar `import_compile`/`diagnose`). 63 pruebas pasando. |
