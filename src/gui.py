@@ -53,12 +53,17 @@ from logger import (
 from llm_client import PLCInterpretationLLMClient
 from llm_parser import parse_command, resolve_parser_mode
 from plc_maps import (
+    GENERAL_PROFILE_LABEL,
+    apply_profile_filter,
     create_plc_map,
     delete_plc_map,
     ensure_plc_maps_library,
     format_validation_report,
+    get_profile,
     list_plc_maps,
     load_plc_map,
+    load_profiles,
+    profile_readiness_summary,
     resolve_active_map_path,
     save_active_map_id,
     save_plc_map,
@@ -332,6 +337,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.io_map_path = resolve_active_map_path(self.project_root)
         self.io_variable_metadata: dict[str, dict[str, Any]] = {}
         self._map_summaries_by_name: dict[str, dict[str, Any]] = {}
+        self._profiles_by_name: dict[str, dict[str, Any]] = {}
         self.active_map_dirty = False
         self.map_sync_status_var = tk.StringVar(value="Mapa PLC: -")
 
@@ -352,6 +358,9 @@ class VozLLMPLCGUI(ctk.CTk):
         self.platform_var = tk.StringVar(value="Siemens TIA V18")
         self.parser_mode_var = tk.StringVar(value=parser_ui_map.get(resolved_start_mode, "Hibrido"))
         self.active_map_var = tk.StringVar(value="")
+        self.active_profile_var = tk.StringVar(value=GENERAL_PROFILE_LABEL)
+        self.active_profile_id: str | None = None
+        self.profile_status_var = tk.StringVar(value="")
         self._map_sync_worker_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._map_sync_worker_active = False
         self.status_var = tk.StringVar(value="Listo")
@@ -432,6 +441,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self._bind_responsive_events()
         self._load_io_map_table()
         self._refresh_map_selector_values()
+        self._refresh_profile_selector_values()
         self._clear_results()
         self._load_history_state()
         self._refresh_llm_client_status()
@@ -806,6 +816,28 @@ class VozLLMPLCGUI(ctk.CTk):
         self.sync_map_button.grid(row=0, column=0, padx=4, pady=2, sticky="ew")
         self.import_map_button = ctk.CTkButton(map_tia_frame, text="Importar desde TIA", command=self.import_plc_map_from_tia, font=self.button_font)
         self.import_map_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
+
+        profile_label = ctk.CTkLabel(map_library_frame, text="Perfil de prueba", font=self.section_label_font)
+        profile_label.grid(row=5, column=0, columnspan=2, padx=12, pady=(4, 4), sticky="w")
+
+        self.profile_selector = ctk.CTkOptionMenu(
+            map_library_frame,
+            variable=self.active_profile_var,
+            values=[GENERAL_PROFILE_LABEL],
+            command=self.on_profile_selected,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.profile_selector.grid(row=6, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        self.profile_status_label = ctk.CTkLabel(
+            map_library_frame,
+            textvariable=self.profile_status_var,
+            anchor="w",
+            justify="left",
+            font=self.body_font
+        )
+        self.profile_status_label.grid(row=7, column=0, columnspan=2, padx=12, pady=(0, 10), sticky="ew")
 
         action_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent")
         action_frame.grid(row=9, column=0, padx=18, pady=(0, 8), sticky="ew")
@@ -2457,6 +2489,55 @@ class VozLLMPLCGUI(ctk.CTk):
         self.active_map_var.set(current_name)
         current_summary = self._map_summaries_by_name.get(current_name, {})
         self._refresh_map_sync_status(current_summary.get("sync_status", "unknown"))
+        self._refresh_profile_status()
+
+    def _refresh_profile_selector_values(self) -> None:
+        profiles = load_profiles(self.project_root)
+        self._profiles_by_name = {profile["name"]: profile for profile in profiles}
+        names = [GENERAL_PROFILE_LABEL] + list(self._profiles_by_name)
+        self.profile_selector.configure(values=names)
+        current_name = next(
+            (profile["name"] for profile in profiles if profile["profile_id"] == self.active_profile_id),
+            GENERAL_PROFILE_LABEL
+        )
+        self.active_profile_var.set(current_name)
+        self._refresh_profile_status()
+
+    def _refresh_profile_status(self) -> None:
+        map_variable_count = len(self.io_variables)
+        if self.active_profile_id is None:
+            self.profile_status_var.set(f"Perfil: {GENERAL_PROFILE_LABEL}\nVariables mapa: {map_variable_count}")
+            return
+
+        profile = get_profile(self.project_root, self.active_profile_id)
+        if profile is None:
+            self.profile_status_var.set(f"Perfil: {self.active_profile_id} (no encontrado)")
+            return
+
+        readiness = profile_readiness_summary(self.project_root, profile)
+        simulation_text = "Simulation: " + (
+            "✓ Ready" if readiness["simulation_ready"]
+            else f"⚠ Faltan {len(readiness['missing_simulation_variables'])} variables"
+        )
+        hardware_text = "Hardware: " + (
+            "✓ Ready" if readiness["hardware_ready"]
+            else f"⚠ Faltan {len(readiness['missing_hardware_variables'])} variables"
+        )
+        self.profile_status_var.set(
+            f"Perfil: {profile['name']}\n"
+            f"Variables mapa: {map_variable_count}   Variables perfil: {len(profile.get('allowed_variables', []))}\n"
+            f"{simulation_text}\n{hardware_text}"
+        )
+
+    def on_profile_selected(self, _choice: str | None = None) -> None:
+        selected_name = self.active_profile_var.get()
+        if selected_name == GENERAL_PROFILE_LABEL:
+            self.active_profile_id = None
+        else:
+            profile = self._profiles_by_name.get(selected_name)
+            self.active_profile_id = profile["profile_id"] if profile else None
+        self._refresh_profile_status()
+        self._log(f"Perfil de prueba activo: {selected_name}.")
 
     def _refresh_map_sync_status(self, last_known_status: str = "unknown") -> None:
         map_name = self.active_map_var.get() or "-"
@@ -2513,6 +2594,8 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _load_runtime_configuration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         io_map = load_json_file(self.io_map_path)
+        active_profile = get_profile(self.project_root, self.active_profile_id) if self.active_profile_id else None
+        io_map = apply_profile_filter(io_map, active_profile)
         intents_catalog = load_json_file(self.intents_catalog_path)
         safety_rules = load_json_file(self.safety_rules_path)
         return io_map, intents_catalog, safety_rules

@@ -43,6 +43,9 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 - `18_mapa_maestro_plc.md`
   Explica la biblioteca de mapas PLC versionados, su metadata semantica y la sincronizacion con TIA.
 
+- `19_perfiles_experimentales_d01_d20.md`
+  Documenta MAPA_SIMULACION_COMPLETO, MAPA_BANCO_FISICO y los perfiles D01-D20 del banco discreto.
+
 - `17_copias_de_seguridad.md`
   Registra los puntos de restauracion (`git tag`) del repositorio y como volver a ellos.
 
@@ -65,9 +68,10 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 9. `10_generacion_de_pou_y_proyectos.md`
 10. `16_integracion_tia_openness_v18.md`
 11. `18_mapa_maestro_plc.md`
-12. `07_registro_pruebas.md`
-13. `17_copias_de_seguridad.md`
-14. `CHANGELOG_TESIS.md`
+12. `19_perfiles_experimentales_d01_d20.md`
+13. `07_registro_pruebas.md`
+14. `17_copias_de_seguridad.md`
+15. `CHANGELOG_TESIS.md`
 
 ## Criterio de uso en tesis
 

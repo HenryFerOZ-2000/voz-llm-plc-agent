@@ -28,5 +28,8 @@ tia_openness_bridge/bin/*
 
 tia_projects/
 
-data/plc_maps/
+data/plc_maps/*
+!data/plc_maps/mapa_simulacion_completo.json
+!data/plc_maps/mapa_banco_fisico.json
+!data/plc_maps/profiles.json
 .pytest_tmp/
