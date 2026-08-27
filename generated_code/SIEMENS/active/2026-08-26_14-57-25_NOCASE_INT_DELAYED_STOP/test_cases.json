@@ -1,0 +1,69 @@
+[
+  {
+    "test_id": "DST_01",
+    "description": "El motor queda encendido tras Start.",
+    "initial_state": {
+      "Q_Motor_Enable": false
+    },
+    "input_sequence": [
+      {
+        "I_Start": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": true
+    },
+    "safety_expectation": "La memoria de marcha debe quedar activa."
+  },
+  {
+    "test_id": "DST_02",
+    "description": "Stop inicia la espera sin apagar instantaneamente.",
+    "initial_state": {
+      "Q_Motor_Enable": true
+    },
+    "input_sequence": [
+      {
+        "I_Stop": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": true
+    },
+    "safety_expectation": "El apagado debe diferirse hasta completar PT."
+  },
+  {
+    "test_id": "DST_03",
+    "description": "Al cumplirse el retardo el motor se desactiva.",
+    "initial_state": {
+      "Q_Motor_Enable": true
+    },
+    "input_sequence": [
+      {
+        "I_Stop": true
+      },
+      {
+        "wait": "T#10s"
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": false
+    },
+    "safety_expectation": "El temporizador T_StopDelay debe completar el apagado."
+  },
+  {
+    "test_id": "DST_04",
+    "description": "La emergencia anula el retardo y para inmediatamente.",
+    "initial_state": {
+      "Q_Motor_Enable": true
+    },
+    "input_sequence": [
+      {
+        "I_Emergency": true
+      }
+    ],
+    "expected_outputs": {
+      "Q_Motor_Enable": false
+    },
+    "safety_expectation": "El paro de emergencia siempre es inmediato."
+  }
+]

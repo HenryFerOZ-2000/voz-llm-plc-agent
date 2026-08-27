@@ -2475,6 +2475,42 @@ class VozLLMPLCGUI(ctk.CTk):
         self.active_map_dirty = True
         self._refresh_map_sync_status()
 
+    def _persist_generated_functional_variables(self, generated_functional_variables: list[dict[str, Any]]) -> None:
+        """Add newly auto-created functional variables (e.g. a setpoint) to the active map and save it."""
+        if not generated_functional_variables:
+            return
+
+        existing_names = {row["name"] for row in self._collect_io_variables()}
+        added_labels: list[str] = []
+        for variable in generated_functional_variables:
+            name = variable.get("name", "")
+            if not name or name in existing_names:
+                continue
+            entry = normalize_variable_entry(
+                {
+                    "name": name,
+                    "class": variable.get("var_class", "internal"),
+                    "type": variable.get("data_type", "BOOL"),
+                    "location": variable.get("location") or "",
+                    "initial_value": variable.get("initial_value") or "",
+                    "description": variable.get("description", "")
+                }
+            )
+            self.io_tree.insert("", "end", values=[entry[column] for column in IO_TREE_COLUMNS])
+            self.io_variable_metadata[name] = {field: entry[field] for field in ADVANCED_VARIABLE_DEFAULTS}
+            existing_names.add(name)
+            added_labels.append(f"{name} ({entry['type']})")
+
+        if not added_labels:
+            return
+        try:
+            save_plc_map(self.io_map_path, self._collect_io_variables())
+            self.io_variables = self._collect_io_variables()
+            self._refresh_map_selector_values()
+            self._log("Variables funcionales nuevas persistidas en el mapa activo: " + ", ".join(added_labels) + ".")
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo persistir la variable funcional nueva en el mapa activo: {error}")
+
     def _load_runtime_configuration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         io_map = load_json_file(self.io_map_path)
         intents_catalog = load_json_file(self.intents_catalog_path)
@@ -3159,6 +3195,10 @@ class VozLLMPLCGUI(ctk.CTk):
                 combined_verification[target_platform] = verification
                 combined_files[target_platform] = saved_paths or {}
                 self._log(f"Paquete {platform_label(target_platform)} generado.")
+                generated_functional = package_result.get("project_ir", {}).get("metadata", {}).get(
+                    "generated_functional_variables", []
+                )
+                self._persist_generated_functional_variables(generated_functional)
                 if target_platform == "OPENPLC_ST":
                     self._log(
                         "Compilacion OpenPLC: "

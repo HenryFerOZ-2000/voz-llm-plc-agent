@@ -55,6 +55,7 @@ Cada vez que `main.py` procesa un comando, `logger.py` agrega una fila debajo de
 | 2026-08-20T14:18:46 | Haz que el motor se encienda con Start y se apague con Stop | INT_MOTOR_START_STOP | Paquete PLC | OPENPLC_ST | D:\Documentos\Automatizacion para la Industria 4.0\TESIS\Software\voz_llm_plc_agent\generated_code\OPENPLC\active\2026-08-20_14-18-42_NOCASE_INT_MOTOR_START_STOP | Si | - | - |
 | 2026-08-20T14:53:31 | Haz que el motor se encienda con Start y se apague con Stop | INT_MOTOR_START_STOP | Paquete PLC | SIEMENS_SCL_V18 | D:\Documentos\Automatizacion para la Industria 4.0\TESIS\Software\voz_llm_plc_agent\generated_code\SIEMENS\active\2026-08-20_14-53-30_NOCASE_INT_MOTOR_START_STOP | Si | - | - |
 | 2026-08-20T14:53:47 | Haz que el motor se encienda con Start y se apague con Stop | INT_MOTOR_START_STOP | Paquete PLC | OPENPLC_ST | D:\Documentos\Automatizacion para la Industria 4.0\TESIS\Software\voz_llm_plc_agent\generated_code\OPENPLC\active\2026-08-20_14-53-39_NOCASE_INT_MOTOR_START_STOP | Si | - | - |
+| 2026-08-26T14:57:28 | Enciende el motor despues de presionar el pulsante de inicio, cuando presione el stop debe detenerse despues de 10 segundos | INT_DELAYED_STOP | Paquete PLC | SIEMENS_SCL_V18 | D:\Documentos\Automatizacion para la Industria 4.0\TESIS\Software\voz_llm_plc_agent\generated_code\SIEMENS\active\2026-08-26_14-57-25_NOCASE_INT_DELAYED_STOP | Si | - | - |
 <!-- AUTO-TEST-ROWS -->
 
 ## Pruebas de robustez linguistica

@@ -9,6 +9,40 @@ from utils import build_io_map_index, get_project_root, load_json_file, sanitize
 INTENT_TEMPLATE_NOT_IMPLEMENTED = "INTENT_TEMPLATE_NOT_IMPLEMENTED"
 SUPPORTED_STANDARD_BLOCK_TYPES = {"TON", "TP", "CTU", "R_TRIG", "F_TRIG"}
 
+EXTERNAL_PREFIXES = ("I_", "Q_")
+INTERNAL_PREFIXES = ("M_", "T_", "C_", "R_", "F_")
+
+# Tipo IEC/clase de cada recurso interno ya usado por las intenciones existentes.
+# Permite generarlos automaticamente sin exigir que preexistan en el mapa PLC.
+INTERNAL_RESOURCE_SPECS: dict[str, dict[str, str]] = {
+    "M_RunLatch": {"type": "BOOL", "class": "internal"},
+    "M_FaultLatch": {"type": "BOOL", "class": "internal"},
+    "M_AutoMode": {"type": "BOOL", "class": "internal"},
+    "M_ManualMode": {"type": "BOOL", "class": "internal"},
+    "M_Step": {"type": "INT", "class": "internal"},
+    "M_StopDelayActive": {"type": "BOOL", "class": "internal"},
+    "M_SensorLastState": {"type": "BOOL", "class": "internal"},
+    "T_Pulse5s": {"type": "TP", "class": "timer"},
+    "T_DelayStart": {"type": "TON", "class": "timer"},
+    "T_OperationLimit": {"type": "TON", "class": "timer"},
+    "T_SensorTimeout": {"type": "TON", "class": "timer"},
+    "T_StopDelay": {"type": "TON", "class": "timer"},
+    "T_CycleOn": {"type": "TON", "class": "timer"},
+    "T_CycleOff": {"type": "TON", "class": "timer"},
+    "C_PulseCount": {"type": "CTU", "class": "counter"},
+    "R_SensorPulse": {"type": "R_TRIG", "class": "auxiliary"},
+    "R_CycleStart": {"type": "R_TRIG", "class": "auxiliary"}
+}
+
+# Tipo por defecto cuando un recurso interno no esta en el registro ni en el mapa.
+INTERNAL_PREFIX_TYPE_FALLBACK: dict[str, dict[str, str]] = {
+    "M_": {"type": "BOOL", "class": "internal"},
+    "T_": {"type": "TON", "class": "timer"},
+    "C_": {"type": "CTU", "class": "counter"},
+    "R_": {"type": "R_TRIG", "class": "auxiliary"},
+    "F_": {"type": "F_TRIG", "class": "auxiliary"}
+}
+
 
 def _normalize_target_platform(target_platform: str) -> str:
     normalized = (target_platform or "").strip().upper()
@@ -472,7 +506,7 @@ def build_test_cases_for_intent(intent_id: str, parameters: dict[str, Any]) -> l
     raise ValueError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {intent_id}")
 
 
-def _build_variable_from_entry(entry: dict[str, Any]) -> PLCVariable:
+def _build_variable_from_entry(entry: dict[str, Any], source: str = "plc_map") -> PLCVariable:
     data_type = str(entry.get("type", "BOOL")).upper()
     location = str(entry.get("location", "")).strip() or None
     initial_value = str(entry.get("initial_value", "")).strip() or None
@@ -483,9 +517,102 @@ def _build_variable_from_entry(entry: dict[str, Any]) -> PLCVariable:
         location=location,
         initial_value=initial_value,
         description=str(entry.get("description", "")),
-        source="io_map",
+        source=source,
         is_standard_block=data_type in SUPPORTED_STANDARD_BLOCK_TYPES
     )
+
+
+def _internal_resource_spec(name: str) -> dict[str, str]:
+    spec = INTERNAL_RESOURCE_SPECS.get(name)
+    if spec is not None:
+        return spec
+    for prefix, fallback in INTERNAL_PREFIX_TYPE_FALLBACK.items():
+        if name.startswith(prefix):
+            return fallback
+    return {"type": "BOOL", "class": "internal"}
+
+
+def _resolve_internal_resources(
+    names: list[str],
+    io_index: dict[str, dict[str, Any]]
+) -> tuple[list[PLCVariable], list[PLCVariable]]:
+    """Resolve internal implementation resources: reuse from the map if declared, else auto-generate."""
+    resolved: list[PLCVariable] = []
+    generated: list[PLCVariable] = []
+    for name in names:
+        if name in io_index:
+            resolved.append(_build_variable_from_entry(io_index[name], source="plc_map"))
+            continue
+        spec = _internal_resource_spec(name)
+        variable = _build_variable_from_entry(
+            {
+                "name": name,
+                "type": spec["type"],
+                "class": spec["class"],
+                "location": "",
+                "initial_value": "",
+                "description": f"Recurso interno generado automaticamente ({spec['type']})."
+            },
+            source="generated_internal"
+        )
+        resolved.append(variable)
+        generated.append(variable)
+    return resolved, generated
+
+
+def _resolve_functional_variables(
+    requirements: list[dict[str, Any]],
+    io_index: dict[str, dict[str, Any]],
+    already_resolved_names: set[str]
+) -> tuple[list[PLCVariable], list[PLCVariable]]:
+    """
+    Resolve functional/process variables (e.g. Level_SP): reuse from the map or a prior
+    generation if already present with a compatible type; create and report as new otherwise.
+    Never invents a variable when the requirement is ambiguous (missing type).
+    """
+    resolved: list[PLCVariable] = []
+    generated: list[PLCVariable] = []
+    seen_names: set[str] = set()
+
+    for requirement in requirements:
+        name = str(requirement.get("name", "")).strip()
+        requested_type = str(requirement.get("type", "")).strip().upper()
+        if not name:
+            raise ValueError("Se solicito una variable funcional sin nombre.")
+        if not requested_type:
+            raise ValueError(f"Variable funcional ambigua: {name} no especifica un tipo. No se puede inventar.")
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+
+        if name in already_resolved_names or name in {v.name for v in resolved}:
+            raise ValueError(f"La variable funcional {name} coincide con un recurso ya resuelto de otro tipo.")
+
+        if name in io_index:
+            existing_type = str(io_index[name].get("type", "")).upper()
+            if existing_type != requested_type:
+                raise ValueError(
+                    f"La variable funcional {name} ya existe en el mapa PLC con tipo {existing_type}, "
+                    f"incompatible con el tipo solicitado {requested_type}."
+                )
+            resolved.append(_build_variable_from_entry(io_index[name], source="plc_map"))
+            continue
+
+        variable = _build_variable_from_entry(
+            {
+                "name": name,
+                "type": requested_type,
+                "class": "internal",
+                "location": "",
+                "initial_value": "",
+                "description": str(requirement.get("semantic_role", "")) or "Variable funcional generada automaticamente."
+            },
+            source="generated_functional"
+        )
+        resolved.append(variable)
+        generated.append(variable)
+
+    return resolved, generated
 
 
 def _build_function_blocks(variables: list[PLCVariable], parameters: dict[str, Any]) -> list[PLCFunctionBlockInstance]:
@@ -528,7 +655,8 @@ def build_project_ir(
     semantic_output: dict[str, Any],
     io_map: dict[str, Any],
     target_platform: str,
-    project_name: str | None = None
+    project_name: str | None = None,
+    functional_requirements: list[dict[str, Any]] | None = None
 ) -> PLCProjectIR:
     intent_id = semantic_output.get("intent_id", "INT_UNKNOWN")
     command_text = semantic_output.get("command_text", "")
@@ -537,14 +665,26 @@ def build_project_ir(
 
     required_variables = get_required_variables_for_intent(intent_id, parameters)
     io_index = build_io_map_index(io_map)
-    missing_variables = [name for name in required_variables if name not in io_index]
+
+    external_names = [name for name in required_variables if name.startswith(EXTERNAL_PREFIXES)]
+    internal_names = [name for name in required_variables if name.startswith(INTERNAL_PREFIXES)]
+
+    missing_variables = [name for name in external_names if name not in io_index]
     if missing_variables:
         raise ValueError(
-            "Las siguientes variables requeridas no existen en io_map.json: "
+            "Recurso externo no autorizado/no existente en el mapa PLC: "
             + ", ".join(missing_variables)
         )
 
-    variables = [_build_variable_from_entry(io_index[name]) for name in required_variables]
+    external_variables = [_build_variable_from_entry(io_index[name], source="plc_map") for name in external_names]
+    internal_variables, generated_internal = _resolve_internal_resources(internal_names, io_index)
+    functional_variables, generated_functional = _resolve_functional_variables(
+        functional_requirements or [],
+        io_index,
+        already_resolved_names={variable.name for variable in external_variables + internal_variables}
+    )
+
+    variables = external_variables + internal_variables + functional_variables
     function_blocks = _build_function_blocks(variables, parameters)
     safety_rules = _load_safety_rules()
     test_cases = build_test_cases_for_intent(intent_id, parameters)
@@ -575,9 +715,11 @@ def build_project_ir(
         "semantic_output": dict(semantic_output),
         "parameters": dict(parameters),
         "required_variables": list(required_variables),
-        "authorized_variables": sorted(io_index.keys()),
+        "authorized_variables": sorted(set(io_index.keys()) | {variable.name for variable in variables}),
         "missing_variables": missing_variables,
-        "platform_requested": normalized_target
+        "platform_requested": normalized_target,
+        "generated_internal_variables": [variable.to_dict() for variable in generated_internal],
+        "generated_functional_variables": [variable.to_dict() for variable in generated_functional]
     }
 
     return PLCProjectIR(

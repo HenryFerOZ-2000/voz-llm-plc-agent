@@ -99,9 +99,12 @@ class SiemensSCLAdapter(PLCPlatformAdapter):
             row = self._variable_to_row(variable)
             row["siemens_type"] = self._siemens_type(variable)
             row["siemens_address"] = self.to_siemens_address(variable.location)
-            row["tia_scope"] = (
-                "PLC_TAG" if variable.var_class in {"input", "output"} else "FB_STATIC"
-            )
+            if variable.var_class in {"input", "output"}:
+                row["tia_scope"] = "PLC_TAG"
+            elif variable.source == "generated_functional":
+                row["tia_scope"] = "FB_STATIC_PERSISTENT"
+            else:
+                row["tia_scope"] = "FB_STATIC"
             rows.append(row)
         return rows
 

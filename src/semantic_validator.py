@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, get_required_variables_for_intent
+from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, INTERNAL_PREFIXES, get_required_variables_for_intent
 from schemas import (
     PLC_TAG_PATTERN,
     SemanticValidationResult,
@@ -208,10 +208,16 @@ def validate_semantic_output(
 
     llm_disallowed_tags: list[str] = []
     for tag_name in recognized_tags + parameter_tags:
-        if tag_name not in authorized_tags and tag_name not in unauthorized_tags:
+        if tag_name in authorized_tags:
+            if tag_name in io_index and io_index[tag_name].get("llm_allowed", True) is False and tag_name not in llm_disallowed_tags:
+                llm_disallowed_tags.append(tag_name)
+            continue
+        if tag_name.startswith(INTERNAL_PREFIXES):
+            # Recurso interno de implementacion (timer/counter/memoria/flanco): puede no
+            # existir todavia en el mapa activo, ir_builder lo genera automaticamente.
+            continue
+        if tag_name not in unauthorized_tags:
             unauthorized_tags.append(tag_name)
-        elif tag_name in io_index and io_index[tag_name].get("llm_allowed", True) is False and tag_name not in llm_disallowed_tags:
-            llm_disallowed_tags.append(tag_name)
 
     if unauthorized_tags:
         errors.append("Se detectaron tags no autorizados: " + ", ".join(unauthorized_tags))
