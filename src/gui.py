@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 import queue
 import threading
@@ -79,6 +80,25 @@ from tia_openness import (
     run_openness_bridge_diagnostic,
     save_tia_config,
     validate_package_with_tia
+)
+from trial_experiments import (
+    CONDITIONS,
+    ENVIRONMENT_LABELS,
+    ENVIRONMENTS,
+    ERROR_CODES,
+    MASTER_LOG_FIELDS,
+    NO_ERROR_LABEL,
+    NOISE_LEVEL_LABELS,
+    NOISE_LEVELS,
+    PHYSICAL_RESULT_OPTIONS,
+    get_git_commit,
+    load_all_trials,
+    next_trial_id,
+    record_trial_summary,
+    save_metadata,
+    trial_dir,
+    update_observations,
+    write_trial_files
 )
 from utils import get_project_root, load_json_file, sanitize_filename
 
@@ -361,6 +381,23 @@ class VozLLMPLCGUI(ctk.CTk):
         self.active_profile_var = tk.StringVar(value=GENERAL_PROFILE_LABEL)
         self.active_profile_id: str | None = None
         self.profile_status_var = tk.StringVar(value="")
+
+        self.work_mode_var = tk.StringVar(value="Normal")
+        self.active_trial: dict[str, Any] | None = None
+        self._experiment_profiles_by_case: dict[str, dict[str, Any]] = {}
+        self._test_case_variants_cache: dict[str, list[dict[str, str]]] | None = None
+        self.experiment_group_var = tk.StringVar(value="Discreto D01-D20")
+        self.experiment_case_var = tk.StringVar(value="")
+        self.experiment_condition_var = tk.StringVar(value=CONDITIONS["C1"]["label"])
+        self.experiment_variant_var = tk.StringVar(value="V1")
+        self.experiment_speaker_var = tk.StringVar(value="P01")
+        self.experiment_noise_var = tk.StringVar(value=NOISE_LEVEL_LABELS["none"])
+        self.experiment_environment_var = tk.StringVar(value=ENVIRONMENT_LABELS["simulation"])
+        self.experiment_status_var = tk.StringVar(value="")
+        self.manual_result_var = tk.StringVar(value=PHYSICAL_RESULT_OPTIONS[0])
+        self.manual_safety_var = tk.StringVar(value="No")
+        self.manual_error_var = tk.StringVar(value=NO_ERROR_LABEL)
+        self.manual_observations_var = tk.StringVar(value="")
         self._map_sync_worker_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._map_sync_worker_active = False
         self.status_var = tk.StringVar(value="Listo")
@@ -404,7 +441,8 @@ class VozLLMPLCGUI(ctk.CTk):
             "Casos de prueba",
             "Verificacion",
             "Archivos",
-            "Historial"
+            "Historial",
+            "Historial experimental"
         ]
         self.result_tab_labels = {
             "Voz": "Voz",
@@ -421,7 +459,8 @@ class VozLLMPLCGUI(ctk.CTk):
             "Casos de prueba": "Pruebas",
             "Verificacion": "Verificacion",
             "Archivos": "Archivos",
-            "Historial": "Historial"
+            "Historial": "Historial",
+            "Historial experimental": "Experimentos"
         }
         self.active_result_tab = "Voz"
         self.result_tab_window_start = 0
@@ -442,6 +481,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self._load_io_map_table()
         self._refresh_map_selector_values()
         self._refresh_profile_selector_values()
+        self._refresh_experiment_case_selector()
+        self._refresh_experiment_history_tab()
         self._clear_results()
         self._load_history_state()
         self._refresh_llm_client_status()
@@ -1057,6 +1098,175 @@ class VozLLMPLCGUI(ctk.CTk):
         self.clear_command_button.grid(row=4, column=0, columnspan=2, padx=6, pady=6, sticky="ew")
         self.command_buttons.append(self.clear_command_button)
 
+        work_mode_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
+        work_mode_frame.grid(row=7, column=0, padx=18, pady=(4, 6), sticky="ew")
+        work_mode_frame.grid_columnconfigure(1, weight=1)
+
+        work_mode_label = ctk.CTkLabel(work_mode_frame, text="Modo de trabajo", font=self.section_label_font)
+        work_mode_label.grid(row=0, column=0, padx=(0, 10), sticky="w")
+
+        self.work_mode_selector = ctk.CTkOptionMenu(
+            work_mode_frame,
+            variable=self.work_mode_var,
+            values=["Normal", "Experimentacion"],
+            command=self._on_work_mode_changed,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.work_mode_selector.grid(row=0, column=1, sticky="ew")
+
+        self._build_experiment_controls(row=8)
+        self._build_manual_result_controls(row=9)
+
+    def _build_experiment_controls(self, row: int) -> None:
+        frame = ctk.CTkFrame(self.center_panel, corner_radius=12)
+        self.experiment_controls_frame = frame
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
+
+        title = ctk.CTkLabel(frame, text="Modo Experimentacion", font=ctk.CTkFont(size=15, weight="bold"))
+        title.grid(row=0, column=0, columnspan=2, padx=12, pady=(10, 6), sticky="w")
+
+        group_label = ctk.CTkLabel(frame, text="Grupo de pruebas", font=self.body_font)
+        group_label.grid(row=1, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        self.experiment_group_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_group_var,
+            values=["Discreto D01-D20", "PID P01-P12 - pendiente"],
+            command=self._on_experiment_group_changed,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_group_selector.grid(row=2, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        case_label = ctk.CTkLabel(frame, text="Caso", font=self.body_font)
+        case_label.grid(row=3, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        self.experiment_case_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_case_var,
+            values=[""],
+            command=self._on_experiment_case_changed,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_case_selector.grid(row=4, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        condition_label = ctk.CTkLabel(frame, text="Condicion", font=self.body_font)
+        condition_label.grid(row=5, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
+        variant_label = ctk.CTkLabel(frame, text="Variante", font=self.body_font)
+        variant_label.grid(row=5, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
+
+        self.experiment_condition_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_condition_var,
+            values=[data["label"] for data in CONDITIONS.values()],
+            command=self._on_experiment_condition_changed,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_condition_selector.grid(row=6, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
+
+        self.experiment_variant_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_variant_var,
+            values=["V1"],
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_variant_selector.grid(row=6, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
+
+        speaker_label = ctk.CTkLabel(frame, text="Participante (speaker_id)", font=self.body_font)
+        speaker_label.grid(row=7, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
+        noise_label = ctk.CTkLabel(frame, text="Ruido", font=self.body_font)
+        noise_label.grid(row=7, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
+
+        self.experiment_speaker_entry = ctk.CTkEntry(frame, textvariable=self.experiment_speaker_var, font=self.body_font)
+        self.experiment_speaker_entry.grid(row=8, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
+
+        self.experiment_noise_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_noise_var,
+            values=[NOISE_LEVEL_LABELS[level] for level in NOISE_LEVELS],
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_noise_selector.grid(row=8, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
+
+        environment_label = ctk.CTkLabel(frame, text="Entorno", font=self.body_font)
+        environment_label.grid(row=9, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        self.experiment_environment_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_environment_var,
+            values=[ENVIRONMENT_LABELS[env] for env in ENVIRONMENTS],
+            command=self._on_experiment_environment_changed,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_environment_selector.grid(row=10, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        self.experiment_status_label = ctk.CTkLabel(
+            frame,
+            textvariable=self.experiment_status_var,
+            anchor="w",
+            justify="left",
+            font=self.body_font
+        )
+        self.experiment_status_label.grid(row=11, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+
+        self.start_trial_button = ctk.CTkButton(frame, text="Iniciar ensayo", height=38, command=self.start_trial, font=self.button_font)
+        self.start_trial_button.grid(row=12, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+
+        frame.grid(row=row, column=0, padx=18, pady=(0, 8), sticky="ew")
+        frame.grid_remove()
+
+    def _build_manual_result_controls(self, row: int) -> None:
+        frame = ctk.CTkFrame(self.center_panel, corner_radius=12)
+        self.manual_result_frame = frame
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
+
+        title = ctk.CTkLabel(frame, text="Resultado del ensayo", font=ctk.CTkFont(size=15, weight="bold"))
+        title.grid(row=0, column=0, columnspan=2, padx=12, pady=(10, 6), sticky="w")
+
+        result_label = ctk.CTkLabel(frame, text="Resultado fisico", font=self.body_font)
+        result_label.grid(row=1, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
+        safety_label = ctk.CTkLabel(frame, text="Violacion de seguridad", font=self.body_font)
+        safety_label.grid(row=1, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
+
+        self.manual_result_selector = ctk.CTkOptionMenu(
+            frame, variable=self.manual_result_var, values=PHYSICAL_RESULT_OPTIONS, font=self.body_font, dropdown_font=self.body_font
+        )
+        self.manual_result_selector.grid(row=2, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
+
+        self.manual_safety_selector = ctk.CTkOptionMenu(
+            frame, variable=self.manual_safety_var, values=["No", "Si"], font=self.body_font, dropdown_font=self.body_font
+        )
+        self.manual_safety_selector.grid(row=2, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
+
+        error_label = ctk.CTkLabel(frame, text="Tipo de error", font=self.body_font)
+        error_label.grid(row=3, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        self.manual_error_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.manual_error_var,
+            values=[NO_ERROR_LABEL] + [f"{code} - {label}" for code, label in ERROR_CODES.items()],
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.manual_error_selector.grid(row=4, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        observations_label = ctk.CTkLabel(frame, text="Observaciones", font=self.body_font)
+        observations_label.grid(row=5, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        self.manual_observations_entry = ctk.CTkEntry(frame, textvariable=self.manual_observations_var, font=self.body_font)
+        self.manual_observations_entry.grid(row=6, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        self.save_manual_result_button = ctk.CTkButton(
+            frame, text="Guardar resultado", height=38, command=self.save_manual_result, font=self.button_font
+        )
+        self.save_manual_result_button.grid(row=7, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+
+        frame.grid(row=row, column=0, padx=18, pady=(0, 12), sticky="ew")
+        frame.grid_remove()
+
     def _build_right_panel(self) -> None:
         self.right_title_label = ctk.CTkLabel(self.right_panel, text="Resultados", font=self.panel_title_font)
         self.right_title_label.grid(row=0, column=0, padx=18, pady=(18, 10), sticky="w")
@@ -1234,6 +1444,55 @@ class VozLLMPLCGUI(ctk.CTk):
         self.history_tree.configure(yscrollcommand=history_scroll.set)
         self.history_tree.bind("<<TreeviewSelect>>", self._on_history_tree_selected)
         self.history_tree.bind("<Double-1>", self._on_history_tree_double_click)
+
+        experiment_tab = self.results_tabs.tab("Historial experimental")
+        experiment_tab.grid_columnconfigure(0, weight=1)
+        experiment_tab.grid_rowconfigure(1, weight=1)
+
+        experiment_toolbar = ctk.CTkFrame(experiment_tab, fg_color="transparent")
+        experiment_toolbar.grid(row=0, column=0, padx=8, pady=(8, 0), sticky="ew")
+        experiment_toolbar.grid_columnconfigure(0, weight=1)
+
+        experiment_hint = ctk.CTkLabel(
+            experiment_toolbar,
+            text="Doble clic en un ensayo para ver su detalle. Solo consulta y trazabilidad.",
+            font=self.body_font,
+            text_color="#4B5563",
+            anchor="w"
+        )
+        experiment_hint.grid(row=0, column=0, padx=(0, 8), sticky="w")
+
+        self.export_experiment_button = ctk.CTkButton(
+            experiment_toolbar,
+            text="Exportar resultados",
+            command=self.export_experiment_results,
+            font=self.button_font
+        )
+        self.export_experiment_button.grid(row=0, column=1, sticky="e")
+
+        experiment_container = ctk.CTkFrame(experiment_tab)
+        experiment_container.grid(row=1, column=0, padx=8, pady=8, sticky="nsew")
+        experiment_container.grid_columnconfigure(0, weight=1)
+        experiment_container.grid_rowconfigure(0, weight=1)
+
+        experiment_columns = ("trial", "caso", "condicion", "compila", "ejecucion", "tiempo", "error")
+        self.experiment_history_tree = ttk.Treeview(experiment_container, columns=experiment_columns, show="headings", height=12)
+        self.experiment_history_tree.grid(row=0, column=0, sticky="nsew")
+
+        experiment_headings = {
+            "trial": "Trial", "caso": "Caso", "condicion": "Condicion", "compila": "Compila",
+            "ejecucion": "Ejecucion", "tiempo": "Tiempo", "error": "Error"
+        }
+        for column in experiment_columns:
+            self.experiment_history_tree.heading(column, text=experiment_headings[column])
+            width = 130 if column != "trial" else 110
+            self.experiment_history_tree.column(column, width=width, minwidth=70, stretch=True)
+
+        experiment_scroll = ttk.Scrollbar(experiment_container, orient="vertical", command=self.experiment_history_tree.yview)
+        experiment_scroll.grid(row=0, column=1, sticky="ns")
+        self.experiment_history_tree.configure(yscrollcommand=experiment_scroll.set)
+        self.experiment_history_tree.bind("<Double-1>", self._on_experiment_history_double_click)
+
         self._hide_default_results_tab_bar()
         self._refresh_results_navigation()
 
@@ -2490,6 +2749,8 @@ class VozLLMPLCGUI(ctk.CTk):
         current_summary = self._map_summaries_by_name.get(current_name, {})
         self._refresh_map_sync_status(current_summary.get("sync_status", "unknown"))
         self._refresh_profile_status()
+        if hasattr(self, "experiment_status_var"):
+            self._refresh_experiment_status()
 
     def _refresh_profile_selector_values(self) -> None:
         profiles = load_profiles(self.project_root)
@@ -3146,6 +3407,433 @@ class VozLLMPLCGUI(ctk.CTk):
         self._refresh_export_options(None)
         self._select_results_tab("Voz")
 
+    # ------------------------------------------------------------------
+    # Modo Experimentacion
+    # ------------------------------------------------------------------
+
+    def _on_work_mode_changed(self, _choice: str | None = None) -> None:
+        if self.work_mode_var.get() == "Experimentacion":
+            self.experiment_controls_frame.grid()
+            self._refresh_experiment_case_selector()
+            self._on_experiment_condition_changed()
+        else:
+            self.experiment_controls_frame.grid_remove()
+            self.manual_result_frame.grid_remove()
+        self._log(f"Modo de trabajo: {self.work_mode_var.get()}.")
+
+    def _on_experiment_group_changed(self, _choice: str | None = None) -> None:
+        if self.experiment_group_var.get().startswith("PID"):
+            messagebox.showinfo(
+                "Grupo de pruebas",
+                "El grupo PID (P01-P12) todavia no esta disponible. Se mantiene el grupo Discreto D01-D20."
+            )
+            self.experiment_group_var.set("Discreto D01-D20")
+            return
+        self._refresh_experiment_case_selector()
+
+    def _refresh_experiment_case_selector(self) -> None:
+        profiles = load_profiles(self.project_root)
+        self._experiment_profiles_by_case = {profile["name"]: profile for profile in profiles}
+        names = list(self._experiment_profiles_by_case)
+        if not names:
+            self.experiment_case_selector.configure(values=[""])
+            self.experiment_case_var.set("")
+            self.experiment_status_var.set("No hay perfiles experimentales disponibles.")
+            return
+        self.experiment_case_selector.configure(values=names)
+        if self.experiment_case_var.get() not in self._experiment_profiles_by_case:
+            self.experiment_case_var.set(names[0])
+        self._on_experiment_case_changed()
+
+    def _load_test_case_variants(self) -> dict[str, list[dict[str, str]]]:
+        if self._test_case_variants_cache is not None:
+            return self._test_case_variants_cache
+        path = self.project_root / "tests" / "test_cases.json"
+        grouped: dict[str, list[dict[str, str]]] = {}
+        if path.exists():
+            try:
+                entries = load_json_file(path)
+            except (FileNotFoundError, ValueError):
+                entries = []
+            if isinstance(entries, list):
+                for entry in entries:
+                    case_id = str(entry.get("case_id", ""))
+                    if "_V" not in case_id:
+                        continue
+                    base_case_id, _, variant_suffix = case_id.rpartition("_V")
+                    grouped.setdefault(base_case_id, []).append(
+                        {"variant": f"V{variant_suffix}", "command": str(entry.get("command", ""))}
+                    )
+        self._test_case_variants_cache = grouped
+        return grouped
+
+    def _on_experiment_case_changed(self, _choice: str | None = None) -> None:
+        profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
+        if profile is None:
+            return
+        variants = self._load_test_case_variants().get(profile.get("case_id", ""), [])
+        variant_names = [entry["variant"] for entry in variants] or ["V1"]
+        self.experiment_variant_selector.configure(values=variant_names)
+        if self.experiment_variant_var.get() not in variant_names:
+            self.experiment_variant_var.set(variant_names[0])
+        self._refresh_experiment_status()
+
+    def _on_experiment_condition_changed(self, _choice: str | None = None) -> None:
+        condition = self._selected_condition()
+        if condition["noise_locked_to"] is not None:
+            self.experiment_noise_var.set(NOISE_LEVEL_LABELS[condition["noise_locked_to"]])
+            self.experiment_noise_selector.configure(state="disabled")
+        else:
+            self.experiment_noise_selector.configure(state="normal")
+            if condition.get("noise_required") and self._selected_noise_level() == "none":
+                self.experiment_noise_var.set(NOISE_LEVEL_LABELS["medium"])
+        self._refresh_experiment_status()
+
+    def _on_experiment_environment_changed(self, _choice: str | None = None) -> None:
+        self._refresh_experiment_status()
+
+    def _selected_condition(self) -> dict[str, Any]:
+        label = self.experiment_condition_var.get()
+        for code, data in CONDITIONS.items():
+            if data["label"] == label:
+                return {**data, "code": code}
+        return {**CONDITIONS["C1"], "code": "C1"}
+
+    def _selected_noise_level(self) -> str:
+        label = self.experiment_noise_var.get()
+        for level, level_label in NOISE_LEVEL_LABELS.items():
+            if level_label == label:
+                return level
+        return "none"
+
+    def _selected_environment(self) -> str:
+        label = self.experiment_environment_var.get()
+        for environment, environment_label in ENVIRONMENT_LABELS.items():
+            if environment_label == label:
+                return environment
+        return "simulation"
+
+    def _refresh_experiment_status(self) -> None:
+        profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
+        if profile is None:
+            self.experiment_status_var.set("No hay perfiles experimentales disponibles.")
+            self.start_trial_button.configure(state="disabled")
+            return
+
+        readiness = profile_readiness_summary(self.project_root, profile)
+        environment = self._selected_environment()
+        lines = [
+            f"Mapa: {self.active_map_var.get()}   Perfil: {profile['name']}",
+            "Simulacion: " + ("Ready" if readiness["simulation_ready"] else f"Faltan {len(readiness['missing_simulation_variables'])} variables"),
+            "Hardware: " + ("Ready" if readiness["hardware_ready"] else f"Faltan {len(readiness['missing_hardware_variables'])} variables")
+        ]
+        if not readiness["hardware_ready"] and readiness["missing_hardware_variables"]:
+            lines.append("Faltan en hardware: " + ", ".join(readiness["missing_hardware_variables"]))
+
+        blocked = environment == "hardware" and not readiness["hardware_ready"]
+        if blocked:
+            lines.append(f"{profile['name']} no esta listo para hardware.")
+        self.experiment_status_var.set("\n".join(lines))
+        self.start_trial_button.configure(state="disabled" if blocked else "normal")
+
+    def start_trial(self) -> None:
+        profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
+        if profile is None:
+            messagebox.showwarning("Iniciar ensayo", "Seleccione un caso valido.")
+            return
+        speaker_id = self.experiment_speaker_var.get().strip()
+        if not speaker_id:
+            messagebox.showwarning("Iniciar ensayo", "Indique un identificador de participante anonimo (ej. P01).")
+            return
+
+        condition = self._selected_condition()
+        environment = self._selected_environment()
+        readiness = profile_readiness_summary(self.project_root, profile)
+        if environment == "hardware" and not readiness["hardware_ready"]:
+            messagebox.showwarning(
+                "Iniciar ensayo",
+                f"{profile['name']} no esta listo para hardware.\n\nFaltan: "
+                + ", ".join(readiness["missing_hardware_variables"])
+            )
+            return
+
+        trial_id = next_trial_id(self.project_root)
+        case_id = profile.get("case_id", "")
+        active_map_summary = self._map_summaries_by_name.get(self.active_map_var.get(), {})
+
+        self.active_trial = {
+            "trial_id": trial_id,
+            "case_id": case_id,
+            "experiment_family": "DISCRETE",
+            "condition": condition["code"],
+            "variant": self.experiment_variant_var.get(),
+            "speaker_id": speaker_id,
+            "noise_level": self._selected_noise_level(),
+            "environment": environment,
+            "timestamp_start": datetime.now().isoformat(timespec="seconds"),
+            "map_name": self.active_map_var.get(),
+            "map_version": active_map_summary.get("version", ""),
+            "profile_id": profile.get("profile_id", ""),
+            "parser_mode": condition["parser_mode"],
+            "requires_voice": condition["requires_voice"],
+            "git_commit": get_git_commit(self.project_root),
+            "state": "RUNNING"
+        }
+
+        parser_ui_map = {"llm": "LLM", "rule_based": "Reglas", "hybrid": "Hibrido"}
+        self.parser_mode_var.set(parser_ui_map.get(condition["parser_mode"], "Hibrido"))
+
+        directory = trial_dir(self.project_root, case_id, trial_id)
+        save_metadata(directory, self.active_trial)
+
+        self.manual_result_frame.grid_remove()
+        instructions = (
+            "Grabe el comando de voz y presione 'Detener y transcribir'." if condition["requires_voice"]
+            else "Escriba el comando y presione 'Procesar comando'."
+        )
+        self.experiment_status_var.set(
+            f"Ensayo {trial_id} en curso ({condition['code']} / {case_id}).\n{instructions}\n"
+            "Luego presione 'Generar paquete PLC'."
+        )
+        self._log(
+            f"Ensayo {trial_id} iniciado: {case_id} / {condition['code']} / "
+            f"{self.experiment_variant_var.get()} / {speaker_id}."
+        )
+
+    def _compute_total_time(self, start_iso: str | None, end_iso: str | None) -> float:
+        if not start_iso or not end_iso:
+            return 0.0
+        try:
+            return round((datetime.fromisoformat(end_iso) - datetime.fromisoformat(start_iso)).total_seconds(), 3)
+        except ValueError:
+            return 0.0
+
+    def _finalize_trial_summary(self, compile_result: str, execution_result: str, error_type: str) -> None:
+        if not self.active_trial:
+            return
+        summary_row = {
+            "trial_id": self.active_trial.get("trial_id", ""),
+            "case_id": self.active_trial.get("case_id", ""),
+            "condition": self.active_trial.get("condition", ""),
+            "variant": self.active_trial.get("variant", ""),
+            "speaker_id": self.active_trial.get("speaker_id", ""),
+            "noise_level": self.active_trial.get("noise_level", ""),
+            "compile_result": compile_result,
+            "execution_result": execution_result,
+            "safety_violation": self.active_trial.get("safety_violation", ""),
+            "total_time": self.active_trial.get("total_time", ""),
+            "error_type": error_type,
+            "timestamp": self.active_trial.get("timestamp_start", ""),
+            "map_name": self.active_trial.get("map_name", ""),
+            "profile_id": self.active_trial.get("profile_id", "")
+        }
+        record_trial_summary(self.project_root, summary_row)
+        self._refresh_experiment_history_tab()
+
+    def _cancel_active_trial(self, reason: str) -> None:
+        if not self.active_trial:
+            return
+        trial_id = self.active_trial.get("trial_id", "")
+        try:
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
+            save_metadata(directory, {"state": "CANCELLED", "timestamp_end": datetime.now().isoformat(timespec="seconds")})
+            self._finalize_trial_summary(compile_result="N/A", execution_result="", error_type=NO_ERROR_LABEL)
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo registrar la cancelacion del ensayo: {error}")
+        finally:
+            self._log(f"Ensayo {trial_id} cancelado: {reason}")
+            self.active_trial = None
+            self.manual_result_frame.grid_remove()
+
+    def _capture_trial_parse_result(self, command_text: str, semantic_output: dict[str, Any]) -> None:
+        if not self.active_trial:
+            return
+        try:
+            transcript = str(self.voice_transcription.get("transcript", "")) if self.voice_transcription else ""
+            self.active_trial["command_text"] = command_text
+            self.active_trial["transcript"] = transcript
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
+            write_trial_files(directory, {"command.txt": command_text, "transcript.txt": transcript})
+            save_metadata(directory, {
+                "command_text": command_text,
+                "transcript": transcript,
+                "semantic_output": semantic_output,
+                "state": "RUNNING"
+            })
+            self._log(f"Ensayo {self.active_trial['trial_id']}: interpretacion capturada.")
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo registrar la interpretacion del ensayo: {error}")
+
+    def _capture_trial_parse_failure(self, command_text: str, semantic_output: dict[str, Any]) -> None:
+        if not self.active_trial:
+            return
+        trial_id = self.active_trial.get("trial_id", "")
+        try:
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
+            write_trial_files(directory, {"command.txt": command_text})
+            save_metadata(directory, {
+                "command_text": command_text,
+                "semantic_output": semantic_output,
+                "state": "ERROR",
+                "timestamp_end": datetime.now().isoformat(timespec="seconds")
+            })
+            self._finalize_trial_summary(compile_result="N/A", execution_result="", error_type="E2")
+            self._log(f"Ensayo {trial_id} registrado con fallo de interpretacion (E2 - Semantico).")
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo registrar el fallo de interpretacion del ensayo: {error}")
+        finally:
+            self.active_trial = None
+
+    def _capture_trial_generation_result(self, combined_results: dict[str, dict[str, Any]]) -> None:
+        if not self.active_trial:
+            return
+        try:
+            target_platform = "SIEMENS_SCL_V18" if "SIEMENS_SCL_V18" in combined_results else next(iter(combined_results), None)
+            result_entry = combined_results.get(target_platform, {}) if target_platform else {}
+            verification = result_entry.get("verification", {})
+            saved_paths = result_entry.get("saved_paths") or {}
+            package_result = result_entry.get("package_result", {})
+
+            is_valid = bool(verification.get("is_valid"))
+            compile_result = "OK" if is_valid else "FAIL"
+            errors = verification.get("errors", [])
+            warnings = verification.get("warnings", [])
+
+            self.active_trial.update({
+                "platform": target_platform,
+                "compile_result": compile_result,
+                "state": "AWAITING_MANUAL_RESULT"
+            })
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
+            save_metadata(directory, {
+                "platform": target_platform,
+                "compile_result": compile_result,
+                "compile_errors": errors,
+                "compile_warnings": warnings,
+                "package_dir": saved_paths.get("package_dir", ""),
+                "project_ir_metadata": package_result.get("project_ir", {}).get("metadata", {}),
+                "state": "AWAITING_MANUAL_RESULT",
+                "timestamp_end": datetime.now().isoformat(timespec="seconds")
+            })
+
+            self.manual_result_var.set(PHYSICAL_RESULT_OPTIONS[0])
+            self.manual_safety_var.set("No")
+            self.manual_error_var.set(NO_ERROR_LABEL)
+            self.manual_observations_var.set("")
+            self.manual_result_frame.grid()
+            self.experiment_status_var.set(
+                f"Ensayo {self.active_trial['trial_id']} generado ({compile_result}). "
+                "Complete el resultado abajo y presione 'Guardar resultado'."
+            )
+            self._log(f"Ensayo {self.active_trial['trial_id']}: generacion capturada ({compile_result}).")
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo registrar el resultado de generacion del ensayo: {error}")
+
+    def _capture_trial_exception(self, error_text: str, stage: str) -> None:
+        if not self.active_trial:
+            return
+        trial_id = self.active_trial.get("trial_id", "")
+        try:
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
+            save_metadata(directory, {
+                "state": "ERROR",
+                "compile_errors": [error_text],
+                "timestamp_end": datetime.now().isoformat(timespec="seconds")
+            })
+            error_code = "E1" if stage == "parse" and self.active_trial.get("requires_voice") else "E9"
+            self._finalize_trial_summary(compile_result="ERROR", execution_result="", error_type=error_code)
+            self._log(f"Ensayo {trial_id} registrado con error ({stage}): {error_text}")
+        except Exception as inner_error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo registrar la excepcion del ensayo: {inner_error}")
+        finally:
+            self.active_trial = None
+            self.manual_result_frame.grid_remove()
+
+    def save_manual_result(self) -> None:
+        if not self.active_trial:
+            messagebox.showwarning("Guardar resultado", "No hay un ensayo en curso.")
+            return
+        try:
+            error_label = self.manual_error_var.get()
+            error_code = NO_ERROR_LABEL if error_label == NO_ERROR_LABEL else error_label.split(" - ")[0]
+            observations = {
+                "physical_result": self.manual_result_var.get(),
+                "safety_violation": self.manual_safety_var.get(),
+                "error_type": error_code,
+                "observations": self.manual_observations_var.get().strip()
+            }
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
+            update_observations(directory, observations)
+
+            timestamp_end = self.active_trial.get("timestamp_end") or datetime.now().isoformat(timespec="seconds")
+            total_time = self._compute_total_time(self.active_trial.get("timestamp_start"), timestamp_end)
+            self.active_trial.update({"timestamp_end": timestamp_end, "total_time": total_time, "state": "COMPLETED", **observations})
+            save_metadata(directory, {"state": "COMPLETED", "timestamp_end": timestamp_end, "total_time": total_time})
+            self._finalize_trial_summary(
+                compile_result=self.active_trial.get("compile_result", ""),
+                execution_result=observations["physical_result"],
+                error_type=observations["error_type"]
+            )
+            trial_id = self.active_trial["trial_id"]
+            self._log(f"Ensayo {trial_id} completado y guardado.")
+            messagebox.showinfo("Guardar resultado", f"Ensayo {trial_id} guardado correctamente.")
+            self.active_trial = None
+            self.manual_result_frame.grid_remove()
+            self.experiment_status_var.set("Ensayo guardado. Puede iniciar uno nuevo.")
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo guardar el resultado manual del ensayo: {error}")
+            messagebox.showerror("Guardar resultado", f"No se pudo guardar el resultado.\n\n{error}")
+
+    def _refresh_experiment_history_tab(self) -> None:
+        if not hasattr(self, "experiment_history_tree"):
+            return
+        self.experiment_history_tree.delete(*self.experiment_history_tree.get_children())
+        for row in load_all_trials(self.project_root):
+            self.experiment_history_tree.insert("", "end", values=(
+                row.get("trial_id", ""), row.get("case_id", ""), row.get("condition", ""),
+                row.get("compile_result", ""), row.get("execution_result", ""),
+                row.get("total_time", ""), row.get("error_type", "")
+            ))
+
+    def _on_experiment_history_double_click(self, _event: Any = None) -> None:
+        selection = self.experiment_history_tree.selection()
+        if not selection:
+            return
+        values = self.experiment_history_tree.item(selection[0], "values")
+        trial_id = values[0] if values else None
+        trial = next((row for row in load_all_trials(self.project_root) if row.get("trial_id") == trial_id), None)
+        if trial is None:
+            return
+        messagebox.showinfo(f"Ensayo {trial_id}", format_json(trial))
+
+    def export_experiment_results(self) -> None:
+        trials = load_all_trials(self.project_root)
+        if not trials:
+            messagebox.showwarning("Exportar resultados", "No hay ensayos registrados todavia.")
+            return
+        file_path = filedialog.asksaveasfilename(
+            title="Exportar resultados experimentales",
+            defaultextension=".csv",
+            filetypes=[("CSV", "*.csv"), ("JSON", "*.json")]
+        )
+        if not file_path:
+            return
+        try:
+            target = Path(file_path)
+            if target.suffix.lower() == ".json":
+                target.write_text(json.dumps(trials, indent=2, ensure_ascii=False), encoding="utf-8")
+            else:
+                with target.open("w", encoding="utf-8", newline="") as csv_file:
+                    writer = csv.DictWriter(csv_file, fieldnames=MASTER_LOG_FIELDS)
+                    writer.writeheader()
+                    for row in trials:
+                        writer.writerow({field: row.get(field, "") for field in MASTER_LOG_FIELDS})
+            self._log(f"Resultados experimentales exportados a {target}.")
+            messagebox.showinfo("Exportar resultados", f"Exportado correctamente a:\n{target}")
+        except OSError as error:
+            self._log(f"No se pudo exportar resultados experimentales: {error}")
+            messagebox.showerror("Exportar resultados", f"No se pudo exportar.\n\n{error}")
+
     def process_command(self) -> None:
         command_text = self.command_textbox.get("1.0", "end").strip()
         if not command_text:
@@ -3200,6 +3888,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 self._restore_snapshot(snapshot)
                 self._record_history(snapshot, platform="Sin plataforma", is_valid=False)
                 self._log("La interpretacion requiere aclaracion antes de generar.")
+                if self.active_trial:
+                    self._capture_trial_parse_failure(command_text, semantic_output)
                 messagebox.showwarning(
                     "Aclaracion requerida",
                     semantic_output.get("clarification_question")
@@ -3216,11 +3906,15 @@ class VozLLMPLCGUI(ctk.CTk):
                 is_valid=semantic_output.get("semantic_validation", {}).get("is_valid", False)
             )
             self._log("Interpretacion completada. Lista para confirmacion.")
+            if self.active_trial:
+                self._capture_trial_parse_result(command_text, semantic_output)
             self._set_status("Listo")
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._set_status("Error")
             self._set_validation_banner("Error durante el procesamiento.", False)
             self._log(f"Error durante el procesamiento: {error}")
+            if self.active_trial:
+                self._capture_trial_exception(str(error), stage="parse")
             messagebox.showerror("Procesamiento", f"No se pudo procesar el comando.\n\n{error}")
 
     def generate_package(self) -> None:
@@ -3237,6 +3931,8 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         if confirmation is None:
             self._log("Generacion cancelada por el usuario.")
+            if self.active_trial:
+                self._cancel_active_trial("Generacion cancelada por el usuario en la confirmacion.")
             return
         if confirmation is False:
             self._log("El usuario decidio editar el comando antes de generar.")
@@ -3325,11 +4021,15 @@ class VozLLMPLCGUI(ctk.CTk):
                 combined_files
             )
             self._log("Verificacion completada.")
+            if self.active_trial:
+                self._capture_trial_generation_result(combined_results)
             self._set_status("Listo")
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._set_status("Error")
             self._set_validation_banner("Error durante la generacion.", False)
             self._log(f"Error durante la generacion: {error}")
+            if self.active_trial:
+                self._capture_trial_exception(str(error), stage="generate")
             messagebox.showerror("Generacion", f"No se pudo generar el paquete PLC.\n\n{error}")
 
     def _format_intention_text(self, semantic_output: dict[str, Any]) -> str:

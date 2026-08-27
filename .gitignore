@@ -33,3 +33,5 @@ data/plc_maps/*
 !data/plc_maps/mapa_banco_fisico.json
 !data/plc_maps/profiles.json
 .pytest_tmp/
+
+experiments/

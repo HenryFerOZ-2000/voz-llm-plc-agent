@@ -46,6 +46,9 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 - `19_perfiles_experimentales_d01_d20.md`
   Documenta MAPA_SIMULACION_COMPLETO, MAPA_BANCO_FISICO y los perfiles D01-D20 del banco discreto.
 
+- `20_modo_experimentacion.md`
+  Documenta el Modo Experimentacion de la GUI: condiciones C1-C4, captura automatica de ensayos y log maestro.
+
 - `17_copias_de_seguridad.md`
   Registra los puntos de restauracion (`git tag`) del repositorio y como volver a ellos.
 
@@ -69,9 +72,10 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 10. `16_integracion_tia_openness_v18.md`
 11. `18_mapa_maestro_plc.md`
 12. `19_perfiles_experimentales_d01_d20.md`
-13. `07_registro_pruebas.md`
-14. `17_copias_de_seguridad.md`
-15. `CHANGELOG_TESIS.md`
+13. `20_modo_experimentacion.md`
+14. `07_registro_pruebas.md`
+15. `17_copias_de_seguridad.md`
+16. `CHANGELOG_TESIS.md`
 
 ## Criterio de uso en tesis
 
