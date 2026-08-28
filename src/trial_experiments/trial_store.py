@@ -11,7 +11,6 @@ from utils import ensure_directory, load_json_file
 EXPERIMENTS_DIRNAME = "experiments"
 AUTOMATED_DIRNAME = "automated"
 COUNTER_FILENAME = ".trial_counter.json"
-REPETITION_COUNTERS_FILENAME = ".repetition_counters.json"
 MASTER_CSV_FILENAME = "experimental_results.csv"
 MASTER_JSON_FILENAME = "experimental_results.json"
 
@@ -44,40 +43,19 @@ def next_trial_id(project_root: Path) -> str:
     return f"TRIAL_{next_id:06d}"
 
 
-def _repetition_key(condition: str, case_id: str, variant: str) -> str:
-    return f"{condition}_{case_id}_{variant}"
-
-
-def _repetition_counters_path(project_root: Path) -> Path:
-    return get_experiments_dir(project_root) / REPETITION_COUNTERS_FILENAME
-
-
-def load_repetition_counters(project_root: Path) -> dict[str, int]:
-    path = _repetition_counters_path(project_root)
-    if not path.exists():
-        return {}
-    try:
-        payload = load_json_file(path)
-    except (FileNotFoundError, ValueError):
-        return {}
-    return payload if isinstance(payload, dict) else {}
-
-
-def peek_next_repetition(project_root: Path, condition: str, case_id: str, variant: str) -> int:
-    """Read-only: what the repetition number WOULD be if a trial started now. Never mutates."""
-    counters = load_repetition_counters(project_root)
-    return counters.get(_repetition_key(condition, case_id, variant), 0) + 1
-
-
-def consume_next_repetition(project_root: Path, condition: str, case_id: str, variant: str) -> int:
-    """Increments and persists the repetition counter for this condition+case+variant combo."""
-    ensure_experiments_dir(project_root)
-    key = _repetition_key(condition, case_id, variant)
-    counters = load_repetition_counters(project_root)
-    next_value = counters.get(key, 0) + 1
-    counters[key] = next_value
-    _repetition_counters_path(project_root).write_text(json.dumps(counters, indent=2), encoding="utf-8")
-    return next_value
+def compute_next_repetition(project_root: Path, condition: str, case_id: str, variant: str) -> int:
+    """
+    Next repetition number for this condition+case_id+variant combo, derived entirely from
+    already-saved trial records (experimental_results.json) - never a separate counter file
+    that could drift if a trial is abandoned, cancelled, or the file gets edited by hand.
+    Safe to call repeatedly as a preview: it never mutates anything.
+    """
+    matching_repetitions = [
+        int(trial.get("repetition", 0))
+        for trial in load_all_trials(project_root)
+        if trial.get("condition") == condition and trial.get("case_id") == case_id and trial.get("variant") == variant
+    ]
+    return max(matching_repetitions, default=0) + 1
 
 
 def build_experiment_label(condition: str, case_id: str, variant: str, repetition: int) -> str:

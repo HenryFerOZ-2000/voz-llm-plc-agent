@@ -92,11 +92,12 @@ from trial_experiments import (
     NOISE_LEVELS,
     PHYSICAL_RESULT_OPTIONS,
     build_experiment_label,
-    consume_next_repetition,
+    compute_next_repetition,
     get_git_commit,
+    get_variant_command,
     load_all_trials,
+    load_variants_for_case,
     next_trial_id,
-    peek_next_repetition,
     record_trial_summary,
     save_metadata,
     trial_dir,
@@ -388,7 +389,6 @@ class VozLLMPLCGUI(ctk.CTk):
         self.work_mode_var = tk.StringVar(value="Normal")
         self.active_trial: dict[str, Any] | None = None
         self._experiment_profiles_by_case: dict[str, dict[str, Any]] = {}
-        self._test_case_variants_cache: dict[str, list[dict[str, str]]] | None = None
         self.experiment_group_var = tk.StringVar(value="Discreto D01-D20")
         self.experiment_case_var = tk.StringVar(value="")
         self.experiment_condition_var = tk.StringVar(value=CONDITIONS["C1"]["label"])
@@ -398,6 +398,9 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_environment_var = tk.StringVar(value=ENVIRONMENT_LABELS["simulation"])
         self.experiment_status_var = tk.StringVar(value="")
         self.experiment_next_label_var = tk.StringVar(value="")
+        self.experiment_variant_command_var = tk.StringVar(value="")
+        self._profile_id_before_experiment: str | None = None
+        self._active_variant_command_text: str = ""
         self.manual_result_var = tk.StringVar(value=PHYSICAL_RESULT_OPTIONS[0])
         self.manual_safety_var = tk.StringVar(value="No")
         self.manual_error_var = tk.StringVar(value=NO_ERROR_LABEL)
@@ -862,8 +865,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self.import_map_button = ctk.CTkButton(map_tia_frame, text="Importar desde TIA", command=self.import_plc_map_from_tia, font=self.button_font)
         self.import_map_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
 
-        profile_label = ctk.CTkLabel(map_library_frame, text="Perfil de prueba", font=self.section_label_font)
-        profile_label.grid(row=5, column=0, columnspan=2, padx=12, pady=(4, 4), sticky="w")
+        self.profile_selector_label = ctk.CTkLabel(map_library_frame, text="Perfil de prueba", font=self.section_label_font)
+        self.profile_selector_label.grid(row=5, column=0, columnspan=2, padx=12, pady=(4, 4), sticky="w")
 
         self.profile_selector = ctk.CTkOptionMenu(
             map_library_frame,
@@ -1143,7 +1146,7 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.experiment_group_selector.grid(row=2, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
 
-        case_label = ctk.CTkLabel(frame, text="Caso", font=self.body_font)
+        case_label = ctk.CTkLabel(frame, text="Caso experimental", font=self.body_font)
         case_label.grid(row=3, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
         self.experiment_case_selector = ctk.CTkOptionMenu(
             frame,
@@ -1155,21 +1158,8 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.experiment_case_selector.grid(row=4, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
 
-        condition_label = ctk.CTkLabel(frame, text="Condicion", font=self.body_font)
-        condition_label.grid(row=5, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
-        variant_label = ctk.CTkLabel(frame, text="Variante", font=self.body_font)
-        variant_label.grid(row=5, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
-
-        self.experiment_condition_selector = ctk.CTkOptionMenu(
-            frame,
-            variable=self.experiment_condition_var,
-            values=[data["label"] for data in CONDITIONS.values()],
-            command=self._on_experiment_condition_changed,
-            font=self.body_font,
-            dropdown_font=self.body_font
-        )
-        self.experiment_condition_selector.grid(row=6, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
-
+        variant_label = ctk.CTkLabel(frame, text="Variante linguistica", font=self.body_font)
+        variant_label.grid(row=5, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
         self.experiment_variant_selector = ctk.CTkOptionMenu(
             frame,
             variable=self.experiment_variant_var,
@@ -1178,15 +1168,42 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_variant_selector.grid(row=6, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
+        self.experiment_variant_selector.grid(row=6, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
+        self.experiment_variant_command_label = ctk.CTkLabel(
+            frame,
+            textvariable=self.experiment_variant_command_var,
+            anchor="w",
+            justify="left",
+            wraplength=380,
+            font=self.body_font
+        )
+        self.experiment_variant_command_label.grid(row=7, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
+
+        self.use_variant_command_button = ctk.CTkButton(
+            frame, text="Usar este comando", height=28, command=self._use_variant_command, font=self.button_font
+        )
+        self.use_variant_command_button.grid(row=8, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+
+        condition_label = ctk.CTkLabel(frame, text="Condicion", font=self.body_font)
+        condition_label.grid(row=9, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        self.experiment_condition_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_condition_var,
+            values=[data["label"] for data in CONDITIONS.values()],
+            command=self._on_experiment_condition_changed,
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_condition_selector.grid(row=10, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
 
         speaker_label = ctk.CTkLabel(frame, text="Participante (speaker_id)", font=self.body_font)
-        speaker_label.grid(row=7, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
+        speaker_label.grid(row=11, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
         noise_label = ctk.CTkLabel(frame, text="Ruido", font=self.body_font)
-        noise_label.grid(row=7, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
+        noise_label.grid(row=11, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
 
         self.experiment_speaker_entry = ctk.CTkEntry(frame, textvariable=self.experiment_speaker_var, font=self.body_font)
-        self.experiment_speaker_entry.grid(row=8, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
+        self.experiment_speaker_entry.grid(row=12, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
 
         self.experiment_noise_selector = ctk.CTkOptionMenu(
             frame,
@@ -1195,10 +1212,10 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_noise_selector.grid(row=8, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
+        self.experiment_noise_selector.grid(row=12, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
 
         environment_label = ctk.CTkLabel(frame, text="Entorno", font=self.body_font)
-        environment_label.grid(row=9, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        environment_label.grid(row=13, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
         self.experiment_environment_selector = ctk.CTkOptionMenu(
             frame,
             variable=self.experiment_environment_var,
@@ -1207,7 +1224,15 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_environment_selector.grid(row=10, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        self.experiment_environment_selector.grid(row=14, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+
+        self.experiment_next_label_label = ctk.CTkLabel(
+            frame,
+            textvariable=self.experiment_next_label_var,
+            anchor="w",
+            font=ctk.CTkFont(size=13, weight="bold")
+        )
+        self.experiment_next_label_label.grid(row=15, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
 
         self.experiment_status_label = ctk.CTkLabel(
             frame,
@@ -1216,18 +1241,10 @@ class VozLLMPLCGUI(ctk.CTk):
             justify="left",
             font=self.body_font
         )
-        self.experiment_status_label.grid(row=11, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
-
-        self.experiment_next_label_label = ctk.CTkLabel(
-            frame,
-            textvariable=self.experiment_next_label_var,
-            anchor="w",
-            font=ctk.CTkFont(size=13, weight="bold")
-        )
-        self.experiment_next_label_label.grid(row=12, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        self.experiment_status_label.grid(row=16, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
         self.start_trial_button = ctk.CTkButton(frame, text="Iniciar ensayo", height=38, command=self.start_trial, font=self.button_font)
-        self.start_trial_button.grid(row=13, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        self.start_trial_button.grid(row=17, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
 
         frame.grid(row=row, column=0, padx=18, pady=(0, 8), sticky="ew")
         frame.grid_remove()
@@ -3426,12 +3443,19 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _on_work_mode_changed(self, _choice: str | None = None) -> None:
         if self.work_mode_var.get() == "Experimentacion":
+            self._profile_id_before_experiment = self.active_profile_id
+            self.profile_selector.configure(state="disabled")
+            self.profile_selector_label.configure(text="Perfil de prueba (automatico - Modo Experimentacion)")
             self.experiment_controls_frame.grid()
             self._refresh_experiment_case_selector()
             self._on_experiment_condition_changed()
         else:
             self.experiment_controls_frame.grid_remove()
             self.manual_result_frame.grid_remove()
+            self.profile_selector.configure(state="normal")
+            self.profile_selector_label.configure(text="Perfil de prueba")
+            self.active_profile_id = self._profile_id_before_experiment
+            self._refresh_profile_selector_values()
         self._log(f"Modo de trabajo: {self.work_mode_var.get()}.")
 
     def _on_experiment_group_changed(self, _choice: str | None = None) -> None:
@@ -3458,38 +3482,42 @@ class VozLLMPLCGUI(ctk.CTk):
             self.experiment_case_var.set(names[0])
         self._on_experiment_case_changed()
 
-    def _load_test_case_variants(self) -> dict[str, list[dict[str, str]]]:
-        if self._test_case_variants_cache is not None:
-            return self._test_case_variants_cache
-        path = self.project_root / "tests" / "test_cases.json"
-        grouped: dict[str, list[dict[str, str]]] = {}
-        if path.exists():
-            try:
-                entries = load_json_file(path)
-            except (FileNotFoundError, ValueError):
-                entries = []
-            if isinstance(entries, list):
-                for entry in entries:
-                    case_id = str(entry.get("case_id", ""))
-                    if "_V" not in case_id:
-                        continue
-                    base_case_id, _, variant_suffix = case_id.rpartition("_V")
-                    grouped.setdefault(base_case_id, []).append(
-                        {"variant": f"V{variant_suffix}", "command": str(entry.get("command", ""))}
-                    )
-        self._test_case_variants_cache = grouped
-        return grouped
-
     def _on_experiment_case_changed(self, _choice: str | None = None) -> None:
         profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
         if profile is None:
             return
-        variants = self._load_test_case_variants().get(profile.get("case_id", ""), [])
+
+        # El caso experimental determina automaticamente el perfil asociado: el usuario
+        # ya no elige un perfil por separado en Modo Experimentacion.
+        self.active_profile_id = profile.get("profile_id")
+        self.active_profile_var.set(profile["name"])
+        self._refresh_profile_status()
+
+        case_id = profile.get("case_id", "")
+        variants = load_variants_for_case(self.project_root, case_id)
         variant_names = [entry["variant"] for entry in variants] or ["V1"]
         self.experiment_variant_selector.configure(values=variant_names)
         if self.experiment_variant_var.get() not in variant_names:
             self.experiment_variant_var.set(variant_names[0])
+        self._update_variant_command_preview()
         self._refresh_experiment_status()
+
+    def _update_variant_command_preview(self) -> None:
+        profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
+        case_id = profile.get("case_id", "") if profile else ""
+        variant = self.experiment_variant_var.get()
+        command_text = get_variant_command(self.project_root, case_id, variant) if case_id else ""
+        self._active_variant_command_text = command_text
+        if command_text:
+            self.experiment_variant_command_var.set(f'Comando {variant}: "{command_text}"')
+        else:
+            self.experiment_variant_command_var.set(f"Comando {variant}: (sin texto de referencia)")
+
+    def _use_variant_command(self) -> None:
+        if not self._active_variant_command_text:
+            return
+        self.command_textbox.delete("1.0", "end")
+        self.command_textbox.insert("1.0", self._active_variant_command_text)
 
     def _on_experiment_condition_changed(self, _choice: str | None = None) -> None:
         condition = self._selected_condition()
@@ -3506,6 +3534,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self._refresh_experiment_status()
 
     def _on_experiment_variant_changed(self, _choice: str | None = None) -> None:
+        self._update_variant_command_preview()
         self._refresh_experiment_status()
 
     def _selected_condition(self) -> dict[str, Any]:
@@ -3539,9 +3568,11 @@ class VozLLMPLCGUI(ctk.CTk):
 
         readiness = profile_readiness_summary(self.project_root, profile)
         environment = self._selected_environment()
+        allowed_variables = profile.get("allowed_variables", [])
         lines = [
-            f"Mapa: {self.active_map_var.get()}   Perfil: {profile['name']}",
-            "Simulacion: " + ("Ready" if readiness["simulation_ready"] else f"Faltan {len(readiness['missing_simulation_variables'])} variables"),
+            f"Perfil asociado: {profile['profile_id']}",
+            f"Variables mapa: {len(self.io_variables)}   Variables habilitadas: {len(allowed_variables)}",
+            "Simulation: " + ("Ready" if readiness["simulation_ready"] else f"Faltan {len(readiness['missing_simulation_variables'])} variables"),
             "Hardware: " + ("Ready" if readiness["hardware_ready"] else f"Faltan {len(readiness['missing_hardware_variables'])} variables")
         ]
         if not readiness["hardware_ready"] and readiness["missing_hardware_variables"]:
@@ -3556,7 +3587,7 @@ class VozLLMPLCGUI(ctk.CTk):
         condition_code = self._selected_condition()["code"]
         case_id = profile.get("case_id", "")
         variant = self.experiment_variant_var.get()
-        next_repetition = peek_next_repetition(self.project_root, condition_code, case_id, variant)
+        next_repetition = compute_next_repetition(self.project_root, condition_code, case_id, variant)
         next_label = build_experiment_label(condition_code, case_id, variant, next_repetition)
         self.experiment_next_label_var.set(f"Proximo ensayo: {next_label}")
 
@@ -3584,7 +3615,7 @@ class VozLLMPLCGUI(ctk.CTk):
         trial_id = next_trial_id(self.project_root)
         case_id = profile.get("case_id", "")
         variant = self.experiment_variant_var.get()
-        repetition = consume_next_repetition(self.project_root, condition["code"], case_id, variant)
+        repetition = compute_next_repetition(self.project_root, condition["code"], case_id, variant)
         experiment_label = build_experiment_label(condition["code"], case_id, variant, repetition)
         active_map_summary = self._map_summaries_by_name.get(self.active_map_var.get(), {})
 
@@ -3596,6 +3627,7 @@ class VozLLMPLCGUI(ctk.CTk):
             "experiment_family": "DISCRETE",
             "condition": condition["code"],
             "variant": variant,
+            "reference_command_text": self._active_variant_command_text,
             "speaker_id": speaker_id,
             "noise_level": self._selected_noise_level(),
             "environment": environment,

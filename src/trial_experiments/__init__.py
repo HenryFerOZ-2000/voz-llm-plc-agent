@@ -14,19 +14,23 @@ from trial_experiments.constants import (
 from trial_experiments.git_info import get_git_commit
 from trial_experiments.trial_store import (
     build_experiment_label,
-    consume_next_repetition,
+    compute_next_repetition,
     ensure_experiments_dir,
     get_experiments_dir,
     load_all_trials,
     load_metadata,
-    load_repetition_counters,
     next_trial_id,
-    peek_next_repetition,
     record_trial_summary,
     save_metadata,
     trial_dir,
     update_observations,
     write_trial_files
+)
+from trial_experiments.variants import (
+    get_variant_command,
+    get_variants_path,
+    load_all_variants,
+    load_variants_for_case
 )
 
 __all__ = [
@@ -43,17 +47,19 @@ __all__ = [
     "TRIAL_STATES",
     "get_git_commit",
     "build_experiment_label",
-    "consume_next_repetition",
+    "compute_next_repetition",
     "ensure_experiments_dir",
     "get_experiments_dir",
     "load_all_trials",
     "load_metadata",
-    "load_repetition_counters",
     "next_trial_id",
-    "peek_next_repetition",
     "record_trial_summary",
     "save_metadata",
     "trial_dir",
     "update_observations",
-    "write_trial_files"
+    "write_trial_files",
+    "get_variant_command",
+    "get_variants_path",
+    "load_all_variants",
+    "load_variants_for_case"
 ]

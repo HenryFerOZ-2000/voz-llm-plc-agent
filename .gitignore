@@ -32,6 +32,7 @@ data/plc_maps/*
 !data/plc_maps/mapa_simulacion_completo.json
 !data/plc_maps/mapa_banco_fisico.json
 !data/plc_maps/profiles.json
+!data/plc_maps/experiment_variants.json
 .pytest_tmp/
 
 experiments/

@@ -21,16 +21,21 @@ No se implementa inyeccion real de ruido acustico: `noise_level` es un campo de 
 
 Todo el enganche es aditivo: dos bloques `if self.active_trial:` en `process_command()` y `generate_package()`, envueltos en su propio try/except. En Modo Normal `self.active_trial` siempre es `None`, asi que el comportamiento es identico al actual. La confirmacion humana existente antes de generar (`askyesnocancel`) no se salta ni se duplica.
 
-## Variables/aliases y variantes
+## "Caso experimental" reemplaza a "Perfil de prueba" como selector principal
 
-Las variantes V1-V6 se leen del banco ya existente `tests/test_cases.json` (no todos los casos tienen las 6; D20 no tiene ninguna variante registrada todavia — la arquitectura lo permite, solo se ofrece "V1" por defecto).
+El usuario no elige un perfil por separado en Modo Experimentacion: selecciona un **Caso experimental** (D01-D20) y la GUI resuelve automaticamente el `profile_id` asociado (`case_id == profile_id` en el esquema actual de `data/plc_maps/profiles.json`), fija `self.active_profile_id` y por tanto filtra `allowed_variables` igual que lo haria el selector manual (`_load_runtime_configuration`, sin cambios). El selector "Perfil de prueba" del panel izquierdo se deshabilita mientras el modo de trabajo es Experimentacion (se re-etiqueta como "Perfil de prueba (automatico - Modo Experimentacion)") y su seleccion previa se restaura al volver a Modo Normal. La infraestructura de perfiles (`src/plc_maps/profiles.py`, `apply_profile_filter`, `profile_readiness_summary`) no se duplica ni se modifica — solo se reutiliza desde un punto de entrada distinto.
+
+Debajo del selector de caso, la GUI muestra como informacion tecnica secundaria: "Perfil asociado: `<profile_id>`", "Variables mapa: X   Variables habilitadas: Y", y el estado `Simulation:`/`Hardware:` (`profile_readiness_summary`).
+
+## Variantes linguisticas por caso
+
+Las variantes V1-V3 (minimo) por caso se leen de `data/plc_maps/experiment_variants.json` (`src/trial_experiments/variants.py`), no de `tests/test_cases.json` ni hardcodeadas en el widget. Cada entrada es `{"variant": "V1", "command": "..."}`. Al cambiar de caso o variante, la GUI muestra "Comando V1: \"<texto>\"" y un boton `[Usar este comando]` que copia el texto al cuadro de comando (referencia editable, no un envio automatico). Agregar V4/V5, editar V1-V3 o cargar variantes nuevas no requiere cambios de codigo en la GUI: basta con editar el JSON.
 
 ## Formato de archivos
 
 ```text
 experiments/
   .trial_counter.json          # contador persistente, nunca reutiliza un trial_id
-  .repetition_counters.json    # contador persistente por combinacion condicion+caso+variante
   automated/<case_id>/<trial_id>/
     command.txt                # solo si hay contenido
     transcript.txt             # solo si hubo voz
@@ -46,13 +51,13 @@ experiments/
 
 ## Etiqueta experimental legible
 
-Cada ensayo tiene, ademas del `trial_id` interno unico (`TRIAL_000123`), una etiqueta legible con formato `C{condicion}_{caso}_{variante}_R{repeticion}` (ej. `C3_D05_V2_R02`). La repeticion se lleva por combinacion `condicion+caso+variante` (`consume_next_repetition`, `src/trial_experiments/trial_store.py`) — cambiar de variante o condicion arranca su propio contador en R01, sin afectar los demas. Antes de iniciar el ensayo, la GUI muestra en todo momento "Proximo ensayo: C{...}_R{...}" (`peek_next_repetition`, funcion de solo lectura que nunca avanza el contador), recalculado cada vez que cambia caso/condicion/variante. Ambos campos (`trial_id`, `experiment_label`, `repetition`) se guardan en `metadata.json` y en `experimental_results.csv`.
+Cada ensayo tiene, ademas del `trial_id` interno unico (`TRIAL_000123`), una etiqueta legible con formato `C{condicion}_{caso}_{variante}_R{repeticion}` (ej. `C3_D05_V2_R02`). La repeticion **no se guarda en un contador separado**: se calcula consultando `experimental_results.json` (`compute_next_repetition`, `src/trial_experiments/trial_store.py`) y contando cuantos ensayos ya guardados coinciden en `condicion+caso+variante` — un ensayo iniciado y abandonado sin llegar a `record_trial_summary()` no consume un numero de repeticion. Cambiar de variante o condicion arranca su propio conteo en R01, sin afectar los demas. Antes de iniciar el ensayo, la GUI muestra en todo momento "Proximo ensayo: C{...}_R{...}" (funcion de solo lectura, se puede llamar repetidamente sin efecto secundario), recalculado cada vez que cambia caso/condicion/variante. Los campos `trial_id`, `experiment_label`, `condition`, `case_id`, `variant` y `repetition` se guardan en `metadata.json`, `experimental_results.csv` y `experimental_results.json`.
 
 ## Flujo de un ensayo
 
-1. Seleccionar Grupo (solo Discreto D01-D20 disponible; PID muestra aviso y revierte), Caso, Condicion, Variante, Participante (`speaker_id` anonimo, ej. `P01`), Ruido, Entorno.
-2. El estado muestra mapa activo, perfil, `simulation_ready`/`hardware_ready` (`plc_maps.profiles.profile_readiness_summary`, sin cambios). Si Entorno=Hardware y `hardware_ready=False`, se bloquea solo el boton `[Iniciar ensayo]`, nunca la seleccion del caso.
-3. `[Iniciar ensayo]` crea `trial_id` (`TRIAL_000001`, ...), fuerza el `parser_mode` de la condicion en el selector existente, y guarda un `metadata.json` inicial. No reemplaza los botones "Procesar comando"/"Generar paquete PLC" — el usuario los sigue usando normalmente (necesario para C3/C4, que requieren grabar voz de verdad).
+1. Seleccionar Grupo (solo Discreto D01-D20 disponible; PID muestra aviso y revierte), Caso experimental, Variante (con su "Comando V1/V2/V3" de referencia), Condicion, Participante (`speaker_id` anonimo, ej. `P01`), Ruido, Entorno.
+2. El estado muestra "Proximo ensayo", el perfil asociado al caso, variables mapa/habilitadas y `simulation_ready`/`hardware_ready` (`plc_maps.profiles.profile_readiness_summary`, sin cambios). Si Entorno=Hardware y `hardware_ready=False`, se bloquea solo el boton `[Iniciar ensayo]`, nunca la seleccion del caso.
+3. `[Iniciar ensayo]` crea `trial_id` (`TRIAL_000001`, ...), fuerza el `parser_mode` de la condicion en el selector existente, y guarda un `metadata.json` inicial. No reemplaza los botones "Procesar comando"/"Generar paquete PLC" — el usuario los sigue usando normalmente (necesario para C3/C4, que requieren grabar voz de verdad; el boton `[Usar este comando]` puede prellenar el cuadro de texto con la variante seleccionada como referencia).
 4. Al procesar el comando exitosamente, se captura `command_text`/`transcript`/`semantic_output` en el ensayo activo. Si el parser falla o produce `INT_UNKNOWN`, se registra igual (clasificado `E2`) y el ensayo se cierra sin bloquear la GUI (seccion 24 del pedido).
 5. Al generar el paquete (tras la confirmacion humana existente), se captura `compile_result`/errores/advertencias/`package_dir`, y aparece la seccion "Resultado del ensayo" (Resultado fisico, Violacion de seguridad, Tipo de error E1-E10, Observaciones).
 6. `[Guardar resultado]` cierra el ensayo (`state=COMPLETED`), calcula `total_time`, y actualiza el log maestro.
