@@ -91,9 +91,12 @@ from trial_experiments import (
     NOISE_LEVEL_LABELS,
     NOISE_LEVELS,
     PHYSICAL_RESULT_OPTIONS,
+    build_experiment_label,
+    consume_next_repetition,
     get_git_commit,
     load_all_trials,
     next_trial_id,
+    peek_next_repetition,
     record_trial_summary,
     save_metadata,
     trial_dir,
@@ -394,6 +397,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_noise_var = tk.StringVar(value=NOISE_LEVEL_LABELS["none"])
         self.experiment_environment_var = tk.StringVar(value=ENVIRONMENT_LABELS["simulation"])
         self.experiment_status_var = tk.StringVar(value="")
+        self.experiment_next_label_var = tk.StringVar(value="")
         self.manual_result_var = tk.StringVar(value=PHYSICAL_RESULT_OPTIONS[0])
         self.manual_safety_var = tk.StringVar(value="No")
         self.manual_error_var = tk.StringVar(value=NO_ERROR_LABEL)
@@ -1170,6 +1174,7 @@ class VozLLMPLCGUI(ctk.CTk):
             frame,
             variable=self.experiment_variant_var,
             values=["V1"],
+            command=self._on_experiment_variant_changed,
             font=self.body_font,
             dropdown_font=self.body_font
         )
@@ -1213,8 +1218,16 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.experiment_status_label.grid(row=11, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
+        self.experiment_next_label_label = ctk.CTkLabel(
+            frame,
+            textvariable=self.experiment_next_label_var,
+            anchor="w",
+            font=ctk.CTkFont(size=13, weight="bold")
+        )
+        self.experiment_next_label_label.grid(row=12, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
         self.start_trial_button = ctk.CTkButton(frame, text="Iniciar ensayo", height=38, command=self.start_trial, font=self.button_font)
-        self.start_trial_button.grid(row=12, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        self.start_trial_button.grid(row=13, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
 
         frame.grid(row=row, column=0, padx=18, pady=(0, 8), sticky="ew")
         frame.grid_remove()
@@ -1475,17 +1488,17 @@ class VozLLMPLCGUI(ctk.CTk):
         experiment_container.grid_columnconfigure(0, weight=1)
         experiment_container.grid_rowconfigure(0, weight=1)
 
-        experiment_columns = ("trial", "caso", "condicion", "compila", "ejecucion", "tiempo", "error")
+        experiment_columns = ("trial", "etiqueta", "compila", "ejecucion", "tiempo", "error")
         self.experiment_history_tree = ttk.Treeview(experiment_container, columns=experiment_columns, show="headings", height=12)
         self.experiment_history_tree.grid(row=0, column=0, sticky="nsew")
 
         experiment_headings = {
-            "trial": "Trial", "caso": "Caso", "condicion": "Condicion", "compila": "Compila",
+            "trial": "Trial", "etiqueta": "Etiqueta", "compila": "Compila",
             "ejecucion": "Ejecucion", "tiempo": "Tiempo", "error": "Error"
         }
         for column in experiment_columns:
             self.experiment_history_tree.heading(column, text=experiment_headings[column])
-            width = 130 if column != "trial" else 110
+            width = 150 if column == "etiqueta" else 110
             self.experiment_history_tree.column(column, width=width, minwidth=70, stretch=True)
 
         experiment_scroll = ttk.Scrollbar(experiment_container, orient="vertical", command=self.experiment_history_tree.yview)
@@ -3492,6 +3505,9 @@ class VozLLMPLCGUI(ctk.CTk):
     def _on_experiment_environment_changed(self, _choice: str | None = None) -> None:
         self._refresh_experiment_status()
 
+    def _on_experiment_variant_changed(self, _choice: str | None = None) -> None:
+        self._refresh_experiment_status()
+
     def _selected_condition(self) -> dict[str, Any]:
         label = self.experiment_condition_var.get()
         for code, data in CONDITIONS.items():
@@ -3517,6 +3533,7 @@ class VozLLMPLCGUI(ctk.CTk):
         profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
         if profile is None:
             self.experiment_status_var.set("No hay perfiles experimentales disponibles.")
+            self.experiment_next_label_var.set("")
             self.start_trial_button.configure(state="disabled")
             return
 
@@ -3535,6 +3552,13 @@ class VozLLMPLCGUI(ctk.CTk):
             lines.append(f"{profile['name']} no esta listo para hardware.")
         self.experiment_status_var.set("\n".join(lines))
         self.start_trial_button.configure(state="disabled" if blocked else "normal")
+
+        condition_code = self._selected_condition()["code"]
+        case_id = profile.get("case_id", "")
+        variant = self.experiment_variant_var.get()
+        next_repetition = peek_next_repetition(self.project_root, condition_code, case_id, variant)
+        next_label = build_experiment_label(condition_code, case_id, variant, next_repetition)
+        self.experiment_next_label_var.set(f"Proximo ensayo: {next_label}")
 
     def start_trial(self) -> None:
         profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
@@ -3559,14 +3583,19 @@ class VozLLMPLCGUI(ctk.CTk):
 
         trial_id = next_trial_id(self.project_root)
         case_id = profile.get("case_id", "")
+        variant = self.experiment_variant_var.get()
+        repetition = consume_next_repetition(self.project_root, condition["code"], case_id, variant)
+        experiment_label = build_experiment_label(condition["code"], case_id, variant, repetition)
         active_map_summary = self._map_summaries_by_name.get(self.active_map_var.get(), {})
 
         self.active_trial = {
             "trial_id": trial_id,
+            "experiment_label": experiment_label,
+            "repetition": repetition,
             "case_id": case_id,
             "experiment_family": "DISCRETE",
             "condition": condition["code"],
-            "variant": self.experiment_variant_var.get(),
+            "variant": variant,
             "speaker_id": speaker_id,
             "noise_level": self._selected_noise_level(),
             "environment": environment,
@@ -3592,13 +3621,11 @@ class VozLLMPLCGUI(ctk.CTk):
             else "Escriba el comando y presione 'Procesar comando'."
         )
         self.experiment_status_var.set(
-            f"Ensayo {trial_id} en curso ({condition['code']} / {case_id}).\n{instructions}\n"
+            f"Ensayo {trial_id} ({experiment_label}) en curso.\n{instructions}\n"
             "Luego presione 'Generar paquete PLC'."
         )
-        self._log(
-            f"Ensayo {trial_id} iniciado: {case_id} / {condition['code']} / "
-            f"{self.experiment_variant_var.get()} / {speaker_id}."
-        )
+        self.experiment_next_label_var.set(f"Ensayo activo: {experiment_label}")
+        self._log(f"Ensayo {trial_id} iniciado: {experiment_label} / {speaker_id}.")
 
     def _compute_total_time(self, start_iso: str | None, end_iso: str | None) -> float:
         if not start_iso or not end_iso:
@@ -3613,9 +3640,11 @@ class VozLLMPLCGUI(ctk.CTk):
             return
         summary_row = {
             "trial_id": self.active_trial.get("trial_id", ""),
+            "experiment_label": self.active_trial.get("experiment_label", ""),
             "case_id": self.active_trial.get("case_id", ""),
             "condition": self.active_trial.get("condition", ""),
             "variant": self.active_trial.get("variant", ""),
+            "repetition": self.active_trial.get("repetition", ""),
             "speaker_id": self.active_trial.get("speaker_id", ""),
             "noise_level": self.active_trial.get("noise_level", ""),
             "compile_result": compile_result,
@@ -3790,7 +3819,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_history_tree.delete(*self.experiment_history_tree.get_children())
         for row in load_all_trials(self.project_root):
             self.experiment_history_tree.insert("", "end", values=(
-                row.get("trial_id", ""), row.get("case_id", ""), row.get("condition", ""),
+                row.get("trial_id", ""), row.get("experiment_label", ""),
                 row.get("compile_result", ""), row.get("execution_result", ""),
                 row.get("total_time", ""), row.get("error_type", "")
             ))

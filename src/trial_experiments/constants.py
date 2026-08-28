@@ -67,7 +67,7 @@ PHYSICAL_RESULT_OPTIONS = ["Correcto", "Incorrecto", "No ejecutado"]
 TRIAL_STATES = ["READY", "RUNNING", "AWAITING_MANUAL_RESULT", "COMPLETED", "CANCELLED", "ERROR"]
 
 MASTER_LOG_FIELDS = [
-    "trial_id", "case_id", "condition", "variant", "speaker_id", "noise_level",
-    "compile_result", "execution_result", "safety_violation", "total_time",
-    "error_type", "timestamp", "map_name", "profile_id"
+    "trial_id", "experiment_label", "case_id", "condition", "variant", "repetition",
+    "speaker_id", "noise_level", "compile_result", "execution_result", "safety_violation",
+    "total_time", "error_type", "timestamp", "map_name", "profile_id"
 ]

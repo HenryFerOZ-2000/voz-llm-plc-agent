@@ -3,10 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from trial_experiments import (
+    build_experiment_label,
+    consume_next_repetition,
     get_git_commit,
     load_all_trials,
     load_metadata,
     next_trial_id,
+    peek_next_repetition,
     record_trial_summary,
     save_metadata,
     trial_dir,
@@ -81,3 +84,31 @@ def test_record_trial_summary_upserts_by_trial_id(tmp_path: Path) -> None:
 def test_get_git_commit_never_raises_without_repo(tmp_path: Path) -> None:
     commit = get_git_commit(tmp_path)
     assert commit is None or isinstance(commit, str)
+
+
+def test_peek_next_repetition_never_mutates_counter(tmp_path: Path) -> None:
+    first_peek = peek_next_repetition(tmp_path, "C1", "D01", "V1")
+    second_peek = peek_next_repetition(tmp_path, "C1", "D01", "V1")
+    assert first_peek == 1
+    assert second_peek == 1  # peeking repeatedly must never advance the counter
+
+
+def test_consume_next_repetition_increments_per_combo_only(tmp_path: Path) -> None:
+    first = consume_next_repetition(tmp_path, "C1", "D01", "V1")
+    second = consume_next_repetition(tmp_path, "C1", "D01", "V1")
+    other_variant = consume_next_repetition(tmp_path, "C1", "D01", "V2")
+    other_condition = consume_next_repetition(tmp_path, "C3", "D01", "V1")
+
+    assert (first, second) == (1, 2)
+    assert other_variant == 1  # distinct variant starts its own counter
+    assert other_condition == 1  # distinct condition starts its own counter
+
+    # peek must reflect what consume already recorded
+    assert peek_next_repetition(tmp_path, "C1", "D01", "V1") == 3
+
+
+def test_build_experiment_label_matches_required_format() -> None:
+    assert build_experiment_label("C1", "D01", "V1", 1) == "C1_D01_V1_R01"
+    assert build_experiment_label("C3", "D05", "V2", 2) == "C3_D05_V2_R02"
+    assert build_experiment_label("C4", "D12", "V3", 1) == "C4_D12_V3_R01"
+    assert build_experiment_label("C2", "D20", "V1", 123) == "C2_D20_V1_R123"

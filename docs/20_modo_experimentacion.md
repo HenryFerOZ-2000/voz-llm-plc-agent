@@ -30,6 +30,7 @@ Las variantes V1-V6 se leen del banco ya existente `tests/test_cases.json` (no t
 ```text
 experiments/
   .trial_counter.json          # contador persistente, nunca reutiliza un trial_id
+  .repetition_counters.json    # contador persistente por combinacion condicion+caso+variante
   automated/<case_id>/<trial_id>/
     command.txt                # solo si hay contenido
     transcript.txt             # solo si hubo voz
@@ -42,6 +43,10 @@ experiments/
 `metadata.json` no copia los artefactos grandes que `generate_project_package` ya escribe en `generated_code/SIEMENS/active/<run>/` (SCL, variables.json, verification.json, tia_compile_report.json) — guarda un campo `package_dir` que apunta ahi.
 
 `experiments/` esta en `.gitignore` (estado local generado, mismo criterio que `generated_code/*/active`).
+
+## Etiqueta experimental legible
+
+Cada ensayo tiene, ademas del `trial_id` interno unico (`TRIAL_000123`), una etiqueta legible con formato `C{condicion}_{caso}_{variante}_R{repeticion}` (ej. `C3_D05_V2_R02`). La repeticion se lleva por combinacion `condicion+caso+variante` (`consume_next_repetition`, `src/trial_experiments/trial_store.py`) — cambiar de variante o condicion arranca su propio contador en R01, sin afectar los demas. Antes de iniciar el ensayo, la GUI muestra en todo momento "Proximo ensayo: C{...}_R{...}" (`peek_next_repetition`, funcion de solo lectura que nunca avanza el contador), recalculado cada vez que cambia caso/condicion/variante. Ambos campos (`trial_id`, `experiment_label`, `repetition`) se guardan en `metadata.json` y en `experimental_results.csv`.
 
 ## Flujo de un ensayo
 
