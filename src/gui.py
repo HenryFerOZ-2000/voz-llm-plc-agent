@@ -695,10 +695,13 @@ class VozLLMPLCGUI(ctk.CTk):
         self.left_panel.grid(row=0, column=0, padx=(18, 10), pady=(18, 10), sticky="nsew")
         self.left_panel.grid_columnconfigure(0, weight=1)
 
-        self.center_panel = ctk.CTkFrame(self, corner_radius=18)
+        self.center_panel = ctk.CTkScrollableFrame(
+            self,
+            corner_radius=18,
+            orientation="vertical"
+        )
         self.center_panel.grid(row=0, column=1, padx=10, pady=(18, 10), sticky="nsew")
         self.center_panel.grid_columnconfigure(0, weight=1)
-        self.center_panel.grid_rowconfigure(2, weight=1)
 
         self.right_panel = ctk.CTkFrame(self, corner_radius=18)
         self.right_panel.grid(row=0, column=2, padx=(10, 18), pady=(18, 10), sticky="nsew")
