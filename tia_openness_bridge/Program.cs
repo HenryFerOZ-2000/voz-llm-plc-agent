@@ -8,6 +8,8 @@ using System.Web.Script.Serialization;
 
 using Siemens.Engineering;
 using Siemens.Engineering.Compiler;
+using Siemens.Engineering.Connection;
+using Siemens.Engineering.Download;
 using Siemens.Engineering.HW;
 using Siemens.Engineering.HW.Features;
 using Siemens.Engineering.SW;
@@ -52,6 +54,10 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 {
                     report = ExecuteReadTags(request);
                 }
+                else if (action == "download")
+                {
+                    report = ExecuteDownload(request);
+                }
                 else
                 {
                     report = NewReport("TIA_OPENNESS_ERROR");
@@ -63,6 +69,10 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 report = NewReport("TIA_OPENNESS_ERROR");
                 AddError(report, exception.GetType().FullName + ": " + exception.Message);
                 report["exception"] = exception.ToString();
+            }
+            if (!report.ContainsKey("success"))
+            {
+                report["success"] = GetString(report, "status", "").EndsWith("PASSED", StringComparison.Ordinal);
             }
 
             WriteJson(resultPath, report);
@@ -556,6 +566,204 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 }
             }
             return report;
+        }
+
+        /// <summary>
+        /// Downloads the already-compiled PLC software (blocks/program only, never hardware
+        /// configuration) to the physical/target PLC configured in the current TIA project.
+        /// Does NOT recompile, does NOT create/configure hardware, and NEVER guesses the
+        /// download target: if the PLC or its online connection cannot be resolved to exactly
+        /// one unambiguous candidate, it aborts without downloading.
+        /// </summary>
+        private static Dictionary<string, object> ExecuteDownload(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> report = NewReport("RUNNING");
+            string projectPath = GetString(request, "project_path", "");
+            string requestedPlcName = GetString(request, "plc_name", "");
+            bool attach = GetBool(request, "attach_to_running", true);
+            bool withUi = GetBool(request, "with_user_interface", true);
+
+            TiaPortal portal = null;
+            Project project = null;
+            bool attachedToExisting = false;
+            try
+            {
+                if (attach)
+                {
+                    TiaPortalProcess process = TiaPortal.GetProcesses().FirstOrDefault();
+                    if (process != null)
+                    {
+                        portal = process.Attach();
+                        attachedToExisting = true;
+                    }
+                }
+                if (portal == null)
+                {
+                    portal = new TiaPortal(withUi ? TiaPortalMode.WithUserInterface : TiaPortalMode.WithoutUserInterface);
+                }
+
+                project = portal.Projects.FirstOrDefault();
+                if (project == null)
+                {
+                    if (String.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                    {
+                        throw new FileNotFoundException("No TIA project is open and project_path is invalid.", projectPath);
+                    }
+                    project = portal.Projects.Open(new FileInfo(projectPath));
+                }
+
+                report["attached_to_existing_tia"] = attachedToExisting;
+                report["project_path"] = project.Path.FullName;
+                report["success"] = false;
+
+                List<KeyValuePair<DeviceItem, PlcSoftware>> candidates = new List<KeyValuePair<DeviceItem, PlcSoftware>>();
+                foreach (Device device in project.Devices)
+                {
+                    foreach (DeviceItem item in device.DeviceItems)
+                    {
+                        CollectPlcCandidates(item, candidates);
+                    }
+                }
+
+                List<KeyValuePair<DeviceItem, PlcSoftware>> matches = String.IsNullOrWhiteSpace(requestedPlcName)
+                    ? candidates
+                    : candidates.Where(c => String.Equals(c.Value.Name, requestedPlcName, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                if (matches.Count != 1)
+                {
+                    report["status"] = "TIA_DOWNLOAD_AMBIGUOUS_TARGET";
+                    report["candidate_plc_names"] = candidates.Select(c => c.Value.Name).ToList();
+                    AddError(report, "No se pudo determinar de forma inequivoca el PLC objetivo del proyecto TIA.");
+                    return report;
+                }
+
+                DeviceItem plcDeviceItem = matches[0].Key;
+                PlcSoftware plcSoftware = matches[0].Value;
+                report["plc_name"] = plcSoftware.Name;
+                report["device_item_name"] = plcDeviceItem.Name;
+                report["device_type"] = plcDeviceItem.TypeIdentifier;
+
+                DownloadProvider downloadProvider = plcDeviceItem.GetService<DownloadProvider>();
+                if (downloadProvider == null)
+                {
+                    throw new InvalidOperationException("The target PLC device does not expose a download service.");
+                }
+
+                IConfiguration targetConfiguration = ResolveUnambiguousTargetInterface(downloadProvider.Configuration, report);
+                if (targetConfiguration == null)
+                {
+                    report["status"] = "TIA_DOWNLOAD_AMBIGUOUS_TARGET";
+                    return report;
+                }
+
+                // Software-only download: never touches hardware configuration, IP addresses,
+                // racks or modules. preDownloadConfigurationDelegate/postDownloadConfigurationDelegate
+                // are intentionally null - this reuses whatever online/download connection is
+                // already configured and saved in the project instead of auto-selecting one.
+                DownloadResult downloadResult = downloadProvider.Download(
+                    targetConfiguration,
+                    null,
+                    null,
+                    DownloadOptions.Software
+                );
+
+                int errorCount = downloadResult.ErrorCount;
+                int warningCount = downloadResult.WarningCount;
+                bool success = errorCount == 0 && downloadResult.State != DownloadResultState.Error;
+
+                report["download_state"] = downloadResult.State.ToString();
+                report["download_error_count"] = errorCount;
+                report["download_warning_count"] = warningCount;
+                report["download_messages"] = FlattenDownloadMessages(downloadResult.Messages);
+                report["success"] = success;
+                report["status"] = success ? "TIA_DOWNLOAD_PASSED" : "TIA_DOWNLOAD_FAILED";
+            }
+            finally
+            {
+                if (!attachedToExisting && project != null)
+                {
+                    project.Close();
+                }
+                if (portal != null)
+                {
+                    portal.Dispose();
+                }
+            }
+            return report;
+        }
+
+        private static void CollectPlcCandidates(DeviceItem item, IList<KeyValuePair<DeviceItem, PlcSoftware>> result)
+        {
+            SoftwareContainer container = item.GetService<SoftwareContainer>();
+            if (container != null && container.Software is PlcSoftware)
+            {
+                result.Add(new KeyValuePair<DeviceItem, PlcSoftware>(item, (PlcSoftware)container.Software));
+            }
+            foreach (DeviceItem child in item.DeviceItems)
+            {
+                CollectPlcCandidates(child, result);
+            }
+        }
+
+        /// <summary>
+        /// Walks Modes -> PcInterfaces -> TargetInterfaces and only returns a target when each
+        /// level has exactly one candidate. Never scans the network or picks arbitrarily among
+        /// several - if more than one option exists anywhere, the caller must abort.
+        /// </summary>
+        private static IConfiguration ResolveUnambiguousTargetInterface(ConnectionConfiguration connectionConfiguration, Dictionary<string, object> report)
+        {
+            List<ConfigurationMode> modes = connectionConfiguration.Modes.ToList();
+            if (modes.Count != 1)
+            {
+                report["available_modes"] = modes.Select(m => m.Name).ToList();
+                AddError(report, "No se pudo determinar de forma inequivoca el modo de conexion (PN/IE, MPI, etc.) del PLC objetivo.");
+                return null;
+            }
+
+            List<ConfigurationPcInterface> pcInterfaces = modes[0].PcInterfaces.ToList();
+            if (pcInterfaces.Count != 1)
+            {
+                report["available_pc_interfaces"] = pcInterfaces.Select(i => i.Name).ToList();
+                AddError(report, "No se pudo determinar de forma inequivoca la interfaz PC/PG para descargar al PLC.");
+                return null;
+            }
+
+            List<ConfigurationTargetInterface> targetInterfaces = pcInterfaces[0].TargetInterfaces.ToList();
+            if (targetInterfaces.Count != 1)
+            {
+                report["available_target_interfaces"] = targetInterfaces.Select(i => i.Name).ToList();
+                AddError(report, "No se pudo determinar de forma inequivoca el dispositivo objetivo accesible para el PLC.");
+                return null;
+            }
+
+            report["target_interface_name"] = targetInterfaces[0].Name;
+            return targetInterfaces[0];
+        }
+
+        private static List<Dictionary<string, object>> FlattenDownloadMessages(DownloadResultMessageComposition messages)
+        {
+            List<Dictionary<string, object>> output = new List<Dictionary<string, object>>();
+            foreach (DownloadResultMessage message in messages)
+            {
+                AddDownloadMessage(message, output);
+            }
+            return output;
+        }
+
+        private static void AddDownloadMessage(DownloadResultMessage message, IList<Dictionary<string, object>> output)
+        {
+            output.Add(new Dictionary<string, object>
+            {
+                { "state", message.State.ToString() },
+                { "message", message.Message },
+                { "error_count", message.ErrorCount },
+                { "warning_count", message.WarningCount },
+                { "date_time", message.DateTime.ToString("s") }
+            });
+            foreach (DownloadResultMessage child in message.Messages)
+            {
+                AddDownloadMessage(child, output);
+            }
         }
 
         private static List<Dictionary<string, object>> FlattenMessages(CompilerResultMessageComposition messages)

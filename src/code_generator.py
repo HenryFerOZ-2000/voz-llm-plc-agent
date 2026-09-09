@@ -5,6 +5,7 @@ from typing import Any
 
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, get_required_variables_for_intent
 from plc_ir import PLCProjectIR
+from functional_requirements import is_catalog_functional_requirement
 from utils import build_io_map_index, get_project_root, load_json_file
 
 
@@ -543,6 +544,81 @@ def _generate_auto_cycle_body(parameters: dict[str, Any]) -> str:
     )
 
 
+# Output-signal functional_requirements: each renders one additive ST assignment layered on top
+# of the base intent's own state variables (run_latch/stop_delay_active/emergency_input/
+# fault_latch), never replacing them. "Control-flow" types (motor_start_latch, delayed_start,
+# delayed_stop, emergency_priority, reset_behavior, maintenance_inhibit, counter_requirement,
+# automatic_mode, manual_mode) are intentionally NOT rendered here: they are already implemented
+# by whichever intent template was selected as the main behavior, so emitting them again would
+# duplicate logic. They still flow through tag resolution (ir_builder) and coverage checking.
+_FUNCTIONAL_REQUIREMENT_OUTPUT_TEMPLATES: dict[str, str] = {
+    "run_pilot": "{pilot_run} := {motor_output} AND NOT {emergency_input};",
+    "stop_pilot": "{pilot_stop} := NOT {motor_output} AND NOT {stop_delay_active} AND NOT {emergency_input};",
+    "fault_pilot": "{pilot_fault} := {fault_latch} OR {emergency_input};",
+    "alarm_output": "{alarm_output} := {fault_latch} OR {emergency_input};"
+}
+
+
+def _generate_interlock_clause(requirement: dict[str, Any], parameters: dict[str, Any]) -> str:
+    start_input = _param(parameters, "trigger_input", default="I_Start")
+    stop_input = _param(parameters, "stop_input", default="I_Stop")
+    emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+    output_a = str(requirement.get("output_a") or "Q_Contactor_A")
+    output_b = str(requirement.get("output_b") or "Q_Contactor_B")
+    return _dedented(
+        f"""\
+        (* Enclavamiento mutuo adicional: {output_a} / {output_b} *)
+        IF {emergency_input} THEN
+            {output_a} := FALSE;
+            {output_b} := FALSE;
+        ELSIF {start_input} THEN
+            {output_a} := NOT {output_b};
+        ELSIF {stop_input} THEN
+            {output_b} := NOT {output_a};
+        END_IF;
+        """
+    )
+
+
+def _generate_functional_requirement_clauses(
+    functional_requirements: list[dict[str, Any]],
+    parameters: dict[str, Any]
+) -> str:
+    """
+    Renders extra ST for output-signal functional_requirements (pilots/alarm) on top of the base
+    intent's implementation body. Reuses the intent's own parameter names (motor_output,
+    emergency_input, stop_delay_active, fault_latch) so the added signals stay consistent with
+    whatever state variables that specific intent actually declares.
+    """
+    format_values = {
+        "pilot_run": _param(parameters, "run_indicator", "pilot_run_output", default="Q_Pilot_Run"),
+        "pilot_stop": _param(parameters, "pilot_stop_output", default="Q_Pilot_Stop"),
+        "pilot_fault": _param(parameters, "fault_indicator", "pilot_fault_output", default="Q_Pilot_Fault"),
+        "motor_output": _param(parameters, "motor_output", default="Q_Motor_Enable"),
+        "stop_delay_active": _param(parameters, "stop_delay_active", default="M_StopDelayActive"),
+        "emergency_input": _param(parameters, "emergency_input", default="I_Emergency"),
+        "fault_latch": _param(parameters, "fault_latch", default="M_FaultLatch"),
+        "alarm_output": _param(parameters, "alarm_output", default="Q_Alarm")
+    }
+
+    clauses: list[str] = []
+    for requirement in functional_requirements:
+        if not is_catalog_functional_requirement(requirement):
+            continue
+        req_type = str(requirement.get("type", ""))
+        if req_type == "interlock":
+            clauses.append(_generate_interlock_clause(requirement, parameters).strip())
+            continue
+        template = _FUNCTIONAL_REQUIREMENT_OUTPUT_TEMPLATES.get(req_type)
+        if template is None:
+            continue
+        clauses.append(template.format(**format_values))
+
+    if not clauses:
+        return ""
+    return "\n(* Requisitos funcionales adicionales *)\n" + "\n".join(clauses) + "\n"
+
+
 IMPLEMENTED_TEMPLATES = {
     "INT_TIMED_PULSE": _generate_timed_pulse_body,
     "INT_DIRECT_OUTPUT": _generate_direct_output_body,
@@ -680,7 +756,10 @@ def generate_implementation_from_ir(project_ir: PLCProjectIR) -> str:
     generator = IMPLEMENTED_TEMPLATES.get(project_ir.intent_id)
     if generator is None:
         raise TemplateNotImplementedError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {project_ir.intent_id}")
-    return generator(parameters)
+    base_body = generator(parameters)
+    functional_requirements = project_ir.metadata.get("functional_requirements", [])
+    extra_body = _generate_functional_requirement_clauses(functional_requirements, parameters)
+    return base_body + extra_body if extra_body else base_body
 
 
 def generate_plc_artifact(

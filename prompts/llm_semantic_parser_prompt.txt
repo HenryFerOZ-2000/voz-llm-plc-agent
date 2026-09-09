@@ -33,6 +33,57 @@ Debes respetar:
 - las reglas de seguridad;
 - el esquema JSON esperado.
 
+Un comando puede contener MÁS de un requisito funcional además de la intención principal
+(`intent_id`). NO inventes una intención combinada nueva para eso: elige la intención principal
+más cercana y declara los requisitos adicionales en `functional_requirements` (lista, puede
+quedar vacía `[]` si la intención principal ya representa todo el comando). NO descartes en
+silencio un requisito explícito del comando solo porque la intención principal no lo cubre.
+
+Catálogo cerrado de `type` permitidos en `functional_requirements` (usa solo estos valores):
+
+- `motor_start_latch`: el motor debe quedar enclavado/mantenerse encendido tras soltar el pulsador.
+- `delayed_start`: arranque retardado (agrega `"delay": "T#Ns"`).
+- `delayed_stop`: paro retardado (agrega `"delay": "T#Ns"`).
+- `run_pilot`: luz/piloto de marcha.
+- `stop_pilot`: luz/piloto de paro.
+- `fault_pilot`: luz/piloto de falla.
+- `alarm_output`: salida de alarma.
+- `emergency_priority`: prioridad explícita de parada de emergencia.
+- `reset_behavior`: reinicio de falla mediante pulsador.
+- `interlock`: enclavamiento mutuo entre dos salidas (agrega `"output_a"` y `"output_b"`).
+- `maintenance_inhibit`: bloqueo de arranque en modo mantenimiento.
+- `counter_requirement`: conteo de pulsos.
+- `automatic_mode` / `manual_mode`: selección de modo.
+
+Ejemplo con requisitos compuestos (intención principal + comportamientos adicionales):
+
+Comando: "Enciende un motor con un pulsante de inicio, que este se mantenga encendido junto con
+una luz piloto, quiero un pulsante de paro, y cuando presione paro el motor se detendrá a los 3
+segundos y se encenderá la luz de paro."
+
+Resultado esperado (intención principal `INT_DELAYED_STOP`, que YA cubre el enclavamiento y el
+paro retardado; los pilotos se declaran aparte porque `INT_DELAYED_STOP` no los cubre):
+
+{
+  "intent_id": "INT_DELAYED_STOP",
+  "parameters": {
+    "trigger_input": "I_Start", "stop_input": "I_Stop", "emergency_input": "I_Emergency",
+    "motor_output": "Q_Motor_Enable", "run_latch": "M_RunLatch",
+    "stop_delay_active": "M_StopDelayActive", "timer": "T_StopDelay", "stop_delay_time": "T#3s"
+  },
+  "functional_requirements": [
+    {"type": "run_pilot"},
+    {"type": "stop_pilot"}
+  ],
+  "requires_clarification": false,
+  "recognized_tags": ["I_Start", "I_Stop", "I_Emergency", "Q_Motor_Enable", "Q_Pilot_Run", "Q_Pilot_Stop"]
+}
+
+Solo usa `requires_clarification=true` para una AMBIGÜEDAD real del lenguaje (falta información
+para decidir, o el comando pide algo que ninguna intención ni requisito funcional del catálogo
+puede representar). Que un comando combine varios comportamientos NO es, por sí solo, motivo de
+aclaración: eso se resuelve con `functional_requirements`, no preguntando.
+
 Si el requerimiento es ambiguo o pide algo no soportado:
 
 - usa `INT_UNKNOWN`;

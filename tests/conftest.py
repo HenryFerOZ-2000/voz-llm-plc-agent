@@ -33,3 +33,19 @@ def intents_catalog(project_root: Path) -> dict:
 @pytest.fixture
 def safety_rules(project_root: Path) -> dict:
     return load_json_file(project_root / "config" / "safety_rules.json")
+
+
+@pytest.fixture(scope="session")
+def app():
+    """
+    Single shared Tk root for the WHOLE pytest session. Creating more than one customtkinter
+    root (one per test module, say) in the same Windows process is unreliable - a second
+    ctk.CTk() after the first is destroyed can crash Tcl init - so every GUI test module must
+    reuse this one fixture instead of building its own.
+    """
+    import gui  # noqa: E402 - deferred import, needs SRC_DIR already on sys.path (see above)
+
+    instance = gui.VozLLMPLCGUI()
+    instance.update_idletasks()
+    yield instance
+    instance.destroy()

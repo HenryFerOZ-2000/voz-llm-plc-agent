@@ -56,6 +56,7 @@ from llm_parser import parse_command, resolve_parser_mode
 from plc_maps import (
     GENERAL_PROFILE_LABEL,
     apply_profile_filter,
+    check_case_compatibility,
     create_plc_map,
     delete_plc_map,
     ensure_plc_maps_library,
@@ -76,6 +77,7 @@ from speech_recognizer import SpeechRecognizer
 from tia_openness import (
     build_openness_bridge,
     diagnose_tia_openness,
+    download_program_to_plc,
     load_tia_config,
     run_openness_bridge_diagnostic,
     save_tia_config,
@@ -340,6 +342,89 @@ class LLMConfigDialog(ctk.CTkToplevel):
         self.destroy()
 
 
+class ClarificationDialog(ctk.CTkToplevel):
+    """
+    Pide al usuario una respuesta REAL a una ambiguedad semantica genuina (SEMANTIC_AMBIGUITY):
+    nunca se usa para recursos internos (se autogeneran) ni para recursos fisicos no autorizados
+    (esos usan su propio mensaje informativo, sin dialogo de respuesta). Un "Aceptar" vacio no
+    cuenta como respuesta - hay que escribir algo o usar los atajos Si/No.
+    """
+
+    def __init__(self, parent: ctk.CTk, question: str) -> None:
+        super().__init__(parent)
+        self.title("Aclaracion requerida")
+        self.geometry("520x320")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.result: str | None = None
+
+        self.grid_columnconfigure(0, weight=1)
+
+        header = ctk.CTkLabel(self, text="El comando requiere una aclaracion", font=ctk.CTkFont(size=17, weight="bold"))
+        header.grid(row=0, column=0, padx=20, pady=(18, 6), sticky="w")
+
+        question_label = ctk.CTkLabel(
+            self, text=question, justify="left", anchor="w", wraplength=470
+        )
+        question_label.grid(row=1, column=0, padx=20, pady=(0, 12), sticky="ew")
+
+        self.answer_var = tk.StringVar(value="")
+        answer_entry = ctk.CTkEntry(
+            self, textvariable=self.answer_var,
+            placeholder_text="Escriba su respuesta o aclaracion aqui..."
+        )
+        answer_entry.grid(row=2, column=0, padx=20, pady=(0, 8), sticky="ew")
+
+        quick_frame = ctk.CTkFrame(self, fg_color="transparent")
+        quick_frame.grid(row=3, column=0, padx=20, pady=(0, 12), sticky="ew")
+        quick_frame.grid_columnconfigure((0, 1), weight=1)
+        si_button = ctk.CTkButton(quick_frame, text="Si", command=lambda: self.answer_var.set("Si"))
+        si_button.grid(row=0, column=0, padx=(0, 6), sticky="ew")
+        no_button = ctk.CTkButton(quick_frame, text="No", command=lambda: self.answer_var.set("No"))
+        no_button.grid(row=0, column=1, padx=(6, 0), sticky="ew")
+
+        helper = ctk.CTkLabel(
+            self,
+            text=(
+                "La respuesta se usara para reprocesar el comando (no autoriza recursos "
+                "fisicos nuevos; para eso use Modo Normal o cambie de caso experimental)."
+            ),
+            text_color="#556272",
+            justify="left",
+            wraplength=470
+        )
+        helper.grid(row=4, column=0, padx=20, pady=(0, 10), sticky="ew")
+
+        button_frame = ctk.CTkFrame(self, fg_color="transparent")
+        button_frame.grid(row=5, column=0, padx=20, pady=(0, 20), sticky="ew")
+        button_frame.grid_columnconfigure((0, 1), weight=1)
+
+        cancel_button = ctk.CTkButton(
+            button_frame, text="Cancelar", fg_color="#6B7280", hover_color="#4B5563", command=self._cancel
+        )
+        cancel_button.grid(row=0, column=0, padx=(0, 8), sticky="ew")
+
+        confirm_button = ctk.CTkButton(button_frame, text="Usar esta respuesta", command=self._confirm)
+        confirm_button.grid(row=0, column=1, padx=(8, 0), sticky="ew")
+
+        self.protocol("WM_DELETE_WINDOW", self._cancel)
+        self.after(50, self.focus_force)
+
+    def _confirm(self) -> None:
+        answer = self.answer_var.get().strip()
+        if not answer:
+            messagebox.showwarning("Aclaracion requerida", "Escriba una respuesta o use Si/No antes de continuar.")
+            return
+        self.result = answer
+        self.destroy()
+
+    def _cancel(self) -> None:
+        self.result = None
+        self.destroy()
+
+
 class VozLLMPLCGUI(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
@@ -399,8 +484,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_status_var = tk.StringVar(value="")
         self.experiment_next_label_var = tk.StringVar(value="")
         self.experiment_variant_command_var = tk.StringVar(value="")
-        self._profile_id_before_experiment: str | None = None
         self._active_variant_command_text: str = ""
+        self._last_experiment_condition_code: str | None = None
         self.manual_result_var = tk.StringVar(value=PHYSICAL_RESULT_OPTIONS[0])
         self.manual_safety_var = tk.StringVar(value="No")
         self.manual_error_var = tk.StringVar(value=NO_ERROR_LABEL)
@@ -416,6 +501,11 @@ class VozLLMPLCGUI(ctk.CTk):
         self.current_result_snapshot: dict[str, Any] | None = None
         self.pending_semantic_output: dict[str, Any] | None = None
         self.pending_runtime_config: tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None = None
+        # Solo "CARGAR PROGRAMA AL PLC" queda habilitado mientras esto apunte al paquete de la
+        # ULTIMA compilacion Siemens aprobada; cualquier nuevo comando procesado lo invalida.
+        self._last_compiled_package_dir: Path | None = None
+        self._download_worker_active = False
+        self._download_worker_queue: queue.Queue = queue.Queue()
         self.voice_audio_path: Path | None = None
         self.voice_transcription: dict[str, Any] | None = None
         self._voice_worker_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
@@ -784,8 +874,7 @@ class VozLLMPLCGUI(ctk.CTk):
 
         tia_actions_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent")
         tia_actions_frame.grid(row=7, column=0, padx=18, pady=(0, 8), sticky="ew")
-        for column_index in range(2):
-            tia_actions_frame.grid_columnconfigure(column_index, weight=1)
+        tia_actions_frame.grid_columnconfigure(0, weight=1)
 
         self.configure_tia_button = ctk.CTkButton(
             tia_actions_frame,
@@ -793,23 +882,9 @@ class VozLLMPLCGUI(ctk.CTk):
             command=self.configure_tia_openness,
             font=self.button_font
         )
-        self.configure_tia_button.grid(row=0, column=0, padx=(0, 4), pady=4, sticky="ew")
-
-        self.diagnose_tia_button = ctk.CTkButton(
-            tia_actions_frame,
-            text="Diagnosticar Openness",
-            command=self.diagnose_tia_connection,
-            font=self.button_font
-        )
-        self.diagnose_tia_button.grid(row=0, column=1, padx=(4, 0), pady=4, sticky="ew")
-
-        self.validate_tia_button = ctk.CTkButton(
-            tia_actions_frame,
-            text="Importar y compilar ultimo paquete Siemens",
-            command=self.validate_latest_package_in_tia,
-            font=self.button_font
-        )
-        self.validate_tia_button.grid(row=1, column=0, columnspan=2, pady=4, sticky="ew")
+        self.configure_tia_button.grid(row=0, column=0, sticky="ew")
+        # "Diagnosticar Openness" e "Importar y compilar ultimo paquete Siemens" viven ahora
+        # en Herramientas avanzadas (panel central) para no duplicar el flujo operativo.
 
         map_library_frame = ctk.CTkFrame(self.left_panel, corner_radius=12)
         map_library_frame.grid(row=8, column=0, padx=18, pady=(0, 8), sticky="ew")
@@ -868,7 +943,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.import_map_button = ctk.CTkButton(map_tia_frame, text="Importar desde TIA", command=self.import_plc_map_from_tia, font=self.button_font)
         self.import_map_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
 
-        self.profile_selector_label = ctk.CTkLabel(map_library_frame, text="Perfil de prueba", font=self.section_label_font)
+        self.profile_selector_label = ctk.CTkLabel(map_library_frame, text="Contexto (Modo Normal)", font=self.section_label_font)
         self.profile_selector_label.grid(row=5, column=0, columnspan=2, padx=12, pady=(4, 4), sticky="w")
 
         self.profile_selector = ctk.CTkOptionMenu(
@@ -876,10 +951,13 @@ class VozLLMPLCGUI(ctk.CTk):
             variable=self.active_profile_var,
             values=[GENERAL_PROFILE_LABEL],
             command=self.on_profile_selected,
+            state="disabled",
             font=self.body_font,
             dropdown_font=self.body_font
         )
         self.profile_selector.grid(row=6, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        # El perfil ya no se elige manualmente: Normal siempre usa GENERAL, Experimentacion
+        # lo resuelve automaticamente desde el caso Dxx seleccionado (_on_experiment_case_changed).
 
         self.profile_status_label = ctk.CTkLabel(
             map_library_frame,
@@ -1024,92 +1102,167 @@ class VozLLMPLCGUI(ctk.CTk):
         self.voice_level_bar.grid(row=1, column=0, pady=(4, 0), sticky="ew")
         self.voice_level_bar.set(0.0)
 
-        button_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
-        button_frame.grid(row=6, column=0, padx=18, pady=(0, 14), sticky="ew")
+        primary_controls_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
+        primary_controls_frame.grid(row=6, column=0, padx=18, pady=(0, 8), sticky="ew")
         for column_index in range(2):
-            button_frame.grid_columnconfigure(column_index, weight=1)
+            primary_controls_frame.grid_columnconfigure(column_index, weight=1)
 
         self.command_buttons: list[ctk.CTkButton] = []
-        self.process_button = ctk.CTkButton(button_frame, text="Procesar comando", height=40, command=self.process_command, font=self.button_font)
-        self.process_button.grid(row=0, column=0, padx=6, pady=6, sticky="ew")
-        self.command_buttons.append(self.process_button)
 
-        self.generate_button = ctk.CTkButton(button_frame, text="Generar paquete PLC", height=40, command=self.generate_package, font=self.button_font)
-        self.generate_button.grid(row=0, column=1, padx=6, pady=6, sticky="ew")
-        self.command_buttons.append(self.generate_button)
-
-        self.listen_button = ctk.CTkButton(button_frame, text="Escuchar comando", height=40, command=self.listen_command, font=self.button_font)
-        self.listen_button.grid(row=1, column=0, padx=6, pady=6, sticky="ew")
+        self.listen_button = ctk.CTkButton(
+            primary_controls_frame, text="\U0001F399 Grabar comando", height=40,
+            command=self.listen_command, font=self.button_font
+        )
+        self.listen_button.grid(row=0, column=0, padx=6, pady=6, sticky="ew")
         self.command_buttons.append(self.listen_button)
 
         self.stop_voice_button = ctk.CTkButton(
-            button_frame,
-            text="Detener y transcribir",
+            primary_controls_frame,
+            text="■ Detener y transcribir",
             height=40,
             fg_color="#B45309",
             hover_color="#92400E",
             command=self.stop_listening,
             font=self.button_font
         )
-        self.stop_voice_button.grid(row=1, column=1, padx=6, pady=6, sticky="ew")
+        self.stop_voice_button.grid(row=0, column=1, padx=6, pady=6, sticky="ew")
         self.command_buttons.append(self.stop_voice_button)
 
+        self.execute_command_button = ctk.CTkButton(
+            primary_controls_frame,
+            text="EJECUTAR COMANDO",
+            height=46,
+            fg_color="#0F766E",
+            hover_color="#115E59",
+            command=self.execute_full_pipeline,
+            font=ctk.CTkFont(size=15, weight="bold")
+        )
+        self.execute_command_button.grid(row=1, column=0, columnspan=2, padx=6, pady=(2, 6), sticky="ew")
+        self.command_buttons.append(self.execute_command_button)
+
+        self.download_plc_button = ctk.CTkButton(
+            primary_controls_frame,
+            text="CARGAR PROGRAMA AL PLC",
+            height=42,
+            fg_color="#B91C1C",
+            hover_color="#991B1B",
+            state="disabled",
+            command=self.load_program_to_plc,
+            font=ctk.CTkFont(size=14, weight="bold")
+        )
+        self.download_plc_button.grid(row=2, column=0, columnspan=2, padx=6, pady=(0, 6), sticky="ew")
+        self.command_buttons.append(self.download_plc_button)
+
+        advanced_toggle_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
+        advanced_toggle_frame.grid(row=7, column=0, padx=18, pady=(0, 4), sticky="ew")
+        advanced_toggle_frame.grid_columnconfigure(0, weight=1)
+
+        self.advanced_tools_toggle_button = ctk.CTkButton(
+            advanced_toggle_frame,
+            text="Herramientas avanzadas ▾",
+            height=30,
+            fg_color="transparent",
+            border_width=1,
+            text_color=("#334155", "#E2E8F0"),
+            command=self._toggle_advanced_tools,
+            font=self.body_font
+        )
+        self.advanced_tools_toggle_button.grid(row=0, column=0, sticky="ew")
+
+        self.advanced_tools_frame = ctk.CTkFrame(self.center_panel, corner_radius=12)
+        self.advanced_tools_frame.grid_columnconfigure(0, weight=1)
+        self.advanced_tools_frame.grid_columnconfigure(1, weight=1)
+
+        advanced_tools_label = ctk.CTkLabel(
+            self.advanced_tools_frame, text="Herramientas avanzadas (depuracion)", font=self.section_label_font
+        )
+        advanced_tools_label.grid(row=0, column=0, columnspan=2, padx=12, pady=(10, 4), sticky="w")
+
+        self.process_button = ctk.CTkButton(self.advanced_tools_frame, text="Procesar comando", height=36, command=self.process_command, font=self.button_font)
+        self.process_button.grid(row=1, column=0, padx=6, pady=4, sticky="ew")
+        self.command_buttons.append(self.process_button)
+
+        self.generate_button = ctk.CTkButton(self.advanced_tools_frame, text="Generar paquete PLC", height=36, command=self.generate_package, font=self.button_font)
+        self.generate_button.grid(row=1, column=1, padx=6, pady=4, sticky="ew")
+        self.command_buttons.append(self.generate_button)
+
         self.replay_button = ctk.CTkButton(
-            button_frame,
+            self.advanced_tools_frame,
             text="Reproducir grabacion",
-            height=40,
+            height=36,
             command=self.play_recording,
             font=self.button_font
         )
-        self.replay_button.grid(row=2, column=0, padx=6, pady=6, sticky="ew")
+        self.replay_button.grid(row=2, column=0, padx=6, pady=4, sticky="ew")
         self.command_buttons.append(self.replay_button)
 
         self.transcribe_button = ctk.CTkButton(
-            button_frame,
+            self.advanced_tools_frame,
             text="Transcribir",
-            height=40,
+            height=36,
             command=self.transcribe_recording,
             font=self.button_font
         )
-        self.transcribe_button.grid(row=2, column=1, padx=6, pady=6, sticky="ew")
+        self.transcribe_button.grid(row=2, column=1, padx=6, pady=4, sticky="ew")
         self.command_buttons.append(self.transcribe_button)
 
         self.use_transcription_button = ctk.CTkButton(
-            button_frame,
+            self.advanced_tools_frame,
             text="Usar transcripcion",
-            height=40,
+            height=36,
             command=self.use_transcription,
             font=self.button_font
         )
-        self.use_transcription_button.grid(row=3, column=0, padx=6, pady=6, sticky="ew")
+        self.use_transcription_button.grid(row=3, column=0, padx=6, pady=4, sticky="ew")
         self.command_buttons.append(self.use_transcription_button)
 
         self.discard_voice_button = ctk.CTkButton(
-            button_frame,
+            self.advanced_tools_frame,
             text="Descartar",
-            height=40,
+            height=36,
             fg_color="#7C2D12",
             hover_color="#9A3412",
             command=self.discard_transcription,
             font=self.button_font
         )
-        self.discard_voice_button.grid(row=3, column=1, padx=6, pady=6, sticky="ew")
+        self.discard_voice_button.grid(row=3, column=1, padx=6, pady=4, sticky="ew")
         self.command_buttons.append(self.discard_voice_button)
 
         self.clear_command_button = ctk.CTkButton(
-            button_frame,
+            self.advanced_tools_frame,
             text="Limpiar comando",
-            height=40,
+            height=36,
             fg_color="#475569",
             hover_color="#334155",
             command=self.clear_command,
             font=self.button_font
         )
-        self.clear_command_button.grid(row=4, column=0, columnspan=2, padx=6, pady=6, sticky="ew")
+        self.clear_command_button.grid(row=4, column=0, columnspan=2, padx=6, pady=4, sticky="ew")
         self.command_buttons.append(self.clear_command_button)
 
+        self.diagnose_tia_button = ctk.CTkButton(
+            self.advanced_tools_frame,
+            text="Diagnosticar Openness",
+            height=36,
+            command=self.diagnose_tia_connection,
+            font=self.button_font
+        )
+        self.diagnose_tia_button.grid(row=5, column=0, columnspan=2, padx=6, pady=4, sticky="ew")
+
+        self.validate_tia_button = ctk.CTkButton(
+            self.advanced_tools_frame,
+            text="Importar y compilar ultimo paquete Siemens",
+            height=36,
+            command=self.validate_latest_package_in_tia,
+            font=self.button_font
+        )
+        self.validate_tia_button.grid(row=6, column=0, columnspan=2, padx=6, pady=(4, 10), sticky="ew")
+
+        self.advanced_tools_frame.grid(row=8, column=0, padx=18, pady=(0, 8), sticky="ew")
+        self.advanced_tools_frame.grid_remove()
+
         work_mode_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
-        work_mode_frame.grid(row=7, column=0, padx=18, pady=(4, 6), sticky="ew")
+        work_mode_frame.grid(row=9, column=0, padx=18, pady=(4, 6), sticky="ew")
         work_mode_frame.grid_columnconfigure(1, weight=1)
 
         work_mode_label = ctk.CTkLabel(work_mode_frame, text="Modo de trabajo", font=self.section_label_font)
@@ -1125,8 +1278,16 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.work_mode_selector.grid(row=0, column=1, sticky="ew")
 
-        self._build_experiment_controls(row=8)
-        self._build_manual_result_controls(row=9)
+        self._build_experiment_controls(row=10)
+        self._build_manual_result_controls(row=11)
+
+    def _toggle_advanced_tools(self) -> None:
+        if self.advanced_tools_frame.winfo_ismapped():
+            self.advanced_tools_frame.grid_remove()
+            self.advanced_tools_toggle_button.configure(text="Herramientas avanzadas ▾")
+        else:
+            self.advanced_tools_frame.grid()
+            self.advanced_tools_toggle_button.configure(text="Herramientas avanzadas ▴")
 
     def _build_experiment_controls(self, row: int) -> None:
         frame = ctk.CTkFrame(self.center_panel, corner_radius=12)
@@ -1134,8 +1295,8 @@ class VozLLMPLCGUI(ctk.CTk):
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_columnconfigure(1, weight=1)
 
-        title = ctk.CTkLabel(frame, text="Modo Experimentacion", font=ctk.CTkFont(size=15, weight="bold"))
-        title.grid(row=0, column=0, columnspan=2, padx=12, pady=(10, 6), sticky="w")
+        title = ctk.CTkLabel(frame, text="EXPERIMENTACION", font=ctk.CTkFont(size=16, weight="bold"))
+        title.grid(row=0, column=0, columnspan=2, padx=12, pady=(12, 8), sticky="w")
 
         group_label = ctk.CTkLabel(frame, text="Grupo de pruebas", font=self.body_font)
         group_label.grid(row=1, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
@@ -1173,23 +1334,32 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.experiment_variant_selector.grid(row=6, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
 
+        command_ref_label = ctk.CTkLabel(frame, text="Comando de referencia", font=self.body_font)
+        command_ref_label.grid(row=7, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+
+        self.experiment_variant_command_box = ctk.CTkFrame(
+            frame, corner_radius=8, border_width=1, border_color="#CBD5E1", fg_color="#F1F5F9"
+        )
+        self.experiment_variant_command_box.grid_columnconfigure(0, weight=1)
         self.experiment_variant_command_label = ctk.CTkLabel(
-            frame,
+            self.experiment_variant_command_box,
             textvariable=self.experiment_variant_command_var,
             anchor="w",
             justify="left",
-            wraplength=380,
-            font=self.body_font
+            wraplength=340,
+            font=self.body_font,
+            text_color="#0F172A"
         )
-        self.experiment_variant_command_label.grid(row=7, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
+        self.experiment_variant_command_label.grid(row=0, column=0, padx=10, pady=8, sticky="ew")
+        self.experiment_variant_command_box.grid(row=8, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
 
         self.use_variant_command_button = ctk.CTkButton(
             frame, text="Usar este comando", height=28, command=self._use_variant_command, font=self.button_font
         )
-        self.use_variant_command_button.grid(row=8, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+        self.use_variant_command_button.grid(row=9, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
-        condition_label = ctk.CTkLabel(frame, text="Condicion", font=self.body_font)
-        condition_label.grid(row=9, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        condition_label = ctk.CTkLabel(frame, text="Condicion experimental", font=self.body_font)
+        condition_label.grid(row=10, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
         self.experiment_condition_selector = ctk.CTkOptionMenu(
             frame,
             variable=self.experiment_condition_var,
@@ -1198,15 +1368,15 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_condition_selector.grid(row=10, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        self.experiment_condition_selector.grid(row=11, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
 
         speaker_label = ctk.CTkLabel(frame, text="Participante (speaker_id)", font=self.body_font)
-        speaker_label.grid(row=11, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
+        speaker_label.grid(row=12, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
         noise_label = ctk.CTkLabel(frame, text="Ruido", font=self.body_font)
-        noise_label.grid(row=11, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
+        noise_label.grid(row=12, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
 
         self.experiment_speaker_entry = ctk.CTkEntry(frame, textvariable=self.experiment_speaker_var, font=self.body_font)
-        self.experiment_speaker_entry.grid(row=12, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
+        self.experiment_speaker_entry.grid(row=13, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
 
         self.experiment_noise_selector = ctk.CTkOptionMenu(
             frame,
@@ -1215,10 +1385,10 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_noise_selector.grid(row=12, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
+        self.experiment_noise_selector.grid(row=13, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
 
         environment_label = ctk.CTkLabel(frame, text="Entorno", font=self.body_font)
-        environment_label.grid(row=13, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
+        environment_label.grid(row=14, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
         self.experiment_environment_selector = ctk.CTkOptionMenu(
             frame,
             variable=self.experiment_environment_var,
@@ -1227,7 +1397,7 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_environment_selector.grid(row=14, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+        self.experiment_environment_selector.grid(row=15, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
         self.experiment_next_label_label = ctk.CTkLabel(
             frame,
@@ -1235,7 +1405,7 @@ class VozLLMPLCGUI(ctk.CTk):
             anchor="w",
             font=ctk.CTkFont(size=13, weight="bold")
         )
-        self.experiment_next_label_label.grid(row=15, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
+        self.experiment_next_label_label.grid(row=16, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
 
         self.experiment_status_label = ctk.CTkLabel(
             frame,
@@ -1244,10 +1414,14 @@ class VozLLMPLCGUI(ctk.CTk):
             justify="left",
             font=self.body_font
         )
-        self.experiment_status_label.grid(row=16, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+        self.experiment_status_label.grid(row=17, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
-        self.start_trial_button = ctk.CTkButton(frame, text="Iniciar ensayo", height=38, command=self.start_trial, font=self.button_font)
-        self.start_trial_button.grid(row=17, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        self.start_trial_button = ctk.CTkButton(
+            frame, text="EJECUTAR ENSAYO", height=42,
+            fg_color="#0F766E", hover_color="#115E59",
+            command=self.run_experiment_trial, font=ctk.CTkFont(size=14, weight="bold")
+        )
+        self.start_trial_button.grid(row=18, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
 
         frame.grid(row=row, column=0, padx=18, pady=(0, 8), sticky="ew")
         frame.grid_remove()
@@ -1753,6 +1927,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.process_button.configure(state=command_state)
         self.generate_button.configure(state=command_state)
         self.clear_command_button.configure(state=command_state)
+        self.execute_command_button.configure(state=command_state)
 
     def configure_llm_api(self) -> None:
         dialog = LLMConfigDialog(self, load_llm_env_settings(self.env_path))
@@ -1900,13 +2075,17 @@ class VozLLMPLCGUI(ctk.CTk):
 
         if not messagebox.askyesno(
             "Confirmar TIA Openness",
-            "Se importara la fuente SCL en el proyecto TIA configurado, se crearan tags faltantes, "
-            "se generaran bloques y se compilara. El proyecto solo se guardara si no hay errores.\n\n"
-            f"Proyecto: {diagnostic.get('project_path')}\n"
+            "Codigo generado y verificado.\n\n"
+            f"Proyecto TIA: {diagnostic.get('project_path')}\n"
+            f"Mapa: {self.active_map_var.get()}\n"
             f"Paquete: {package_dir_text}\n\n"
-            "No se descargara nada a un PLC fisico. ¿Desea continuar?"
+            "Se importara la fuente SCL en el proyecto TIA configurado, se crearan tags faltantes, "
+            "se generaran bloques y se compilara. El proyecto solo se guardara si no hay errores. "
+            "No se descargara nada a un PLC fisico.\n\n¿Desea importar y compilar?"
         ):
             self._log("Importacion TIA Openness cancelada por el usuario.")
+            if self.active_trial:
+                self._cancel_active_trial("Importacion a TIA cancelada por el usuario en la confirmacion.")
             return
 
         while not self._tia_worker_queue.empty():
@@ -1918,6 +2097,8 @@ class VozLLMPLCGUI(ctk.CTk):
         package_dir = Path(package_dir_text)
         self._tia_worker_active = True
         self.validate_tia_button.configure(state="disabled")
+        self.execute_command_button.configure(state="disabled")
+        self.start_trial_button.configure(state="disabled")
         self._set_status("Procesando")
         self._set_textbox_content(
             self.tia_openness_textbox,
@@ -1946,10 +2127,17 @@ class VozLLMPLCGUI(ctk.CTk):
 
         self._tia_worker_active = False
         self.validate_tia_button.configure(state="normal")
+        self.execute_command_button.configure(state="normal")
+        self.start_trial_button.configure(state="normal")
         if outcome == "error":
+            self._invalidate_download_readiness()
             self._set_status("Error")
             self._set_textbox_content(self.tia_openness_textbox, str(payload))
             self._log(f"Error TIA Openness: {payload}")
+            if self.active_trial:
+                directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
+                save_metadata(directory, {"tia_compile_status": "ERROR", "tia_error": str(payload)})
+                self._log(f"Ensayo {self.active_trial['trial_id']}: fallo TIA Openness registrado como evidencia.")
             messagebox.showerror("TIA Openness", f"No se pudo completar la operacion.\n\n{payload}")
             return
 
@@ -1962,6 +2150,10 @@ class VozLLMPLCGUI(ctk.CTk):
             self._refresh_export_options(self.current_result_snapshot)
 
         result_path = str(report.get("result_path", ""))
+        if self.active_trial:
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
+            save_metadata(directory, {"tia_compile_status": report.get("status", ""), "tia_result_path": result_path})
+            self._log(f"Ensayo {self.active_trial['trial_id']}: resultado TIA registrado ({report.get('status')}).")
         report_package_dir = str(Path(result_path).parent) if result_path else ""
         history_updated = False
         for history_record in self.history_records:
@@ -1974,6 +2166,14 @@ class VozLLMPLCGUI(ctk.CTk):
                 history_updated = True
         if history_updated:
             self._save_history_state()
+
+        if passed and report_package_dir:
+            self._last_compiled_package_dir = Path(report_package_dir)
+            self.download_plc_button.configure(state="normal")
+            self._log(f"'CARGAR PROGRAMA AL PLC' habilitado para {report_package_dir}.")
+        else:
+            self._invalidate_download_readiness()
+
         self._set_status("Listo" if passed else "Error")
         self._set_validation_banner(
             "Compilacion TIA Portal V18 aprobada." if passed else "TIA Portal reporto errores de compilacion.",
@@ -1984,6 +2184,135 @@ class VozLLMPLCGUI(ctk.CTk):
             messagebox.showinfo("TIA Openness", "Los bloques fueron importados y compilados correctamente.")
         else:
             messagebox.showwarning("TIA Openness", "La operacion termino con incidencias. Revise el reporte.")
+
+    def load_program_to_plc(self) -> None:
+        """
+        Descarga UNICAMENTE el programa ya compilado (nunca configuracion de hardware) al PLC
+        configurado en el proyecto TIA actual. No reprocesa el comando, no vuelve a llamar al
+        LLM, no reconstruye IR/SCL ni reimporta - solo invoca DownloadProvider.Download sobre el
+        paquete que ya paso la ultima compilacion aprobada (self._last_compiled_package_dir).
+        """
+        if self._download_worker_active or self._tia_worker_active:
+            messagebox.showwarning("Cargar programa al PLC", "Ya existe una operacion TIA en curso.")
+            return
+        if self._last_compiled_package_dir is None:
+            messagebox.showwarning(
+                "Cargar programa al PLC",
+                "No hay una compilacion Siemens vigente y aprobada. Genere y compile el programa antes de descargar."
+            )
+            return
+
+        package_dir = self._last_compiled_package_dir
+        compile_report_path = package_dir / "tia_compile_report.json"
+        compile_status = ""
+        compile_timestamp = ""
+        if compile_report_path.exists():
+            try:
+                compile_report = load_json_file(compile_report_path)
+                compile_status = str(compile_report.get("status", ""))
+                compile_timestamp = str(compile_report.get("timestamp", ""))
+            except (FileNotFoundError, ValueError):
+                pass
+        if compile_status != "TIA_COMPILATION_PASSED":
+            self._invalidate_download_readiness()
+            messagebox.showwarning(
+                "Cargar programa al PLC",
+                "No hay una compilacion Siemens vigente y aprobada. Genere y compile el programa antes de descargar."
+            )
+            return
+
+        tia_config = load_tia_config(self.project_root)
+        project_path = str(tia_config.get("project_path", "")) or "(no configurado)"
+        plc_name = str(tia_config.get("plc_name", "")).strip() or "(unico en el proyecto)"
+
+        confirmed = messagebox.askyesno(
+            "Confirmar descarga al PLC",
+            "Se descargara el programa compilado al PLC configurado en el proyecto TIA actual.\n\n"
+            f"Proyecto TIA: {project_path}\n"
+            f"CPU/dispositivo configurado: {plc_name}\n"
+            f"Ultimo resultado de compilacion: {compile_status}\n"
+            f"Timestamp de compilacion: {compile_timestamp}\n\n"
+            "Esta accion afecta hardware fisico real. Solo se descarga el programa (software); "
+            "no se modifica la configuracion de hardware ni se fuerza RUN/STOP mas alla de lo "
+            "que TIA Portal Openness requiera internamente.\n\n"
+            "¿Desea continuar?"
+        )
+        if not confirmed:
+            self._log("Descarga al PLC cancelada por el usuario.")
+            return
+
+        while not self._download_worker_queue.empty():
+            try:
+                self._download_worker_queue.get_nowait()
+            except queue.Empty:
+                break
+
+        self._download_worker_active = True
+        self.download_plc_button.configure(state="disabled")
+        self.execute_command_button.configure(state="disabled")
+        self.start_trial_button.configure(state="disabled")
+        self.validate_tia_button.configure(state="disabled")
+        self._set_status("Procesando")
+        self._set_textbox_content(
+            self.tia_openness_textbox,
+            "Descargando el programa compilado al PLC mediante TIA Portal V18 Openness. "
+            "Esta operacion puede tardar varios minutos..."
+        )
+        self._select_results_tab("TIA Openness")
+        self._log(f"Iniciando descarga al PLC del paquete {package_dir}.")
+
+        def _worker() -> None:
+            try:
+                result = download_program_to_plc(package_dir, self.project_root)
+                self._download_worker_queue.put(("success", result))
+            except Exception as error:  # pragma: no cover - external Siemens process
+                self._download_worker_queue.put(("error", str(error)))
+
+        threading.Thread(target=_worker, name="tia-download", daemon=True).start()
+        self.after(250, self._poll_download_worker)
+
+    def _poll_download_worker(self) -> None:
+        try:
+            outcome, payload = self._download_worker_queue.get_nowait()
+        except queue.Empty:
+            if self._download_worker_active:
+                self.after(250, self._poll_download_worker)
+            return
+
+        self._download_worker_active = False
+        self.execute_command_button.configure(state="normal")
+        self.start_trial_button.configure(state="normal")
+        self.validate_tia_button.configure(state="normal")
+        # El estado de "compilacion vigente" no cambia por intentar descargar: si sigue siendo
+        # el mismo paquete (no se proceso un comando nuevo mientras tanto), el boton se reactiva
+        # para permitir reintentar sin tener que recompilar.
+        self.download_plc_button.configure(state="normal" if self._last_compiled_package_dir else "disabled")
+
+        if outcome == "error":
+            self._set_status("Error")
+            self._log(f"Error al cargar el programa al PLC: {payload}")
+            messagebox.showerror("Cargar programa al PLC", f"No se pudo cargar el programa al PLC.\n\n{payload}")
+            return
+
+        report = payload
+        self._set_textbox_content(self.tia_openness_textbox, format_json(report))
+        success = bool(report.get("success"))
+        status = str(report.get("status", ""))
+        self._set_status("Listo" if success else "Error")
+        self._log(f"Descarga al PLC finalizada con estado {status}.")
+
+        if success:
+            messagebox.showinfo(
+                "Cargar programa al PLC",
+                "Programa cargado correctamente al PLC.\n\n"
+                f"Dispositivo: {report.get('device_item_name', '')}\n"
+                f"Fecha/hora: {report.get('timestamp', '')}\n"
+                f"Resultado: {status}"
+            )
+        else:
+            errors = report.get("errors", [])
+            detail = "\n".join(str(item) for item in errors) if errors else "Revise el reporte tecnico en la pestana TIA Openness."
+            messagebox.showerror("Cargar programa al PLC", "No se pudo cargar el programa al PLC.\n\n" + detail)
 
     def _apply_tia_report_to_snapshot(
         self,
@@ -3445,9 +3774,14 @@ class VozLLMPLCGUI(ctk.CTk):
     # ------------------------------------------------------------------
 
     def _on_work_mode_changed(self, _choice: str | None = None) -> None:
+        """
+        El perfil activo es siempre automatico, nunca una eleccion manual del usuario:
+        Normal -> GENERAL (sin filtro, mapa PLC completo); Experimentacion -> perfil del
+        caso Dxx seleccionado. El selector "Perfil de prueba" del panel izquierdo queda
+        deshabilitado en ambos modos (es solo informativo) para que nadie termine
+        generando codigo en Modo Normal con un perfil experimental activo por accidente.
+        """
         if self.work_mode_var.get() == "Experimentacion":
-            self._profile_id_before_experiment = self.active_profile_id
-            self.profile_selector.configure(state="disabled")
             self.profile_selector_label.configure(text="Perfil de prueba (automatico - Modo Experimentacion)")
             self.experiment_controls_frame.grid()
             self._refresh_experiment_case_selector()
@@ -3455,9 +3789,8 @@ class VozLLMPLCGUI(ctk.CTk):
         else:
             self.experiment_controls_frame.grid_remove()
             self.manual_result_frame.grid_remove()
-            self.profile_selector.configure(state="normal")
-            self.profile_selector_label.configure(text="Perfil de prueba")
-            self.active_profile_id = self._profile_id_before_experiment
+            self.profile_selector_label.configure(text="Contexto (Modo Normal)")
+            self.active_profile_id = None
             self._refresh_profile_selector_values()
         self._log(f"Modo de trabajo: {self.work_mode_var.get()}.")
 
@@ -3483,7 +3816,11 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_case_selector.configure(values=names)
         if self.experiment_case_var.get() not in self._experiment_profiles_by_case:
             self.experiment_case_var.set(names[0])
-        self._on_experiment_case_changed()
+        # Solo activar el perfil del caso (active_profile_id) cuando realmente estamos en
+        # Modo Experimentacion - de lo contrario esta llamada (tambien usada para poblar el
+        # selector al iniciar la app) dejaria un perfil Dxx activo mientras el modo es Normal.
+        if self.work_mode_var.get() == "Experimentacion":
+            self._on_experiment_case_changed()
 
     def _on_experiment_case_changed(self, _choice: str | None = None) -> None:
         profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
@@ -3495,6 +3832,9 @@ class VozLLMPLCGUI(ctk.CTk):
         self.active_profile_id = profile.get("profile_id")
         self.active_profile_var.set(profile["name"])
         self._refresh_profile_status()
+        # La compatibilidad mostrada corresponde a la ultima interpretacion; al cambiar de
+        # caso ya no es valida hasta procesar un comando nuevo contra el caso actual.
+        self.pending_semantic_output = None
 
         case_id = profile.get("case_id", "")
         variants = load_variants_for_case(self.project_root, case_id)
@@ -3512,9 +3852,9 @@ class VozLLMPLCGUI(ctk.CTk):
         command_text = get_variant_command(self.project_root, case_id, variant) if case_id else ""
         self._active_variant_command_text = command_text
         if command_text:
-            self.experiment_variant_command_var.set(f'Comando {variant}: "{command_text}"')
+            self.experiment_variant_command_var.set(f'"{command_text}"')
         else:
-            self.experiment_variant_command_var.set(f"Comando {variant}: (sin texto de referencia)")
+            self.experiment_variant_command_var.set("(sin texto de referencia para esta variante)")
 
     def _use_variant_command(self) -> None:
         if not self._active_variant_command_text:
@@ -3529,8 +3869,12 @@ class VozLLMPLCGUI(ctk.CTk):
             self.experiment_noise_selector.configure(state="disabled")
         else:
             self.experiment_noise_selector.configure(state="normal")
+            if condition["code"] == "C3" and self._last_experiment_condition_code != "C3":
+                # C3 arranca "sin ruido" por defecto, pero queda editable de inmediato.
+                self.experiment_noise_var.set(NOISE_LEVEL_LABELS["none"])
             if condition.get("noise_required") and self._selected_noise_level() == "none":
                 self.experiment_noise_var.set(NOISE_LEVEL_LABELS["medium"])
+        self._last_experiment_condition_code = condition["code"]
         self._refresh_experiment_status()
 
     def _on_experiment_environment_changed(self, _choice: str | None = None) -> None:
@@ -3574,12 +3918,22 @@ class VozLLMPLCGUI(ctk.CTk):
         allowed_variables = profile.get("allowed_variables", [])
         lines = [
             f"Perfil asociado: {profile['profile_id']}",
-            f"Variables mapa: {len(self.io_variables)}   Variables habilitadas: {len(allowed_variables)}",
-            "Simulation: " + ("Ready" if readiness["simulation_ready"] else f"Faltan {len(readiness['missing_simulation_variables'])} variables"),
-            "Hardware: " + ("Ready" if readiness["hardware_ready"] else f"Faltan {len(readiness['missing_hardware_variables'])} variables")
+            f"Variables habilitadas: {len(allowed_variables)}   (mapa: {len(self.io_variables)})",
         ]
+        if self.pending_semantic_output is not None:
+            compatibility = check_case_compatibility(self.pending_semantic_output, profile)
+            if compatibility["compatible"]:
+                lines.append("Compatibilidad: ✓ Compatible")
+            else:
+                lines.append(
+                    "Compatibilidad: ⚠ Recursos no autorizados: " + ", ".join(compatibility["missing_external"])
+                )
+        lines.extend([
+            "Simulacion: " + ("✓ Ready" if readiness["simulation_ready"] else f"⚠ Faltan {len(readiness['missing_simulation_variables'])} variables"),
+            "Hardware: " + ("✓ Ready" if readiness["hardware_ready"] else "⚠ No listo")
+        ])
         if not readiness["hardware_ready"] and readiness["missing_hardware_variables"]:
-            lines.append("Faltan en hardware: " + ", ".join(readiness["missing_hardware_variables"]))
+            lines.append("Faltan: " + ", ".join(readiness["missing_hardware_variables"]))
 
         blocked = environment == "hardware" and not readiness["hardware_ready"]
         if blocked:
@@ -3594,26 +3948,27 @@ class VozLLMPLCGUI(ctk.CTk):
         next_label = build_experiment_label(condition_code, case_id, variant, next_repetition)
         self.experiment_next_label_var.set(f"Proximo ensayo: {next_label}")
 
-    def start_trial(self) -> None:
+    def start_trial(self) -> bool:
+        """Arma un nuevo ensayo (trial_id + metadata inicial) sin ejecutar el pipeline todavia."""
         profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
         if profile is None:
-            messagebox.showwarning("Iniciar ensayo", "Seleccione un caso valido.")
-            return
+            messagebox.showwarning("Ejecutar ensayo", "Seleccione un caso valido.")
+            return False
         speaker_id = self.experiment_speaker_var.get().strip()
         if not speaker_id:
-            messagebox.showwarning("Iniciar ensayo", "Indique un identificador de participante anonimo (ej. P01).")
-            return
+            messagebox.showwarning("Ejecutar ensayo", "Indique un identificador de participante anonimo (ej. P01).")
+            return False
 
         condition = self._selected_condition()
         environment = self._selected_environment()
         readiness = profile_readiness_summary(self.project_root, profile)
         if environment == "hardware" and not readiness["hardware_ready"]:
             messagebox.showwarning(
-                "Iniciar ensayo",
+                "Ejecutar ensayo",
                 f"{profile['name']} no esta listo para hardware.\n\nFaltan: "
                 + ", ".join(readiness["missing_hardware_variables"])
             )
-            return
+            return False
 
         trial_id = next_trial_id(self.project_root)
         case_id = profile.get("case_id", "")
@@ -3651,16 +4006,16 @@ class VozLLMPLCGUI(ctk.CTk):
         save_metadata(directory, self.active_trial)
 
         self.manual_result_frame.grid_remove()
-        instructions = (
-            "Grabe el comando de voz y presione 'Detener y transcribir'." if condition["requires_voice"]
-            else "Escriba el comando y presione 'Procesar comando'."
-        )
-        self.experiment_status_var.set(
-            f"Ensayo {trial_id} ({experiment_label}) en curso.\n{instructions}\n"
-            "Luego presione 'Generar paquete PLC'."
-        )
+        self.experiment_status_var.set(f"Ensayo {trial_id} ({experiment_label}) creado.")
         self.experiment_next_label_var.set(f"Ensayo activo: {experiment_label}")
         self._log(f"Ensayo {trial_id} iniciado: {experiment_label} / {speaker_id}.")
+        return True
+
+    def run_experiment_trial(self) -> None:
+        """Boton EJECUTAR ENSAYO: arma el ensayo y corre el mismo pipeline automatico que EJECUTAR COMANDO."""
+        if not self.start_trial():
+            return
+        self.execute_full_pipeline()
 
     def _compute_total_time(self, start_iso: str | None, end_iso: str | None) -> float:
         if not start_iso or not end_iso:
@@ -3728,7 +4083,9 @@ class VozLLMPLCGUI(ctk.CTk):
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo registrar la interpretacion del ensayo: {error}")
 
-    def _capture_trial_parse_failure(self, command_text: str, semantic_output: dict[str, Any]) -> None:
+    def _capture_trial_parse_failure(
+        self, command_text: str, semantic_output: dict[str, Any], error_code: str = "E2"
+    ) -> None:
         if not self.active_trial:
             return
         trial_id = self.active_trial.get("trial_id", "")
@@ -3741,8 +4098,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 "state": "ERROR",
                 "timestamp_end": datetime.now().isoformat(timespec="seconds")
             })
-            self._finalize_trial_summary(compile_result="N/A", execution_result="", error_type="E2")
-            self._log(f"Ensayo {trial_id} registrado con fallo de interpretacion (E2 - Semantico).")
+            self._finalize_trial_summary(compile_result="N/A", execution_result="", error_type=error_code)
+            self._log(f"Ensayo {trial_id} registrado con fallo de interpretacion ({error_code} - {ERROR_CODES.get(error_code, '')}).")
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo registrar el fallo de interpretacion del ensayo: {error}")
         finally:
@@ -3898,17 +4255,148 @@ class VozLLMPLCGUI(ctk.CTk):
             self._log(f"No se pudo exportar resultados experimentales: {error}")
             messagebox.showerror("Exportar resultados", f"No se pudo exportar.\n\n{error}")
 
-    def process_command(self) -> None:
+    def _run_pipeline_precheck(self, command_text: str) -> tuple[bool, str]:
+        """Verificaciones rapidas y sin efectos secundarios antes de correr el pipeline completo."""
+        if not command_text:
+            return False, "Escriba o dicte un comando antes de ejecutar."
+
+        if self.active_profile_id is not None and get_profile(self.project_root, self.active_profile_id) is None:
+            return False, f"El perfil activo '{self.active_profile_id}' ya no existe. Seleccione otro mapa o caso."
+
+        tia_config = load_tia_config(self.project_root)
+        if not str(tia_config.get("project_path", "")).strip():
+            return False, "No hay un proyecto TIA configurado. Use 'Configurar TIA V18'."
+
+        build_openness_bridge(self.project_root)
+        diagnostic = diagnose_tia_openness(self.project_root)
+        if not diagnostic.get("is_ready"):
+            details = "\n".join(diagnostic.get("warnings", [])) or "Revise la configuracion de TIA Openness."
+            return False, "TIA Portal Openness no esta disponible.\n\n" + details
+
+        return True, ""
+
+    def execute_full_pipeline(self) -> bool:
+        """
+        Orquesta el pipeline completo reutilizando los metodos existentes, sin duplicar
+        su logica: pre-check -> process_command() -> generate_package() -> validate_latest_package_in_tia().
+        Usado tanto por 'EJECUTAR COMANDO' (Modo Normal) como por 'EJECUTAR ENSAYO' (Modo
+        Experimentacion, donde self.active_trial ya fue armado por start_trial()).
+        """
+        if self._tia_worker_active:
+            messagebox.showwarning("Ejecutar comando", "Ya existe una operacion TIA en curso.")
+            return False
+        if self._voice_worker_active:
+            messagebox.showwarning("Ejecutar comando", "Espere a que termine la transcripcion de voz.")
+            return False
+
+        command_text = self.command_textbox.get("1.0", "end").strip()
+        precheck_ok, precheck_message = self._run_pipeline_precheck(command_text)
+        if not precheck_ok:
+            self._set_status("Error")
+            self._log(f"Ejecucion detenida en verificacion previa: {precheck_message}")
+            if self.active_trial:
+                self._cancel_active_trial(f"Verificacion previa fallida: {precheck_message}")
+            messagebox.showwarning("Ejecutar comando", precheck_message)
+            return False
+
+        if not self.process_command():
+            return False
+        if not self.generate_package():
+            return False
+        self.validate_latest_package_in_tia()
+        return True
+
+    def _show_experimental_incompatibility(self, profile: dict[str, Any] | None, unauthorized_tags: list[str]) -> None:
+        """
+        El comando pidio recursos fisicos (I_/Q_) que el perfil del caso experimental activo
+        no autoriza. Esto NUNCA debe ofrecer ampliar el mapa o el perfil automaticamente -
+        es una senal de que el comando no corresponde al caso, no un problema de configuracion.
+        """
+        profile = profile or {}
+        allowed_external = profile.get("allowed_variables", [])
+        messagebox.showwarning(
+            "Incompatibilidad experimental",
+            "El comando no corresponde completamente al caso experimental seleccionado.\n\n"
+            f"Caso activo: {profile.get('name', self.experiment_case_var.get())}\n\n"
+            "Recursos fisicos autorizados:\n" + (", ".join(allowed_external) or "(ninguno)") + "\n\n"
+            "Recursos fisicos solicitados por el comando:\n" + ", ".join(unauthorized_tags) + "\n\n"
+            "Opciones:\n"
+            "- Reformule el comando para que corresponda a este caso.\n"
+            "- Seleccione otro caso experimental.\n"
+            "- Utilice Modo Normal si necesita programacion libre."
+        )
+
+    def _show_normal_missing_variable(self, unauthorized_tags: list[str]) -> None:
+        """En Modo Normal no hay protocolo Dxx: si falta la variable, sí puede ofrecerse editar el mapa."""
+        messagebox.showwarning(
+            "Recurso fisico no encontrado",
+            "El comando solicita un recurso fisico que no existe en el mapa PLC activo.\n\n"
+            "Variable(s) solicitada(s):\n" + ", ".join(unauthorized_tags) + "\n\n"
+            f"No existe en: {self.active_map_var.get()}\n\n"
+            "Opciones:\n"
+            "- Agregue la variable en el panel izquierdo ('Agregar variable').\n"
+            "- Seleccione otro mapa PLC.\n"
+            "- Cancele y reformule el comando."
+        )
+
+    def _invalidate_download_readiness(self) -> None:
+        """
+        'CARGAR PROGRAMA AL PLC' solo puede estar habilitado mientras represente la ULTIMA
+        compilacion Siemens aprobada. Cualquier comando nuevo procesado, o una compilacion que
+        falla, invalida ese estado para no arriesgar descargar un programa anterior.
+        """
+        if self._last_compiled_package_dir is not None or self.download_plc_button.cget("state") != "disabled":
+            self._log("'CARGAR PROGRAMA AL PLC' deshabilitado: no hay una compilacion vigente.")
+        self._last_compiled_package_dir = None
+        self.download_plc_button.configure(state="disabled")
+
+    def _resolve_semantic_ambiguity(self, command_text: str, semantic_output: dict[str, Any]) -> bool:
+        """
+        Handles a genuine SEMANTIC_AMBIGUITY (requires_clarification=True / INT_UNKNOWN with no
+        unauthorized_tags - internal resources never reach here, see the classification in
+        process_command's failure branch). "Aceptar" must be a REAL answer, not a dismissed
+        MessageBox: opens ClarificationDialog, and only if the user actually answers does it
+        append the Q&A to the command and reprocess (recursively re-enters process_command, so
+        EJECUTAR COMANDO/EJECUTAR ENSAYO continue automatically once the ambiguity resolves).
+        Cancelling is the real "give up" path and closes any active trial with the evidence.
+        """
+        question = str(
+            semantic_output.get("clarification_question")
+            or "El comando requiere aclaracion antes de generar el paquete PLC."
+        )
+        dialog = ClarificationDialog(self, question)
+        self.wait_window(dialog)
+        answer = dialog.result
+
+        if not answer:
+            self._log("Aclaracion cancelada por el usuario; el comando no se reprocesa.")
+            if self.active_trial:
+                self._capture_trial_parse_failure(command_text, semantic_output)
+            return False
+
+        self._log(f"Aclaracion registrada por el usuario: {answer!r}. Reprocesando el comando.")
+        augmented_command = (
+            f"{command_text}\n\n"
+            f"Aclaracion solicitada: {question}\n"
+            f"Respuesta del usuario: {answer}"
+        )
+        self.command_textbox.delete("1.0", "end")
+        self.command_textbox.insert("1.0", augmented_command)
+        return self.process_command()
+
+    def process_command(self) -> bool:
         command_text = self.command_textbox.get("1.0", "end").strip()
         if not command_text:
             self._set_status("Error")
             self._log("No se proceso el comando porque el cuadro de texto esta vacio.")
             messagebox.showwarning("Comando", "Escriba un comando industrial antes de procesar.")
-            return
+            return False
+
+        self._invalidate_download_readiness()
 
         if not self.save_io_map(show_success=False):
             self._set_status("Error")
-            return
+            return False
 
         self._set_status("Procesando")
         self._log("Comando recibido.")
@@ -3941,6 +4429,9 @@ class VozLLMPLCGUI(ctk.CTk):
             self._set_textbox_content(self.verification_textbox, format_json(semantic_output.get("semantic_validation", {})))
             self.pending_semantic_output = semantic_output
 
+            if self.work_mode_var.get() == "Experimentacion":
+                self._refresh_experiment_status()
+
             if semantic_output.get("intent_id") == "INT_UNKNOWN" or not semantic_output.get("semantic_validation", {}).get("is_valid", False):
                 unknown_payload = {
                     "is_valid": False,
@@ -3951,16 +4442,25 @@ class VozLLMPLCGUI(ctk.CTk):
                 snapshot = self._build_unknown_snapshot(command_text, semantic_output, unknown_payload)
                 self._restore_snapshot(snapshot)
                 self._record_history(snapshot, platform="Sin plataforma", is_valid=False)
-                self._log("La interpretacion requiere aclaracion antes de generar.")
-                if self.active_trial:
-                    self._capture_trial_parse_failure(command_text, semantic_output)
-                messagebox.showwarning(
-                    "Aclaracion requerida",
-                    semantic_output.get("clarification_question")
-                    or "El comando requiere aclaracion antes de generar el paquete PLC."
-                )
+
+                unauthorized_tags = list(semantic_output.get("semantic_validation", {}).get("unauthorized_tags", []))
+                if unauthorized_tags and self.work_mode_var.get() == "Experimentacion":
+                    profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
+                    self._log("El comando solicita recursos fisicos no autorizados por el caso experimental.")
+                    if self.active_trial:
+                        self._capture_trial_parse_failure(command_text, semantic_output, error_code="E3")
+                    self._show_experimental_incompatibility(profile, unauthorized_tags)
+                elif unauthorized_tags and self.work_mode_var.get() == "Normal":
+                    self._log("El comando solicita un recurso fisico inexistente en el mapa activo.")
+                    if self.active_trial:
+                        self._capture_trial_parse_failure(command_text, semantic_output, error_code="E3")
+                    self._show_normal_missing_variable(unauthorized_tags)
+                else:
+                    self._log("La interpretacion requiere aclaracion antes de generar (SEMANTIC_AMBIGUITY).")
+                    self._set_status("Listo")
+                    return self._resolve_semantic_ambiguity(command_text, semantic_output)
                 self._set_status("Listo")
-                return
+                return False
 
             self._set_validation_banner("Interpretacion lista. Revise y confirme la generacion.", None)
             interpretation_snapshot = self._build_interpretation_snapshot(command_text, semantic_output)
@@ -3973,6 +4473,7 @@ class VozLLMPLCGUI(ctk.CTk):
             if self.active_trial:
                 self._capture_trial_parse_result(command_text, semantic_output)
             self._set_status("Listo")
+            return True
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._set_status("Error")
             self._set_validation_banner("Error durante el procesamiento.", False)
@@ -3980,11 +4481,12 @@ class VozLLMPLCGUI(ctk.CTk):
             if self.active_trial:
                 self._capture_trial_exception(str(error), stage="parse")
             messagebox.showerror("Procesamiento", f"No se pudo procesar el comando.\n\n{error}")
+            return False
 
-    def generate_package(self) -> None:
+    def generate_package(self) -> bool:
         if self.pending_semantic_output is None or self.pending_runtime_config is None:
             messagebox.showwarning("Generacion", "Primero procese un comando valido.")
-            return
+            return False
 
         target_platforms = normalize_platform_targets(self.platform_var.get())
         confirmation = messagebox.askyesnocancel(
@@ -3997,10 +4499,10 @@ class VozLLMPLCGUI(ctk.CTk):
             self._log("Generacion cancelada por el usuario.")
             if self.active_trial:
                 self._cancel_active_trial("Generacion cancelada por el usuario en la confirmacion.")
-            return
+            return False
         if confirmation is False:
             self._log("El usuario decidio editar el comando antes de generar.")
-            return
+            return False
 
         io_map, intents_catalog, safety_rules = self.pending_runtime_config
         command_text = self.pending_semantic_output.get("command_text", self.command_textbox.get("1.0", "end").strip())
@@ -4088,6 +4590,7 @@ class VozLLMPLCGUI(ctk.CTk):
             if self.active_trial:
                 self._capture_trial_generation_result(combined_results)
             self._set_status("Listo")
+            return all(result["verification"]["is_valid"] for result in combined_results.values())
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._set_status("Error")
             self._set_validation_banner("Error durante la generacion.", False)
@@ -4095,6 +4598,7 @@ class VozLLMPLCGUI(ctk.CTk):
             if self.active_trial:
                 self._capture_trial_exception(str(error), stage="generate")
             messagebox.showerror("Generacion", f"No se pudo generar el paquete PLC.\n\n{error}")
+            return False
 
     def _format_intention_text(self, semantic_output: dict[str, Any]) -> str:
         return (

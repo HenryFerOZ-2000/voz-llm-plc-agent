@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from functional_requirements import detect_functional_requirement_conflicts
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, INTERNAL_PREFIXES, get_required_variables_for_intent
 from schemas import (
     PLC_TAG_PATTERN,
@@ -91,7 +92,8 @@ def _core_semantic_payload(semantic_output: dict[str, Any]) -> dict[str, Any]:
         "clarification_question",
         "assumptions",
         "recognized_tags",
-        "unrecognized_terms"
+        "unrecognized_terms",
+        "functional_requirements"
     }
     return {
         key: semantic_output.get(key)
@@ -231,8 +233,22 @@ def validate_semantic_output(
     if _requires_emergency(intent_id, parameters, safety_rules) and "I_Emergency" not in parameter_tags and parameters.get("emergency_input") != "I_Emergency":
         errors.append("La logica solicitada requiere incluir I_Emergency.")
 
+    functional_requirement_conflicts = detect_functional_requirement_conflicts(
+        payload.get("functional_requirements", []) or []
+    )
+
     clarification_question = payload.get("clarification_question")
     requires_clarification = bool(payload.get("requires_clarification", False))
+    if functional_requirement_conflicts and not requires_clarification:
+        # Composicion != ambiguedad, PERO un conflicto real entre requisitos si necesita al
+        # usuario: no se puede combinar automaticamente sin arbitrar entre valores distintos.
+        requires_clarification = True
+        conflict_summary = "; ".join(conflict["reason"] for conflict in functional_requirement_conflicts)
+        clarification_question = (
+            payload.get("clarification_question")
+            or f"Se detecto un conflicto entre requisitos funcionales: {conflict_summary} "
+            "Indique cual valor debe aplicarse."
+        )
     if requires_clarification and not clarification_question:
         errors.append("Se solicito aclaracion pero no existe clarification_question.")
 
@@ -262,6 +278,7 @@ def validate_semantic_output(
         warnings=warnings,
         missing_parameters=missing_parameters,
         unauthorized_tags=unauthorized_tags,
-        requires_clarification=requires_clarification
+        requires_clarification=requires_clarification,
+        functional_requirement_conflicts=functional_requirement_conflicts
     )
     return result.model_dump(mode="python")

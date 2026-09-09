@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tia_openness import _persist_tia_report, prepare_tia_request, save_tia_config
+from tia_openness import _persist_tia_report, prepare_download_request, prepare_tia_request, save_tia_config
 
 
 def test_prepare_tia_request_uses_authorized_tags(tmp_path: Path) -> None:
@@ -90,4 +90,27 @@ def test_tia_report_is_persisted_in_package_and_metadata(tmp_path: Path) -> None
     assert verification["compilation_status"] == "TIA_COMPILATION_PASSED"
     assert metadata["verification_result"]["is_compilable"] is True
     assert metadata["rendered_artifacts"]["tia_compile_report.json"] == report
+
+
+def test_prepare_download_request_never_recompiles_or_reimports(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    package_dir = project_root / "generated_code" / "SIEMENS" / "active" / "PKG_003"
+    package_dir.mkdir(parents=True)
+    save_tia_config(
+        {"project_path": "C:/TIA/Demo.ap18", "plc_name": "PLC_1"},
+        project_root
+    )
+
+    request_path, result_path, request = prepare_download_request(package_dir, project_root)
+
+    assert request_path.exists()
+    assert request_path.name == "tia_download_request.json"
+    assert result_path.name == "tia_download_report.json"
+    assert request["action"] == "download"
+    assert request["plc_name"] == "PLC_1"
+    assert request["project_path"] == "C:/TIA/Demo.ap18"
+    # La solicitud de descarga no lleva fuente SCL ni tags: no reimporta ni recompila,
+    # solo referencia el proyecto/PLC ya configurados.
+    assert "source_path" not in request
+    assert "tags" not in request
 

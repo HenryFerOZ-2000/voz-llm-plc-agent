@@ -75,6 +75,19 @@ def profile_readiness_summary(project_root: Path, profile: dict[str, Any]) -> di
     }
 
 
+def check_case_compatibility(semantic_output: dict[str, Any], profile: dict[str, Any] | None) -> dict[str, Any]:
+    """
+    Compara los recursos externos (I_/Q_) que el comando interpretado requiere contra los
+    autorizados por el perfil experimental activo. Reutiliza semantic_validation.unauthorized_tags,
+    que ya excluye recursos internos (M_/T_/C_/R_/F_) - esos siempre puede generarlos ir_builder
+    sin importar el perfil, asi que nunca cuentan como incompatibilidad experimental.
+    """
+    if profile is None:
+        return {"compatible": True, "missing_external": []}
+    unauthorized = list((semantic_output.get("semantic_validation") or {}).get("unauthorized_tags", []))
+    return {"compatible": not unauthorized, "missing_external": unauthorized}
+
+
 def apply_profile_filter(io_map: dict[str, Any], profile: dict[str, Any] | None) -> dict[str, Any]:
     """
     Restrict the external (I_/Q_) variables of io_map to the profile's allowed_variables.

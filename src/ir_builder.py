@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from functional_requirements import get_functional_requirement_tags, is_catalog_functional_requirement
 from plc_ir import PLCFunctionBlockInstance, PLCPOU, PLCProjectIR, PLCTask, PLCVariable
 from utils import build_io_map_index, get_project_root, load_json_file, sanitize_filename
 
@@ -663,7 +664,26 @@ def build_project_ir(
     case_id = semantic_output.get("case_id") or "NOCASE"
     parameters = semantic_output.get("parameters", {})
 
+    # functional_requirements puede llegar explicito (project_packager.py) o, si no, se toma del
+    # semantic_output directamente - asi el parametro queda activado de punta a punta sin exigir
+    # que cada llamador lo repita.
+    if functional_requirements is None:
+        functional_requirements = list(semantic_output.get("functional_requirements") or [])
+
+    # Dos formas conviven en el mismo parametro: entradas de catalogo ({"type": "run_pilot"}),
+    # que se resuelven a tags fijos, y variables funcionales ad-hoc con nombre propio
+    # ({"name": "Level_SP", "type": "REAL"}), que sigue resolviendo _resolve_functional_variables.
+    catalog_requirements = [r for r in functional_requirements if is_catalog_functional_requirement(r)]
+    ad_hoc_requirements = [r for r in functional_requirements if not is_catalog_functional_requirement(r)]
+
     required_variables = get_required_variables_for_intent(intent_id, parameters)
+    functional_requirement_tags: list[str] = []
+    for requirement in catalog_requirements:
+        for tag in get_functional_requirement_tags(requirement):
+            if tag not in functional_requirement_tags:
+                functional_requirement_tags.append(tag)
+    required_variables = list(dict.fromkeys(required_variables + functional_requirement_tags))
+
     io_index = build_io_map_index(io_map)
 
     external_names = [name for name in required_variables if name.startswith(EXTERNAL_PREFIXES)]
@@ -679,7 +699,7 @@ def build_project_ir(
     external_variables = [_build_variable_from_entry(io_index[name], source="plc_map") for name in external_names]
     internal_variables, generated_internal = _resolve_internal_resources(internal_names, io_index)
     functional_variables, generated_functional = _resolve_functional_variables(
-        functional_requirements or [],
+        ad_hoc_requirements,
         io_index,
         already_resolved_names={variable.name for variable in external_variables + internal_variables}
     )
@@ -719,7 +739,9 @@ def build_project_ir(
         "missing_variables": missing_variables,
         "platform_requested": normalized_target,
         "generated_internal_variables": [variable.to_dict() for variable in generated_internal],
-        "generated_functional_variables": [variable.to_dict() for variable in generated_functional]
+        "generated_functional_variables": [variable.to_dict() for variable in generated_functional],
+        "functional_requirements": list(functional_requirements),
+        "functional_requirement_tags": functional_requirement_tags
     }
 
     return PLCProjectIR(

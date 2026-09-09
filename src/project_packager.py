@@ -331,7 +331,8 @@ def generate_project_package(
     project_ir = build_project_ir(
         semantic_output=semantic_output,
         io_map=io_map,
-        target_platform=normalized_target
+        target_platform=normalized_target,
+        functional_requirements=semantic_output.get("functional_requirements", [])
     )
 
     generation_errors: list[str] = []

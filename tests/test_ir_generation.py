@@ -55,6 +55,33 @@ def test_delayed_start_generates_timer_without_requiring_it_in_map(io_map: dict)
     assert [v["name"] for v in project_ir.metadata["generated_internal_variables"]] == ["T_DelayStart"]
 
 
+def test_delayed_stop_autogenerates_run_latch_stop_delay_active_and_timer(io_map: dict) -> None:
+    # INT_DELAYED_STOP requiere M_RunLatch, M_StopDelayActive y T_StopDelay como internos -
+    # ninguno esta en el mapa minimalista y ninguno debe requerir autorizacion del usuario.
+    minimal_map = _minimal_map(io_map, {"I_Start", "I_Stop", "I_Emergency", "Q_Motor_Enable"})
+    semantic_output = _semantic_output(
+        "INT_DELAYED_STOP",
+        {
+            "trigger_input": "I_Start", "stop_input": "I_Stop", "emergency_input": "I_Emergency",
+            "motor_output": "Q_Motor_Enable", "run_latch": "M_RunLatch",
+            "stop_delay_active": "M_StopDelayActive", "timer": "T_StopDelay"
+        },
+        ["I_Start", "I_Stop", "I_Emergency", "Q_Motor_Enable"]
+    )
+
+    project_ir = build_project_ir(semantic_output, minimal_map, "SIEMENS_SCL_V18")
+
+    variables_by_name = {v.name: v for v in project_ir.pou.variables}
+    generated_names = {v["name"] for v in project_ir.metadata["generated_internal_variables"]}
+    assert generated_names == {"M_RunLatch", "M_StopDelayActive", "T_StopDelay"}
+    assert variables_by_name["T_StopDelay"].source == "generated_internal"
+    assert variables_by_name["T_StopDelay"].data_type == "TON"
+    assert variables_by_name["M_RunLatch"].source == "generated_internal"
+    assert variables_by_name["M_RunLatch"].data_type == "BOOL"
+    # el mapa base no se modifica: build_project_ir es puro
+    assert {v.get("name") for v in minimal_map["variables"]} == {"I_Start", "I_Stop", "I_Emergency", "Q_Motor_Enable"}
+
+
 def test_cyclic_motor_generates_multiple_internal_resources(io_map: dict) -> None:
     # Caso B: una logica que requiere varios recursos internos (M_Step, R_CycleStart, 2 timers).
     minimal_map = _minimal_map(io_map, {"I_Start", "I_Stop", "I_Emergency", "Q_Motor_Enable"})

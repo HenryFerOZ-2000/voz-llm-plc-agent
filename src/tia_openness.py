@@ -373,6 +373,98 @@ def validate_package_with_tia(
     return report
 
 
+def prepare_download_request(
+    package_dir: Path,
+    project_root: Path | None = None
+) -> tuple[Path, Path, dict[str, Any]]:
+    root = project_root or get_project_root()
+    config = load_tia_config(root)
+    compile_report_path = package_dir / "tia_compile_report.json"
+
+    request_path = package_dir / "tia_download_request.json"
+    result_path = package_dir / "tia_download_report.json"
+    request = {
+        "action": "download",
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "tia_version": "V18",
+        "project_path": str(config.get("project_path", "")),
+        "plc_name": str(config.get("plc_name", "")),
+        "result_path": str(result_path.resolve()),
+        "attach_to_running": bool(config.get("attach_to_running", True)),
+        "with_user_interface": bool(config.get("with_user_interface", True))
+    }
+    request_path.write_text(json.dumps(request, indent=2, ensure_ascii=False), encoding="utf-8")
+    return request_path, result_path, request
+
+
+def download_program_to_plc(
+    package_dir: Path,
+    project_root: Path | None = None
+) -> dict[str, Any]:
+    """
+    Downloads the already-compiled PLC software (software/program only - never hardware
+    configuration) to the target PLC configured in the current TIA project. Never recompiles,
+    never creates or auto-detects hardware. The bridge itself refuses to guess an ambiguous
+    PLC or connection target (see Program.cs ExecuteDownload/ResolveUnambiguousTargetInterface).
+    """
+    root = project_root or get_project_root()
+    diagnostic = diagnose_tia_openness(root)
+    if not diagnostic["checks"].get("bridge_built"):
+        build_result = build_openness_bridge(root)
+        if not build_result.get("built"):
+            return {
+                "executed": False,
+                "success": False,
+                "status": "BRIDGE_BUILD_FAILED",
+                "diagnostic": diagnostic,
+                "build": build_result,
+                "errors": build_result.get("errors", [])
+            }
+        diagnostic = diagnose_tia_openness(root)
+
+    if not diagnostic.get("is_ready"):
+        return {
+            "executed": False,
+            "success": False,
+            "status": "TIA_NOT_READY",
+            "diagnostic": diagnostic,
+            "errors": diagnostic.get("warnings", [])
+        }
+
+    request_path, result_path, request = prepare_download_request(package_dir, root)
+    timeout_seconds = int(load_tia_config(root).get("timeout_seconds", 300))
+    environment = os.environ.copy()
+    portal_bin = str(DEFAULT_PORTAL_ROOT / "Bin")
+    environment["PATH"] = portal_bin + os.pathsep + environment.get("PATH", "")
+    result = subprocess.run(
+        [diagnostic["bridge_exe_path"], str(request_path)],
+        capture_output=True,
+        text=True,
+        errors="replace",
+        timeout=timeout_seconds,
+        check=False,
+        env=environment
+    )
+    report: dict[str, Any] = {}
+    if result_path.exists():
+        payload = load_json_file(result_path)
+        if isinstance(payload, dict):
+            report = payload
+    report.update(
+        {
+            "executed": True,
+            "bridge_return_code": result.returncode,
+            "bridge_stdout": result.stdout.strip(),
+            "bridge_stderr": result.stderr.strip(),
+            "request_path": str(request_path),
+            "result_path": str(result_path),
+            "compile_report": str(package_dir / "tia_compile_report.json")
+        }
+    )
+    result_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    return report
+
+
 def _persist_tia_report(package_dir: Path, report: dict[str, Any]) -> None:
     status = str(report.get("status", "TIA_OPENNESS_UNKNOWN"))
     passed = status == "TIA_COMPILATION_PASSED"

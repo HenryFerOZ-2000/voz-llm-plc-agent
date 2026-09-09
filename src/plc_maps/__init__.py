@@ -3,6 +3,7 @@ from plc_maps.migration import ensure_plc_maps_library, migrate_legacy_io_map
 from plc_maps.profiles import (
     GENERAL_PROFILE_LABEL,
     apply_profile_filter,
+    check_case_compatibility,
     compute_readiness,
     get_profile,
     get_profiles_path,
@@ -32,6 +33,7 @@ __all__ = [
     "migrate_legacy_io_map",
     "GENERAL_PROFILE_LABEL",
     "apply_profile_filter",
+    "check_case_compatibility",
     "compute_readiness",
     "get_profile",
     "get_profiles_path",

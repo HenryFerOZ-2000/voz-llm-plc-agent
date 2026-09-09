@@ -6,6 +6,11 @@ from pathlib import Path
 from typing import Any
 
 from alias_resolver import build_alias_index
+from functional_requirements import (
+    FUNCTIONAL_REQUIREMENT_KEYWORDS,
+    compute_intent_covered_types,
+    compute_semantic_coverage
+)
 from knowledge_retriever import retrieve_relevant_context
 from llm_client import PLCInterpretationLLMClient
 from llm_context_builder import build_llm_context
@@ -126,7 +131,8 @@ def _base_unknown_output(command_text: str) -> dict[str, Any]:
         "clarification_question": "Aclare la accion industrial requerida, las variables involucradas y el tiempo si aplica.",
         "assumptions": [],
         "recognized_tags": [],
-        "unrecognized_terms": []
+        "unrecognized_terms": [],
+        "functional_requirements": []
     }
 
 
@@ -146,6 +152,9 @@ def _normalize_semantic_output(payload: dict[str, Any] | None, command_text: str
     normalized["unrecognized_terms"] = payload.get("unrecognized_terms", []) if isinstance(payload.get("unrecognized_terms", []), list) else []
     normalized["requires_clarification"] = bool(payload.get("requires_clarification", False))
     normalized["clarification_question"] = payload.get("clarification_question")
+    normalized["functional_requirements"] = (
+        payload.get("functional_requirements", []) if isinstance(payload.get("functional_requirements", []), list) else []
+    )
 
     try:
         normalized["confidence"] = round(float(payload.get("confidence", 0.0)), 2)
@@ -153,6 +162,58 @@ def _normalize_semantic_output(payload: dict[str, Any] | None, command_text: str
         normalized["confidence"] = 0.0
     normalized["confidence"] = max(0.0, min(1.0, normalized["confidence"]))
     return normalized
+
+
+def _attach_rule_based_functional_requirements(
+    result: dict[str, Any],
+    command_text: str,
+    intents_catalog: dict[str, Any]
+) -> dict[str, Any]:
+    """
+    Gives the rule-based/hybrid path the same composability the LLM path gets: detects known
+    functional_requirement keywords in the command and attaches the ones the chosen intent does
+    not already cover by itself. Reuses the SAME catalog the LLM prompt and the coverage checker
+    use - no separate semantic model, per section 14 of the request.
+    """
+    if result.get("functional_requirements"):
+        return result
+    normalized_command = str(result.get("normalized_command") or command_text).lower()
+    detected_types = {
+        req_type
+        for req_type, keywords in FUNCTIONAL_REQUIREMENT_KEYWORDS.items()
+        if any(keyword in normalized_command for keyword in keywords)
+    }
+    if not detected_types:
+        return result
+    intent_definition = intents_catalog.get(result.get("intent_id", ""), {}) if isinstance(intents_catalog, dict) else {}
+    covered_by_intent = compute_intent_covered_types(intent_definition) if isinstance(intent_definition, dict) else set()
+    additional_types = sorted(detected_types - covered_by_intent)
+    if not additional_types:
+        return result
+    updated = dict(result)
+    updated["functional_requirements"] = [{"type": req_type} for req_type in additional_types]
+    return updated
+
+
+def _sync_clarification_from_validation(result: dict[str, Any], validation: dict[str, Any]) -> dict[str, Any]:
+    """
+    A functional_requirement conflict can force semantic_validation.requires_clarification=True
+    without the parser output itself ever having set clarification_question (section 12: real
+    conflict -> clarification). Mirror that decision into the top-level result so the GUI's
+    clarification dialog has a real question to show, not the generic fallback text.
+    """
+    if not validation.get("requires_clarification") or result.get("clarification_question"):
+        return result
+    conflicts = validation.get("functional_requirement_conflicts") or []
+    if not conflicts:
+        return result
+    summary = "; ".join(str(conflict.get("reason", "")) for conflict in conflicts)
+    updated = dict(result)
+    updated["requires_clarification"] = True
+    updated["clarification_question"] = (
+        f"Se detecto un conflicto entre requisitos funcionales: {summary} Indique cual valor debe aplicarse."
+    )
+    return updated
 
 
 def _validate_result(
@@ -198,7 +259,11 @@ def _annotate_result(
     decision_reason: str,
     llm_usage: dict[str, Any] | None,
     semantic_validation: dict[str, Any],
-    retrieved_context: list[dict[str, Any]] | None
+    retrieved_context: list[dict[str, Any]] | None,
+    semantic_coverage: dict[str, Any] | None = None,
+    first_pass_interpretation: dict[str, Any] | None = None,
+    second_pass_interpretation: dict[str, Any] | None = None,
+    reason_for_retry: str | None = None
 ) -> dict[str, Any]:
     payload = dict(selected_result)
     payload["parser_mode_requested"] = requested_mode
@@ -211,6 +276,10 @@ def _annotate_result(
     payload["semantic_validation"] = semantic_validation
     payload["retrieved_context"] = retrieved_context or []
     payload["parser_mode"] = used_mode
+    payload["semantic_coverage"] = semantic_coverage or {}
+    payload["first_pass_interpretation"] = first_pass_interpretation
+    payload["second_pass_interpretation"] = second_pass_interpretation
+    payload["reason_for_retry"] = reason_for_retry
     payload["parser_metadata"] = {
         "requested_mode": requested_mode,
         "decision_reason": decision_reason,
@@ -284,7 +353,9 @@ def parse_with_mode(
     rule_result = _normalize_semantic_output(
         parse_command_rule_based(command_text, alias_index=build_alias_index(runtime_io_map)), command_text
     )
+    rule_result = _attach_rule_based_functional_requirements(rule_result, command_text, runtime_intents_catalog)
     rule_validation = _validate_result(rule_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+    rule_result = _sync_clarification_from_validation(rule_result, rule_validation)
 
     if requested_mode == "rule_based":
         return _annotate_result(
@@ -326,6 +397,13 @@ def parse_with_mode(
             retrieved_context=[]
         )
 
+    rule_coverage = compute_semantic_coverage(
+        command_text=command_text,
+        intent_id=rule_result.get("intent_id", "INT_UNKNOWN"),
+        functional_requirements=rule_result.get("functional_requirements", []),
+        intents_catalog=runtime_intents_catalog
+    )
+
     should_consult_llm = requested_mode == "llm"
     if requested_mode == "hybrid":
         should_consult_llm = bool(
@@ -334,6 +412,10 @@ def parse_with_mode(
             or rule_result.get("requires_clarification", False)
             or bool(rule_result.get("ambiguities"))
             or not rule_validation.get("is_valid", False)
+            # Las reglas pueden estar seguras del intent principal y aun asi omitir requisitos
+            # compuestos (pilotos, delays adicionales, etc.) - eso tambien amerita consultar al
+            # LLM, aunque la confianza por reglas ya superara el umbral (seccion 14).
+            or not rule_coverage["complete"]
         )
 
     if requested_mode == "hybrid" and not should_consult_llm:
@@ -346,7 +428,8 @@ def parse_with_mode(
             decision_reason="El parser por reglas supero el umbral de confianza y no presento ambiguedades.",
             llm_usage={},
             semantic_validation=rule_validation,
-            retrieved_context=[]
+            retrieved_context=[],
+            semantic_coverage=rule_coverage
         )
 
     if not llm_available:
@@ -392,6 +475,50 @@ def parse_with_mode(
         raise
 
     llm_validation = _validate_result(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+    llm_result = _sync_clarification_from_validation(llm_result, llm_validation)
+
+    first_pass_result = dict(llm_result)
+    second_pass_result: dict[str, Any] | None = None
+    reason_for_retry: str | None = None
+    coverage = compute_semantic_coverage(
+        command_text=command_text,
+        intent_id=llm_result.get("intent_id", "INT_UNKNOWN"),
+        functional_requirements=llm_result.get("functional_requirements", []),
+        intents_catalog=runtime_intents_catalog
+    )
+
+    if not coverage["complete"]:
+        # Segunda pasada, como maximo una: no hay reintento de un reintento, para no crear
+        # un bucle. Si la segunda pasada tampoco mejora, se conserva la primera y sigue su curso
+        # normal (llegara a clarification/fallback por las reglas ya existentes mas abajo).
+        reason_for_retry = "semantic_coverage_incomplete: " + ", ".join(coverage["missing_types"])
+        retry_context = dict(llm_context)
+        retry_context["correction_note"] = (
+            "La interpretacion anterior omitio estos requisitos detectados en el comando: "
+            + ", ".join(coverage["missing_types"])
+            + ". Reestructura el resultado incluyendo TODOS los requisitos funcionales explicitos "
+            "del comando usando el campo functional_requirements (no inventes una intencion nueva)."
+        )
+        try:
+            retry_result, retry_usage = _invoke_llm(
+                command_text=command_text,
+                llm_client=runtime_llm_client,
+                context=retry_context,
+                llm_response_text=None
+            )
+            second_pass_result = retry_result
+            retry_validation = _validate_result(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+            retry_result = _sync_clarification_from_validation(retry_result, retry_validation)
+            retry_coverage = compute_semantic_coverage(
+                command_text=command_text,
+                intent_id=retry_result.get("intent_id", "INT_UNKNOWN"),
+                functional_requirements=retry_result.get("functional_requirements", []),
+                intents_catalog=runtime_intents_catalog
+            )
+            if retry_coverage["complete"] or retry_validation.get("is_valid", False):
+                llm_result, llm_usage, llm_validation, coverage = retry_result, retry_usage, retry_validation, retry_coverage
+        except Exception:
+            pass  # se conserva la primera pasada; el flujo normal de abajo decide que hacer con ella
 
     if requested_mode == "llm":
         return _annotate_result(
@@ -403,7 +530,11 @@ def parse_with_mode(
             decision_reason="Modo LLM solicitado y respuesta semantica estructurada obtenida.",
             llm_usage=llm_usage,
             semantic_validation=llm_validation,
-            retrieved_context=retrieved_context
+            retrieved_context=retrieved_context,
+            semantic_coverage=coverage,
+            first_pass_interpretation=first_pass_result,
+            second_pass_interpretation=second_pass_result,
+            reason_for_retry=reason_for_retry
         )
 
     if _critical_disagreement(rule_result, llm_result):
@@ -437,7 +568,11 @@ def parse_with_mode(
             decision_reason="Existe desacuerdo critico entre reglas y LLM; se solicita aclaracion.",
             llm_usage=llm_usage,
             semantic_validation=clarification_validation,
-            retrieved_context=retrieved_context
+            retrieved_context=retrieved_context,
+            semantic_coverage=coverage,
+            first_pass_interpretation=first_pass_result,
+            second_pass_interpretation=second_pass_result,
+            reason_for_retry=reason_for_retry
         )
 
     if llm_validation.get("is_valid", False):
@@ -450,7 +585,11 @@ def parse_with_mode(
             decision_reason="El parser hibrido consulto al LLM y la salida paso validacion semantica.",
             llm_usage=llm_usage,
             semantic_validation=llm_validation,
-            retrieved_context=retrieved_context
+            retrieved_context=retrieved_context,
+            semantic_coverage=coverage,
+            first_pass_interpretation=first_pass_result,
+            second_pass_interpretation=second_pass_result,
+            reason_for_retry=reason_for_retry
         )
 
     if allow_rule_fallback and rule_validation.get("is_valid", False):
@@ -463,7 +602,11 @@ def parse_with_mode(
             decision_reason="La salida LLM no paso validacion; se conserva el resultado por reglas.",
             llm_usage=llm_usage,
             semantic_validation=rule_validation,
-            retrieved_context=retrieved_context
+            retrieved_context=retrieved_context,
+            semantic_coverage=coverage,
+            first_pass_interpretation=first_pass_result,
+            second_pass_interpretation=second_pass_result,
+            reason_for_retry=reason_for_retry
         )
 
     return _annotate_result(
@@ -475,7 +618,11 @@ def parse_with_mode(
         decision_reason="La salida LLM fue obtenida pero requiere aclaracion o correccion antes de continuar.",
         llm_usage=llm_usage,
         semantic_validation=llm_validation,
-        retrieved_context=retrieved_context
+        retrieved_context=retrieved_context,
+        semantic_coverage=coverage,
+        first_pass_interpretation=first_pass_result,
+        second_pass_interpretation=second_pass_result,
+        reason_for_retry=reason_for_retry
     )
 
 

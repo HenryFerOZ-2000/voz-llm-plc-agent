@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from functional_requirements import get_functional_requirement_tags, is_catalog_functional_requirement
 from plc_ir import PLCProjectIR
 from utils import build_io_map_index, flatten_io_map
 
@@ -265,6 +266,20 @@ def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
 
     if _is_fallback_or_unimplemented(project_ir.pou.implementation_code):
         errors.append("La implementacion de la IR es un fallback o plantilla no implementada.")
+
+    # Ningun functional_requirement puede desaparecer en silencio entre el semantic_output y la
+    # IR: si el catalogo dice que "run_pilot" implica Q_Pilot_Run, esa variable debe estar
+    # declarada. Si falta, es un error de propagacion, no un exito silencioso (seccion 7).
+    for requirement in project_ir.metadata.get("functional_requirements", []) or []:
+        if not is_catalog_functional_requirement(requirement):
+            continue
+        requirement_type = requirement.get("type", "")
+        for tag in get_functional_requirement_tags(requirement):
+            if tag not in declared_names:
+                errors.append(
+                    f"El requisito funcional '{requirement_type}' no se propago a la IR: "
+                    f"falta la variable {tag}."
+                )
 
     critical_outputs = {"Q_Motor_Enable", "Q_Aux_Output", "Q_Contactor_A", "Q_Contactor_B"}
     if used_identifiers.intersection(critical_outputs) and "I_Emergency" not in project_ir.pou.implementation_code:

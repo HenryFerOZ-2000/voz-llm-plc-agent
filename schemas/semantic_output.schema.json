@@ -102,6 +102,7 @@
           "Q_Alarm",
           "Q_Pilot_Run",
           "Q_Pilot_Fault",
+          "Q_Pilot_Stop",
           "Q_Aux_Output",
           "Q_Contactor_A",
           "Q_Contactor_B",
@@ -129,6 +130,35 @@
       "type": "array",
       "items": {
         "type": "string"
+      }
+    },
+    "functional_requirements": {
+      "type": "array",
+      "description": "Additional behaviors beyond intent_id (e.g. run_pilot, delayed_stop). Optional: [] when the single intent already fully represents the command.",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "motor_start_latch",
+              "delayed_start",
+              "delayed_stop",
+              "run_pilot",
+              "stop_pilot",
+              "fault_pilot",
+              "alarm_output",
+              "emergency_priority",
+              "reset_behavior",
+              "interlock",
+              "maintenance_inhibit",
+              "counter_requirement",
+              "automatic_mode",
+              "manual_mode"
+            ]
+          }
+        }
       }
     }
   }

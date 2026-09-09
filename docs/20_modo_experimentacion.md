@@ -4,6 +4,44 @@
 
 Segundo modo de trabajo dentro de la misma GUI (`Modo de trabajo: Normal / Experimentacion`) para correr ensayos controlados sobre el banco discreto D01-D20 y capturar automaticamente evidencia por ensayo mas un log maestro CSV/JSON. Reutiliza integramente `MAPA_SIMULACION_COMPLETO`, `MAPA_BANCO_FISICO` y los perfiles D01-D20 (`18_mapa_maestro_plc.md`, `19_perfiles_experimentales_d01_d20.md`) sin duplicarlos.
 
+## Modo Normal vs Modo Experimentacion
+
+Los dos modos de trabajo tienen proposito distinto y **nunca comparten un perfil Dxx activo por accidente**:
+
+- **Modo Normal** es el uso funcional/oficial de la arquitectura: programacion libre dentro de las capacidades soportadas (parser reglas/LLM/hibrido, intenciones del catalogo, IEC 61131-3, `SiemensSCLAdapter`, reglas de seguridad). Usa siempre `GENERAL / SIN FILTRO` — el mapa PLC activo completo, sin ningun filtro de perfil — y no depende de D01-D20 para nada. No limita artificialmente lo que se puede programar; solo esta acotado por lo que la arquitectura realmente soporta (intenciones implementadas, variables que existen en el mapa, reglas de seguridad).
+- **Modo Experimentacion** es un entorno controlado para evaluar sistematicamente la arquitectura: D01-D20 (y en el futuro P01-P12), cada uno con un perfil que restringe que recursos fisicos/externos estan autorizados para ese caso especifico.
+
+`self.active_profile_id` (el "contexto" activo) es siempre automatico, nunca una eleccion manual:
+
+| Cambio de modo | `active_profile_id` resultante |
+|---|---|
+| Normal (por defecto al abrir la app) | `None` (GENERAL) |
+| Normal -> Experimentacion + caso Dxx | `profile_id` del caso seleccionado |
+| Cambiar de caso dentro de Experimentacion | se actualiza al `profile_id` del nuevo caso |
+| Experimentacion -> Normal | vuelve a `None` (GENERAL) |
+
+El selector "Perfil de prueba" del panel izquierdo queda **permanentemente deshabilitado** (`state="disabled"` desde su construccion) — nadie elige un perfil a mano nunca, ni siquiera en Modo Normal. Su etiqueta cambia segun el modo ("Contexto (Modo Normal)" / "Perfil de prueba (automatico - Modo Experimentacion)") pero es solo informativo.
+
+## Regla de recursos externos vs internos
+
+Esta regla ya estaba implementada en la arquitectura (clasificacion por prefijo en `ir_builder.EXTERNAL_PREFIXES`/`INTERNAL_PREFIXES`, reutilizada por `plc_maps.apply_profile_filter` y `semantic_validator.validate_semantic_output`) y esta tarea la documenta y la expone claramente en la GUI:
+
+> **Los perfiles experimentales restringen unicamente los recursos externos autorizados (`I_`/`Q_`: sensores, pulsadores, salidas fisicas, VFD, senales analogicas reales). Los recursos internos necesarios para implementar la logica (`M_`/`T_`/`C_`/`R_`/`F_`: temporizadores TON/TOF/TP, contadores CTU/CTD, flancos R_TRIG/F_TRIG, memorias, latches, estados) pueden ser generados automaticamente por la arquitectura sin importar el perfil activo.**
+
+`apply_profile_filter(io_map, profile)` nunca filtra variables internas. `semantic_validator.py` excluye explicitamente los tags con `INTERNAL_PREFIXES` antes de calcular `unauthorized_tags` — un recurso interno nuevo jamas cuenta como incompatibilidad de perfil, solo un recurso externo no autorizado lo hace.
+
+## Incompatibilidad experimental vs aclaracion semantica
+
+Antes, cualquier interpretacion invalida (`semantic_validation.is_valid=False`) mostraba el mismo dialogo generico "Aclaracion requerida" con el `clarification_question` que el LLM hubiera generado — incluso cuando la causa real era que el comando pedia recursos fisicos (p. ej. `I_Stop`, `Q_Motor_Enable`) que el perfil D01 no autoriza, lo que producia mensajes confusos del estilo "¿Puede autorizarse un mapa I/O que incluya...?" sugiriendo ampliar el hardware del caso.
+
+`process_command()` ahora distingue la causa usando `semantic_validation.unauthorized_tags` (que ya viene filtrado a solo recursos externos):
+
+- **`unauthorized_tags` no vacio + Modo Experimentacion** -> dialogo "Incompatibilidad experimental": indica el caso activo, los recursos fisicos autorizados por el perfil y los solicitados por el comando, y ofrece reformular el comando, elegir otro caso o usar Modo Normal. **Nunca** ofrece ampliar el mapa o el perfil automaticamente. Si hay un ensayo activo, se registra como fallo con `error_type="E3"` (Variable) en vez de `"E2"` (Semantico), preservando toda la evidencia (`_capture_trial_parse_failure`, sin cambios en su logica de guardado).
+- **`unauthorized_tags` no vacio + Modo Normal** -> dialogo "Recurso fisico no encontrado": indica la variable solicitada y el mapa activo, y ofrece agregar la variable, elegir otro mapa o cancelar — aqui si tiene sentido ofrecer modificar el mapa porque Modo Normal no esta sujeto a un protocolo Dxx.
+- **`unauthorized_tags` vacio pero `requires_clarification=True`** -> se mantiene exactamente el dialogo "Aclaracion requerida" de siempre, para ambiguedades reales del lenguaje (p. ej. "enciende la bomba cuando sea necesario").
+
+En el panel de Modo Experimentacion, mientras hay una interpretacion pendiente (`self.pending_semantic_output`) se muestra una linea "Compatibilidad: ✓ Compatible" o "Compatibilidad: ⚠ Recursos no autorizados: ..." (`plc_maps.check_case_compatibility`, reutiliza `unauthorized_tags` ya calculado — no vuelve a invocar el LLM). Se limpia (`pending_semantic_output = None`) al cambiar de caso, para no mostrar una compatibilidad calculada contra un caso distinto.
+
 ## Aclaracion importante: dos taxonomias de condiciones distintas
 
 El proyecto ya tenia un protocolo de evaluacion documentado (`14_protocolo_evaluacion.md`) con 6 condiciones (`C0_MANUAL`...`C5_HYBRID_VOICE_NOISE`) usadas por `src/evaluation_runner.py`, un harness batch independiente que corre todo el banco de pruebas por script y que **no fue modificado** por esta funcionalidad. El Modo Experimentacion de la GUI usa una taxonomia propia de 4 condiciones (C0 eliminado a proposito):
@@ -23,7 +61,7 @@ Todo el enganche es aditivo: dos bloques `if self.active_trial:` en `process_com
 
 ## "Caso experimental" reemplaza a "Perfil de prueba" como selector principal
 
-El usuario no elige un perfil por separado en Modo Experimentacion: selecciona un **Caso experimental** (D01-D20) y la GUI resuelve automaticamente el `profile_id` asociado (`case_id == profile_id` en el esquema actual de `data/plc_maps/profiles.json`), fija `self.active_profile_id` y por tanto filtra `allowed_variables` igual que lo haria el selector manual (`_load_runtime_configuration`, sin cambios). El selector "Perfil de prueba" del panel izquierdo se deshabilita mientras el modo de trabajo es Experimentacion (se re-etiqueta como "Perfil de prueba (automatico - Modo Experimentacion)") y su seleccion previa se restaura al volver a Modo Normal. La infraestructura de perfiles (`src/plc_maps/profiles.py`, `apply_profile_filter`, `profile_readiness_summary`) no se duplica ni se modifica — solo se reutiliza desde un punto de entrada distinto.
+El usuario no elige un perfil por separado en Modo Experimentacion: selecciona un **Caso experimental** (D01-D20) y la GUI resuelve automaticamente el `profile_id` asociado (`case_id == profile_id` en el esquema actual de `data/plc_maps/profiles.json`), fija `self.active_profile_id` y por tanto filtra `allowed_variables` igual que lo haria el selector manual (`_load_runtime_configuration`, sin cambios). El selector "Perfil de prueba" del panel izquierdo esta permanentemente deshabilitado (ver seccion "Modo Normal vs Modo Experimentacion" mas arriba); solo cambia de etiqueta segun el modo. La infraestructura de perfiles (`src/plc_maps/profiles.py`, `apply_profile_filter`, `profile_readiness_summary`, `check_case_compatibility`) no se duplica ni se modifica — solo se reutiliza desde un punto de entrada distinto.
 
 Debajo del selector de caso, la GUI muestra como informacion tecnica secundaria: "Perfil asociado: `<profile_id>`", "Variables mapa: X   Variables habilitadas: Y", y el estado `Simulation:`/`Hardware:` (`profile_readiness_summary`).
 
@@ -55,11 +93,11 @@ Cada ensayo tiene, ademas del `trial_id` interno unico (`TRIAL_000123`), una eti
 
 ## Flujo de un ensayo
 
-1. Seleccionar Grupo (solo Discreto D01-D20 disponible; PID muestra aviso y revierte), Caso experimental, Variante (con su "Comando V1/V2/V3" de referencia), Condicion, Participante (`speaker_id` anonimo, ej. `P01`), Ruido, Entorno.
-2. El estado muestra "Proximo ensayo", el perfil asociado al caso, variables mapa/habilitadas y `simulation_ready`/`hardware_ready` (`plc_maps.profiles.profile_readiness_summary`, sin cambios). Si Entorno=Hardware y `hardware_ready=False`, se bloquea solo el boton `[Iniciar ensayo]`, nunca la seleccion del caso.
-3. `[Iniciar ensayo]` crea `trial_id` (`TRIAL_000001`, ...), fuerza el `parser_mode` de la condicion en el selector existente, y guarda un `metadata.json` inicial. No reemplaza los botones "Procesar comando"/"Generar paquete PLC" — el usuario los sigue usando normalmente (necesario para C3/C4, que requieren grabar voz de verdad; el boton `[Usar este comando]` puede prellenar el cuadro de texto con la variante seleccionada como referencia).
-4. Al procesar el comando exitosamente, se captura `command_text`/`transcript`/`semantic_output` en el ensayo activo. Si el parser falla o produce `INT_UNKNOWN`, se registra igual (clasificado `E2`) y el ensayo se cierra sin bloquear la GUI (seccion 24 del pedido).
-5. Al generar el paquete (tras la confirmacion humana existente), se captura `compile_result`/errores/advertencias/`package_dir`, y aparece la seccion "Resultado del ensayo" (Resultado fisico, Violacion de seguridad, Tipo de error E1-E10, Observaciones).
+1. Seleccionar Grupo (solo Discreto D01-D20 disponible; PID muestra aviso y revierte), Caso experimental, Variante (con su "Comando de referencia"), Condicion, Participante (`speaker_id` anonimo, ej. `P01`), Ruido, Entorno.
+2. El estado muestra "Proximo ensayo", el perfil asociado al caso, compatibilidad (si ya hay una interpretacion pendiente), variables habilitadas y `simulation_ready`/`hardware_ready`. Si Entorno=Hardware y `hardware_ready=False`, se bloquea solo el boton `[EJECUTAR ENSAYO]`, nunca la seleccion del caso.
+3. `[EJECUTAR ENSAYO]` (`run_experiment_trial()`) arma el ensayo (`trial_id`, `metadata.json` inicial, `parser_mode` de la condicion) y corre automaticamente el mismo pipeline que `[EJECUTAR COMANDO]` en Modo Normal (`execute_full_pipeline()`: `process_command()` -> `generate_package()` -> `validate_latest_package_in_tia()`) — el usuario ya no pulsa por separado "Procesar comando"/"Generar paquete PLC"/"Importar y compilar" durante un ensayo (esos botones siguen existiendo en "Herramientas avanzadas" para depuracion). Para C3/C4 se graba voz primero con `[Grabar comando]`/`[Detener y transcribir]` (que ya transcribe automaticamente al cuadro de comando) antes de pulsar `[EJECUTAR ENSAYO]`.
+4. Al procesar el comando, se captura `command_text`/`transcript`/`semantic_output` en el ensayo activo. Si el parser falla, produce `INT_UNKNOWN`, o el comando pide recursos fisicos no autorizados por el caso (incompatibilidad experimental, ver seccion correspondiente mas arriba), se registra igual (`E2` para ambiguedad semantica, `E3` para incompatibilidad de recursos) y el ensayo se cierra sin bloquear la GUI.
+5. Al generar el paquete (tras la confirmacion humana existente) y al importar/compilar en TIA (segunda confirmacion, tambien existente), se captura `compile_result`/errores/advertencias/`package_dir`/`tia_compile_status`, y aparece la seccion "Resultado del ensayo" (Resultado fisico, Violacion de seguridad, Tipo de error E1-E10, Observaciones).
 6. `[Guardar resultado]` cierra el ensayo (`state=COMPLETED`), calcula `total_time`, y actualiza el log maestro.
 
 ## Log maestro

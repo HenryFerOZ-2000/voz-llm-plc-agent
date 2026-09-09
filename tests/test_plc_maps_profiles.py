@@ -7,6 +7,7 @@ from plc_maps.profiles import (
     HARDWARE_MAP_NAME,
     SIMULATION_MAP_NAME,
     apply_profile_filter,
+    check_case_compatibility,
     compute_readiness,
     profile_readiness_summary
 )
@@ -104,3 +105,23 @@ def test_profile_readiness_summary_handles_missing_reference_maps(tmp_path: Path
     result = profile_readiness_summary(tmp_path, profile)
     assert result["simulation_ready"] is False
     assert result["hardware_ready"] is False
+
+
+def test_check_case_compatibility_none_profile_is_always_compatible() -> None:
+    semantic_output = {"semantic_validation": {"unauthorized_tags": ["Q_Motor_Enable"]}}
+    result = check_case_compatibility(semantic_output, None)
+    assert result == {"compatible": True, "missing_external": []}
+
+
+def test_check_case_compatibility_compatible_when_no_unauthorized_tags() -> None:
+    semantic_output = {"semantic_validation": {"unauthorized_tags": []}}
+    profile = {"profile_id": "D01", "allowed_variables": ["I_Start", "Q_Auxiliary"]}
+    result = check_case_compatibility(semantic_output, profile)
+    assert result == {"compatible": True, "missing_external": []}
+
+
+def test_check_case_compatibility_incompatible_when_external_resources_missing() -> None:
+    semantic_output = {"semantic_validation": {"unauthorized_tags": ["I_Stop", "Q_Motor_Enable"]}}
+    profile = {"profile_id": "D01", "allowed_variables": ["I_Start", "Q_Auxiliary"]}
+    result = check_case_compatibility(semantic_output, profile)
+    assert result == {"compatible": False, "missing_external": ["I_Stop", "Q_Motor_Enable"]}

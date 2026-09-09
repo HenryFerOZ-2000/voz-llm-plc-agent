@@ -59,6 +59,7 @@ class SemanticValidationResult(BaseModel):
     missing_parameters: list[str] = Field(default_factory=list)
     unauthorized_tags: list[str] = Field(default_factory=list)
     requires_clarification: bool = False
+    functional_requirement_conflicts: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class SemanticOutput(BaseModel):
@@ -78,6 +79,7 @@ class SemanticOutput(BaseModel):
     assumptions: list[str] = Field(default_factory=list)
     recognized_tags: list[str] = Field(default_factory=list)
     unrecognized_terms: list[str] = Field(default_factory=list)
+    functional_requirements: list[dict[str, Any]] = Field(default_factory=list)
 
     @field_validator("confidence")
     @classmethod
