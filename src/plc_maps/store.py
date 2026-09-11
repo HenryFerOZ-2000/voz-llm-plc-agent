@@ -13,6 +13,7 @@ from utils import ensure_directory, load_json_file, sanitize_filename
 PLC_MAPS_DIRNAME = "plc_maps"
 MAP_FILE_SUFFIX = ".json"
 RESERVED_STEMS = {"_active_map"}
+MAX_HISTORY_ENTRIES = 500
 
 
 def get_plc_maps_dir(project_root: Path) -> Path:
@@ -87,9 +88,15 @@ def create_plc_map(
 def save_plc_map(
     path: Path,
     variables: list[dict[str, Any]],
-    metadata_patch: dict[str, Any] | None = None
+    metadata_patch: dict[str, Any] | None = None,
+    history_entries: list[dict[str, Any]] | None = None
 ) -> None:
-    """Persist a map file, preserving/patching its metadata block."""
+    """
+    Persist a map file, preserving/patching its metadata block. `history_entries` (section 26:
+    timestamp/address/old_name/new_name/old_state/new_state/source) are APPENDED to the map's
+    existing `history` list, never replacing it - this is the single write chokepoint so it is
+    the one place a full trail of map changes can be kept, capped at MAX_HISTORY_ENTRIES.
+    """
     existing_payload: dict[str, Any] = {}
     if path.exists():
         try:
@@ -102,14 +109,30 @@ def save_plc_map(
     if metadata_patch:
         metadata.update(metadata_patch)
 
+    history = list(existing_payload.get("history", []))
+    if history_entries:
+        history.extend(history_entries)
+        history = history[-MAX_HISTORY_ENTRIES:]
+
     payload = {
         "schema_version": existing_payload.get("schema_version", 1),
         "metadata": metadata,
         "naming_convention": existing_payload.get("naming_convention", new_map_payload(path.stem, path.stem)["naming_convention"]),
-        "variables": variables
+        "variables": variables,
+        "history": history
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def get_map_history(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    try:
+        payload = load_json_file(path)
+    except (FileNotFoundError, ValueError):
+        return []
+    return list(payload.get("history", []))
 
 
 def delete_plc_map(path: Path) -> None:

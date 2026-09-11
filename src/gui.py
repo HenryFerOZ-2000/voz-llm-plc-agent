@@ -45,6 +45,13 @@ from gui_helpers import (
     validate_io_map_variables
 )
 from env_manager import get_env_path, load_llm_env_settings, save_llm_env_settings
+from io_allocator import (
+    apply_assignments,
+    block_map_config_message,
+    find_variable_by_address,
+    set_variable_state,
+    validate_manual_rename
+)
 from logger import (
     append_test_record_to_docs,
     archive_generated_files,
@@ -73,6 +80,7 @@ from plc_maps import (
 )
 from plc_maps.tia_sync import import_tags_from_tia, sync_map_with_tia
 from project_packager import generate_project_package
+from semantic_validator import validate_semantic_output
 from speech_recognizer import SpeechRecognizer
 from tia_openness import (
     build_openness_bridge,
@@ -143,11 +151,22 @@ class VariableEditorDialog(ctk.CTkToplevel):
         self.min_var = tk.StringVar(value="" if data.get("min") is None else str(data.get("min")))
         self.max_var = tk.StringVar(value="" if data.get("max") is None else str(data.get("max")))
         self.comments_var = tk.StringVar(value=data.get("comments", ""))
+        # El estado FREE/ASSIGNED/LOCKED NO se edita aqui a proposito (docs/23_io_allocator.md):
+        # solo los botones dedicados [Bloquear]/[Desbloquear] lo cambian, para que editar otro
+        # campo (p. ej. la descripcion) nunca reinicie/pierda silenciosamente un LOCKED existente.
+        self.existing_state = data.get("state", "ASSIGNED")
 
         self.grid_columnconfigure(1, weight=1)
 
         header = ctk.CTkLabel(self, text=title, font=ctk.CTkFont(size=20, weight="bold"))
-        header.grid(row=0, column=0, columnspan=2, padx=20, pady=(18, 12), sticky="w")
+        header.grid(row=0, column=0, columnspan=2, padx=20, pady=(18, 4), sticky="w")
+
+        state_label = ctk.CTkLabel(
+            self,
+            text=f"Estado: {self.existing_state} (usar [Bloquear]/[Desbloquear] en el panel para cambiarlo)",
+            text_color="#556272"
+        )
+        state_label.grid(row=0, column=0, columnspan=2, padx=20, pady=(44, 8), sticky="w")
 
         self._build_form_row(1, "Name", ctk.CTkEntry(self, textvariable=self.name_var))
         self._build_form_row(
@@ -227,7 +246,8 @@ class VariableEditorDialog(ctk.CTkToplevel):
                 "unit": self.unit_var.get(),
                 "min": self.min_var.get(),
                 "max": self.max_var.get(),
-                "comments": self.comments_var.get()
+                "comments": self.comments_var.get(),
+                "state": self.existing_state
             }
         )
         self.destroy()
@@ -235,6 +255,219 @@ class VariableEditorDialog(ctk.CTkToplevel):
     def _cancel(self) -> None:
         self.result = None
         self.destroy()
+
+
+class FullIOMapWindow(ctk.CTkToplevel):
+    """
+    Ventana independiente "Mapa I/O completo" (secciones 7-10 y 25): muestra TODOS los canales
+    del mapa activo (no solo los que caben en la tabla pequena del panel izquierdo), con
+    Direccion/Nombre/Tipo/Clase/Estado/Descripcion. La direccion fisica nunca es editable aqui.
+    Cada accion (renombrar/bloquear/desbloquear/marcar libre) valida con io_allocator y persiste
+    de inmediato con save_plc_map - nunca queda solo en memoria esperando un "Guardar" separado,
+    que es precisamente el problema reportado (el nombre "no cambiaba realmente"). [Guardar] y
+    [Guardar como...] reutilizan los metodos ya existentes de la app (save_io_map/save_plc_map_as).
+    """
+
+    COLUMNS = ("address", "name", "type", "class_label", "state", "description")
+    HEADERS = {
+        "address": "Direccion", "name": "Nombre funcional", "type": "Tipo",
+        "class_label": "Clase", "state": "Estado", "description": "Descripcion"
+    }
+
+    def __init__(self, parent: "VozLLMPLCGUI") -> None:
+        super().__init__(parent)
+        self.app = parent
+        self.io_map: dict[str, Any] = {}
+        self.transient(parent)
+        self.geometry("920x580")
+
+        self.read_only_message = block_map_config_message(parent.active_trial, parent.active_profile_id)
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        header = ctk.CTkLabel(self, text="Mapa I/O completo", font=ctk.CTkFont(size=20, weight="bold"))
+        header.grid(row=0, column=0, padx=20, pady=(16, 4), sticky="w")
+
+        if self.read_only_message:
+            warning = ctk.CTkLabel(self, text=self.read_only_message, text_color="#8A1F1F")
+            warning.grid(row=0, column=0, padx=20, pady=(46, 4), sticky="w")
+
+        tree_container = ctk.CTkFrame(self, corner_radius=12)
+        tree_container.grid(row=1, column=0, padx=20, pady=(4, 8), sticky="nsew")
+        tree_container.grid_columnconfigure(0, weight=1)
+        tree_container.grid_rowconfigure(0, weight=1)
+
+        self.tree = ttk.Treeview(tree_container, columns=self.COLUMNS, show="headings", height=18)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        for column in self.COLUMNS:
+            self.tree.heading(column, text=self.HEADERS[column])
+            width = 220 if column == "description" else 130
+            self.tree.column(column, width=width, minwidth=70, stretch=True)
+        scroll_y = ttk.Scrollbar(tree_container, orient="vertical", command=self.tree.yview)
+        scroll_y.grid(row=0, column=1, sticky="ns")
+        self.tree.configure(yscrollcommand=scroll_y.set)
+
+        button_frame = ctk.CTkFrame(self, fg_color="transparent")
+        button_frame.grid(row=2, column=0, padx=20, pady=(0, 18), sticky="ew")
+        for index in range(6):
+            button_frame.grid_columnconfigure(index, weight=1)
+
+        actions = [
+            ("Editar nombre", self.edit_name),
+            ("Bloquear", self.lock_selected),
+            ("Desbloquear", self.unlock_selected),
+            ("Marcar libre", self.mark_free_selected),
+            ("Guardar", self.save),
+            ("Guardar como...", self.save_as)
+        ]
+        self.action_buttons: list[ctk.CTkButton] = []
+        for index, (text, command) in enumerate(actions):
+            button = ctk.CTkButton(button_frame, text=text, command=command, font=self.app.button_font)
+            button.grid(row=0, column=index, padx=4, sticky="ew")
+            self.action_buttons.append(button)
+
+        if self.read_only_message:
+            for button in self.action_buttons[:4]:  # Guardar/Guardar como siguen disponibles (solo lectura de asignaciones)
+                button.configure(state="disabled")
+
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+        self._reload()
+        self.after(50, self.focus_force)
+
+    def _class_label(self, variable: dict[str, Any]) -> str:
+        location = str(variable.get("location", "")).upper()
+        is_analog = "W" in location
+        variable_class = variable.get("class")
+        if variable_class == "input":
+            return "AI" if is_analog else "DI"
+        if variable_class == "output":
+            return "AO" if is_analog else "DO"
+        return variable_class or ""
+
+    def _reload(self) -> None:
+        previous_selection = self._selected_address()
+        try:
+            self.io_map = load_json_file(self.app.io_map_path)
+        except (FileNotFoundError, ValueError) as error:
+            messagebox.showerror("Mapa I/O completo", f"No se pudo leer el mapa activo.\n\n{error}")
+            self.io_map = {"variables": []}
+        self.title(f"Mapa I/O - {self.app.active_map_var.get() or self.app.io_map_path.stem}")
+        self.tree.delete(*self.tree.get_children())
+        for variable in self.io_map.get("variables", []):
+            state = variable.get("state", "ASSIGNED")
+            # Un canal FREE no tiene todavia un rol funcional real (seccion 12): el nombre interno
+            # (necesario para indexar/autorizar el recurso) se oculta y se muestra "-" en su lugar.
+            name_display = "—" if state == "FREE" else variable.get("name", "")
+            self.tree.insert(
+                "", "end", iid=variable.get("location"),
+                values=(
+                    variable.get("location", ""), name_display, variable.get("type", ""),
+                    self._class_label(variable), state, variable.get("description", "")
+                )
+            )
+        # Reinsertar borra la seleccion (los iids son las direcciones, estables entre recargas) -
+        # sin esto, tras UNA accion el usuario tendria que volver a seleccionar la fila cada vez.
+        if previous_selection and self.tree.exists(previous_selection):
+            self.tree.selection_set(previous_selection)
+            self.tree.focus(previous_selection)
+
+    def _selected_address(self) -> str | None:
+        selection = self.tree.selection()
+        return selection[0] if selection else None
+
+    def _refresh_everything(self) -> None:
+        self._reload()
+        self.app.io_variables = load_io_map_variables(self.app.io_map_path)
+        self.app._load_active_map_metadata_shadow()
+        self.app._load_io_map_table()
+
+    def edit_name(self) -> None:
+        if self.read_only_message:
+            messagebox.showwarning("Mapa I/O completo", self.read_only_message)
+            return
+        address = self._selected_address()
+        if address is None:
+            messagebox.showwarning("Editar nombre", "Seleccione un canal.")
+            return
+        variable = find_variable_by_address(self.io_map, address)
+        if variable is None:
+            return
+        if variable.get("state") == "LOCKED":
+            messagebox.showwarning(
+                "Editar nombre",
+                "Este canal esta bloqueado. Desbloqueelo manualmente antes de modificarlo."
+            )
+            return
+
+        new_name = simpledialog.askstring(
+            "Editar nombre",
+            f"Nuevo nombre funcional para {address} (actual: {variable.get('name') or '—'}):",
+            initialvalue="" if variable.get("state") == "FREE" else variable.get("name", ""),
+            parent=self
+        )
+        if not new_name or not new_name.strip():
+            return
+        new_name = new_name.strip()
+
+        result = validate_manual_rename(self.io_map, address, new_name)
+        if not result["valid"]:
+            messagebox.showerror("Editar nombre", "\n".join(result["errors"]))
+            return
+
+        proposal = {"address": address, "proposed_name": new_name, "blocked": False}
+        try:
+            updated_map, history_entries = apply_assignments(self.io_map, [proposal], source="MANUAL_EDITOR")
+            save_plc_map(self.app.io_map_path, updated_map["variables"], history_entries=history_entries)
+        except ValueError as error:
+            messagebox.showerror("Editar nombre", str(error))
+            return
+
+        self._refresh_everything()
+        self.app._log(f"Mapa I/O completo: {address} renombrado a {new_name}.")
+
+    def _apply_state_change(self, new_state: str, guard_locked: bool = False) -> None:
+        if self.read_only_message:
+            messagebox.showwarning("Mapa I/O completo", self.read_only_message)
+            return
+        address = self._selected_address()
+        if address is None:
+            messagebox.showwarning("Mapa I/O completo", "Seleccione un canal.")
+            return
+        variable = find_variable_by_address(self.io_map, address)
+        if variable is None:
+            return
+        if guard_locked and variable.get("state") == "LOCKED":
+            messagebox.showwarning(
+                "Mapa I/O completo",
+                f"{variable.get('name')} esta bloqueada (LOCKED). Desbloqueela primero."
+            )
+            return
+        try:
+            updated_map = set_variable_state(self.io_map, variable.get("name"), new_state)
+            save_plc_map(self.app.io_map_path, updated_map["variables"])
+        except ValueError as error:
+            messagebox.showerror("Mapa I/O completo", str(error))
+            return
+        self._refresh_everything()
+
+    def lock_selected(self) -> None:
+        self._apply_state_change("LOCKED")
+
+    def unlock_selected(self) -> None:
+        self._apply_state_change("ASSIGNED")
+
+    def mark_free_selected(self) -> None:
+        self._apply_state_change("FREE", guard_locked=True)
+
+    def save(self) -> None:
+        if self.app.save_io_map(show_success=False):
+            self._reload()
+            messagebox.showinfo("Mapa I/O completo", "Mapa guardado correctamente.")
+
+    def save_as(self) -> None:
+        self.app.save_plc_map_as()
+        self._refresh_everything()
 
 
 class LLMConfigDialog(ctk.CTkToplevel):
@@ -501,9 +734,20 @@ class VozLLMPLCGUI(ctk.CTk):
         self.current_result_snapshot: dict[str, Any] | None = None
         self.pending_semantic_output: dict[str, Any] | None = None
         self.pending_runtime_config: tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None = None
+        # Resumen de la ultima configuracion automatica de mapa (seccion 14) para un comando MIXTO
+        # (mapa + logica): no se muestra en un messagebox intermedio que detenga el flujo - se
+        # registra en consola y se reserva para incorporarse al dialogo de confirmacion de
+        # generate_package(), el siguiente punto de confirmacion humana natural en el pipeline.
+        self._last_map_config_summary: str | None = None
         # Solo "CARGAR PROGRAMA AL PLC" queda habilitado mientras esto apunte al paquete de la
         # ULTIMA compilacion Siemens aprobada; cualquier nuevo comando procesado lo invalida.
         self._last_compiled_package_dir: Path | None = None
+        # Distinto de `_last_compiled_package_dir`: ese se limpia en CADA fallo (correctamente -
+        # es el guardian de 'CARGAR PROGRAMA AL PLC', que nunca debe ofrecer descargar un programa
+        # viejo tras un intento fallido). Este campo es solo informativo/de reporte: conserva el
+        # ultimo paquete que SI compilo con exito en TIA, sin importar cuantos comandos fallidos
+        # vengan despues (comando A compila, B falla -> last_successful_tia_package sigue siendo A).
+        self._last_successful_tia_package_dir: Path | None = None
         self._download_worker_active = False
         self._download_worker_queue: queue.Queue = queue.Queue()
         self.voice_audio_path: Path | None = None
@@ -759,7 +1003,8 @@ class VozLLMPLCGUI(ctk.CTk):
             "type": max(int(usable_width * 0.10), 78),
             "location": max(int(usable_width * 0.14), 92),
             "initial_value": max(int(usable_width * 0.13), 95),
-            "description": max(int(usable_width * 0.28), 170)
+            "description": max(int(usable_width * 0.24), 150),
+            "state": max(int(usable_width * 0.10), 80)
         }
 
         for column in IO_TREE_COLUMNS:
@@ -974,20 +1219,38 @@ class VozLLMPLCGUI(ctk.CTk):
         action_frame.grid_columnconfigure(1, weight=1)
 
         self.left_action_buttons: list[ctk.CTkButton] = []
-        buttons = [
+        paired_buttons = [
             ("Abrir mapa I/O", self.open_io_map),
             ("Guardar mapa I/O", self.save_io_map),
             ("Agregar variable", self.add_variable),
             ("Editar variable", self.edit_variable),
-            ("Eliminar variable", self.delete_variable)
+            ("Bloquear variable", self.lock_selected_variable),
+            ("Desbloquear variable", self.unlock_selected_variable)
         ]
-        for index, (text, callback) in enumerate(buttons):
+        for index, (text, callback) in enumerate(paired_buttons):
             button = ctk.CTkButton(action_frame, text=text, command=callback, font=self.button_font)
-            if index == len(buttons) - 1:
-                button.grid(row=2, column=0, columnspan=2, padx=4, pady=4, sticky="ew")
-            else:
-                button.grid(row=index // 2, column=index % 2, padx=4, pady=4, sticky="ew")
+            button.grid(row=index // 2, column=index % 2, padx=4, pady=4, sticky="ew")
             self.left_action_buttons.append(button)
+
+        full_width_buttons = [
+            ("Eliminar variable", self.delete_variable),
+            ("Marcar como libre", self.mark_selected_variable_free)
+        ]
+        for offset, (text, callback) in enumerate(full_width_buttons):
+            button = ctk.CTkButton(action_frame, text=text, command=callback, font=self.button_font)
+            button.grid(row=3 + offset, column=0, columnspan=2, padx=4, pady=4, sticky="ew")
+            self.left_action_buttons.append(button)
+
+        self.open_full_map_button = ctk.CTkButton(
+            action_frame,
+            text="ABRIR MAPA I/O COMPLETO",
+            command=self.open_full_io_map_window,
+            font=self.button_font,
+            fg_color="#1D4ED8",
+            hover_color="#1E40AF"
+        )
+        self.open_full_map_button.grid(row=5, column=0, columnspan=2, padx=4, pady=(2, 4), sticky="ew")
+        self.left_action_buttons.append(self.open_full_map_button)
 
         self.table_label = ctk.CTkLabel(self.left_panel, text="Mapa maestro PLC", font=self.section_label_font)
         self.table_label.grid(row=10, column=0, padx=18, pady=(2, 6), sticky="w")
@@ -1303,7 +1566,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_group_selector = ctk.CTkOptionMenu(
             frame,
             variable=self.experiment_group_var,
-            values=["Discreto D01-D20", "PID P01-P12 - pendiente"],
+            values=["Discreto D01-D20", "PID P01-P12"],
             command=self._on_experiment_group_changed,
             font=self.body_font,
             dropdown_font=self.body_font
@@ -2073,20 +2336,18 @@ class VozLLMPLCGUI(ctk.CTk):
             )
             return
 
-        if not messagebox.askyesno(
-            "Confirmar TIA Openness",
-            "Codigo generado y verificado.\n\n"
-            f"Proyecto TIA: {diagnostic.get('project_path')}\n"
-            f"Mapa: {self.active_map_var.get()}\n"
-            f"Paquete: {package_dir_text}\n\n"
-            "Se importara la fuente SCL en el proyecto TIA configurado, se crearan tags faltantes, "
-            "se generaran bloques y se compilara. El proyecto solo se guardara si no hay errores. "
-            "No se descargara nada a un PLC fisico.\n\n¿Desea importar y compilar?"
-        ):
-            self._log("Importacion TIA Openness cancelada por el usuario.")
-            if self.active_trial:
-                self._cancel_active_trial("Importacion a TIA cancelada por el usuario en la confirmacion.")
-            return
+        # EJECUTAR COMANDO debe continuar automaticamente hasta TIA/compilacion sin ningun dialogo
+        # de confirmacion intermedio (decision explicita del usuario - reemplaza la politica previa
+        # de "confirmar antes de importar a TIA"). CARGAR PROGRAMA AL PLC sigue siendo manual e
+        # independiente - esto nunca descarga nada a un PLC fisico, solo importa/compila en el
+        # proyecto TIA configurado.
+        self._log(
+            "Iniciando TIA Openness sin confirmacion interactiva (Modo Normal, pipeline automatico). "
+            f"Proyecto TIA: {diagnostic.get('project_path')} | Mapa: {self.active_map_var.get()} | "
+            f"Paquete: {package_dir_text}"
+        )
+        self._log("[PIPELINE] Starting TIA Openness")
+        self._log(f"[PIPELINE] Opening project: {diagnostic.get('project_path')}")
 
         while not self._tia_worker_queue.empty():
             try:
@@ -2134,6 +2395,7 @@ class VozLLMPLCGUI(ctk.CTk):
             self._set_status("Error")
             self._set_textbox_content(self.tia_openness_textbox, str(payload))
             self._log(f"Error TIA Openness: {payload}")
+            self._log(f"[PIPELINE] FAILED at stage: TIA Openness (exception) - {payload}")
             if self.active_trial:
                 directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
                 save_metadata(directory, {"tia_compile_status": "ERROR", "tia_error": str(payload)})
@@ -2145,6 +2407,18 @@ class VozLLMPLCGUI(ctk.CTk):
         passed = report.get("status") == "TIA_COMPILATION_PASSED"
         report_text = format_json(report)
         self._set_textbox_content(self.tia_openness_textbox, report_text)
+        self._log(f"[PIPELINE] Compile report: {report.get('result_path', '(sin result_path)')}")
+        if passed:
+            self._log("[PIPELINE] Completed")
+        else:
+            # Seccion 8: nunca dejar solo "Verificacion completada" en un fallo de Openness -
+            # exponer executable, codigo de salida, stdout y stderr exactos.
+            self._log(
+                "[PIPELINE] FAILED at stage: TIA Openness (compile) - status="
+                f"{report.get('status')} return_code={report.get('bridge_return_code')}\n"
+                f"stdout: {report.get('bridge_stdout', '')}\n"
+                f"stderr: {report.get('bridge_stderr', '')}"
+            )
         if self.current_result_snapshot is not None:
             self._apply_tia_report_to_snapshot(self.current_result_snapshot, report)
             self._refresh_export_options(self.current_result_snapshot)
@@ -2169,10 +2443,16 @@ class VozLLMPLCGUI(ctk.CTk):
 
         if passed and report_package_dir:
             self._last_compiled_package_dir = Path(report_package_dir)
+            self._last_successful_tia_package_dir = Path(report_package_dir)
             self.download_plc_button.configure(state="normal")
             self._log(f"'CARGAR PROGRAMA AL PLC' habilitado para {report_package_dir}.")
         else:
             self._invalidate_download_readiness()
+            if self._last_successful_tia_package_dir is not None:
+                self._log(
+                    "Ultimo programa compilado con exito sin cambios: "
+                    f"{self._last_successful_tia_package_dir}."
+                )
 
         self._set_status("Listo" if passed else "Error")
         self._set_validation_banner(
@@ -3245,6 +3525,11 @@ class VozLLMPLCGUI(ctk.CTk):
         self.wait_window(dialog)
         return dialog.result
 
+    def open_full_io_map_window(self) -> None:
+        """[ABRIR MAPA I/O COMPLETO] (seccion 7): ventana independiente con TODOS los canales del
+        mapa activo, no solo los que caben en la tabla del panel izquierdo."""
+        FullIOMapWindow(self)
+
     def open_io_map(self) -> None:
         try:
             self.io_variables = load_io_map_variables(self.io_map_path)
@@ -3322,6 +3607,50 @@ class VozLLMPLCGUI(ctk.CTk):
         self.io_variable_metadata.pop(selected_data["name"], None)
         self._mark_active_map_dirty()
         self._log(f"Variable eliminada de la tabla: {selected_data['name']}.")
+
+    def _set_selected_variable_state(self, dialog_title: str, new_state: str) -> None:
+        """
+        Shared implementation for [Bloquear]/[Desbloquear]/[Marcar como libre] (section 4/5):
+        changes ONLY `state` on the selected row - never the physical `location` or the `name`.
+        Requires the same explicit row selection as edit/delete, never a silent bulk change.
+        """
+        item_id = self._selected_tree_item()
+        selected_data = self._selected_tree_data()
+        if item_id is None or selected_data is None:
+            messagebox.showwarning(dialog_title, "Seleccione una variable.")
+            return
+
+        name = selected_data["name"]
+        current = dict(self.io_variable_metadata.get(name, {}))
+        current["state"] = new_state
+        self.io_variable_metadata[name] = current
+
+        row_values = list(self.io_tree.item(item_id, "values"))
+        state_index = IO_TREE_COLUMNS.index("state")
+        row_values[state_index] = new_state
+        self.io_tree.item(item_id, values=row_values)
+
+        self._mark_active_map_dirty()
+        self._log(f"{name}: estado cambiado a {new_state} (pendiente de guardar).")
+
+    def lock_selected_variable(self) -> None:
+        self._set_selected_variable_state("Bloquear variable", "LOCKED")
+
+    def unlock_selected_variable(self) -> None:
+        self._set_selected_variable_state("Desbloquear variable", "ASSIGNED")
+
+    def mark_selected_variable_free(self) -> None:
+        item_id = self._selected_tree_item()
+        selected_data = self._selected_tree_data()
+        if item_id is not None and selected_data is not None:
+            current_state = self.io_variable_metadata.get(selected_data["name"], {}).get("state")
+            if current_state == "LOCKED":
+                messagebox.showwarning(
+                    "Marcar como libre",
+                    f"{selected_data['name']} esta protegida (LOCKED). Desbloquee primero."
+                )
+                return
+        self._set_selected_variable_state("Marcar como libre", "FREE")
 
     def _confirm_discard_unsaved_map_changes(self) -> bool:
         if not self.active_map_dirty:
@@ -3796,16 +4125,39 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _on_experiment_group_changed(self, _choice: str | None = None) -> None:
         if self.experiment_group_var.get().startswith("PID"):
-            messagebox.showinfo(
-                "Grupo de pruebas",
-                "El grupo PID (P01-P12) todavia no esta disponible. Se mantiene el grupo Discreto D01-D20."
-            )
-            self.experiment_group_var.set("Discreto D01-D20")
-            return
+            self._maybe_recommend_pid_map()
         self._refresh_experiment_case_selector()
 
+    def _maybe_recommend_pid_map(self) -> None:
+        """
+        Seccion 27: preferir MAPA_PID_SIMULACION al entrar al grupo PID, pero nunca cambiar el
+        mapa activo en silencio (podria descartar trabajo del usuario). Si el mapa activo no
+        tiene los recursos PID, se avisa y se ofrece el cambio explicitamente.
+        """
+        current_names = {variable.get("name") for variable in self.io_variables}
+        if "Q_Pump_Enable" in current_names:
+            return
+        pid_map_summary = self._map_summaries_by_name.get("MAPA_PID_SIMULACION")
+        if pid_map_summary is None:
+            messagebox.showwarning(
+                "Grupo de pruebas PID",
+                "El mapa activo no contiene los recursos requeridos para Pxx y no se encontro "
+                "MAPA_PID_SIMULACION en la biblioteca de mapas."
+            )
+            return
+        if pid_map_summary["path"] == self.io_map_path:
+            return
+        if messagebox.askyesno(
+            "Grupo de pruebas PID",
+            "El mapa activo no contiene los recursos requeridos para Pxx.\n\n"
+            "¿Desea cambiar el mapa activo a MAPA_PID_SIMULACION?"
+        ):
+            self.active_map_var.set("MAPA_PID_SIMULACION")
+            self.on_active_map_selected()
+
     def _refresh_experiment_case_selector(self) -> None:
-        profiles = load_profiles(self.project_root)
+        case_prefix = "P" if self.experiment_group_var.get().startswith("PID") else "D"
+        profiles = [p for p in load_profiles(self.project_root) if str(p.get("case_id", "")).startswith(case_prefix)]
         self._experiment_profiles_by_case = {profile["name"]: profile for profile in profiles}
         names = list(self._experiment_profiles_by_case)
         if not names:
@@ -3982,7 +4334,7 @@ class VozLLMPLCGUI(ctk.CTk):
             "experiment_label": experiment_label,
             "repetition": repetition,
             "case_id": case_id,
-            "experiment_family": "DISCRETE",
+            "experiment_family": "PID" if case_id.startswith("P") else "DISCRETE",
             "condition": condition["code"],
             "variant": variant,
             "reference_command_text": self._active_variant_command_text,
@@ -4289,22 +4641,37 @@ class VozLLMPLCGUI(ctk.CTk):
             messagebox.showwarning("Ejecutar comando", "Espere a que termine la transcripcion de voz.")
             return False
 
-        command_text = self.command_textbox.get("1.0", "end").strip()
-        precheck_ok, precheck_message = self._run_pipeline_precheck(command_text)
-        if not precheck_ok:
-            self._set_status("Error")
-            self._log(f"Ejecucion detenida en verificacion previa: {precheck_message}")
-            if self.active_trial:
-                self._cancel_active_trial(f"Verificacion previa fallida: {precheck_message}")
-            messagebox.showwarning("Ejecutar comando", precheck_message)
-            return False
+        # Deshabilitar el boton durante TODO el pipeline, no solo la fase TIA (que ya se
+        # autogestiona en validate_latest_package_in_tia()/_poll_tia_worker) - cierra la ventana
+        # en la que un doble clic durante process_command()/generate_package() (fases sincronas,
+        # potencialmente de varios segundos por llamadas LLM reales) podria reencolar el mismo
+        # comando antes de que _tia_worker_active exista siquiera. Solo lo reactivamos aqui si la
+        # operacion TIA nunca llego a arrancar - si arranco, _poll_tia_worker es quien la libera.
+        self.execute_command_button.configure(state="disabled")
+        self.start_trial_button.configure(state="disabled")
+        tia_started = False
+        try:
+            command_text = self.command_textbox.get("1.0", "end").strip()
+            precheck_ok, precheck_message = self._run_pipeline_precheck(command_text)
+            if not precheck_ok:
+                self._set_status("Error")
+                self._log(f"Ejecucion detenida en verificacion previa: {precheck_message}")
+                if self.active_trial:
+                    self._cancel_active_trial(f"Verificacion previa fallida: {precheck_message}")
+                messagebox.showwarning("Ejecutar comando", precheck_message)
+                return False
 
-        if not self.process_command():
-            return False
-        if not self.generate_package():
-            return False
-        self.validate_latest_package_in_tia()
-        return True
+            if not self.process_command():
+                return False
+            if not self.generate_package():
+                return False
+            self.validate_latest_package_in_tia()
+            tia_started = self._tia_worker_active
+            return True
+        finally:
+            if not tia_started:
+                self.execute_command_button.configure(state="normal")
+                self.start_trial_button.configure(state="normal")
 
     def _show_experimental_incompatibility(self, profile: dict[str, Any] | None, unauthorized_tags: list[str]) -> None:
         """
@@ -4339,6 +4706,28 @@ class VozLLMPLCGUI(ctk.CTk):
             "- Cancele y reformule el comando."
         )
 
+    def _show_validation_errors(self, semantic_output: dict[str, Any]) -> None:
+        """
+        `is_valid=False` sin una ambiguedad real que preguntar (ver process_command, seccion "unica
+        fuente de verdad"): tipicamente el intent elegido quedo con parametros faltantes o
+        estructuralmente incompatibles con su plantilla (p. ej. un comando de N actores que el LLM
+        interpreto con una forma de parametros que INT_MOTOR_START_STOP/INT_MUTUAL_INTERLOCK no
+        pueden consumir). Esto es un ERROR, no una pregunta - se muestran los errores reales de
+        semantic_validation en vez de abrir ClarificationDialog con una pregunta vacia/generica.
+        """
+        errors = list(semantic_output.get("semantic_validation", {}).get("errors", []))
+        detail = "\n".join(f"- {error}" for error in errors) if errors else (
+            "No se especifico un motivo de validacion (revise Parametros/Verificacion en el panel derecho)."
+        )
+        messagebox.showerror(
+            "Interpretacion no valida",
+            "La interpretacion no se puede generar tal como quedo estructurada "
+            f"(intent: {semantic_output.get('intent_id', 'INT_UNKNOWN')}).\n\n"
+            f"{detail}\n\n"
+            "Reformule el comando o simplifiquelo (por ejemplo, describiendo los actores de uno en "
+            "uno) e intente de nuevo."
+        )
+
     def _invalidate_download_readiness(self) -> None:
         """
         'CARGAR PROGRAMA AL PLC' solo puede estar habilitado mientras represente la ULTIMA
@@ -4360,10 +4749,21 @@ class VozLLMPLCGUI(ctk.CTk):
         EJECUTAR COMANDO/EJECUTAR ENSAYO continue automatically once the ambiguity resolves).
         Cancelling is the real "give up" path and closes any active trial with the evidence.
         """
-        question = str(
-            semantic_output.get("clarification_question")
-            or "El comando requiere aclaracion antes de generar el paquete PLC."
-        )
+        # Guardia defensiva secundaria (seccion 7 del pedido): si algun otro llamador futuro
+        # invoca esto sin una pregunta real, no se abre un dialogo con texto de relleno generico -
+        # eso es exactamente lo que producia la "caja vacia" reportada. La correccion real vive en
+        # process_command (unica fuente de verdad: requires_clarification + pregunta no vacia antes
+        # de siquiera llegar aqui); esto es solo un ultimo resguardo, no el arreglo principal.
+        clarification_question = semantic_output.get("clarification_question")
+        if not clarification_question or not str(clarification_question).strip():
+            self._log(
+                "_resolve_semantic_ambiguity invocado sin clarification_question real - no se abre "
+                "un dialogo vacio; tratando como error de validacion."
+            )
+            self._show_validation_errors(semantic_output)
+            return False
+
+        question = str(clarification_question)
         dialog = ClarificationDialog(self, question)
         self.wait_window(dialog)
         answer = dialog.result
@@ -4384,6 +4784,131 @@ class VozLLMPLCGUI(ctk.CTk):
         self.command_textbox.insert("1.0", augmented_command)
         return self.process_command()
 
+    def _handle_map_config_command(
+        self,
+        semantic_output: dict[str, Any],
+        io_map: dict[str, Any],
+        intents_catalog: dict[str, Any],
+        safety_rules: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """
+        MAP_CONFIG branch (sections 6-9, 14-16, 23): a command that mentions "Usa Q8.1 para el
+        motor 2" style address+role assignments. Every proposal here already came from
+        io_allocator.propose_assignment (via semantic_validator) against the REAL active map -
+        this method only shows it to the user and applies it on confirmation; it never computes
+        or guesses an address itself. Returns None to stop process_command right here (blocked,
+        rejected, or a pure-configuration command with no logic to generate), or the
+        semantic_output (re-validated against the now-updated map) to let process_command
+        continue into its normal intent/logic flow for a combined command (section 14).
+        """
+        block_message = block_map_config_message(self.active_trial, self.active_profile_id)
+        if block_message:
+            self._log("MAP_CONFIG rechazado: ensayo/perfil experimental activo.")
+            messagebox.showwarning("Configuracion de mapa", block_message)
+            return None
+
+        proposals = semantic_output.get("semantic_validation", {}).get("io_assignment_proposals", [])
+        if not proposals:
+            self._log("MAP_CONFIG detectado pero sin propuestas validas (revise el mapa activo).")
+            messagebox.showwarning(
+                "Configuracion de mapa",
+                "No se pudo generar una propuesta de asignacion valida para este comando."
+            )
+            return None
+
+        # Politica de cero confirmaciones en Modo Normal (seccion 22): MAP_CONFIG ya esta
+        # restringido a Modo Normal (Experimentacion se bloquea arriba), asi que TODO lo que no
+        # este bloqueado se aplica directo - FREE, "ya es ese nombre", y tambien reasignar un
+        # ASSIGNED con un rol distinto. Nunca se pregunta; se informa despues (seccion 23).
+        blocked = [proposal for proposal in proposals if proposal.get("blocked")]
+        to_apply = [proposal for proposal in proposals if not proposal.get("blocked")]
+
+        if not to_apply:
+            if blocked:
+                reasons = "\n".join(f"- {proposal.get('reason')}" for proposal in blocked)
+                messagebox.showerror("Configuracion de mapa", f"No se aplico ninguna asignacion:\n\n{reasons}")
+            self._log("MAP_CONFIG: no se aplico ninguna asignacion.")
+            return None
+
+        try:
+            # CRITICO: el parche SIEMPRE se aplica sobre el inventario fisico COMPLETO, leido de
+            # nuevo directamente del archivo - nunca sobre `io_map` (el parametro recibido), que
+            # puede venir filtrado por perfil (apply_profile_filter, en _load_runtime_configuration)
+            # si hay un active_profile_id activo. Guardar ese `io_map` filtrado de vuelta al disco
+            # borraria permanentemente todo canal fisico fuera de allowed_variables del perfil - el
+            # bug reportado (el "Mapa I/O completo" mostraba solo los canales usados). El filtro de
+            # perfil es correcto para INTERPRETAR/VALIDAR que puede referenciar un comando; nunca
+            # debe ser la base de una escritura al mapa real.
+            full_io_map = load_json_file(self.io_map_path)
+            updated_map, history_entries = apply_assignments(full_io_map, to_apply, source="TEXT_EXPLICIT")
+            save_plc_map(self.io_map_path, updated_map["variables"], history_entries=history_entries)
+        except ValueError as error:
+            messagebox.showerror("Configuracion de mapa", f"No se pudo aplicar la asignacion.\n\n{error}")
+            self._log(f"MAP_CONFIG fallo al aplicar: {error}")
+            return None
+
+        self.io_variables = load_io_map_variables(self.io_map_path)
+        self._load_active_map_metadata_shadow()
+        self._load_io_map_table()
+
+        # Resumen compacto seccion 23: separa lo que ya era exactamente ese nombre (conservado,
+        # sin cambio real) de lo que efectivamente cambio de nombre (reasignado).
+        kept = [p for p in to_apply if p.get("current_name") == p.get("proposed_name")]
+        reassigned = [p for p in to_apply if p.get("current_name") != p.get("proposed_name")]
+        summary_parts = ["CONFIGURACION AUTOMATICA"]
+        if kept:
+            summary_parts.append("\nConservados:\n" + "\n".join(f"{p['address']} -> {p['proposed_name']}" for p in kept))
+        if reassigned:
+            summary_parts.append(
+                "\nReasignados:\n" + "\n".join(
+                    f"{p['address']}: {p.get('current_name') or '—'} -> {p['proposed_name']}" for p in reassigned
+                )
+            )
+        summary_text = "\n".join(summary_parts)
+        summary_lines = [f"{proposal.get('address')} -> {proposal.get('proposed_name')}" for proposal in to_apply]
+        if blocked:
+            summary_text += "\n\nRechazadas (protegidas):\n" + "\n".join(
+                f"- {proposal.get('reason')}" for proposal in blocked
+            )
+        self._log("MAP_CONFIG aplicado. " + "; ".join(summary_lines))
+
+        io_map, intents_catalog, safety_rules = self._load_runtime_configuration()
+        self.pending_runtime_config = (io_map, intents_catalog, safety_rules)
+        semantic_output = dict(semantic_output)
+        semantic_output["semantic_validation"] = validate_semantic_output(
+            semantic_output, io_map, intents_catalog, safety_rules
+        )
+
+        # Seccion 11: "no hay mas logica que generar" NO es lo mismo que "intent_id quedo
+        # INT_UNKNOWN". Un comando compuesto real (p.ej. un enclavamiento de N motores que no
+        # coincide con ningun intent_id fijo del catalogo) puede legitimamente resolver a
+        # INT_UNKNOWN y aun asi traer functional_requirements con contenido logico real - en ese
+        # caso el pipeline debe continuar (seccion 6 de una tarea anterior: reusar
+        # functional_requirements en vez de forzar un intent_id especifico). Solo se trata como
+        # "puramente configuracion, sin logica" cuando AMBOS son verdad: intent_id sigue
+        # INT_UNKNOWN y no hay ningun functional_requirement adjunto.
+        has_logic_content = bool(semantic_output.get("functional_requirements")) or semantic_output.get(
+            "intent_id"
+        ) not in (None, "INT_UNKNOWN")
+
+        if not has_logic_content:
+            # Comando exclusivamente de configuracion (seccion 11, ejemplo "Usa Q8.1 como salida
+            # del motor 2."): este SI es el resultado final visible para el usuario, se muestra
+            # ahora.
+            summary_text += "\n\n(El comando no incluia logica PLC adicional; no se genero ningun programa.)"
+            self._last_map_config_summary = None
+            messagebox.showinfo("Configuracion de mapa", summary_text)
+            return None
+
+        # Comando MIXTO (mapa + logica, seccion 11/13/14): la configuracion automatica es UNA
+        # ETAPA del pipeline, no su fin - no se detiene el flujo con un messagebox aqui. Se
+        # registra en consola/historial y se reserva el resumen para el dialogo de confirmacion de
+        # generate_package(), que sigue siendo el unico punto de confirmacion humana antes de
+        # generar codigo (esa confirmacion no se elimina ni se salta).
+        self._log("MAP_CONFIG aplicado automaticamente (comando mixto, continua con la logica): " + summary_text.replace("\n", " | "))
+        self._last_map_config_summary = summary_text
+        return semantic_output
+
     def process_command(self) -> bool:
         command_text = self.command_textbox.get("1.0", "end").strip()
         if not command_text:
@@ -4393,6 +4918,10 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         self._invalidate_download_readiness()
+        # Un resumen de MAP_CONFIG solo es valido para el comando que lo genero - nunca debe
+        # sobrevivir y aparecer en el dialogo de confirmacion de un comando siguiente que no toco
+        # el mapa.
+        self._last_map_config_summary = None
 
         if not self.save_io_map(show_success=False):
             self._set_status("Error")
@@ -4432,7 +4961,31 @@ class VozLLMPLCGUI(ctk.CTk):
             if self.work_mode_var.get() == "Experimentacion":
                 self._refresh_experiment_status()
 
-            if semantic_output.get("intent_id") == "INT_UNKNOWN" or not semantic_output.get("semantic_validation", {}).get("is_valid", False):
+            has_map_proposals = bool(semantic_output.get("semantic_validation", {}).get("io_assignment_proposals"))
+            map_config_continued = False
+            if semantic_output.get("operation_type") == "MAP_CONFIG" or has_map_proposals:
+                # has_map_proposals cubre el caso implicito (seccion 11/12): un tag no autorizado
+                # pero bien formado que el IOAllocator ya resolvio dentro de validate_semantic_output
+                # (nunca paso por extract_io_assignment_requests, asi que operation_type solo no
+                # alcanza para detectarlo).
+                proceed_with_logic = self._handle_map_config_command(semantic_output, io_map, intents_catalog, safety_rules)
+                if proceed_with_logic is None:
+                    self._set_status("Listo")
+                    return False
+                semantic_output = proceed_with_logic
+                self.pending_semantic_output = semantic_output
+                map_config_continued = True
+
+            # Seccion 11: un comando compuesto real puede no coincidir con ningun intent_id fijo
+            # del catalogo y por eso resolver a INT_UNKNOWN, aun trayendo functional_requirements
+            # con contenido logico real que _handle_map_config_command ya considero suficiente
+            # para continuar (has_logic_content). Bloquear aqui SOLO por "intent_id volvio
+            # INT_UNKNOWN" deshacia esa decision y detenia el pipeline otra vez. Fuera del flujo
+            # MAP_CONFIG, intent_id == INT_UNKNOWN sigue significando exactamente lo mismo que
+            # siempre (no se entendio el comando, se pide aclaracion) - sin cambios ahi.
+            intent_missing = semantic_output.get("intent_id") == "INT_UNKNOWN" and not map_config_continued
+            is_valid_now = semantic_output.get("semantic_validation", {}).get("is_valid", False)
+            if intent_missing or not is_valid_now:
                 unknown_payload = {
                     "is_valid": False,
                     "errors": list(semantic_output.get("semantic_validation", {}).get("errors", [])),
@@ -4444,6 +4997,21 @@ class VozLLMPLCGUI(ctk.CTk):
                 self._record_history(snapshot, platform="Sin plataforma", is_valid=False)
 
                 unauthorized_tags = list(semantic_output.get("semantic_validation", {}).get("unauthorized_tags", []))
+                # Unica fuente de verdad para abrir el dialogo de aclaracion (seccion 5 del pedido):
+                # requires_clarification debe ser True Y traer una pregunta real y no vacia. Un
+                # semantic_output final con requires_clarification=False (el caso reportado:
+                # is_valid=False solo porque el intent elegido - p.ej. INT_MOTOR_START_STOP - quedo
+                # con parametros faltantes/estructuralmente incompatibles, no porque el comando sea
+                # ambiguo) NUNCA debe llegar a ClarificationDialog - eso es un ERROR DE VALIDACION,
+                # no una pregunta que el usuario pueda responder, y por eso la caja aparecia vacia
+                # (clarification_question siempre fue None; el dialogo solo rellenaba un texto
+                # generico de relleno). Se muestran los errores reales en su lugar.
+                clarification_question = semantic_output.get("clarification_question")
+                has_real_question = bool(
+                    semantic_output.get("requires_clarification")
+                    and clarification_question
+                    and str(clarification_question).strip()
+                )
                 if unauthorized_tags and self.work_mode_var.get() == "Experimentacion":
                     profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
                     self._log("El comando solicita recursos fisicos no autorizados por el caso experimental.")
@@ -4455,21 +5023,28 @@ class VozLLMPLCGUI(ctk.CTk):
                     if self.active_trial:
                         self._capture_trial_parse_failure(command_text, semantic_output, error_code="E3")
                     self._show_normal_missing_variable(unauthorized_tags)
-                else:
+                elif has_real_question:
                     self._log("La interpretacion requiere aclaracion antes de generar (SEMANTIC_AMBIGUITY).")
                     self._set_status("Listo")
                     return self._resolve_semantic_ambiguity(command_text, semantic_output)
+                else:
+                    self._log("La interpretacion no es valida para generar codigo (error de validacion, no una ambiguedad).")
+                    if self.active_trial:
+                        self._capture_trial_parse_failure(command_text, semantic_output, error_code="E3")
+                    self._show_validation_errors(semantic_output)
                 self._set_status("Listo")
                 return False
 
-            self._set_validation_banner("Interpretacion lista. Revise y confirme la generacion.", None)
+            self._set_validation_banner("Interpretacion lista.", None)
             interpretation_snapshot = self._build_interpretation_snapshot(command_text, semantic_output)
             self._record_history(
                 interpretation_snapshot,
                 platform="Interpretacion",
                 is_valid=semantic_output.get("semantic_validation", {}).get("is_valid", False)
             )
-            self._log("Interpretacion completada. Lista para confirmacion.")
+            self._log("Interpretacion completada.")
+            self._log("[PIPELINE] Semantic OK")
+            self._log("[PIPELINE] IO allocation OK")
             if self.active_trial:
                 self._capture_trial_parse_result(command_text, semantic_output)
             self._set_status("Listo")
@@ -4489,20 +5064,18 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         target_platforms = normalize_platform_targets(self.platform_var.get())
-        confirmation = messagebox.askyesnocancel(
-            "Confirmar generacion",
-            "Revise la interpretacion antes de generar.\n\n"
+        # EJECUTAR COMANDO debe continuar automaticamente hasta TIA/compilacion sin ningun dialogo
+        # de confirmacion intermedio (decision explicita del usuario - reemplaza la politica previa
+        # de "confirmar antes de generar"). El resumen de interpretacion (y el de MAP_CONFIG si
+        # aplico, seccion 14) se registra en consola en vez de bloquear con un messagebox.
+        map_config_prefix = ""
+        if self._last_map_config_summary:
+            map_config_prefix = self._last_map_config_summary + "\n\n"
+        self._log(
+            "Generando sin confirmacion interactiva (Modo Normal, pipeline automatico):\n"
+            + map_config_prefix
             + self._build_confirmation_summary(self.pending_semantic_output, target_platforms)
-            + "\n\nSi selecciona 'No' podra editar el comando. Si selecciona 'Cancelar' no se generara nada."
         )
-        if confirmation is None:
-            self._log("Generacion cancelada por el usuario.")
-            if self.active_trial:
-                self._cancel_active_trial("Generacion cancelada por el usuario en la confirmacion.")
-            return False
-        if confirmation is False:
-            self._log("El usuario decidio editar el comando antes de generar.")
-            return False
 
         io_map, intents_catalog, safety_rules = self.pending_runtime_config
         command_text = self.pending_semantic_output.get("command_text", self.command_textbox.get("1.0", "end").strip())
@@ -4523,6 +5096,13 @@ class VozLLMPLCGUI(ctk.CTk):
                 )
                 verification = package_result["verification"]
                 saved_paths = package_result.get("artifacts") or None
+                self._log("[PIPELINE] IR built")
+                if target_platform == "SIEMENS_SCL_V18":
+                    self._log("[PIPELINE] Siemens SCL generated")
+                self._log(
+                    "[PIPELINE] Verification passed" if verification.get("is_valid")
+                    else "[PIPELINE] Verification FAILED: " + "; ".join(verification.get("errors", []))
+                )
                 append_test_record_to_docs(
                     docs_dir=self.docs_dir,
                     command_text=command_text,
@@ -4586,11 +5166,18 @@ class VozLLMPLCGUI(ctk.CTk):
                 combined_verification,
                 combined_files
             )
-            self._log("Verificacion completada.")
+            all_valid = all(result["verification"]["is_valid"] for result in combined_results.values())
+            # Seccion 12: un mensaje generico ("Verificacion completada.") suena a exito incluso
+            # cuando fallo - ya se emitio "[PIPELINE] Verification passed/FAILED" por plataforma
+            # mas arriba; este es el resumen final, inequivoco, de TODAS las plataformas juntas.
+            if all_valid:
+                self._log("Verificacion completada correctamente.")
+            else:
+                self._log("Verificacion fallida.")
             if self.active_trial:
                 self._capture_trial_generation_result(combined_results)
             self._set_status("Listo")
-            return all(result["verification"]["is_valid"] for result in combined_results.values())
+            return all_valid
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._set_status("Error")
             self._set_validation_banner("Error durante la generacion.", False)

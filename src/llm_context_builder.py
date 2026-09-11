@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from alias_resolver import filter_llm_allowed_entries
+from ir_builder import OPTIONAL_PARAMETER_KEYS
 from utils import build_io_map_index
 
 
@@ -143,6 +144,8 @@ def _summarize_intents(intents_catalog: dict[str, Any]) -> list[dict[str, Any]]:
     for intent_id, payload in intents_catalog.items():
         if not isinstance(payload, dict):
             continue
+        optional_keys = OPTIONAL_PARAMETER_KEYS.get(intent_id, set())
+        all_keys = INTENT_PARAMETER_HINTS.get(intent_id, [])
         summaries.append(
             {
                 "intent_id": intent_id,
@@ -151,7 +154,14 @@ def _summarize_intents(intents_catalog: dict[str, Any]) -> list[dict[str, Any]]:
                 "required_outputs": payload.get("required_outputs", []),
                 "required_internal": payload.get("required_internal", []),
                 "plc_blocks": payload.get("plc_blocks", []),
-                "expected_parameters": INTENT_PARAMETER_HINTS.get(intent_id, [])
+                # "expected_parameters" NO es una checklist obligatoria: son los NOMBRES validos
+                # que este intent reconoce. Los que tambien aparecen en "optional_parameter_names"
+                # (p.ej. reset_input/alarm_output/run_indicator/fault_indicator en
+                # INT_MOTOR_START_STOP) solo deben incluirse en "parameters" si el comando
+                # REALMENTE pidio esa funcion (reset, alarma, piloto...) - omitelos si no se pidio,
+                # nunca rellenes con el tag fisico historico "por si acaso".
+                "expected_parameters": all_keys,
+                "optional_parameter_names": sorted(optional_keys) if optional_keys else []
             }
         )
     return summaries
@@ -170,7 +180,13 @@ def _summarize_io_map(io_map: dict[str, Any]) -> list[dict[str, Any]]:
                 "location": entry.get("location", ""),
                 "description": entry.get("description", ""),
                 "aliases": entry.get("aliases", []),
-                "semantic_role": entry.get("semantic_role", "")
+                "semantic_role": entry.get("semantic_role", ""),
+                # FREE/ASSIGNED/LOCKED (ver IOAllocator, docs/23_io_allocator.md): el LLM debe
+                # saber que un nombre ASSIGNED es solo el rol ACTUAL de ese canal fisico, no una
+                # etiqueta permanente - puede reutilizarse tal cual o, si el comando pide una
+                # funcion distinta, el sistema lo reasignara automaticamente (nunca preguntando
+                # por el tag). Solo LOCKED es realmente fijo.
+                "state": entry.get("state", "ASSIGNED")
             }
         )
     return summary
@@ -203,6 +219,17 @@ def build_llm_context(
         "authorized_intents": _summarize_intents(intents_catalog),
         "authorized_io_map": _summarize_io_map(io_map),
         "authorized_tags": sorted(build_io_map_index(filter_llm_allowed_entries(io_map))),
+        "io_allocation_policy": (
+            "authorized_io_map.state dice FREE (canal fisico disponible, sin funcion todavia), "
+            "ASSIGNED (tiene un rol actual, pero es REASIGNABLE - puedes describir un recurso "
+            "funcional nuevo con ese mismo canal en mente, el sistema decide si lo reasigna) o "
+            "LOCKED (fijo, nunca cambia de nombre - reutilizalo tal cual si la funcion coincide). "
+            "No necesitas que el nombre exacto que necesitas ya exista en el mapa: si el comando "
+            "pide una funcion fisica nueva (una entrada o salida que hoy no tiene ese rol), "
+            "propon un nombre funcional claro con el prefijo correcto (I_/Q_/AI_/AO_) - el "
+            "IOAllocator decide deterministicamente que canal fisico usar. NUNCA propongas una "
+            "direccion (%I.../%Q...); solo el nombre funcional."
+        ),
         "safety_rules": _summarize_safety_rules(safety_rules),
         "iec_time_format": {
             "description": "Use IEC 61131-3 TIME literals",

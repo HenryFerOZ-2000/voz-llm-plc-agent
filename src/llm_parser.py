@@ -6,16 +6,21 @@ from pathlib import Path
 from typing import Any
 
 from alias_resolver import build_alias_index
+from io_allocator import extract_implicit_multi_resource_requests, extract_io_assignment_requests
 from functional_requirements import (
     FUNCTIONAL_REQUIREMENT_KEYWORDS,
+    PID_PROCESS_VARIABLES,
     compute_intent_covered_types,
-    compute_semantic_coverage
+    compute_semantic_coverage,
+    detect_compositional_complexity,
+    detect_functional_requirement_conflicts
 )
 from knowledge_retriever import retrieve_relevant_context
 from llm_client import PLCInterpretationLLMClient
 from llm_context_builder import build_llm_context
 from semantic_parser import normalize_text, parse_command as parse_command_rule_based
-from semantic_validator import validate_semantic_output
+from semantic_repair import repair_semantic_output, strip_unavailable_emergency_reference
+from semantic_validator import INTENT_PARAMETER_RULES, validate_semantic_output
 from utils import get_project_root, load_json_file
 
 
@@ -178,10 +183,12 @@ def _attach_rule_based_functional_requirements(
     if result.get("functional_requirements"):
         return result
     normalized_command = str(result.get("normalized_command") or command_text).lower()
+    is_pid_context = result.get("intent_id") == "INT_PID_SUPERVISOR"
     detected_types = {
         req_type
         for req_type, keywords in FUNCTIONAL_REQUIREMENT_KEYWORDS.items()
-        if any(keyword in normalized_command for keyword in keywords)
+        if (req_type in PID_PROCESS_VARIABLES) == is_pid_context
+        and any(keyword in normalized_command for keyword in keywords)
     }
     if not detected_types:
         return result
@@ -230,6 +237,29 @@ def _validate_result(
     )
 
 
+def _repair_and_validate(
+    payload: dict[str, Any],
+    io_map: dict[str, Any],
+    intents_catalog: dict[str, Any],
+    safety_rules: dict[str, Any]
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Shape-normalization pass (see semantic_repair.py) BEFORE validation: a compound-command
+    interpretation the LLM/rules already understood correctly, but expressed under a different
+    parameter shape than the chosen intent's fixed template, must not be rejected as "missing
+    required parameters" - it gets repaired first, then validated as usual. Also strips any
+    I_Emergency reference the parser added by convention when the active map has no such tag
+    (section "banco sin paro de emergencia cableado al PLC") - otherwise the two-level validation
+    below would auto-resolve it to a real FREE channel nobody asked for. Returns (possibly-repaired
+    payload, its validation) so callers keep using the SAME repaired object downstream (IR building
+    reads semantic_output["parameters"] directly), never the pre-repair one.
+    """
+    payload = strip_unavailable_emergency_reference(payload, io_map)
+    repaired = repair_semantic_output(payload, INTENT_PARAMETER_RULES)
+    validation = _validate_result(repaired, io_map, intents_catalog, safety_rules)
+    return repaired, validation
+
+
 def _agreement(rule_result: dict[str, Any] | None, llm_result: dict[str, Any] | None) -> bool:
     if not rule_result or not llm_result:
         return False
@@ -239,14 +269,60 @@ def _agreement(rule_result: dict[str, Any] | None, llm_result: dict[str, Any] | 
     )
 
 
-def _critical_disagreement(rule_result: dict[str, Any] | None, llm_result: dict[str, Any] | None) -> bool:
+def _result_richness_score(result: dict[str, Any] | None, validation: dict[str, Any] | None) -> float:
+    """
+    Metrica deliberadamente simple y determinista (no una IA de verdad) para comparar cuanto
+    representa cada interpretacion: paso su propia validacion, tiene una intencion resuelta,
+    cuantos tags reconoce, cuantos requisitos funcionales declara. Se usa para decidir CUAL de
+    reglas/LLM usar cuando ambas son coherentes pero distintas - nunca para inventar contenido.
+    """
+    if not result:
+        return -1.0
+    score = 0.0
+    if result.get("intent_id") not in (None, "INT_UNKNOWN"):
+        score += 1.0
+    score += len(result.get("recognized_tags", []) or [])
+    score += len(result.get("functional_requirements", []) or [])
+    if validation and validation.get("is_valid"):
+        score += 2.0
+    if result.get("requires_clarification"):
+        score -= 1.0
+    return score
+
+
+def _merge_functional_requirements(
+    primary: list[dict[str, Any]], secondary: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """
+    Incorpora requisitos funcionales coherentes que SOLO la interpretacion secundaria detecto
+    (nunca sustituye los de la primaria, nunca duplica un `type` ya presente).
+    """
+    primary_types = {str(requirement.get("type", "")) for requirement in primary}
+    merged = list(primary)
+    for requirement in secondary:
+        if str(requirement.get("type", "")) not in primary_types:
+            merged.append(requirement)
+    return merged
+
+
+def _detect_functional_contradiction(
+    rule_result: dict[str, Any] | None, llm_result: dict[str, Any] | None
+) -> list[dict[str, Any]]:
+    """
+    Una diferencia de `intent_id` NUNCA es, por si sola, una contradiccion real - eso se resuelve
+    comparando cobertura (_result_richness_score), no preguntando. Una contradiccion REAL es que
+    ambas interpretaciones pidan el MISMO tipo de requisito funcional con parametros incompatibles
+    (p. ej. las reglas detectan `set_manual_mode` y el LLM `set_auto_mode` sobre el mismo comando -
+    literalmente pedir dos comportamientos opuestos). Reutiliza
+    detect_functional_requirement_conflicts, ya usado para esto mismo dentro de una sola
+    interpretacion - aqui simplemente se combinan ambas listas antes de aplicarlo.
+    """
     if not rule_result or not llm_result:
-        return False
-    rule_intent = rule_result.get("intent_id")
-    llm_intent = llm_result.get("intent_id")
-    if rule_intent != llm_intent and "INT_UNKNOWN" not in {rule_intent, llm_intent}:
-        return True
-    return False
+        return []
+    combined = list(rule_result.get("functional_requirements", []) or []) + list(
+        llm_result.get("functional_requirements", []) or []
+    )
+    return detect_functional_requirement_conflicts(combined)
 
 
 def _annotate_result(
@@ -300,7 +376,7 @@ def _fallback_to_rules(
     rule_result = _normalize_semantic_output(
         parse_command_rule_based(command_text, alias_index=build_alias_index(io_map)), command_text
     )
-    semantic_validation = _validate_result(rule_result, io_map, intents_catalog, safety_rules)
+    rule_result, semantic_validation = _repair_and_validate(rule_result, io_map, intents_catalog, safety_rules)
     return _annotate_result(
         rule_result,
         requested_mode=requested_mode,
@@ -354,7 +430,7 @@ def parse_with_mode(
         parse_command_rule_based(command_text, alias_index=build_alias_index(runtime_io_map)), command_text
     )
     rule_result = _attach_rule_based_functional_requirements(rule_result, command_text, runtime_intents_catalog)
-    rule_validation = _validate_result(rule_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+    rule_result, rule_validation = _repair_and_validate(rule_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
     rule_result = _sync_clarification_from_validation(rule_result, rule_validation)
 
     if requested_mode == "rule_based":
@@ -404,6 +480,8 @@ def parse_with_mode(
         intents_catalog=runtime_intents_catalog
     )
 
+    compositional_complexity = detect_compositional_complexity(command_text)
+
     should_consult_llm = requested_mode == "llm"
     if requested_mode == "hybrid":
         should_consult_llm = bool(
@@ -416,6 +494,12 @@ def parse_with_mode(
             # compuestos (pilotos, delays adicionales, etc.) - eso tambien amerita consultar al
             # LLM, aunque la confianza por reglas ya superara el umbral (seccion 14).
             or not rule_coverage["complete"]
+            # Senales ESTRUCTURALES (multiples entidades numeradas, "respectivamente",
+            # "viceversa", exclusion mutua/"al mismo tiempo", apagado cruzado uno/otro, varias
+            # condiciones "cuando") indican un comando composicional que compute_semantic_coverage
+            # no detecta porque no coincide con ninguna frase exacta de su catalogo de keywords -
+            # aunque la confianza de reglas sea alta, esto tambien amerita consultar al LLM.
+            or compositional_complexity["is_compositional"]
         )
 
     if requested_mode == "hybrid" and not should_consult_llm:
@@ -474,7 +558,7 @@ def parse_with_mode(
             )
         raise
 
-    llm_validation = _validate_result(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+    llm_result, llm_validation = _repair_and_validate(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
     llm_result = _sync_clarification_from_validation(llm_result, llm_validation)
 
     first_pass_result = dict(llm_result)
@@ -506,8 +590,8 @@ def parse_with_mode(
                 context=retry_context,
                 llm_response_text=None
             )
+            retry_result, retry_validation = _repair_and_validate(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
             second_pass_result = retry_result
-            retry_validation = _validate_result(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
             retry_result = _sync_clarification_from_validation(retry_result, retry_validation)
             retry_coverage = compute_semantic_coverage(
                 command_text=command_text,
@@ -537,21 +621,23 @@ def parse_with_mode(
             reason_for_retry=reason_for_retry
         )
 
-    if _critical_disagreement(rule_result, llm_result):
+    functional_contradictions = _detect_functional_contradiction(rule_result, llm_result)
+    if functional_contradictions:
+        # Contradiccion funcional REAL (mismo tipo de requisito, parametros incompatibles - p.ej.
+        # una interpretacion pide set_auto_mode y la otra set_manual_mode para el mismo comando).
+        # Esto SI amerita aclaracion. Una simple diferencia de intent_id NUNCA la amerita por si
+        # sola (bug reportado) - eso se resuelve mas abajo comparando cobertura, sin preguntar.
         clarification_output = dict(llm_result)
         clarification_output["intent_id"] = "INT_UNKNOWN"
         clarification_output["confidence"] = 0.0
         clarification_output["requires_clarification"] = True
+        conflict_summary = "; ".join(conflict["reason"] for conflict in functional_contradictions)
         clarification_output["clarification_question"] = (
-            "La interpretacion por reglas y la interpretacion LLM discrepan. "
-            "Confirme la intencion requerida antes de generar el paquete PLC."
+            "Se detecto una contradiccion funcional real entre la interpretacion por reglas y la "
+            f"del LLM: {conflict_summary} Indique cual comportamiento debe aplicarse."
         )
         clarification_output["ambiguities"] = list(dict.fromkeys(
-            list(clarification_output.get("ambiguities", []))
-            + [
-                f"Reglas propusieron {rule_result.get('intent_id')}.",
-                f"LLM propuso {llm_result.get('intent_id')}."
-            ]
+            list(clarification_output.get("ambiguities", [])) + [conflict_summary]
         ))
         clarification_validation = _validate_result(
             clarification_output,
@@ -565,7 +651,10 @@ def parse_with_mode(
             used_mode="hybrid",
             rule_result=rule_result,
             llm_result=llm_result,
-            decision_reason="Existe desacuerdo critico entre reglas y LLM; se solicita aclaracion.",
+            decision_reason=(
+                "Contradiccion funcional real entre reglas y LLM (mismo requisito, parametros "
+                "incompatibles); se solicita aclaracion."
+            ),
             llm_usage=llm_usage,
             semantic_validation=clarification_validation,
             retrieved_context=retrieved_context,
@@ -575,14 +664,29 @@ def parse_with_mode(
             reason_for_retry=reason_for_retry
         )
 
-    if llm_validation.get("is_valid", False):
+    # Sin contradiccion real: nunca se pregunta solo por un intent_id distinto. Se compara
+    # cobertura semantica (_result_richness_score) y se elige automaticamente el resultado mas
+    # completo, fusionando los requisitos funcionales coherentes que la otra interpretacion haya
+    # detectado de mas (seccion 6: "si uno detecta requisitos adicionales coherentes, incorporarlos").
+    rule_score = _result_richness_score(rule_result, rule_validation)
+    llm_score = _result_richness_score(llm_result, llm_validation)
+
+    if llm_validation.get("is_valid", False) and (llm_score >= rule_score or not rule_validation.get("is_valid", False)):
+        merged_result = dict(llm_result)
+        merged_result["functional_requirements"] = _merge_functional_requirements(
+            llm_result.get("functional_requirements", []) or [], rule_result.get("functional_requirements", []) or []
+        )
         return _annotate_result(
-            llm_result,
+            merged_result,
             requested_mode=requested_mode,
             used_mode="llm",
             rule_result=rule_result,
             llm_result=llm_result,
-            decision_reason="El parser hibrido consulto al LLM y la salida paso validacion semantica.",
+            decision_reason=(
+                "El parser hibrido comparo cobertura semantica entre reglas y LLM (sin "
+                "contradiccion real) y uso la interpretacion LLM por tener cobertura igual o "
+                "mayor, fusionando requisitos funcionales adicionales coherentes de reglas."
+            ),
             llm_usage=llm_usage,
             semantic_validation=llm_validation,
             retrieved_context=retrieved_context,
@@ -593,13 +697,21 @@ def parse_with_mode(
         )
 
     if allow_rule_fallback and rule_validation.get("is_valid", False):
+        merged_result = dict(rule_result)
+        merged_result["functional_requirements"] = _merge_functional_requirements(
+            rule_result.get("functional_requirements", []) or [], llm_result.get("functional_requirements", []) or []
+        )
         return _annotate_result(
-            rule_result,
+            merged_result,
             requested_mode=requested_mode,
             used_mode="rule_based",
             rule_result=rule_result,
             llm_result=llm_result,
-            decision_reason="La salida LLM no paso validacion; se conserva el resultado por reglas.",
+            decision_reason=(
+                "El parser hibrido comparo cobertura semantica: las reglas tuvieron cobertura "
+                "igual o mayor (o la salida LLM no paso validacion), fusionando requisitos "
+                "funcionales adicionales coherentes detectados por el LLM."
+            ),
             llm_usage=llm_usage,
             semantic_validation=rule_validation,
             retrieved_context=retrieved_context,
@@ -634,7 +746,7 @@ def parse_command_with_llm(
     llm_client: PLCInterpretationLLMClient | None = None,
     llm_response_text: str | dict[str, Any] | None = None
 ) -> dict[str, Any]:
-    return parse_with_mode(
+    result = parse_with_mode(
         command_text=command_text,
         mode="llm",
         io_map=io_map,
@@ -643,6 +755,41 @@ def parse_command_with_llm(
         llm_client=llm_client,
         llm_response_text=llm_response_text
     )
+    return _attach_io_assignment_requests(result, command_text, io_map, intents_catalog, safety_rules)
+
+
+def _attach_io_assignment_requests(
+    payload: dict[str, Any],
+    command_text: str,
+    io_map: dict[str, Any] | None,
+    intents_catalog: dict[str, Any] | None,
+    safety_rules: dict[str, Any] | None
+) -> dict[str, Any]:
+    """
+    MAP_CONFIG post-processing (section 8/29.8): detects address<->role mentions with a plain
+    regex scan (io_allocator.extract_io_assignment_requests) - never with the LLM. Runs after the
+    normal rule/LLM/hybrid interpretation regardless of parser mode, so "Usa Q8.1 para el motor 2"
+    is classified the same way whether C1/C2/C3 is active. If no EXPLICIT address is mentioned,
+    falls back to extract_implicit_multi_resource_requests (a narrow, deterministic pattern for
+    "N motores con un pulsante independiente para cada uno" - section 42), which resolves roles by
+    NAME only (IOAllocator still decides the physical channel, never a guess). If neither finds
+    anything, the payload is returned unchanged (normal PLC-logic commands never go through this).
+    """
+    requests = extract_io_assignment_requests(command_text)
+    if not requests:
+        requests = extract_implicit_multi_resource_requests(command_text)
+    if not requests:
+        return payload
+    updated = dict(payload)
+    updated["requested_io_assignments"] = requests
+    updated["operation_type"] = "MAP_CONFIG"
+    updated["semantic_validation"] = validate_semantic_output(
+        semantic_output=updated,
+        io_map=io_map or {},
+        intents_catalog=intents_catalog or {},
+        safety_rules=safety_rules or {}
+    )
+    return updated
 
 
 def parse_command(
@@ -656,7 +803,7 @@ def parse_command(
 ) -> dict[str, Any]:
     settings = load_parser_settings()
     resolved_mode = _normalize_parser_mode(mode or resolve_parser_mode(settings))
-    return parse_with_mode(
+    result = parse_with_mode(
         command_text=command_text,
         mode=resolved_mode,
         io_map=io_map,
@@ -665,3 +812,4 @@ def parse_command(
         llm_client=llm_client,
         llm_response_text=llm_response_text
     )
+    return _attach_io_assignment_requests(result, command_text, io_map, intents_catalog, safety_rules)

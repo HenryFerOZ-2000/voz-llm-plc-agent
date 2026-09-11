@@ -311,36 +311,41 @@ def extract_tags(text: str, alias_index: dict[str, str] | None = None) -> dict[s
                 if slot_name:
                     tags[slot_name] = canonical_tag
 
+    # setdefault, no asignacion directa: si `alias_index` (arriba) ya resolvio este slot contra un
+    # tag REAL del mapa activo (p. ej. una variable LOCKED con un nombre distinto de la convencion
+    # pero con "arranque"/"start" en sus aliases), esa resolucion dinamica tiene prioridad sobre
+    # este valor de convencion fijo - "reutilizacion semantica de variables LOCKED": no debe
+    # sobrescribirse silenciosamente un match real solo porque coincide con el nombre por defecto.
     if _contains_any(normalized, ("start",)):
-        tags["start"] = "I_Start"
+        tags.setdefault("start", "I_Start")
     if _contains_any(normalized, ("stop", "after_stop", "stop_delay")):
-        tags["stop"] = "I_Stop"
+        tags.setdefault("stop", "I_Stop")
     if _contains_any(normalized, ("emergency",)):
-        tags["emergency"] = "I_Emergency"
+        tags.setdefault("emergency", "I_Emergency")
     if _contains_any(normalized, ("reset",)):
-        tags["reset"] = "I_Reset"
+        tags.setdefault("reset", "I_Reset")
     if _contains_any(normalized, ("sensor",)):
-        tags["sensor"] = "I_Sensor1"
+        tags.setdefault("sensor", "I_Sensor1")
     if _contains_any(normalized, ("manual", "manual_mode")):
-        tags["manual"] = "I_Mode_Manual"
+        tags.setdefault("manual", "I_Mode_Manual")
     if _contains_any(normalized, ("auto", "auto_mode")):
-        tags["auto"] = "I_Mode_Auto"
+        tags.setdefault("auto", "I_Mode_Auto")
     if _contains_any(normalized, ("maintenance",)):
-        tags["maintenance"] = "I_Maintenance"
+        tags.setdefault("maintenance", "I_Maintenance")
     if _contains_any(normalized, ("motor",)):
-        tags["motor"] = "Q_Motor_Enable"
+        tags.setdefault("motor", "Q_Motor_Enable")
     if _contains_any(normalized, ("alarma",)):
-        tags["alarm"] = "Q_Alarm"
+        tags.setdefault("alarm", "Q_Alarm")
     if _contains_any(normalized, ("pilot_run",)):
-        tags["pilot_run"] = "Q_Pilot_Run"
+        tags.setdefault("pilot_run", "Q_Pilot_Run")
     if _contains_any(normalized, ("pilot_fault",)):
-        tags["pilot_fault"] = "Q_Pilot_Fault"
+        tags.setdefault("pilot_fault", "Q_Pilot_Fault")
     if _contains_any(normalized, ("aux_output", "salida")):
-        tags["output"] = "Q_Aux_Output"
+        tags.setdefault("output", "Q_Aux_Output")
     if _contains_any(normalized, ("contactor_a",)):
-        tags["contactor_a"] = "Q_Contactor_A"
+        tags.setdefault("contactor_a", "Q_Contactor_A")
     if _contains_any(normalized, ("contactor_b",)):
-        tags["contactor_b"] = "Q_Contactor_B"
+        tags.setdefault("contactor_b", "Q_Contactor_B")
     return tags
 
 
@@ -479,18 +484,26 @@ def _build_timed_pulse_parameters(tags: dict[str, str], time_value: str | None) 
 
 
 def _build_motor_start_stop_parameters(tags: dict[str, str]) -> dict[str, Any]:
-    return {
+    parameters: dict[str, Any] = {
         "trigger_input": tags.get("start", "I_Start"),
         "stop_input": tags.get("stop", "I_Stop"),
         "emergency_input": tags.get("emergency", "I_Emergency"),
-        "reset_input": tags.get("reset", "I_Reset"),
         "motor_output": tags.get("motor", "Q_Motor_Enable"),
-        "alarm_output": tags.get("alarm", "Q_Alarm"),
-        "run_indicator": tags.get("pilot_run", "Q_Pilot_Run"),
-        "fault_indicator": tags.get("pilot_fault", "Q_Pilot_Fault"),
         "run_latch": "M_RunLatch",
         "fault_latch": "M_FaultLatch"
     }
+    # reset/alarm/pilotos son funciones OPCIONALES de este intent (ir_builder.
+    # OPTIONAL_PARAMETER_KEYS): solo se agregan si el comando realmente las menciono (extract_tags
+    # ya solo llena "reset"/"alarm"/"pilot_run"/"pilot_fault" cuando el texto las contiene) - nunca
+    # como relleno automatico con el tag fisico historico ("I_Reset", "Q_Alarm", ...), que el banco
+    # activo podria no tener.
+    for tag_key, param_key in (
+        ("reset", "reset_input"), ("alarm", "alarm_output"),
+        ("pilot_run", "run_indicator"), ("pilot_fault", "fault_indicator")
+    ):
+        if tag_key in tags:
+            parameters[param_key] = tags[tag_key]
+    return parameters
 
 
 def _build_delayed_start_parameters(tags: dict[str, str], time_value: str | None) -> dict[str, Any]:
@@ -770,9 +783,6 @@ def _build_assumptions(
         "INT_CYCLIC_MOTOR"
     } and "emergency" not in tags:
         assumptions.append("Se agrega I_Emergency por seguridad industrial obligatoria.")
-
-    if intent_id == "INT_MOTOR_START_STOP" and "reset" not in tags:
-        assumptions.append("Se reutiliza I_Reset para reinicio de falla.")
 
     if intent_id == "INT_TIMED_PULSE" and time_value is None:
         assumptions.append("Se usa una duracion por defecto de T#5s.")

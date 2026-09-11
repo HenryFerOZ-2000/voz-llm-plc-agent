@@ -100,6 +100,66 @@
       {"variant": "V1", "command": "Ejecuta un ciclo automatico completo con reinicio y manejo de alarma."},
       {"variant": "V2", "command": "Genera un ciclo automatico del motor con reset y alarma."},
       {"variant": "V3", "command": "Programa el ciclo automatico completo usando Start, Stop, Reset y Emergency."}
+    ],
+    "P01": [
+      {"variant": "V1", "command": "Habilita el modo automatico."},
+      {"variant": "V2", "command": "Quiero que el sistema pase a modo automatico."},
+      {"variant": "V3", "command": "Activa Auto_Mode."}
+    ],
+    "P02": [
+      {"variant": "V1", "command": "Establece el nivel del tanque en 60 %."},
+      {"variant": "V2", "command": "Quiero que el sistema trabaje con un setpoint de nivel del sesenta por ciento."},
+      {"variant": "V3", "command": "Configura Level_SP en 60 %."}
+    ],
+    "P03": [
+      {"variant": "V1", "command": "Pon el nivel al 150 %."},
+      {"variant": "V2", "command": "Quiero un setpoint de nivel del ciento cincuenta por ciento."},
+      {"variant": "V3", "command": "Configura Level_SP en 150 %."}
+    ],
+    "P04": [
+      {"variant": "V1", "command": "Activa una alarma si el nivel supera el 90 %."},
+      {"variant": "V2", "command": "Quiero que suene la alarma cuando el nivel pase del noventa por ciento."},
+      {"variant": "V3", "command": "Genera alarma de nivel alto cuando Level_PV supere 90 %."}
+    ],
+    "P05": [
+      {"variant": "V1", "command": "Activa una alarma si el nivel baja del 10 %."},
+      {"variant": "V2", "command": "Quiero que suene la alarma cuando el nivel este por debajo del diez por ciento."},
+      {"variant": "V3", "command": "Genera alarma de nivel bajo cuando Level_PV caiga bajo 10 %."}
+    ],
+    "P06": [
+      {"variant": "V1", "command": "Habilita el PID solamente cuando el sistema este en automatico."},
+      {"variant": "V2", "command": "Quiero que el control PID solo funcione en modo automatico."},
+      {"variant": "V3", "command": "Condiciona PID_Enable a que Auto_Mode este activo."}
+    ],
+    "P07": [
+      {"variant": "V1", "command": "Desactiva el control PID si se activa la emergencia."},
+      {"variant": "V2", "command": "Quiero que el PID se deshabilite ante una parada de emergencia."},
+      {"variant": "V3", "command": "Fuerza PID_Enable a falso cuando ocurra I_Emergency."}
+    ],
+    "P08": [
+      {"variant": "V1", "command": "Permite operar la bomba en modo manual de forma limitada."},
+      {"variant": "V2", "command": "Quiero controlar la bomba manualmente sin perder las protecciones de seguridad."},
+      {"variant": "V3", "command": "Habilita Manual_Mode con operacion limitada de Q_Pump_Enable."}
+    ],
+    "P09": [
+      {"variant": "V1", "command": "Detecta un fallo de sensor si el valor de nivel esta fuera de rango."},
+      {"variant": "V2", "command": "Quiero que se marque una falla si la lectura del sensor de nivel es invalida."},
+      {"variant": "V3", "command": "Activa Sensor_Fault cuando Level_PV salga del rango valido."}
+    ],
+    "P10": [
+      {"variant": "V1", "command": "Permite el reset de la alarma solo cuando la condicion de fallo haya desaparecido."},
+      {"variant": "V2", "command": "Quiero reiniciar la alarma unicamente si ya no hay ninguna falla activa."},
+      {"variant": "V3", "command": "Condiciona el reset de alarma a que no existan fallos activos."}
+    ],
+    "P11": [
+      {"variant": "V1", "command": "Detén de forma segura la bomba y genera una alarma si el tanque alcanza un nivel de sobrellenado."},
+      {"variant": "V2", "command": "Quiero una parada segura de la bomba con alarma si el nivel llega a sobrellenado."},
+      {"variant": "V3", "command": "Activa Safe_Stop, desactiva Q_Pump_Enable y genera Q_Alarm ante sobrellenado."}
+    ],
+    "P12": [
+      {"variant": "V1", "command": "Activa el modo automatico, establece el setpoint en 60 %, habilita el PID, genera alarma si el nivel supera el 90 % y detén todo de forma segura ante sobrellenado, permitiendo reset solo cuando la falla desaparezca."},
+      {"variant": "V2", "command": "Quiero automatico con setpoint de sesenta por ciento, PID habilitado, alarma de nivel alto y parada segura con reset condicionado ante sobrellenado."},
+      {"variant": "V3", "command": "Configura Auto_Mode, Level_SP=60%, PID_Enable, High_Level_Alarm en 90%, Safe_Stop por sobrellenado y reset condicionado de alarma."}
     ]
   }
 }

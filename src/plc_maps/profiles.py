@@ -10,7 +10,20 @@ from utils import build_io_map_index, load_json_file
 PROFILES_FILENAME = "profiles.json"
 SIMULATION_MAP_NAME = "MAPA_SIMULACION_COMPLETO"
 HARDWARE_MAP_NAME = "MAPA_BANCO_FISICO"
+PID_SIMULATION_MAP_NAME = "MAPA_PID_SIMULACION"
+PID_HARDWARE_MAP_NAME = "MAPA_PID_BANCO_FISICO"
 GENERAL_PROFILE_LABEL = "GENERAL / SIN FILTRO"
+
+
+def _readiness_map_names(profile: dict[str, Any]) -> tuple[str, str]:
+    """
+    D01-D20 keep checking readiness against the discrete maps; P01-P12 check against the PID
+    maps instead - decided purely from the case_id prefix, never mixed in the same profile.
+    """
+    case_id = str(profile.get("case_id", ""))
+    if case_id.startswith("P"):
+        return PID_SIMULATION_MAP_NAME, PID_HARDWARE_MAP_NAME
+    return SIMULATION_MAP_NAME, HARDWARE_MAP_NAME
 
 
 def get_profiles_path(project_root: Path) -> Path:
@@ -54,16 +67,17 @@ def compute_readiness(allowed_variables: list[str], map_variable_names: set[str]
 def profile_readiness_summary(project_root: Path, profile: dict[str, Any]) -> dict[str, Any]:
     """Compute simulation_ready/hardware_ready dynamically against the current library maps."""
     allowed_variables = profile.get("allowed_variables", [])
+    simulation_map_name, hardware_map_name = _readiness_map_names(profile)
 
-    simulation_names = _find_map_variable_names(project_root, SIMULATION_MAP_NAME)
+    simulation_names = _find_map_variable_names(project_root, simulation_map_name)
     if simulation_names is None:
-        simulation_ready, missing_simulation = False, [f"{SIMULATION_MAP_NAME} no encontrado en la biblioteca."]
+        simulation_ready, missing_simulation = False, [f"{simulation_map_name} no encontrado en la biblioteca."]
     else:
         simulation_ready, missing_simulation = compute_readiness(allowed_variables, simulation_names)
 
-    hardware_names = _find_map_variable_names(project_root, HARDWARE_MAP_NAME)
+    hardware_names = _find_map_variable_names(project_root, hardware_map_name)
     if hardware_names is None:
-        hardware_ready, missing_hardware = False, [f"{HARDWARE_MAP_NAME} no encontrado en la biblioteca."]
+        hardware_ready, missing_hardware = False, [f"{hardware_map_name} no encontrado en la biblioteca."]
     else:
         hardware_ready, missing_hardware = compute_readiness(allowed_variables, hardware_names)
 

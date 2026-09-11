@@ -13,7 +13,11 @@ from semantic_parser import parse_command
     ("case_id", "command", "expected_intent", "expected_tests"),
     [
         ("D01", "Activa una salida durante 5 segundos cuando presione Start", "INT_TIMED_PULSE", 3),
-        ("D03", "Haz que el motor se encienda con Start y se apague con Stop", "INT_MOTOR_START_STOP", 5),
+        # D03 nunca pide reset/alarma: reset_input/alarm_output/run_indicator/fault_indicator son
+        # OPCIONALES para INT_MOTOR_START_STOP (ver ir_builder.OPTIONAL_PARAMETER_KEYS) y ya no se
+        # agregan por defecto solo porque el mapa activo los tenga disponibles - por eso el caso
+        # MSS_04 (que probaba exclusivamente el reset) se omite y el conteo baja de 5 a 4.
+        ("D03", "Haz que el motor se encienda con Start y se apague con Stop", "INT_MOTOR_START_STOP", 4),
         ("D05", "El paro de emergencia debe apagar el motor siempre", "INT_EMERGENCY_PRIORITY", 1),
         ("D07", "Arranca el motor despues de un retardo de 3 segundos", "INT_DELAYED_START", 3),
         ("D09", "Cuenta 5 pulsos del sensor y activa la alarma", "INT_COUNTER_PULSES", 3),

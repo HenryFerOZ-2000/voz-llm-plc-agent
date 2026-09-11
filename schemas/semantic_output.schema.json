@@ -41,6 +41,7 @@
         "INT_STATUS_PILOTS",
         "INT_CYCLIC_MOTOR",
         "INT_AUTO_CYCLE",
+        "INT_PID_SUPERVISOR",
         "INT_UNKNOWN"
       ]
     },
@@ -87,43 +88,10 @@
     },
     "recognized_tags": {
       "type": "array",
+      "description": "Nombres de recursos PLC (fisicos I_/Q_/AI_/AO_ o internos M_/T_/C_/R_/F_) que el comando referencia. Antes era un enum cerrado; se cambio a un patron abierto porque el mapa fisico ahora soporta nombres funcionales dinamicos asignados por el usuario via MAP_CONFIG (docs/23_io_allocator.md) - un nombre nuevo como Q_Motor_2 nunca podria enumerarse por adelantado. La autorizacion real (existe en el mapa activo, no esta LOCKED para otro uso, etc.) la sigue verificando semantic_validator contra el mapa activo, no este schema.",
       "items": {
         "type": "string",
-        "enum": [
-          "I_Start",
-          "I_Stop",
-          "I_Emergency",
-          "I_Reset",
-          "I_Sensor1",
-          "I_Mode_Manual",
-          "I_Mode_Auto",
-          "I_Maintenance",
-          "Q_Motor_Enable",
-          "Q_Alarm",
-          "Q_Pilot_Run",
-          "Q_Pilot_Fault",
-          "Q_Pilot_Stop",
-          "Q_Aux_Output",
-          "Q_Contactor_A",
-          "Q_Contactor_B",
-          "M_RunLatch",
-          "M_FaultLatch",
-          "M_AutoMode",
-          "M_ManualMode",
-          "M_Step",
-          "M_StopDelayActive",
-          "M_SensorLastState",
-          "T_Pulse5s",
-          "T_DelayStart",
-          "T_OperationLimit",
-          "T_SensorTimeout",
-          "T_StopDelay",
-          "T_CycleOn",
-          "T_CycleOff",
-          "C_PulseCount",
-          "R_SensorPulse",
-          "R_CycleStart"
-        ]
+        "pattern": "^(?:AI|AO|[IQMTCFR])_[A-Za-z0-9_]+$"
       }
     },
     "unrecognized_terms": {
@@ -155,9 +123,38 @@
               "maintenance_inhibit",
               "counter_requirement",
               "automatic_mode",
-              "manual_mode"
+              "manual_mode",
+              "set_auto_mode",
+              "set_manual_mode",
+              "set_level_setpoint",
+              "enable_pid",
+              "disable_pid",
+              "high_level_alarm",
+              "low_level_alarm",
+              "sensor_range_fault",
+              "conditional_alarm_reset",
+              "safe_overfill_stop",
+              "manual_pump_limit"
             ]
           }
+        }
+      }
+    },
+    "operation_type": {
+      "type": "string",
+      "description": "PROGRAM (logica PLC normal, default) o MAP_CONFIG (el comando pide (re)asignar un nombre funcional a un canal fisico). Recalculado deterministicamente por semantic_validator a partir de requested_io_assignments - nunca se confia en el valor que ponga el LLM.",
+      "enum": ["PROGRAM", "MAP_CONFIG"]
+    },
+    "requested_io_assignments": {
+      "type": "array",
+      "description": "Menciones crudas de direccion+rol extraidas por regex (io_allocator.extract_io_assignment_requests), NUNCA inventadas por el LLM. Cada entrada se valida y normaliza deterministicamente antes de proponerse - ver semantic_validation.io_assignment_proposals y docs/23_io_allocator.md.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address_text": {"type": "string"},
+          "address": {"type": ["string", "null"]},
+          "role_text": {"type": "string"},
+          "functional_name_hint": {"type": "string"}
         }
       }
     }

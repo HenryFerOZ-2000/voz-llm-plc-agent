@@ -5,7 +5,12 @@ from typing import Any
 
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, get_required_variables_for_intent
 from plc_ir import PLCProjectIR
-from functional_requirements import is_catalog_functional_requirement
+from functional_requirements import (
+    detect_multi_actor_motor_targets,
+    get_functional_requirement_process_variables,
+    is_catalog_functional_requirement,
+    strip_external_prefix
+)
 from utils import build_io_map_index, get_project_root, load_json_file
 
 
@@ -87,39 +92,59 @@ def _generate_direct_output_body(parameters: dict[str, Any]) -> str:
 
 
 def _generate_motor_start_stop_body(parameters: dict[str, Any]) -> str:
+    """
+    reset_input/alarm_output/run_indicator/fault_indicator son recursos OPCIONALES (ver
+    ir_builder.OPTIONAL_PARAMETER_KEYS): solo se declaran y solo aparecen en el SCL si el comando
+    realmente los pidio (la clave esta presente en `parameters`). Ausentes, esas ramas se OMITEN
+    por completo - nunca se sustituyen por un tag fisico por defecto ("I_Reset", "Q_Alarm", ...)
+    que el banco activo podria no tener. La logica CORE (Start/Stop/Emergency/fault_latch interno)
+    siempre se genera igual, con o sin esas features.
+    """
     start_input = _param(parameters, "trigger_input", default="I_Start")
     stop_input = _param(parameters, "stop_input", default="I_Stop")
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
-    reset_input = _param(parameters, "reset_input", default="I_Reset")
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
-    alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
-    run_indicator = _param(parameters, "run_indicator", default="Q_Pilot_Run")
-    fault_indicator = _param(parameters, "fault_indicator", default="Q_Pilot_Fault")
     run_latch = _param(parameters, "run_latch", default="M_RunLatch")
     fault_latch = _param(parameters, "fault_latch", default="M_FaultLatch")
-    return _dedented(
-        f"""\
-        (* Arranque y paro de motor con prioridad de Stop y Emergency *)
-        IF {emergency_input} THEN
-            {run_latch} := FALSE;
-            {fault_latch} := TRUE;
-        ELSIF {stop_input} THEN
-            {run_latch} := FALSE;
-        ELSIF {start_input} AND NOT {fault_latch} THEN
-            {run_latch} := TRUE;
-        END_IF;
 
-        (* Reset manual de falla sin autoarranque *)
-        IF {reset_input} AND NOT {emergency_input} THEN
-            {fault_latch} := FALSE;
-        END_IF;
+    reset_input = parameters.get("reset_input")
+    alarm_output = parameters.get("alarm_output")
+    run_indicator = parameters.get("run_indicator")
+    fault_indicator = parameters.get("fault_indicator")
 
-        {motor_output} := {run_latch} AND NOT {stop_input} AND NOT {emergency_input} AND NOT {fault_latch};
-        {alarm_output} := {fault_latch};
-        {run_indicator} := {motor_output};
-        {fault_indicator} := {fault_latch} OR {emergency_input};
-        """
-    )
+    lines = [
+        "(* Arranque y paro de motor con prioridad de Stop y Emergency *)",
+        f"IF {emergency_input} THEN",
+        f"    {run_latch} := FALSE;",
+        f"    {fault_latch} := TRUE;",
+        f"ELSIF {stop_input} THEN",
+        f"    {run_latch} := FALSE;",
+        f"ELSIF {start_input} AND NOT {fault_latch} THEN",
+        f"    {run_latch} := TRUE;",
+        "END_IF;"
+    ]
+
+    if reset_input:
+        lines += [
+            "",
+            "(* Reset manual de falla sin autoarranque *)",
+            f"IF {reset_input} AND NOT {emergency_input} THEN",
+            f"    {fault_latch} := FALSE;",
+            "END_IF;"
+        ]
+
+    lines += [
+        "",
+        f"{motor_output} := {run_latch} AND NOT {stop_input} AND NOT {emergency_input} AND NOT {fault_latch};"
+    ]
+    if alarm_output:
+        lines.append(f"{alarm_output} := {fault_latch};")
+    if run_indicator:
+        lines.append(f"{run_indicator} := {motor_output};")
+    if fault_indicator:
+        lines.append(f"{fault_indicator} := {fault_latch} OR {emergency_input};")
+
+    return "\n".join(lines) + "\n"
 
 
 def _generate_motor_latch_body(parameters: dict[str, Any]) -> str:
@@ -619,6 +644,261 @@ def _generate_functional_requirement_clauses(
     return "\n(* Requisitos funcionales adicionales *)\n" + "\n".join(clauses) + "\n"
 
 
+def _generate_multi_actor_motor_body(
+    actors: list[dict[str, str]],
+    functional_requirements: list[dict[str, Any]],
+    parameters: dict[str, Any]
+) -> str:
+    """
+    Self-contained composer for a genuine multi-actor command (>=2 independent motor_start_latch
+    actors) - see detect_multi_actor_motor_targets and generate_implementation_from_ir. REPLACES
+    the single-actor base intent template entirely instead of layering on top of it: the base
+    template and this composer would otherwise both try to drive the SAME shared
+    stop_delay_active/timer instance, and the base template's own stop condition
+    (`{stop_input} AND {run_latch}`) only checks its OWN single actor - if only a DIFFERENT actor
+    happened to be running when Stop was pressed, the base template's condition would never fire.
+
+    Renders, generically for N actors (never hardcoded to two):
+      - one independent latch memory per actor (own trigger_input, never a shared bit - the
+        actual bug this closes: two actors sharing "M_RunLatch" could not hold independent state);
+      - mutual interlock between actors named together by an `interlock` requirement (turns the
+        other actor(s) in the same group off the instant one starts);
+      - ONE shared delayed-stop timer if any `delayed_stop` requirement targets one of these
+        actors ("espera 5 segundos" is a single global delay, not one timer per motor) - starts
+        when Stop is pressed while ANY actor is running, turns every actor off when it elapses;
+      - a shared run_pilot (OR of every actor's latch) if requested.
+    Emergency always wins immediately for every actor, bypassing any delay.
+    """
+    emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+    stop_input = _param(parameters, "stop_input", default="I_Stop")
+
+    for actor in actors:
+        actor["latch"] = f"M_{strip_external_prefix(actor['target'])}Latch"
+    targets = {actor["target"] for actor in actors}
+
+    interlock_groups: list[set[str]] = []
+    for requirement in functional_requirements:
+        if str(requirement.get("type", "")) != "interlock":
+            continue
+        output_a = str(requirement.get("output_a", "")).strip()
+        output_b = str(requirement.get("output_b", "")).strip()
+        if output_a in targets and output_b in targets:
+            interlock_groups.append({output_a, output_b})
+
+    def _other_latches(target: str) -> list[str]:
+        others: set[str] = set()
+        for group in interlock_groups:
+            if target in group:
+                others |= (group - {target})
+        return [actor["latch"] for actor in actors if actor["target"] in others]
+
+    has_delayed_stop = any(
+        str(requirement.get("type", "")) == "delayed_stop" and str(requirement.get("target", "")).strip() in targets
+        for requirement in functional_requirements
+    )
+    default_delay = next(
+        (
+            str(requirement.get("delay")) for requirement in functional_requirements
+            if str(requirement.get("type", "")) == "delayed_stop" and requirement.get("delay")
+        ),
+        "T#5s"
+    )
+    stop_delay_active = _param(parameters, "stop_delay_active", default="M_StopDelayActive")
+    stop_delay_time = _param(parameters, "stop_delay_time", default=default_delay)
+    timer_tag = _param(parameters, "timer", default="T_StopDelay")
+
+    lines: list[str] = ["(* Control multi-actor: varios motores independientes con enclavamiento propio *)"]
+    for actor in actors:
+        lines.append(f"IF {actor['trigger_input']} AND NOT {emergency_input} THEN")
+        lines.append(f"    {actor['latch']} := TRUE;")
+        for other_latch in _other_latches(actor["target"]):
+            lines.append(f"    {other_latch} := FALSE;")
+        lines.append("END_IF;")
+
+    any_running = " OR ".join(actor["latch"] for actor in actors)
+    if has_delayed_stop:
+        lines.append(f"IF {emergency_input} THEN")
+        for actor in actors:
+            lines.append(f"    {actor['latch']} := FALSE;")
+        lines.append(f"    {stop_delay_active} := FALSE;")
+        lines.append(f"ELSIF {stop_input} AND ({any_running}) THEN")
+        lines.append(f"    {stop_delay_active} := TRUE;")
+        lines.append("END_IF;")
+        lines.append(f"{timer_tag}(IN := {stop_delay_active} AND NOT {emergency_input}, PT := {stop_delay_time});")
+        lines.append(f"IF {timer_tag}.Q THEN")
+        for actor in actors:
+            lines.append(f"    {actor['latch']} := FALSE;")
+        lines.append(f"    {stop_delay_active} := FALSE;")
+        lines.append("END_IF;")
+    else:
+        lines.append(f"IF {emergency_input} OR {stop_input} THEN")
+        for actor in actors:
+            lines.append(f"    {actor['latch']} := FALSE;")
+        lines.append("END_IF;")
+
+    for actor in actors:
+        lines.append(f"{actor['target']} := {actor['latch']} AND NOT {emergency_input};")
+
+    pilot_requirement = next(
+        (requirement for requirement in functional_requirements if str(requirement.get("type", "")) == "run_pilot"),
+        None
+    )
+    if pilot_requirement is not None:
+        pilot_target = str(
+            pilot_requirement.get("target")
+            or _param(parameters, "run_indicator", "pilot_run_output", default="Q_Pilot_Run")
+        )
+        lines.append(f"{pilot_target} := ({any_running}) AND NOT {emergency_input};")
+
+    return "\n".join(lines) + "\n"
+
+
+_PID_CONFIG_CACHE: dict[str, Any] | None = None
+
+
+def _load_pid_supervisor_config() -> dict[str, Any]:
+    global _PID_CONFIG_CACHE
+    if _PID_CONFIG_CACHE is None:
+        try:
+            _PID_CONFIG_CACHE = load_json_file(get_project_root() / "config" / "pid_supervisor_config.json")
+        except (FileNotFoundError, ValueError):
+            _PID_CONFIG_CACHE = {}
+    return _PID_CONFIG_CACHE
+
+
+def _generate_pid_supervisor_body(parameters: dict[str, Any], functional_requirements: list[dict[str, Any]]) -> str:
+    """
+    Composes the PID supervisory ST logic (P01-P12) from whichever functional_requirements are
+    present. NEVER redefines the PID algorithm/Kp/Ki/Kd - only writes the functional/process
+    variables (Level_SP, PID_Enable, Auto_Mode, ...) that the existing PID block in the TIA
+    template is assumed to already be wired to (see config/pid_supervisor_config.json). Unlike
+    the D01-D20 clause composer, PID behaviors are interdependent (PID_Enable depends on
+    Auto_Mode/Sensor_Fault/Safe_Stop together), so this reads the full list directly instead of
+    emitting one independent line per type.
+    """
+    config = _load_pid_supervisor_config()
+    types_present = {str(r.get("type", "")) for r in functional_requirements if is_catalog_functional_requirement(r)}
+    declared_process_vars: set[str] = set()
+    for requirement in functional_requirements:
+        if is_catalog_functional_requirement(requirement):
+            declared_process_vars.update(get_functional_requirement_process_variables(requirement).keys())
+
+    emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+    reset_input = _param(parameters, "reset_input", default="I_Reset")
+    alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
+    pump_output = _param(parameters, "pump_output", default="Q_Pump_Enable")
+
+    lines: list[str] = ["(* Supervision PID - bloque PID existente en TIA Portal, no redefinido aqui *)"]
+
+    # Prioridad de seguridad absoluta: la emergencia siempre desactiva PID y bomba, sin importar
+    # que otros requisitos funcionales esten presentes (nunca se debilita por composicion).
+    emergency_block = [f"IF {emergency_input} THEN"]
+    if "PID_Enable" in declared_process_vars:
+        emergency_block.append("    PID_Enable := FALSE;")
+    emergency_block.append(f"    {pump_output} := FALSE;")
+    emergency_block.append("END_IF;")
+    lines.append("\n".join(emergency_block))
+
+    sensor_min = config.get("sensor_valid_range", {}).get("min", 0.0)
+    sensor_max = config.get("sensor_valid_range", {}).get("max", 100.0)
+    if "sensor_range_fault" in types_present and "Sensor_Fault" in declared_process_vars:
+        lines.append(
+            f"IF Level_PV < {sensor_min} OR Level_PV > {sensor_max} THEN\n"
+            "    Sensor_Fault := TRUE;\n"
+            "ELSE\n"
+            "    Sensor_Fault := FALSE;\n"
+            "END_IF;"
+        )
+
+    if "high_level_alarm" in types_present and "High_Level_Alarm" in declared_process_vars:
+        limit = next(
+            (r.get("limit") for r in functional_requirements if r.get("type") == "high_level_alarm" and r.get("limit") is not None),
+            config.get("high_level_alarm", {}).get("default_limit", 90.0)
+        )
+        lines.append(
+            f"IF Level_PV > {limit} THEN\n"
+            "    High_Level_Alarm := TRUE;\n"
+            f"    {alarm_output} := TRUE;\n"
+            "ELSE\n"
+            "    High_Level_Alarm := FALSE;\n"
+            "END_IF;"
+        )
+
+    if "low_level_alarm" in types_present and "Low_Level_Alarm" in declared_process_vars:
+        limit = next(
+            (r.get("limit") for r in functional_requirements if r.get("type") == "low_level_alarm" and r.get("limit") is not None),
+            config.get("low_level_alarm", {}).get("default_limit", 10.0)
+        )
+        lines.append(
+            f"IF Level_PV < {limit} THEN\n"
+            "    Low_Level_Alarm := TRUE;\n"
+            f"    {alarm_output} := TRUE;\n"
+            "ELSE\n"
+            "    Low_Level_Alarm := FALSE;\n"
+            "END_IF;"
+        )
+
+    if "safe_overfill_stop" in types_present and "Safe_Stop" in declared_process_vars:
+        limit = next(
+            (r.get("limit") for r in functional_requirements if r.get("type") == "safe_overfill_stop" and r.get("limit") is not None),
+            config.get("safe_overfill_stop", {}).get("default_limit", 95.0)
+        )
+        overfill_block = [f"IF Level_PV >= {limit} THEN", "    Safe_Stop := TRUE;"]
+        if "PID_Enable" in declared_process_vars:
+            overfill_block.append("    PID_Enable := FALSE;")
+        overfill_block.append(f"    {pump_output} := FALSE;")
+        overfill_block.append(f"    {alarm_output} := TRUE;")
+        overfill_block.append("END_IF;")
+        lines.append("\n".join(overfill_block))
+
+    if "conditional_alarm_reset" in types_present:
+        reset_terms = [f"NOT {name}" for name in ("High_Level_Alarm", "Low_Level_Alarm", "Sensor_Fault") if name in declared_process_vars]
+        condition = " AND ".join([reset_input] + reset_terms) if reset_terms else reset_input
+        reset_lines = [f"IF {condition} THEN", f"    {alarm_output} := FALSE;"]
+        if "Safe_Stop" in declared_process_vars:
+            reset_lines.append("    Safe_Stop := FALSE;")
+        reset_lines.append("END_IF;")
+        lines.append("\n".join(reset_lines))
+
+    if "set_auto_mode" in types_present:
+        lines.append(f"IF NOT {emergency_input} THEN\n    Auto_Mode := TRUE;\n    Manual_Mode := FALSE;\nEND_IF;")
+
+    if "set_manual_mode" in types_present:
+        lines.append(f"IF NOT {emergency_input} THEN\n    Auto_Mode := FALSE;\n    Manual_Mode := TRUE;\nEND_IF;")
+
+    if "set_level_setpoint" in types_present and "Level_SP" in declared_process_vars:
+        value = next(
+            (r.get("value") for r in functional_requirements if r.get("type") == "set_level_setpoint" and r.get("value") is not None),
+            None
+        )
+        if value is not None:
+            lines.append(f"Level_SP := {value};")
+
+    if "enable_pid" in types_present and "PID_Enable" in declared_process_vars:
+        enable_terms = [f"NOT {emergency_input}"]
+        if "Auto_Mode" in declared_process_vars:
+            enable_terms.append("Auto_Mode")
+        if "Sensor_Fault" in declared_process_vars:
+            enable_terms.append("NOT Sensor_Fault")
+        if "Safe_Stop" in declared_process_vars:
+            enable_terms.append("NOT Safe_Stop")
+        lines.append(f"PID_Enable := {' AND '.join(enable_terms)};")
+    # "disable_pid" solo (sin "enable_pid") no necesita una linea propia: el bloque de emergencia
+    # incondicional de arriba ya fuerza PID_Enable a FALSE cuando corresponde (P07), y el valor
+    # BOOL inicial (FALSE) ya representa "deshabilitado" mientras nada lo habilite explicitamente.
+
+    if "manual_pump_limit" in types_present:
+        limit_terms = [f"NOT {emergency_input}"]
+        if "Sensor_Fault" in declared_process_vars:
+            limit_terms.append("NOT Sensor_Fault")
+        if "Safe_Stop" in declared_process_vars:
+            limit_terms.append("NOT Safe_Stop")
+        condition = " AND ".join(["Manual_Mode"] + limit_terms)
+        lines.append(f"IF {condition} THEN\n    {pump_output} := TRUE;\nELSE\n    {pump_output} := FALSE;\nEND_IF;")
+
+    return "\n".join(lines) + "\n"
+
+
 IMPLEMENTED_TEMPLATES = {
     "INT_TIMED_PULSE": _generate_timed_pulse_body,
     "INT_DIRECT_OUTPUT": _generate_direct_output_body,
@@ -639,7 +919,8 @@ IMPLEMENTED_TEMPLATES = {
     "INT_MAINTENANCE_BLOCK": _generate_maintenance_block_body,
     "INT_STATUS_PILOTS": _generate_status_pilots_body,
     "INT_CYCLIC_MOTOR": _generate_cyclic_motor_body,
-    "INT_AUTO_CYCLE": _generate_auto_cycle_body
+    "INT_AUTO_CYCLE": _generate_auto_cycle_body,
+    "INT_PID_SUPERVISOR": lambda parameters: _generate_pid_supervisor_body(parameters, [])
 }
 
 
@@ -753,11 +1034,29 @@ def _build_implementation(intent_id: str, parameters: dict[str, Any]) -> tuple[s
 
 def generate_implementation_from_ir(project_ir: PLCProjectIR) -> str:
     parameters = _resolve_parameters_from_ir(project_ir)
+    functional_requirements = project_ir.metadata.get("functional_requirements", [])
+
+    if project_ir.intent_id == "INT_PID_SUPERVISOR":
+        # La logica PID es interdependiente (PID_Enable depende de varios requisitos a la vez),
+        # a diferencia de los pilotos D01-D20 que son asignaciones independientes - por eso este
+        # intent no usa el compositor generico de clausulas, sino su propio generador dedicado.
+        return _generate_pid_supervisor_body(parameters, functional_requirements)
+
+    multi_actor_targets = detect_multi_actor_motor_targets(functional_requirements)
+    if len(multi_actor_targets) >= 2:
+        # Comando multi-actor genuino (dos o mas motores independientes en un solo comando):
+        # ningun intent_id del catalogo representa esto por si solo (cada template asume UN
+        # actor). Se reemplaza el template de un solo actor por el compositor multi-actor -
+        # nunca se complementan los dos a la vez (ver docstring de
+        # _generate_multi_actor_motor_body: compartirian el mismo timer/stop_delay_active con
+        # condiciones de arranque incompatibles). Funciona incluso si intent_id no tiene
+        # plantilla implementada (INT_UNKNOWN): la composicion no depende de IMPLEMENTED_TEMPLATES.
+        return _generate_multi_actor_motor_body(multi_actor_targets, functional_requirements, parameters)
+
     generator = IMPLEMENTED_TEMPLATES.get(project_ir.intent_id)
     if generator is None:
         raise TemplateNotImplementedError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {project_ir.intent_id}")
     base_body = generator(parameters)
-    functional_requirements = project_ir.metadata.get("functional_requirements", [])
     extra_body = _generate_functional_requirement_clauses(functional_requirements, parameters)
     return base_body + extra_body if extra_body else base_body
 

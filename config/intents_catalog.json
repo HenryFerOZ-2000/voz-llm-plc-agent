@@ -158,5 +158,13 @@
     "required_internal": ["M_Step"],
     "plc_blocks": ["CASE", "IF"],
     "related_cases": ["D18", "Ciclo automatico"]
+  },
+  "INT_PID_SUPERVISOR": {
+    "description": "Logica supervisora alrededor de un bloque PID estandar/prevalidado ya existente en TIA Portal (no redisena el PID): modo automatico/manual, setpoint, alarmas de nivel, fallo de sensor, reset condicionado y parada segura por sobrellenado. El comportamiento especifico lo aportan los functional_requirements (set_auto_mode, set_level_setpoint, enable_pid, high_level_alarm, etc.); este intent principal solo fija la base de seguridad comun a todos los casos P01-P12.",
+    "required_inputs": ["I_Emergency", "I_Reset"],
+    "required_outputs": ["Q_Alarm", "Q_Pump_Enable"],
+    "required_internal": [],
+    "plc_blocks": ["IF"],
+    "related_cases": ["P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08", "P09", "P10", "P11", "P12", "Supervision PID"]
   }
 }

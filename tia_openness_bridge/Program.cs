@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 
 using Siemens.Engineering;
@@ -58,11 +59,29 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 {
                     report = ExecuteDownload(request);
                 }
+                else if (action == "self_test")
+                {
+                    // Seccion 18: no hay framework de pruebas C# en este proyecto (solo csc.exe +
+                    // ejecucion directa, sin .csproj/MSBuild) - en vez de introducir uno nuevo
+                    // (rediseno fuera de alcance), se reutiliza la MISMA infraestructura de
+                    // build/ejecucion del bridge para correr aserciones deterministas que no
+                    // requieren TIA Portal abierto (NormalizeAddress es una funcion pura).
+                    report = RunSelfTest();
+                }
                 else
                 {
                     report = NewReport("TIA_OPENNESS_ERROR");
                     AddError(report, "Unknown action: " + action);
                 }
+            }
+            catch (TagSynchronizationException exception)
+            {
+                // Seccion 17: distinguir la etapa de reconciliacion de tags (previa a importar la
+                // fuente/generar bloques/compilar) del resto de fallos genericos de Openness, para
+                // que el pipeline Python pueda mostrar exactamente donde se detuvo.
+                report = NewReport("TIA_TAG_SYNC_ERROR");
+                AddError(report, exception.Message);
+                report["exception"] = exception.ToString();
             }
             catch (Exception exception)
             {
@@ -78,6 +97,54 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             WriteJson(resultPath, report);
             Console.WriteLine(Json.Serialize(report));
             return GetString(report, "status", "").EndsWith("PASSED", StringComparison.Ordinal) ? 0 : 1;
+        }
+
+        /// <summary>
+        /// Deterministic assertions for NormalizeAddress (section 18/21.7) - runs without opening
+        /// TIA Portal. Invoke with a request file containing only {"action": "self_test"}.
+        /// </summary>
+        private static Dictionary<string, object> RunSelfTest()
+        {
+            Dictionary<string, object> report = NewReport("SELF_TEST_PASSED");
+            List<object> checks = new List<object>();
+            report["checks"] = checks;
+
+            Action<string, string, bool> assertEqual = (first, second, expectedEqual) =>
+            {
+                bool actualEqual = String.Equals(
+                    NormalizeAddress(first), NormalizeAddress(second), StringComparison.OrdinalIgnoreCase
+                );
+                bool passed = actualEqual == expectedEqual;
+                checks.Add(new Dictionary<string, object>
+                {
+                    { "left", first },
+                    { "right", second },
+                    { "expected_equal", expectedEqual },
+                    { "actual_equal", actualEqual },
+                    { "passed", passed }
+                });
+                if (!passed)
+                {
+                    AddError(
+                        report,
+                        "NormalizeAddress(" + first + ") vs NormalizeAddress(" + second + "): expected equal="
+                        + expectedEqual + " but got " + actualEqual
+                    );
+                }
+            };
+
+            assertEqual("%IX16.0", "%I16.0", true);
+            assertEqual("%QX8.0", "%Q8.0", true);
+            assertEqual("%MX0.3", "%M0.3", true);
+            assertEqual("%I0.0", "%I16.0", false);
+            assertEqual("%Q8.0", "%Q8.1", false);
+            assertEqual(" %ix16.0 ", "%I16.0", true);
+
+            if (((List<string>)report["errors"]).Count > 0)
+            {
+                report["status"] = "SELF_TEST_FAILED";
+            }
+            return report;
         }
 
         private static Dictionary<string, object> Diagnose()
@@ -240,6 +307,29 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             }
         }
 
+        /// <summary>
+        /// Reconciles the PLC tags the current package needs against TIA's own PLC_Agent_IO tag
+        /// table, treating the ACTIVE map (the request's `tags` payload, already resolved by the
+        /// Python IOAllocator) as the single source of truth - never the other way around
+        /// (section 1). PLC_Agent_IO is a table this application creates and exclusively owns:
+        /// every tag inside it is, by construction, "administered" (section 4/15) - nothing else
+        /// plausibly writes into a table named for this app, so no tag outside PLC_Agent_IO is
+        /// ever read or touched here.
+        ///
+        /// Policy per requested tag (section 3):
+        ///   A. name exists, type matches, address matches -> left untouched.
+        ///   B. name exists, type matches, address differs  -> PlcTag.LogicalAddress has a public
+        ///      setter (confirmed via reflection against Siemens.Engineering.dll - PlcTag does
+        ///      NOT support renaming, but DOES support editing LogicalAddress/DataTypeName in
+        ///      place), so the existing tag is updated directly - no Delete/Create needed.
+        ///   C. name does not exist -> created with the requested name/type/address.
+        ///   D. name exists, type incompatible -> hard error (TagSynchronizationException), never
+        ///      a silent type conversion.
+        ///   E. requested address already occupied by a DIFFERENT tag name inside PLC_Agent_IO
+        ///      (e.g. IOAllocator reassigned %QX8.0 from Q_Motor to Q_Valve) -> the stale
+        ///      occupant is deleted before creating/updating the current tag, so the same address
+        ///      is never claimed by two active tags at once (section 9/10).
+        /// </summary>
         private static Dictionary<string, object> EnsureTags(PlcSoftware plcSoftware, Dictionary<string, object> request)
         {
             PlcTagTable table = plcSoftware.TagTableGroup.TagTables.Find("PLC_Agent_IO");
@@ -248,7 +338,8 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 table = plcSoftware.TagTableGroup.TagTables.Create("PLC_Agent_IO");
             }
             int created = 0;
-            int existing = 0;
+            int updated = 0;
+            int unchanged = 0;
             int requested = 0;
             object rawTags;
             IEnumerable tagItems = null;
@@ -261,6 +352,7 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 throw new InvalidOperationException("The TIA request does not contain a valid tag collection.");
             }
 
+            List<Dictionary<string, object>> tagRequests = new List<Dictionary<string, object>>();
             foreach (object rawTag in tagItems)
             {
                 Dictionary<string, object> tag = rawTag as Dictionary<string, object>;
@@ -268,49 +360,104 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 {
                     throw new InvalidOperationException("The TIA request contains an invalid tag entry.");
                 }
+                tagRequests.Add(tag);
+            }
+
+            HashSet<string> requestedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Dictionary<string, object> tag in tagRequests)
+            {
+                requestedNames.Add(GetRequiredString(tag, "name"));
+            }
+
+            foreach (Dictionary<string, object> tag in tagRequests)
+            {
                 requested++;
                 string name = GetRequiredString(tag, "name");
                 string dataType = GetString(tag, "data_type", "Bool");
                 string address = GetRequiredString(tag, "address");
+                string normalizedAddress = NormalizeAddress(address);
+
+                // Caso E: liberar la direccion si otra tag administrada (misma tabla) la ocupa
+                // bajo un nombre distinto.
+                List<PlcTag> staleOccupants = new List<PlcTag>();
+                foreach (PlcTag candidate in table.Tags)
+                {
+                    if (String.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                    if (String.Equals(NormalizeAddress(candidate.LogicalAddress), normalizedAddress, StringComparison.OrdinalIgnoreCase))
+                    {
+                        staleOccupants.Add(candidate);
+                    }
+                }
+                foreach (PlcTag stale in staleOccupants)
+                {
+                    if (requestedNames.Contains(stale.Name))
+                    {
+                        // La otra tag TAMBIEN esta en esta misma solicitud (se reconciliara en su
+                        // propia iteracion) - dos nombres pidiendo la misma direccion a la vez es
+                        // un conflicto real (nunca deberia ocurrir si el IOAllocator es correcto),
+                        // no algo que este metodo pueda resolver de forma segura.
+                        throw new TagSynchronizationException(
+                            "Two requested tags target the same address " + address + ": "
+                            + name + " and " + stale.Name + "."
+                        );
+                    }
+                    Log("[TIA TAGS] Releasing stale tag " + stale.Name + " at " + stale.LogicalAddress + " (reassigned to " + name + ")");
+                    stale.Delete();
+                }
+
                 PlcTag existingTag = table.Tags.Find(name);
                 if (existingTag == null)
                 {
+                    Log("[TIA TAGS] Creating " + name + " at " + address);
                     table.Tags.Create(name, dataType, address);
                     created++;
+                    Log("[TIA TAGS] " + name + " synchronized");
+                    continue;
                 }
-                else
+
+                bool sameType = String.Equals(existingTag.DataTypeName, dataType, StringComparison.OrdinalIgnoreCase);
+                if (!sameType)
                 {
-                    bool sameType = String.Equals(
-                        existingTag.DataTypeName,
-                        dataType,
-                        StringComparison.OrdinalIgnoreCase
+                    throw new TagSynchronizationException(
+                        "Authorized tag type conflict for " + name
+                        + ". Existing: " + existingTag.DataTypeName
+                        + "; requested: " + dataType
+                        + ". Incompatible types are never converted automatically."
                     );
-                    bool sameAddress = String.Equals(
-                        NormalizeAddress(existingTag.LogicalAddress),
-                        NormalizeAddress(address),
-                        StringComparison.OrdinalIgnoreCase
-                    );
-                    if (!sameType || !sameAddress)
-                    {
-                        throw new InvalidOperationException(
-                            "Authorized tag conflict for " + name
-                            + ". Existing: " + existingTag.DataTypeName + " " + existingTag.LogicalAddress
-                            + "; requested: " + dataType + " " + address
-                        );
-                    }
-                    existing++;
                 }
+
+                bool sameAddress = String.Equals(
+                    NormalizeAddress(existingTag.LogicalAddress),
+                    normalizedAddress,
+                    StringComparison.OrdinalIgnoreCase
+                );
+                if (sameAddress)
+                {
+                    unchanged++;
+                    continue;
+                }
+
+                Log("[TIA TAGS] " + name + " existing=" + existingTag.LogicalAddress + " requested=" + address);
+                Log("[TIA TAGS] Updating " + name);
+                existingTag.LogicalAddress = address;
+                updated++;
+                Log("[TIA TAGS] " + name + " synchronized");
             }
             if (requested == 0)
             {
                 throw new InvalidOperationException("No authorized PLC tags were received; block generation was stopped.");
             }
+            Log("[TIA TAGS] Tag synchronization completed");
             return new Dictionary<string, object>
             {
                 { "table", table.Name },
                 { "requested", requested },
                 { "created", created },
-                { "existing", existing }
+                { "updated", updated },
+                { "existing", unchanged }
             };
         }
 
@@ -813,6 +960,29 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             }
         }
 
+        /// <summary>
+        /// Errores especificos de la etapa de reconciliacion de PLC tags (EnsureTags), distintos
+        /// de un InvalidOperationException generico de otra etapa - permite a Main() asignar el
+        /// status "TIA_TAG_SYNC_ERROR" en vez de "TIA_OPENNESS_ERROR" (seccion 17).
+        /// </summary>
+        private sealed class TagSynchronizationException : InvalidOperationException
+        {
+            public TagSynchronizationException(string message) : base(message)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Progreso de reconciliacion de tags (seccion 16, formato "[TIA TAGS] ..."). Va a stderr,
+        /// nunca a stdout - stdout esta reservado para la unica linea final Json.Serialize(report)
+        /// que Main() escribe (linea ~79), y Python la captura por separado en bridge_stdout/
+        /// bridge_stderr para diagnostico sin necesidad de parsearla como JSON.
+        /// </summary>
+        private static void Log(string message)
+        {
+            Console.Error.WriteLine(message);
+        }
+
         private static Dictionary<string, object> ReadJson(string path)
         {
             return Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(path));
@@ -863,9 +1033,26 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             );
         }
 
+        // Seccion 7: %IX16.0 (convencion IEC/de la aplicacion, ver mapa_banco_fisico.json) y
+        // %I16.0 (formato que TIA/Siemens reporta via PlcTag.LogicalAddress) representan la MISMA
+        // direccion fisica BOOL - la "X" es un calificador de tamano opcional, no parte de la
+        // direccion. Solo se reconoce para I/Q/M booleanos (unico tipo que esta aplicacion genera
+        // para I_/Q_ - variables.json siempre usa data_type "Bool"); cualquier otro formato
+        // (%IW.../%QD... o algo irreconocible) se compara tal cual, sin canonicalizar.
+        private static readonly Regex BoolAddressPattern = new Regex(
+            @"^%(?<area>[IQM])X?(?<byte>\d+)\.(?<bit>\d+)$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
+
         private static string NormalizeAddress(string address)
         {
-            return (address ?? "").Replace(" ", "").Trim().ToUpperInvariant();
+            string trimmed = (address ?? "").Replace(" ", "").Trim().ToUpperInvariant();
+            Match match = BoolAddressPattern.Match(trimmed);
+            if (!match.Success)
+            {
+                return trimmed;
+            }
+            return "%" + match.Groups["area"].Value + match.Groups["byte"].Value + "." + match.Groups["bit"].Value;
         }
 
         private static Assembly ResolveSiemensAssembly(object sender, ResolveEventArgs args)

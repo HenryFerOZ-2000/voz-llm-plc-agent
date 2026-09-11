@@ -11,7 +11,9 @@ from utils import get_project_root
 
 
 TIME_LITERAL_PATTERN = re.compile(r"^T#\d+(?:ms|s|m|h)$", re.IGNORECASE)
-PLC_TAG_PATTERN = re.compile(r"^[IQMTCFR]_[A-Za-z0-9_]+$")
+# AI_/AO_ (entradas/salidas analogicas fisicas) se autorizan igual que I_/Q_ - ver
+# docs/21_pid_supervisory_control.md y docs/22_banco_fisico_direcciones.md.
+PLC_TAG_PATTERN = re.compile(r"^(?:AI|AO|[IQMTCFR])_[A-Za-z0-9_]+$")
 
 
 class SemanticParameters(BaseModel):
@@ -60,6 +62,7 @@ class SemanticValidationResult(BaseModel):
     unauthorized_tags: list[str] = Field(default_factory=list)
     requires_clarification: bool = False
     functional_requirement_conflicts: list[dict[str, Any]] = Field(default_factory=list)
+    io_assignment_proposals: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class SemanticOutput(BaseModel):
@@ -80,6 +83,12 @@ class SemanticOutput(BaseModel):
     recognized_tags: list[str] = Field(default_factory=list)
     unrecognized_terms: list[str] = Field(default_factory=list)
     functional_requirements: list[dict[str, Any]] = Field(default_factory=list)
+    # MAP_CONFIG (section 10): "PROGRAM" (default) para logica PLC normal, "MAP_CONFIG" cuando el
+    # comando pide (re)asignar un nombre funcional a un canal fisico. Este campo se RECALCULA
+    # deterministicamente en semantic_validator - nunca se confia en lo que el LLM haya puesto,
+    # ver docs/23_io_allocator.md.
+    operation_type: str = "PROGRAM"
+    requested_io_assignments: list[dict[str, Any]] = Field(default_factory=list)
 
     @field_validator("confidence")
     @classmethod

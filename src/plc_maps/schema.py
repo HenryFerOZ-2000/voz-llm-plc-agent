@@ -7,7 +7,7 @@ from typing import Any
 SCHEMA_VERSION = 1
 
 ADVANCED_VARIABLE_FIELDS = (
-    "aliases", "semantic_role", "llm_allowed", "safety_level", "unit", "min", "max", "comments"
+    "aliases", "semantic_role", "llm_allowed", "safety_level", "unit", "min", "max", "comments", "state"
 )
 
 ADVANCED_VARIABLE_DEFAULTS: dict[str, Any] = {
@@ -18,8 +18,11 @@ ADVANCED_VARIABLE_DEFAULTS: dict[str, Any] = {
     "unit": "",
     "min": None,
     "max": None,
-    "comments": ""
+    "comments": "",
+    "state": "ASSIGNED"
 }
+
+IO_STATES = ["FREE", "ASSIGNED", "LOCKED"]
 
 SAFETY_LEVELS = ["normal", "critical"]
 

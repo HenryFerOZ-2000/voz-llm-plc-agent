@@ -49,6 +49,15 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 - `20_modo_experimentacion.md`
   Documenta el Modo Experimentacion de la GUI: condiciones C1-C4, captura automatica de ensayos y log maestro.
 
+- `21_pid_supervisory_control.md`
+  Documenta la supervision PID (P01-P12): intent unico + functional_requirements, MAPA_PID_SIMULACION/MAPA_PID_BANCO_FISICO, perfiles P01-P12 y por que el bloque PID nunca se redisena.
+
+- `22_banco_fisico_direcciones.md`
+  Documenta las direcciones fisicas reales del banco (%IX16.x/%QX8.x, canales analogicos %IW/%QW) y el soporte de recursos externos AI_/AO_.
+
+- `23_io_allocator.md`
+  Documenta el estado FREE/ASSIGNED/LOCKED por variable, el IOAllocator deterministico y los comandos de configuracion de mapa (MAP_CONFIG) en Modo Normal.
+
 - `17_copias_de_seguridad.md`
   Registra los puntos de restauracion (`git tag`) del repositorio y como volver a ellos.
 
@@ -73,9 +82,12 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 11. `18_mapa_maestro_plc.md`
 12. `19_perfiles_experimentales_d01_d20.md`
 13. `20_modo_experimentacion.md`
-14. `07_registro_pruebas.md`
-15. `17_copias_de_seguridad.md`
-16. `CHANGELOG_TESIS.md`
+14. `21_pid_supervisory_control.md`
+15. `22_banco_fisico_direcciones.md`
+16. `23_io_allocator.md`
+17. `07_registro_pruebas.md`
+18. `17_copias_de_seguridad.md`
+19. `CHANGELOG_TESIS.md`
 
 ## Criterio de uso en tesis
 

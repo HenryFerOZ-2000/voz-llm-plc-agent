@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from functional_requirements import get_functional_requirement_tags, is_catalog_functional_requirement
+from functional_requirements import (
+    detect_multi_actor_motor_targets,
+    get_functional_requirement_process_variables,
+    get_functional_requirement_tags,
+    is_catalog_functional_requirement
+)
 from plc_ir import PLCFunctionBlockInstance, PLCPOU, PLCProjectIR, PLCTask, PLCVariable
 from utils import build_io_map_index, get_project_root, load_json_file, sanitize_filename
 
@@ -10,7 +15,12 @@ from utils import build_io_map_index, get_project_root, load_json_file, sanitize
 INTENT_TEMPLATE_NOT_IMPLEMENTED = "INTENT_TEMPLATE_NOT_IMPLEMENTED"
 SUPPORTED_STANDARD_BLOCK_TYPES = {"TON", "TP", "CTU", "R_TRIG", "F_TRIG"}
 
-EXTERNAL_PREFIXES = ("I_", "Q_")
+# AI_/AO_ (entradas/salidas analogicas fisicas del banco PID - ver docs/21_pid_supervisory_control.md)
+# se autorizan y verifican EXACTAMENTE igual que I_/Q_: deben existir en el mapa PLC activo y estar
+# permitidas por el perfil, nunca inventadas por el LLM. AI_/AO_ se listan antes que I_/Q_ solo para
+# que un nombre "AI_..."/"AO_..." nunca sea confundido por coincidencia de sufijo; con
+# str.startswith(tuple) el orden no afecta el resultado, pero se deja explicito por claridad.
+EXTERNAL_PREFIXES = ("AI_", "AO_", "I_", "Q_")
 INTERNAL_PREFIXES = ("M_", "T_", "C_", "R_", "F_")
 
 # Tipo IEC/clase de cada recurso interno ya usado por las intenciones existentes.
@@ -74,7 +84,40 @@ def _flatten_safety_rules(safety_rules: dict[str, Any]) -> list[str]:
     return flattened
 
 
+# Recursos externos OPCIONALES por intent: representan una funcionalidad extra que el intent
+# PUEDE incluir (reset manual, alarma, pilotos de estado...) pero que no es intrinseca a su
+# significado base. A diferencia de las claves CORE de cada entrada de `parameter_overrides` (el
+# resto de la lista - siempre resueltas via parameters.get(key, default_fisico)), una clave
+# OPTIONAL_PARAMETER_KEYS solo debe aportar un recurso fisico exigido si el comando REALMENTE la
+# pidio - es decir, si `parameters` ya trae un valor explicito para esa clave (puesto alli por el
+# parser/LLM al reconocer la mencion, nunca por relleno automatico). Si esta ausente, la funcion
+# se omite por completo: no se declara, no se exige, no aparece en el IR ni en el SCL. Este es el
+# mismo principio que ya protege a `emergency_input` (via semantic_repair.
+# strip_unavailable_emergency_reference), aplicado ahora a cualquier otra clave opcional sin
+# necesitar un parche especifico por tag - ver tambien code_generator._generate_motor_start_stop_body
+# y semantic_parser._build_motor_start_stop_parameters, que respetan la misma clasificacion.
+OPTIONAL_PARAMETER_KEYS: dict[str, set[str]] = {
+    "INT_MOTOR_START_STOP": {"reset_input", "alarm_output", "run_indicator", "fault_indicator"}
+}
+
+
 def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]) -> list[str]:
+    motor_start_stop_required: list[str] = [
+        parameters.get("trigger_input", "I_Start"),
+        parameters.get("stop_input", "I_Stop"),
+        parameters.get("emergency_input", "I_Emergency"),
+        parameters.get("motor_output", "Q_Motor_Enable"),
+        parameters.get("run_latch", "M_RunLatch"),
+        # fault_latch es un recurso INTERNO (M_, autogenerado sin exigir presencia en el mapa
+        # fisico) usado por la logica CORE de arranque/paro para recordar que hubo una falla -
+        # se mantiene incondicional, solo las claves externas opcionales de abajo dependen de si
+        # el comando las pidio.
+        parameters.get("fault_latch", "M_FaultLatch")
+    ]
+    for optional_key in OPTIONAL_PARAMETER_KEYS["INT_MOTOR_START_STOP"]:
+        if optional_key in parameters:
+            motor_start_stop_required.append(parameters[optional_key])
+
     parameter_overrides = {
         "INT_TIMED_PULSE": [
             parameters.get("trigger_input", "I_Start"),
@@ -87,18 +130,7 @@ def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]
             parameters.get("emergency_input", "I_Emergency"),
             parameters.get("output", "Q_Aux_Output")
         ],
-        "INT_MOTOR_START_STOP": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("alarm_output", "Q_Alarm"),
-            parameters.get("run_indicator", "Q_Pilot_Run"),
-            parameters.get("fault_indicator", "Q_Pilot_Fault"),
-            parameters.get("run_latch", "M_RunLatch"),
-            parameters.get("fault_latch", "M_FaultLatch")
-        ],
+        "INT_MOTOR_START_STOP": motor_start_stop_required,
         "INT_MOTOR_LATCH": [
             parameters.get("trigger_input", "I_Start"),
             parameters.get("stop_input", "I_Stop"),
@@ -229,6 +261,12 @@ def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]
             parameters.get("alarm_output", "Q_Alarm"),
             parameters.get("step_memory", "M_Step"),
             parameters.get("auto_input", "I_Mode_Auto")
+        ],
+        "INT_PID_SUPERVISOR": [
+            parameters.get("emergency_input", "I_Emergency"),
+            parameters.get("reset_input", "I_Reset"),
+            parameters.get("alarm_output", "Q_Alarm"),
+            parameters.get("pump_output", "Q_Pump_Enable")
         ]
     }
 
@@ -240,7 +278,7 @@ def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]
     for value in required:
         if not isinstance(value, str):
             continue
-        if value.startswith(("I_", "Q_", "M_", "T_", "C_", "R_", "F_")) and value not in ordered:
+        if value.startswith(("I_", "Q_", "AI_", "AO_", "M_", "T_", "C_", "R_", "F_")) and value not in ordered:
             ordered.append(value)
     return ordered
 
@@ -260,6 +298,61 @@ def build_test_cases_for_intent(intent_id: str, parameters: dict[str, Any]) -> l
     sensor_input = parameters.get("sensor_input", parameters.get("pulse_input", "I_Sensor1"))
     counter_name = parameters.get("counter", "C_PulseCount")
     preset = parameters.get("preset", 5)
+
+    # MSS_03 solo debe esperar alarm_output si esa clave fue realmente solicitada (ver
+    # OPTIONAL_PARAMETER_KEYS) - motor_output=False siempre se mantiene, es la parte CORE del
+    # caso. MSS_04 (reset posterior a emergencia) prueba EXCLUSIVAMENTE la funcionalidad de reset:
+    # si reset_input no fue pedido, ese caso no tiene nada que probar y se omite por completo en
+    # vez de referenciar el tag fisico por defecto "I_Reset" que ya no se declara.
+    motor_start_stop_mss_03_outputs: dict[str, Any] = {motor_output: False}
+    if "alarm_output" in parameters:
+        motor_start_stop_mss_03_outputs[alarm_output] = True
+    motor_start_stop_cases = [
+        {
+            "test_id": "MSS_01",
+            "description": "Arranque normal del motor con Start.",
+            "initial_state": {motor_output: False},
+            "input_sequence": [{start_input: True}],
+            "expected_outputs": {motor_output: True},
+            "safety_expectation": f"{emergency_input}=FALSE y {stop_input}=FALSE."
+        },
+        {
+            "test_id": "MSS_02",
+            "description": "Paro normal con Stop.",
+            "initial_state": {motor_output: True},
+            "input_sequence": [{stop_input: True}],
+            "expected_outputs": {motor_output: False},
+            "safety_expectation": f"{stop_input} tiene prioridad sobre {start_input}."
+        },
+        {
+            "test_id": "MSS_03",
+            "description": "La emergencia detiene el motor y activa la falla.",
+            "initial_state": {motor_output: True},
+            "input_sequence": [{emergency_input: True}],
+            "expected_outputs": motor_start_stop_mss_03_outputs,
+            "safety_expectation": "La emergencia debe prevalecer sobre cualquier orden."
+        }
+    ]
+    if "reset_input" in parameters:
+        motor_start_stop_cases.append({
+            "test_id": "MSS_04",
+            "description": "Reset posterior a emergencia sin autoarranque.",
+            "initial_state": {alarm_output: True} if "alarm_output" in parameters else {},
+            "input_sequence": [{reset_input: True}],
+            "expected_outputs": (
+                {motor_output: False, alarm_output: False} if "alarm_output" in parameters
+                else {motor_output: False}
+            ),
+            "safety_expectation": "El motor no debe reencender solo."
+        })
+    motor_start_stop_cases.append({
+        "test_id": "MSS_05",
+        "description": "Start y Stop simultaneos deben privilegiar Stop.",
+        "initial_state": {motor_output: False},
+        "input_sequence": [{start_input: True, stop_input: True}],
+        "expected_outputs": {motor_output: False},
+        "safety_expectation": "No debe existir arranque ambiguo."
+    })
 
     cases_map: dict[str, list[dict[str, Any]]] = {
         "INT_TIMED_PULSE": [
@@ -288,48 +381,7 @@ def build_test_cases_for_intent(intent_id: str, parameters: dict[str, Any]) -> l
                 "safety_expectation": f"El temporizador {timer_name} debe completar el pulso."
             }
         ],
-        "INT_MOTOR_START_STOP": [
-            {
-                "test_id": "MSS_01",
-                "description": "Arranque normal del motor con Start.",
-                "initial_state": {motor_output: False},
-                "input_sequence": [{start_input: True}],
-                "expected_outputs": {motor_output: True},
-                "safety_expectation": f"{emergency_input}=FALSE y {stop_input}=FALSE."
-            },
-            {
-                "test_id": "MSS_02",
-                "description": "Paro normal con Stop.",
-                "initial_state": {motor_output: True},
-                "input_sequence": [{stop_input: True}],
-                "expected_outputs": {motor_output: False},
-                "safety_expectation": f"{stop_input} tiene prioridad sobre {start_input}."
-            },
-            {
-                "test_id": "MSS_03",
-                "description": "La emergencia detiene el motor y activa la falla.",
-                "initial_state": {motor_output: True},
-                "input_sequence": [{emergency_input: True}],
-                "expected_outputs": {motor_output: False, alarm_output: True},
-                "safety_expectation": "La emergencia debe prevalecer sobre cualquier orden."
-            },
-            {
-                "test_id": "MSS_04",
-                "description": "Reset posterior a emergencia sin autoarranque.",
-                "initial_state": {alarm_output: True},
-                "input_sequence": [{reset_input: True}],
-                "expected_outputs": {motor_output: False, alarm_output: False},
-                "safety_expectation": "El motor no debe reencender solo."
-            },
-            {
-                "test_id": "MSS_05",
-                "description": "Start y Stop simultaneos deben privilegiar Stop.",
-                "initial_state": {motor_output: False},
-                "input_sequence": [{start_input: True, stop_input: True}],
-                "expected_outputs": {motor_output: False},
-                "safety_expectation": "No debe existir arranque ambiguo."
-            }
-        ],
+        "INT_MOTOR_START_STOP": motor_start_stop_cases,
         "INT_DELAYED_START": [
             {
                 "test_id": "DS_01",
@@ -491,7 +543,8 @@ def build_test_cases_for_intent(intent_id: str, parameters: dict[str, Any]) -> l
         "INT_SENSOR_TIMEOUT_ALARM",
         "INT_MAINTENANCE_BLOCK",
         "INT_STATUS_PILOTS",
-        "INT_AUTO_CYCLE"
+        "INT_AUTO_CYCLE",
+        "INT_PID_SUPERVISOR"
     }:
         return [
             {
@@ -676,7 +729,34 @@ def build_project_ir(
     catalog_requirements = [r for r in functional_requirements if is_catalog_functional_requirement(r)]
     ad_hoc_requirements = [r for r in functional_requirements if not is_catalog_functional_requirement(r)]
 
-    required_variables = get_required_variables_for_intent(intent_id, parameters)
+    # Algunos tipos de catalogo (PID: set_level_setpoint, enable_pid, etc.) tambien implican
+    # variables funcionales de proceso SIN prefijo I_/Q_/M_ (Level_SP, PID_Enable, Auto_Mode...).
+    # Se expanden aqui a la forma ad-hoc existente {"name":..., "type":...} para que las resuelva
+    # _resolve_functional_variables exactamente igual que cualquier otra variable funcional - sin
+    # convertirlas nunca en recursos fisicos ni en recursos internos autogenerados por prefijo.
+    existing_ad_hoc_names = {str(r.get("name", "")) for r in ad_hoc_requirements}
+    for requirement in catalog_requirements:
+        for name, iec_type in get_functional_requirement_process_variables(requirement).items():
+            if name in existing_ad_hoc_names:
+                continue
+            ad_hoc_requirements.append({"name": name, "type": iec_type, "semantic_role": requirement.get("type", "")})
+            existing_ad_hoc_names.add(name)
+
+    # Comando multi-actor genuino (dos o mas motor_start_latch independientes - ver
+    # code_generator.detect_multi_actor_motor_targets/_generate_multi_actor_motor_body): ningun
+    # intent_id del catalogo representa esto por si solo, asi que intent_id puede legitimamente
+    # no tener plantilla (INT_UNKNOWN) sin que eso sea un error - TODAS las variables que necesita
+    # el programa llegan via functional_requirement_tags mas abajo, no via el intent base.
+    multi_actor_targets = detect_multi_actor_motor_targets(functional_requirements)
+    if len(multi_actor_targets) >= 2:
+        try:
+            required_variables = get_required_variables_for_intent(intent_id, parameters)
+        except ValueError as error:
+            if INTENT_TEMPLATE_NOT_IMPLEMENTED not in str(error):
+                raise
+            required_variables = []
+    else:
+        required_variables = get_required_variables_for_intent(intent_id, parameters)
     functional_requirement_tags: list[str] = []
     for requirement in catalog_requirements:
         for tag in get_functional_requirement_tags(requirement):
@@ -685,6 +765,16 @@ def build_project_ir(
     required_variables = list(dict.fromkeys(required_variables + functional_requirement_tags))
 
     io_index = build_io_map_index(io_map)
+
+    # Banco sin paro de emergencia cableado al PLC (seccion "regla definitiva" - I_Emergency solo
+    # puede existir si el mapa activo ya la tiene, o el usuario la pidio explicitamente, en cuyo
+    # caso MAP_CONFIG ya la habria agregado al mapa ANTES de llegar aqui). Defensa en profundidad:
+    # semantic_repair.strip_unavailable_emergency_reference ya evita que "I_Emergency" llegue hasta
+    # aqui por la via normal (parse_command), pero cualquier semantic_output construido por otro
+    # camino (un intent_specs/parameter_overrides que la agrega por defecto mas arriba, sin pasar
+    # por el repair) nunca debe terminar exigiendo un recurso fisico que el banco activo no tiene.
+    if "I_Emergency" not in io_index:
+        required_variables = [name for name in required_variables if name != "I_Emergency"]
 
     external_names = [name for name in required_variables if name.startswith(EXTERNAL_PREFIXES)]
     internal_names = [name for name in required_variables if name.startswith(INTERNAL_PREFIXES)]

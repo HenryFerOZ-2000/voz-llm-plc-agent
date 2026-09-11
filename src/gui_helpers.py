@@ -14,7 +14,7 @@ ALLOWED_IO_CLASSES = ["input", "output", "internal", "timer", "counter", "auxili
 ALLOWED_IO_TYPES = ["BOOL", "INT", "TON", "TP", "CTU", "R_TRIG", "F_TRIG"]
 ALLOWED_SAFETY_LEVELS = ["normal", "critical"]
 LOCATION_PATTERN = re.compile(r"^%[IQM][A-Z]*\d+(?:\.\d+)?$", re.IGNORECASE)
-IO_TREE_COLUMNS = ("name", "class", "type", "location", "initial_value", "description")
+IO_TREE_COLUMNS = ("name", "class", "type", "location", "initial_value", "description", "state")
 ADVANCED_VARIABLE_DEFAULTS: dict[str, Any] = {
     "aliases": [],
     "semantic_role": "",
@@ -23,8 +23,10 @@ ADVANCED_VARIABLE_DEFAULTS: dict[str, Any] = {
     "unit": "",
     "min": None,
     "max": None,
-    "comments": ""
+    "comments": "",
+    "state": "ASSIGNED"
 }
+ALLOWED_IO_STATES = ["FREE", "ASSIGNED", "LOCKED"]
 PLATFORM_UI_TO_TARGETS = {
     "Siemens + OpenPLC": ["SIEMENS_SCL_V18", "OPENPLC_ST"],
     "Siemens TIA V18": ["SIEMENS_SCL_V18"],
@@ -136,6 +138,11 @@ def _normalize_advanced_field(field: str, value: Any) -> Any:
     if field == "safety_level":
         normalized_level = str(value).strip().lower() or "normal"
         return normalized_level
+    if field == "state":
+        # No se coacciona un estado invalido a un default silenciosamente (a diferencia de
+        # safety_level): igual que class/type, un valor fuera de ALLOWED_IO_STATES debe quedar
+        # visible tal cual para que validate_io_map_variables lo reporte como error explicito.
+        return str(value).strip().upper() or "ASSIGNED"
     return str(value).strip() if value is not None else ""
 
 
@@ -154,7 +161,7 @@ def validate_io_map_variables(variables: list[dict[str, str]]) -> list[str]:
             errors.append(f"Fila {index}: el campo name es obligatorio.")
             continue
 
-        if not re.match(r"^[IQMTCFR]_[A-Za-z0-9_]+$", name):
+        if not re.match(r"^(?:AI|AO|[IQMTCFR])_[A-Za-z0-9_]+$", name):
             errors.append(f"Fila {index}: el nombre {name} no cumple la convención autorizada.")
 
         if name in seen_names:
@@ -170,15 +177,24 @@ def validate_io_map_variables(variables: list[dict[str, str]]) -> list[str]:
         if location:
             if not LOCATION_PATTERN.match(location):
                 errors.append(f"Fila {index}: la ubicación {location} no tiene formato válido.")
-            if name.startswith("I_") and not location.upper().startswith("%IX"):
+            # AI_/AO_ (entradas/salidas analogicas) se comprueban antes que I_/Q_: un nombre
+            # "AI_..." tambien empieza por "A", nunca por "I_"/"Q_", asi que no hay ambiguedad.
+            if name.startswith("AI_") and not location.upper().startswith("%IW"):
+                errors.append(f"Fila {index}: las entradas analogicas deben usar ubicaciones %IW.")
+            elif name.startswith("AO_") and not location.upper().startswith("%QW"):
+                errors.append(f"Fila {index}: las salidas analogicas deben usar ubicaciones %QW.")
+            elif name.startswith("I_") and not location.upper().startswith("%IX"):
                 errors.append(f"Fila {index}: las entradas deben usar ubicaciones %IX.")
-            if name.startswith("Q_") and not location.upper().startswith("%QX"):
+            elif name.startswith("Q_") and not location.upper().startswith("%QX"):
                 errors.append(f"Fila {index}: las salidas deben usar ubicaciones %QX.")
         elif var_class in {"input", "output"}:
             errors.append(f"Fila {index}: la variable {name} requiere una ubicación física.")
 
         if var_type in {"TON", "TP", "CTU", "R_TRIG", "F_TRIG"} and entry["initial_value"]:
             errors.append(f"Fila {index}: el tipo {var_type} no debe tener initial_value.")
+
+        if entry.get("state") not in ALLOWED_IO_STATES:
+            errors.append(f"Fila {index}: el estado {entry.get('state')} no está permitido.")
 
     return errors
 

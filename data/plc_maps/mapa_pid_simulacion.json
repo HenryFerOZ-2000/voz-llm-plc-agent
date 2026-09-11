@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "map_id": "mapa_pid_simulacion",
+    "name": "MAPA_PID_SIMULACION",
+    "version": 1,
+    "description": "Mapa de simulacion con los recursos fisicos necesarios para los casos experimentales PID P01-P12. Las variables de proceso (Level_PV, Level_SP, PID_Enable, Auto_Mode, Manual_Mode, alarmas, Sensor_Fault, Safe_Stop) son funcionales y se generan por software - no tienen entrada aqui a proposito, ver docs/21_pid_supervisory_control.md.",
+    "target_platform": "SIEMENS_SCL_V18",
+    "created_at": "2026-09-10T00:00:00",
+    "updated_at": "2026-09-10T00:00:00",
+    "tia_project_path": "",
+    "tia_plc_name": "",
+    "sync_status": "unknown",
+    "dirty": false
+  },
+  "naming_convention": {
+    "inputs": "I_",
+    "outputs": "Q_",
+    "internal_memory": "M_",
+    "timers": "T_",
+    "counters": "C_",
+    "auxiliary": "R_"
+  },
+  "variables": [
+    {
+      "name": "I_Emergency",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.2",
+      "initial_value": "FALSE",
+      "description": "Parada de emergencia del proceso PID (misma senal fisica de E-stop ya usada por D01-D20 en el mismo banco de pruebas: %IX0.2).",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "critical",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "Direccion alineada deliberadamente con MAPA_SIMULACION_COMPLETO para evitar un conflicto de tag al importar a un proyecto TIA que ya tenga D01-D20 registrado."
+    },
+    {
+      "name": "I_Reset",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX0.3",
+      "initial_value": "FALSE",
+      "description": "Pulsador de reset de alarmas del proceso PID (misma senal fisica de reset ya usada por D01-D20: %IX0.3).",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "Direccion alineada deliberadamente con MAPA_SIMULACION_COMPLETO."
+    },
+    {
+      "name": "Q_Pump_Enable",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX1.0",
+      "initial_value": "FALSE",
+      "description": "Habilitacion fisica de la bomba supervisada por el PID (recurso nuevo, sin equivalente en D01-D20).",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "Se usa el byte %QX1.x (en vez de %QX0.x) para no colisionar con las salidas D01-D20 ya asignadas en ese byte."
+    },
+    {
+      "name": "Q_Alarm",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX0.1",
+      "initial_value": "FALSE",
+      "description": "Salida de alarma general del proceso PID (nivel alto/bajo/fallo de sensor/sobrellenado); misma senal fisica de alarma ya usada por D01-D20: %QX0.1.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "Direccion alineada deliberadamente con MAPA_SIMULACION_COMPLETO."
+    }
+  ]
+}

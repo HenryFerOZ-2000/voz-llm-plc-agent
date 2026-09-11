@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "map_id": "mapa_pid_banco_fisico",
+    "name": "MAPA_PID_BANCO_FISICO",
+    "version": 1,
+    "description": "Mapa de hardware fisico para PID P01-P12. Banco fisico del proceso de nivel/bomba TODAVIA NO CONFIRMADO: no se inventan direcciones analogicas, modulos, canales, sensor de nivel ni senal de bomba reales. Se deja vacio a proposito - todos los perfiles P01-P12 deben mostrar hardware_ready=False hasta que el banco fisico PID se defina, igual que ya ocurria con D14/D19 en el banco discreto.",
+    "target_platform": "SIEMENS_SCL_V18",
+    "created_at": "2026-09-10T00:00:00",
+    "updated_at": "2026-09-10T00:00:00",
+    "tia_project_path": "",
+    "tia_plc_name": "",
+    "sync_status": "unknown",
+    "dirty": false
+  },
+  "naming_convention": {
+    "inputs": "I_",
+    "outputs": "Q_",
+    "internal_memory": "M_",
+    "timers": "T_",
+    "counters": "C_",
+    "auxiliary": "R_"
+  },
+  "variables": []
+}

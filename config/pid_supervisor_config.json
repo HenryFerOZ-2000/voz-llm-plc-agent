@@ -1,0 +1,59 @@
+{
+  "description": "Limites de seguridad y referencia al bloque PID existente en el proyecto TIA plantilla. La arquitectura NUNCA redisena el algoritmo PID: esto es solo metadata de que variables funcionales debe leer/escribir el supervisor generado, y con que bloque coincide conceptualmente en TIA Portal.",
+  "level_setpoint": {
+    "min": 10.0,
+    "max": 90.0,
+    "unit": "percent"
+  },
+  "high_level_alarm": {
+    "default_limit": 90.0,
+    "unit": "percent"
+  },
+  "low_level_alarm": {
+    "default_limit": 10.0,
+    "unit": "percent"
+  },
+  "safe_overfill_stop": {
+    "default_limit": 95.0,
+    "unit": "percent"
+  },
+  "sensor_valid_range": {
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "percent"
+  },
+  "fill_drain_interlock": {
+    "note": "Por defecto Q_Fill_Valve y Q_Drain_Valve nunca deben estar activas simultaneamente para un tanque simple. Si un proceso futuro requiere ambas a la vez, cambiar mutual_exclusion a false explicitamente - nunca asumirlo en el codigo.",
+    "mutual_exclusion": true
+  },
+  "analog_scaling": {
+    "note": "Abstraccion de escalado raw->ingenieria para AI_Level_Raw/AI_Flow_Raw. 'confirmed' debe pasar a true SOLO cuando el modulo analogico real del banco fisico se confirme (rango raw real del modulo, p.ej. 0-27648 en Siemens). Hasta entonces el supervisor NO escala automaticamente - deja un comentario en el SCL generado en vez de asumir un rango no confirmado.",
+    "level": {
+      "confirmed": false,
+      "raw_min": 0.0,
+      "raw_max": 100.0,
+      "engineering_min": 0.0,
+      "engineering_max": 100.0,
+      "unit": "percent"
+    },
+    "flow": {
+      "confirmed": false,
+      "raw_min": 0.0,
+      "raw_max": 100.0,
+      "engineering_min": 0.0,
+      "engineering_max": 100.0,
+      "unit": "percent"
+    }
+  },
+  "pid_block_reference": {
+    "note": "Referencia informativa unicamente. El SCL generado NUNCA instancia ni llama a este bloque - se asume que el proyecto TIA plantilla ya tiene un PID_Compact (u otro bloque PID estandar) interconectado manualmente en TIA Portal con estas mismas variables funcionales (Level_SP como Setpoint, Level_PV como Input, PID_Enable/Auto_Mode como habilitacion). Esta seccion se ajusta cuando el bloque PID real del proyecto se confirme.",
+    "block_name": "PID_Compact_1",
+    "block_type": "PID_Compact",
+    "confirmed": false,
+    "setpoint_variable": "Level_SP",
+    "process_value_variable": "Level_PV",
+    "enable_variable": "PID_Enable",
+    "manual_mode_variable": "Manual_Mode",
+    "auto_mode_variable": "Auto_Mode"
+  }
+}

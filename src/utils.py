@@ -70,7 +70,7 @@ def sanitize_filename(value: str | None) -> str:
 
 
 _ADVANCED_VARIABLE_FIELDS = (
-    "aliases", "semantic_role", "llm_allowed", "safety_level", "unit", "min", "max", "comments"
+    "aliases", "semantic_role", "llm_allowed", "safety_level", "unit", "min", "max", "comments", "state"
 )
 
 

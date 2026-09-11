@@ -19,7 +19,7 @@ DECLARATION_PATTERN = re.compile(
 )
 IDENTIFIER_PATTERN = re.compile(r"\b(?:[IQMTCRF]_[A-Za-z0-9_]+)\b")
 LOCATION_PATTERN = re.compile(r"^%[IQM][A-Z]*\d+(?:\.\d+)?$", re.IGNORECASE)
-STANDARD_DECLARATION_TYPES = {"BOOL", "INT", "TON", "TP", "CTU", "R_TRIG", "F_TRIG"}
+STANDARD_DECLARATION_TYPES = {"BOOL", "INT", "REAL", "TON", "TP", "CTU", "R_TRIG", "F_TRIG"}
 VALID_POU_TYPES = {"PROGRAM", "FUNCTION_BLOCK", "FUNCTION"}
 FALLBACK_MARKERS = ("safe fallback", "fallback", "template_not_implemented", "intent_template_not_implemented")
 INTENT_TOKEN_RULES = {
@@ -177,7 +177,14 @@ def verify_code(
     if invalid_declaration_types:
         errors.append("Se detectaron tipos de declaracion no soportados: " + ", ".join(invalid_declaration_types))
 
-    if ("Q_Motor_Enable" in implementation or "Q_Aux_Output" in implementation) and "I_Emergency" not in implementation:
+    # Igual que en verify_project_ir: solo exigir el token I_Emergency si el banco activo
+    # realmente lo tiene fisicamente (io_index) - de lo contrario semantic_repair ya lo sustituyo
+    # por el literal "FALSE" en la implementacion, correctamente.
+    if (
+        "I_Emergency" in io_index
+        and ("Q_Motor_Enable" in implementation or "Q_Aux_Output" in implementation)
+        and "I_Emergency" not in implementation
+    ):
         errors.append("Toda logica que controle motor o salida auxiliar debe considerar I_Emergency.")
 
     if any(data["type"].upper() in {"TON", "TP"} for data in declared_variables.values()) and "PT := T#" not in st_code:
@@ -210,7 +217,13 @@ def verify_code(
         )
 
     if intent_id in INTENT_TOKEN_RULES:
-        missing_tokens = [token for token in INTENT_TOKEN_RULES[intent_id] if token not in implementation]
+        expected_tokens = INTENT_TOKEN_RULES[intent_id]
+        if "I_Emergency" not in io_index:
+            # Banco sin paro de emergencia cableado al PLC: el token esperado para este intent no
+            # puede exigirse literalmente si el recurso fisico no existe - la logica generada
+            # correctamente lo sustituyo por "FALSE" (ver semantic_repair.py).
+            expected_tokens = tuple(token for token in expected_tokens if token != "I_Emergency")
+        missing_tokens = [token for token in expected_tokens if token not in implementation]
         if missing_tokens:
             errors.append(
                 "La implementacion no cumple los elementos minimos esperados para "
@@ -281,8 +294,20 @@ def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
                     f"falta la variable {tag}."
                 )
 
+    # Banco sin paro de emergencia cableado al PLC (regla definitiva - ver semantic_repair.py):
+    # esta exigencia solo aplica si I_Emergency es un recurso fisico realmente disponible en el
+    # mapa activo (reflejado en authorized_variables, via io_index). Si no lo es,
+    # semantic_repair.strip_unavailable_emergency_reference ya sustituyo la referencia por el
+    # literal booleano "FALSE" en la logica generada - exigir aqui el TOKEN LITERAL "I_Emergency"
+    # de todas formas repetiria exactamente el bug ya corregido (generacion exitosa, verificacion
+    # fallando igual por un requisito que contradice el banco real).
     critical_outputs = {"Q_Motor_Enable", "Q_Aux_Output", "Q_Contactor_A", "Q_Contactor_B"}
-    if used_identifiers.intersection(critical_outputs) and "I_Emergency" not in project_ir.pou.implementation_code:
+    bench_has_emergency = "I_Emergency" in authorized_variables
+    if (
+        bench_has_emergency
+        and used_identifiers.intersection(critical_outputs)
+        and "I_Emergency" not in project_ir.pou.implementation_code
+    ):
         errors.append("Toda logica de salidas criticas debe incluir la senal I_Emergency.")
 
     for variable in project_ir.pou.variables:

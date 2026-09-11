@@ -10,12 +10,18 @@ generated_code/OPENPLC/archived/*
 generated_code/CODESYS/active/*
 generated_code/CODESYS/logs/*
 generated_code/CODESYS/archived/*
+generated_code/SIEMENS/active/*
+generated_code/SIEMENS/logs/*
+generated_code/SIEMENS/archived/*
 !generated_code/OPENPLC/active/.gitkeep
 !generated_code/OPENPLC/logs/.gitkeep
 !generated_code/OPENPLC/archived/.gitkeep
 !generated_code/CODESYS/active/.gitkeep
 !generated_code/CODESYS/logs/.gitkeep
 !generated_code/CODESYS/archived/.gitkeep
+!generated_code/SIEMENS/active/.gitkeep
+!generated_code/SIEMENS/logs/.gitkeep
+!generated_code/SIEMENS/archived/.gitkeep
 
 experimental_results/trials.csv
 experimental_results/trials.jsonl
@@ -25,12 +31,16 @@ generated_code/gui_history.json
 
 tia_openness_bridge/bin/*
 !tia_openness_bridge/bin/.gitkeep
+tia_openness_bridge/sync_map_request.json
+tia_openness_bridge/sync_map_result.json
 
 tia_projects/
 
 data/plc_maps/*
 !data/plc_maps/mapa_simulacion_completo.json
 !data/plc_maps/mapa_banco_fisico.json
+!data/plc_maps/mapa_pid_simulacion.json
+!data/plc_maps/mapa_pid_banco_fisico.json
 !data/plc_maps/profiles.json
 !data/plc_maps/experiment_variants.json
 .pytest_tmp/

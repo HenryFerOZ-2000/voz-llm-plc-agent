@@ -10,6 +10,7 @@ from platforms.base_adapter import PLCPlatformAdapter
 SIEMENS_TYPE_MAP = {
     "BOOL": "Bool",
     "INT": "Int",
+    "REAL": "Real",
     "TIME": "Time",
     "TON": "TON_TIME",
     "TP": "TP_TIME",

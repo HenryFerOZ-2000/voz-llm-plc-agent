@@ -324,6 +324,126 @@
         "Q_Motor_Enable"
       ],
       "notes": "Se agregaron ['I_Mode_Auto'] porque la intencion de referencia INT_AUTO_CYCLE las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent)."
+    },
+    {
+      "profile_id": "P01",
+      "case_id": "P01",
+      "name": "P01 - Habilitar modo automatico",
+      "description": "Habilitar el modo automatico del proceso PID (supervision, no redisena el PID).",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency"],
+      "notes": "Auto_Mode/Manual_Mode son variables funcionales de software, no recursos fisicos: no aparecen en allowed_variables."
+    },
+    {
+      "profile_id": "P02",
+      "case_id": "P02",
+      "name": "P02 - Cambiar setpoint de nivel",
+      "description": "Cambiar el setpoint de nivel del proceso PID dentro del rango seguro configurado.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency"],
+      "notes": "Level_SP es variable funcional (REAL); el rango seguro se valida de forma deterministica via config/pid_supervisor_config.json, no por el perfil."
+    },
+    {
+      "profile_id": "P03",
+      "case_id": "P03",
+      "name": "P03 - Rechazar setpoint inseguro",
+      "description": "Rechazar un setpoint de nivel fuera del rango seguro configurado.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency"],
+      "notes": "Mismo perfil de recursos que P02: la diferencia es puramente de validacion (semantic_validator), no de mapa."
+    },
+    {
+      "profile_id": "P04",
+      "case_id": "P04",
+      "name": "P04 - Alarma de nivel alto",
+      "description": "Activar alarma cuando el nivel supere el limite alto configurado.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency", "Q_Alarm"],
+      "notes": "Level_PV/High_Level_Alarm son variables funcionales; Q_Alarm es el unico recurso fisico requerido."
+    },
+    {
+      "profile_id": "P05",
+      "case_id": "P05",
+      "name": "P05 - Alarma de nivel bajo",
+      "description": "Activar alarma cuando el nivel caiga por debajo del limite bajo configurado.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency", "Q_Alarm"],
+      "notes": "Analogo a P04 con el limite inferior."
+    },
+    {
+      "profile_id": "P06",
+      "case_id": "P06",
+      "name": "P06 - PID condicionado a automatico",
+      "description": "Habilitar el PID unicamente cuando el sistema este en modo automatico y sin condiciones de seguridad activas.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency"],
+      "notes": "PID_Enable/Auto_Mode/Sensor_Fault/Safe_Stop son funcionales; la formula de habilitacion vive en code_generator._generate_pid_supervisor_body."
+    },
+    {
+      "profile_id": "P07",
+      "case_id": "P07",
+      "name": "P07 - Deshabilitar PID ante emergencia",
+      "description": "Forzar PID_Enable y Q_Pump_Enable a falso ante una senal de emergencia.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency"],
+      "notes": "Cubierto por el bloque de seguridad incondicional que siempre genera el supervisor PID (prioridad de emergencia)."
+    },
+    {
+      "profile_id": "P08",
+      "case_id": "P08",
+      "name": "P08 - Modo manual con operacion limitada",
+      "description": "Permitir operacion manual de la bomba, siempre condicionada por emergencia/fallo de sensor/parada segura.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency", "Q_Pump_Enable"],
+      "notes": "El modo manual nunca elimina las condiciones de seguridad (ver seccion 19 del pedido PID)."
+    },
+    {
+      "profile_id": "P09",
+      "case_id": "P09",
+      "name": "P09 - Fallo de sensor fuera de rango",
+      "description": "Detectar fallo de sensor cuando el valor de nivel este fuera del rango fisico valido y deshabilitar el PID.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency"],
+      "notes": "Level_PV/Sensor_Fault son funcionales; el rango fisico valido es configurable via config/pid_supervisor_config.json."
+    },
+    {
+      "profile_id": "P10",
+      "case_id": "P10",
+      "name": "P10 - Reset condicionado de alarma",
+      "description": "Permitir el reset de alarma solo cuando ya no exista ninguna condicion de fallo activa.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency", "I_Reset"],
+      "notes": "El reset requiere I_Reset fisico; las condiciones que evalua (alarmas/fallo de sensor) son funcionales."
+    },
+    {
+      "profile_id": "P11",
+      "case_id": "P11",
+      "name": "P11 - Parada segura por sobrellenado",
+      "description": "Detener la bomba de forma segura y generar alarma si el tanque alcanza el nivel de sobrellenado.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency", "Q_Pump_Enable", "Q_Alarm"],
+      "notes": "Coincide con el ejemplo conceptual del pedido: Level_PV es funcional, Q_Pump_Enable/Q_Alarm son los recursos fisicos."
+    },
+    {
+      "profile_id": "P12",
+      "case_id": "P12",
+      "name": "P12 - Secuencia completa (composicion)",
+      "description": "Prueba de integracion del mecanismo compositivo: automatico + setpoint + PID habilitado + alarma/fallo + recuperacion segura, combinando functional_requirements ya existentes sin una plantilla monolitica nueva.",
+      "complexity": "alta",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": ["I_Emergency", "I_Reset", "Q_Pump_Enable", "Q_Alarm"],
+      "notes": "Requiere el superconjunto de recursos fisicos de P01-P11 porque combina varios functional_requirements en un mismo comando."
     }
   ]
 }

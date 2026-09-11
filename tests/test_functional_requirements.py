@@ -8,7 +8,12 @@ from typing import Any
 import pytest
 
 from code_generator import generate_implementation_from_ir
-from functional_requirements import compute_semantic_coverage, detect_functional_requirement_conflicts
+from functional_requirements import (
+    compute_semantic_coverage,
+    detect_functional_requirement_conflicts,
+    merge_interlock_requirements,
+    normalize_interlock_requirement
+)
 from ir_builder import build_project_ir
 from llm_parser import parse_with_mode
 from project_packager import generate_project_package
@@ -50,8 +55,15 @@ def _semantic_output(intent_id: str, parameters: dict, recognized_tags: list[str
         "intent_id": intent_id,
         "case_id": "TEST",
         "command_text": "comando de prueba",
+        "normalized_command": "comando de prueba",
         "parameters": parameters,
+        "confidence": 0.9,
+        "ambiguities": [],
+        "requires_clarification": False,
+        "clarification_question": None,
+        "assumptions": [],
         "recognized_tags": recognized_tags,
+        "unrecognized_terms": [],
         "functional_requirements": functional_requirements or []
     }
 
@@ -235,6 +247,223 @@ def test_composed_command_without_conflict_does_not_require_clarification(io_map
 def test_duplicate_identical_requirement_is_not_a_conflict() -> None:
     conflicts = detect_functional_requirement_conflicts([{"type": "run_pilot"}, {"type": "run_pilot"}])
     assert conflicts == []
+
+
+# L. normalizacion/fusion de interlock: orden de participantes, N-vias, conflicto real -------------
+
+def _interlock(output_a: str, output_b: str, max_active: int | None = None) -> dict[str, Any]:
+    entry = {"type": "interlock", "output_a": output_a, "output_b": output_b}
+    if max_active is not None:
+        entry["max_active"] = max_active
+    return entry
+
+
+def test_interlock_participant_order_is_not_a_conflict() -> None:
+    """Caso 1: interlock(A,B) e interlock(B,A) son la MISMA exclusion mutua."""
+    conflicts = detect_functional_requirement_conflicts(
+        [_interlock("Q_Motor_1", "Q_Motor_2"), _interlock("Q_Motor_2", "Q_Motor_1")]
+    )
+    assert conflicts == []
+
+
+def test_interlock_pairs_forming_n_way_exclusion_is_not_a_conflict() -> None:
+    """Caso 2: los 3 pares posibles entre A/B/C representan una exclusion mutua de 3, no 3
+    requisitos contradictorios entre si."""
+    conflicts = detect_functional_requirement_conflicts([
+        _interlock("Q_Motor_1", "Q_Motor_2"),
+        _interlock("Q_Motor_1", "Q_Motor_3"),
+        _interlock("Q_Motor_2", "Q_Motor_3")
+    ])
+    assert conflicts == []
+
+
+def test_three_motor_command_does_not_require_clarification(io_map: dict, intents_catalog: dict, safety_rules: dict) -> None:
+    """Caso 3: "Solo un motor puede estar encendido a la vez" para 3 motores nunca debe pedir
+    aclaracion solo por traer 3 requisitos 'interlock' pareados entre si."""
+    minimal_map = _minimal_map(io_map, {"I_Start", "I_Stop", "I_Emergency"})
+    for name, location in (("Q_Motor_1", "%QX0.0"), ("Q_Motor_2", "%QX0.1"), ("Q_Motor_3", "%QX0.2")):
+        minimal_map["variables"].append(
+            {"name": name, "class": "output", "type": "BOOL", "location": location, "initial_value": "FALSE", "description": ""}
+        )
+    semantic_output = _semantic_output(
+        "INT_UNKNOWN", {}, ["Q_Motor_1", "Q_Motor_2", "Q_Motor_3"],
+        functional_requirements=[
+            _interlock("Q_Motor_1", "Q_Motor_2"),
+            _interlock("Q_Motor_1", "Q_Motor_3"),
+            _interlock("Q_Motor_2", "Q_Motor_3")
+        ]
+    )
+    result = validate_semantic_output(semantic_output, minimal_map, intents_catalog, safety_rules)
+    assert result["requires_clarification"] is False
+    assert result["functional_requirement_conflicts"] == []
+
+
+def test_interlock_merge_deduplicates_identical_pairs() -> None:
+    """Caso 4: duplicados identicos se deduplican, no se mantienen dos veces."""
+    merged = merge_interlock_requirements([_interlock("Q_Motor_1", "Q_Motor_2"), _interlock("Q_Motor_1", "Q_Motor_2")])
+    assert merged == [{"type": "mutual_interlock", "participants": ["Q_Motor_1", "Q_Motor_2"], "max_active": 1}]
+
+
+def test_interlock_real_conflict_same_participants_different_max_active() -> None:
+    """Ejemplo de conflicto real del pedido: mismos participantes, max_active distinto SI debe
+    detectarse."""
+    conflicts = detect_functional_requirement_conflicts([
+        _interlock("Q_Motor_1", "Q_Motor_2", max_active=1),
+        _interlock("Q_Motor_1", "Q_Motor_2", max_active=2)
+    ])
+    assert len(conflicts) == 1
+    assert "max_active" in conflicts[0]["reason"]
+
+
+def test_interlock_incomplete_pair_set_is_not_merged_into_a_wider_exclusion() -> None:
+    """Solo A-B y A-C dados (nunca B-C): NO es un grafo completo, no debe fusionarse en una
+    exclusion de 3 - eso prohibiria B+C simultaneos cuando el comando nunca lo dijo."""
+    merged = merge_interlock_requirements([_interlock("A", "B"), _interlock("A", "C")])
+    assert {"type": "mutual_interlock", "participants": ["A", "B"], "max_active": 1} in merged
+    assert {"type": "mutual_interlock", "participants": ["A", "C"], "max_active": 1} in merged
+    assert not any(len(entry["participants"]) == 3 for entry in merged)
+
+
+def test_normalize_interlock_requirement_is_order_independent() -> None:
+    assert normalize_interlock_requirement({"type": "interlock", "output_a": "A", "output_b": "B"}) == \
+        normalize_interlock_requirement({"type": "interlock", "output_a": "B", "output_b": "A"})
+
+
+# M. identidad del requisito (type + target): mismo type + parametros distintos NO es conflicto
+# automatico si los targets (actores) son distintos - solo lo es cuando el target COINCIDE. -------
+
+def _latch(target: str, enabled: bool | None = None) -> dict[str, Any]:
+    entry: dict[str, Any] = {"type": "motor_start_latch", "target": target}
+    if enabled is not None:
+        entry["enabled"] = enabled
+    return entry
+
+
+def _delayed_stop_for(target: str, delay: str) -> dict[str, Any]:
+    return {"type": "delayed_stop", "target": target, "delay": delay}
+
+
+def _run_pilot_for(target: str) -> dict[str, Any]:
+    return {"type": "run_pilot", "target": target}
+
+
+def test_motor_start_latch_for_two_distinct_motors_is_not_a_conflict() -> None:
+    conflicts = detect_functional_requirement_conflicts([_latch("motor_1"), _latch("motor_2")])
+    assert conflicts == []
+
+
+def test_motor_start_latch_for_three_distinct_motors_is_not_a_conflict() -> None:
+    conflicts = detect_functional_requirement_conflicts([_latch("motor_1"), _latch("motor_2"), _latch("motor_3")])
+    assert conflicts == []
+
+
+def test_motor_start_latch_same_target_different_params_is_a_real_conflict() -> None:
+    conflicts = detect_functional_requirement_conflicts([_latch("motor_1", enabled=True), _latch("motor_1", enabled=False)])
+    assert len(conflicts) == 1
+    assert conflicts[0]["target"] == "motor_1"
+
+
+def test_delayed_stop_for_distinct_motors_with_distinct_delays_is_not_a_conflict() -> None:
+    """delayed_stop(motor_1, 3s) + delayed_stop(motor_2, 5s): retardos distintos para motores
+    distintos, no una contradiccion sobre el mismo motor."""
+    conflicts = detect_functional_requirement_conflicts(
+        [_delayed_stop_for("motor_1", "T#3s"), _delayed_stop_for("motor_2", "T#5s")]
+    )
+    assert conflicts == []
+
+
+def test_delayed_stop_same_motor_different_delay_is_a_real_conflict() -> None:
+    conflicts = detect_functional_requirement_conflicts(
+        [_delayed_stop_for("motor_1", "T#3s"), _delayed_stop_for("motor_1", "T#5s")]
+    )
+    assert len(conflicts) == 1
+    assert conflicts[0]["target"] == "motor_1"
+
+
+def test_run_pilot_for_distinct_motors_is_not_a_conflict() -> None:
+    conflicts = detect_functional_requirement_conflicts([_run_pilot_for("motor_1"), _run_pilot_for("motor_2")])
+    assert conflicts == []
+
+
+def test_legacy_requirements_without_any_target_field_keep_old_behavior() -> None:
+    """Compatibilidad hacia atras: un tipo GLOBAL/SINGLETON (o una interpretacion vieja sin
+    `target`) que nunca declaro esa nocion sigue comparandose exactamente como antes - identico
+    -> duplicado inofensivo, distinto -> conflicto real."""
+    assert detect_functional_requirement_conflicts([{"type": "motor_start_latch"}, {"type": "motor_start_latch"}]) == []
+    conflicts = detect_functional_requirement_conflicts(
+        [{"type": "delayed_stop", "delay": "T#3s"}, {"type": "delayed_stop", "delay": "T#10s"}]
+    )
+    assert len(conflicts) == 1
+
+
+def test_three_motor_command_with_latch_and_interlock_does_not_require_clarification(
+    io_map: dict, intents_catalog: dict, safety_rules: dict
+) -> None:
+    """Caso 7 / criterio de exito: un programa de 3 motores con enclavamiento propio por motor
+    (motor_start_latch por actor) MAS la exclusion mutua entre los tres (interlock) nunca debe
+    pedir aclaracion."""
+    minimal_map = _minimal_map(io_map, {"I_Start", "I_Stop", "I_Emergency"})
+    for name, location in (("Q_Motor_1", "%QX0.0"), ("Q_Motor_2", "%QX0.1"), ("Q_Motor_3", "%QX0.2")):
+        minimal_map["variables"].append(
+            {"name": name, "class": "output", "type": "BOOL", "location": location, "initial_value": "FALSE", "description": ""}
+        )
+    semantic_output = _semantic_output(
+        "INT_UNKNOWN", {}, ["Q_Motor_1", "Q_Motor_2", "Q_Motor_3"],
+        functional_requirements=[
+            _latch("Q_Motor_1"), _latch("Q_Motor_2"), _latch("Q_Motor_3"),
+            _interlock("Q_Motor_1", "Q_Motor_2"), _interlock("Q_Motor_1", "Q_Motor_3"), _interlock("Q_Motor_2", "Q_Motor_3")
+        ]
+    )
+    result = validate_semantic_output(semantic_output, minimal_map, intents_catalog, safety_rules)
+    assert result["requires_clarification"] is False
+    assert result["functional_requirement_conflicts"] == []
+
+
+def test_valid_three_motor_interpretation_pipeline_continues_through_ir_scl_and_verification(
+    io_map: dict, intents_catalog: dict, safety_rules: dict, tmp_path: Path
+) -> None:
+    """
+    Criterio critico (seccion 9 del pedido sobre el bug de SEMANTIC_AMBIGUITY): no basta con que
+    desaparezca la ventana de aclaracion - para una interpretacion realmente valida (parametros que
+    SI coinciden con la plantilla de su intent, mas los 3 motores representados via
+    functional_requirements) el pipeline debe continuar de verdad hasta IR -> SCL -> verificacion,
+    no solo evitar el dialogo.
+    """
+    minimal_map = _minimal_map(io_map, {"I_Start", "I_Stop", "I_Emergency"})
+    for name, location in (("Q_Motor_1", "%QX0.0"), ("Q_Motor_2", "%QX0.1"), ("Q_Motor_3", "%QX0.2")):
+        minimal_map["variables"].append(
+            {"name": name, "class": "output", "type": "BOOL", "location": location, "initial_value": "FALSE", "description": ""}
+        )
+    semantic_output = _semantic_output(
+        "INT_MUTUAL_INTERLOCK",
+        {
+            "trigger_input": "I_Start", "stop_input": "I_Stop", "emergency_input": "I_Emergency",
+            "contactor_a": "Q_Motor_1", "contactor_b": "Q_Motor_2"
+        },
+        ["I_Start", "I_Stop", "I_Emergency", "Q_Motor_1", "Q_Motor_2", "Q_Motor_3"],
+        functional_requirements=[
+            _latch("Q_Motor_1"), _latch("Q_Motor_2"), _latch("Q_Motor_3"),
+            _interlock("Q_Motor_1", "Q_Motor_2"), _interlock("Q_Motor_1", "Q_Motor_3"), _interlock("Q_Motor_2", "Q_Motor_3")
+        ]
+    )
+    validation = validate_semantic_output(semantic_output, minimal_map, intents_catalog, safety_rules)
+    assert validation["is_valid"] is True
+    assert validation["requires_clarification"] is False
+
+    result = generate_project_package(
+        semantic_output, "SIEMENS_SCL_V18", minimal_map, intents_catalog, safety_rules, output_dir=tmp_path
+    )
+    assert result["verification"]["is_valid"] is True
+    ir_variable_names = {v["name"] for v in result["project_ir"]["pou"]["variables"]}
+    # Cada motor_start_latch con `target` propio recibe su PROPIA memoria de enclavamiento
+    # (M_Motor_XLatch), no una "M_RunLatch" generica compartida entre los tres actores - eso
+    # colapsaria el estado independiente de cada motor en un solo bit (bug real corregido:
+    # ir_builder/functional_requirements.get_functional_requirement_tags ahora deriva el nombre
+    # del `target` de cada instancia).
+    assert {
+        "Q_Motor_1", "Q_Motor_2", "Q_Motor_3", "M_Motor_1Latch", "M_Motor_2Latch", "M_Motor_3Latch"
+    } <= ir_variable_names
+    assert "M_RunLatch" not in ir_variable_names
 
 
 # Section 6: compute_semantic_coverage ----------------------------------------------------------------
