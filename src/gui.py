@@ -4,6 +4,7 @@ import csv
 import json
 import queue
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
@@ -83,14 +84,24 @@ from project_packager import generate_project_package
 from semantic_validator import validate_semantic_output
 from speech_recognizer import SpeechRecognizer
 from tia_openness import (
+    DOWNLOAD_PURPOSE_EXPERIMENT,
+    DOWNLOAD_PURPOSE_NORMAL,
+    TARGET_TYPE_PLCSIM,
     build_openness_bridge,
     diagnose_tia_openness,
     download_program_to_plc,
     load_tia_config,
+    resolve_download_target,
     run_openness_bridge_diagnostic,
     save_tia_config,
     validate_package_with_tia
 )
+import plcsim_runtime
+import plcsim_runtime_io
+from plcsim_runtime import get_plcsim_runtime_status
+from trial_experiments import benchmark_catalog, oracle_review, oracle_runner, oracle_schema, trial_io_map, trial_model
+from trial_experiments.oracle_runner import run_oracle
+from trial_experiments.oracle_schema import find_case_oracle
 from trial_experiments import (
     CONDITIONS,
     ENVIRONMENT_LABELS,
@@ -486,7 +497,7 @@ class LLMConfigDialog(ctk.CTkToplevel):
         self.transcription_model_var = tk.StringVar(value=initial_settings.get("PLC_TRANSCRIPTION_MODEL", ""))
         self.enable_llm_var = tk.BooleanVar(value=initial_settings.get("ENABLE_LLM", "true").strip().lower() == "true")
         self.enable_voice_var = tk.BooleanVar(value=initial_settings.get("ENABLE_VOICE", "true").strip().lower() == "true")
-        self.parser_mode_var = tk.StringVar(value=initial_settings.get("PARSER_MODE", "hybrid"))
+        self.parser_mode_var = tk.StringVar(value=initial_settings.get("PARSER_MODE", "llm"))
         self.threshold_var = tk.StringVar(value=initial_settings.get("LLM_CONFIDENCE_THRESHOLD", "0.85"))
 
         self.grid_columnconfigure(1, weight=1)
@@ -563,7 +574,7 @@ class LLMConfigDialog(ctk.CTkToplevel):
             "OPENAI_API_KEY": self.api_key_var.get().strip(),
             "PLC_LLM_MODEL": self.model_var.get().strip(),
             "PLC_TRANSCRIPTION_MODEL": self.transcription_model_var.get().strip(),
-            "PARSER_MODE": self.parser_mode_var.get().strip() or "hybrid",
+            "PARSER_MODE": self.parser_mode_var.get().strip() or "llm",
             "LLM_CONFIDENCE_THRESHOLD": self.threshold_var.get().strip() or "0.85",
             "ENABLE_LLM": "true" if self.enable_llm_var.get() else "false",
             "ENABLE_VOICE": "true" if self.enable_voice_var.get() else "false"
@@ -658,6 +669,381 @@ class ClarificationDialog(ctk.CTkToplevel):
         self.destroy()
 
 
+class OracleReviewWindow(ctk.CTkToplevel):
+    """
+    Fase 3B - REVISION DE ORACLES: tabla de los 32 Oracles para la aprobacion formal del
+    investigador. Nunca edita un Oracle; solo muestra, aprueba uno a uno o aprueba en masa los que
+    no tienen review_items abiertos (con confirmacion explicita).
+    """
+
+    COLUMNS = ("caso", "titulo", "complejidad", "runtime", "review", "validacion", "estado")
+
+    def __init__(self, app: "VozLLMPLCGUI") -> None:
+        super().__init__(app)
+        self.app = app
+        self.title("Revision de Oracles")
+        self.geometry("1100x620")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.summary_var = tk.StringVar(value="")
+        ctk.CTkLabel(self, textvariable=self.summary_var, justify="left", anchor="w").grid(row=0, column=0, padx=14, pady=(12, 6), sticky="ew")
+
+        container = ctk.CTkFrame(self)
+        container.grid(row=1, column=0, padx=14, pady=4, sticky="nsew")
+        container.grid_columnconfigure(0, weight=1)
+        container.grid_rowconfigure(0, weight=1)
+        self.tree = ttk.Treeview(container, columns=self.COLUMNS, show="headings", selectmode="browse")
+        headings = {"caso": ("Caso", 60), "titulo": ("Titulo", 420), "complejidad": ("Complejidad", 90), "runtime": ("Runtime", 200),
+                    "review": ("Review items", 90), "validacion": ("Validacion", 90), "estado": ("Estado", 150)}
+        for column, (label, width) in headings.items():
+            self.tree.heading(column, text=label)
+            self.tree.column(column, width=width, anchor="w")
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        scroll = ttk.Scrollbar(container, orient="vertical", command=self.tree.yview)
+        scroll.grid(row=0, column=1, sticky="ns")
+        self.tree.configure(yscrollcommand=scroll.set)
+
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.grid(row=2, column=0, padx=14, pady=(6, 14), sticky="ew")
+        buttons.grid_columnconfigure((0, 1, 2, 3), weight=1)
+        ctk.CTkButton(buttons, text="VER RESUMEN", command=self.show_summary).grid(row=0, column=0, padx=4, sticky="ew")
+        ctk.CTkButton(buttons, text="VER DETALLE", command=self.show_detail).grid(row=0, column=1, padx=4, sticky="ew")
+        ctk.CTkButton(buttons, text="APROBAR", command=self.approve_selected).grid(row=0, column=2, padx=4, sticky="ew")
+        ctk.CTkButton(buttons, text="APROBAR TODOS SIN REVIEW_ITEMS", command=self.approve_all_clean).grid(row=0, column=3, padx=4, sticky="ew")
+        self.refresh()
+
+    def refresh(self) -> None:
+        report = oracle_review.build_validation_report(self.app.project_root)
+        self.report = report
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        for entry in report["oracles"]:
+            validation = "OK" if not entry["errors"] else f"{len(entry['errors'])} error(es)"
+            self.tree.insert("", "end", iid=entry["case_id"], values=(
+                entry["case_id"], entry.get("title") or "", entry.get("complexity") or "",
+                entry["runtime_support"], len(entry["review_items"]), validation, f"{entry['status']} v{entry['version']}"))
+        summary = report["summary"]
+        total = summary["total_oracles"]
+        self.summary_var.set(
+            f"{summary['schema_valid']} / {total} schema valid   ·   {summary['without_review_items']} / {total} sin review_items   ·   "
+            f"{summary['discrete_executable'].replace('/', ' / ')} discretos ejecutables   ·   "
+            f"{summary['pid_executable'].replace('/', ' / ')} PID ejecutables actualmente   ·   "
+            f"{summary['formal']} aprobados   ·   {len(summary['ready_for_human_approval'])} listos para aprobacion"
+            + (f"   ·   FALTAN: {', '.join(report['missing_ids'])}" if report["missing_ids"] else "")
+        )
+
+    def _selected(self) -> str | None:
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showwarning("Revision de Oracles", "Seleccione un Oracle de la tabla.", parent=self)
+            return None
+        return selection[0]
+
+    def show_summary(self) -> None:
+        window = ctk.CTkToplevel(self)
+        window.title("Resumen de Oracles")
+        window.geometry("900x700")
+        window.grid_columnconfigure(0, weight=1)
+        window.grid_rowconfigure(0, weight=1)
+        textbox = ctk.CTkTextbox(window, wrap="word")
+        textbox.grid(row=0, column=0, padx=12, pady=12, sticky="nsew")
+        textbox.insert("1.0", oracle_review.build_summary_markdown(self.app.project_root))
+        textbox.configure(state="disabled")
+
+    def show_detail(self) -> None:
+        case_id = self._selected()
+        if case_id:
+            try:
+                OracleViewerWindow(self.app, oracle_schema.load_oracle(self.app.project_root, case_id))
+            except oracle_schema.OracleError as error:
+                messagebox.showerror("Revision de Oracles", f"{error.code}: {error.detail}", parent=self)
+
+    def approve_selected(self) -> None:
+        case_id = self._selected()
+        if case_id and self.app.approve_oracle_interactive(case_id, parent=self):
+            self._after_approval()
+
+    def approve_all_clean(self) -> None:
+        report = oracle_review.build_validation_report(self.app.project_root)
+        candidates = [e["case_id"] for e in report["oracles"]
+                      if e["status"] not in oracle_schema.FORMAL_STATUSES and not e["review_items"] and not e["errors"]]
+        if not candidates:
+            messagebox.showinfo("Revision de Oracles", "No hay Oracles en borrador sin review_items abiertos.", parent=self)
+            return
+        if not messagebox.askyesno(
+            "Aprobacion masiva",
+            f"Se aprobaran y CONGELARAN {len(candidates)} Oracles sin review_items abiertos:\n{', '.join(candidates)}\n\n"
+            f"\"{oracle_review.MASS_APPROVAL_CONFIRMATION}\"\n\n¿Confirma esta declaracion?", parent=self
+        ):
+            return
+        reviewer = simpledialog.askstring("Aprobacion masiva", "Identificador del investigador que aprueba:", parent=self)
+        if not reviewer or not reviewer.strip():
+            return
+        try:
+            outcome = oracle_review.approve_all_without_review_items(
+                self.app.project_root, reviewer, oracle_review.MASS_APPROVAL_CONFIRMATION)
+        except (oracle_schema.OracleError, ValueError) as error:
+            messagebox.showerror("Aprobacion masiva", str(error), parent=self)
+            return
+        self.app._log(f"[ORACLE] Aprobacion masiva por {reviewer}: {', '.join(outcome['approved'])}")
+        messagebox.showinfo(
+            "Aprobacion masiva",
+            f"Aprobados: {', '.join(outcome['approved']) or '-'}\n"
+            f"Con review_items (no aprobados): {', '.join(outcome['skipped_review_items']) or '-'}", parent=self)
+        self._after_approval()
+
+    def _after_approval(self) -> None:
+        oracle_review.write_validation_report(self.app.project_root, oracle_review.build_validation_report(self.app.project_root))
+        oracle_review.write_summary_markdown(self.app.project_root)
+        oracle_review.write_capability_gaps_report(self.app.project_root)
+        self.refresh()
+        self.app._refresh_oracle_status()
+
+
+class OracleViewerWindow(ctk.CTkToplevel):
+    """VER ORACLE: contenido, hash y puntos REVIEW_REQUIRED. Solo lectura: la GUI nunca edita Oracles."""
+
+    def __init__(self, app: "VozLLMPLCGUI", oracle: dict[str, Any]) -> None:
+        super().__init__(app)
+        approval = oracle.get("approval") or {}
+        self.title(f"Oracle {oracle.get('oracle_id')} v{approval.get('version')} - {approval.get('status')}")
+        self.geometry("760x640")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        pending = oracle_schema.open_review_items(oracle)
+        header = (
+            f"{oracle.get('title')}\n"
+            f"Estado: {approval.get('status')}   ·   Version: {approval.get('version')}   ·   "
+            f"Hash: {oracle_schema.compute_oracle_hash(oracle)[:16]}...\n"
+            f"Aprobado por: {approval.get('approved_by') or '-'}   ·   {approval.get('approved_at') or '-'}\n"
+            + (f"Puntos REVIEW_REQUIRED abiertos: {len(pending)}" if pending else "Sin puntos REVIEW_REQUIRED abiertos.")
+        )
+        ctk.CTkLabel(self, text=header, justify="left", anchor="w").grid(row=0, column=0, padx=14, pady=(12, 6), sticky="ew")
+        textbox = ctk.CTkTextbox(self, wrap="none")
+        textbox.grid(row=1, column=0, padx=14, pady=(0, 14), sticky="nsew")
+        textbox.insert("1.0", json.dumps(oracle, indent=2, ensure_ascii=False))
+        textbox.configure(state="disabled")
+
+
+class RuntimeIOTestWindow(ctk.CTkToplevel):
+    """
+    Fase 2B - PRUEBA DE I/O (herramienta tecnica, NO Oracle). Escribe ENTRADAS BOOL y lee
+    salidas BOOL del programa actual en PLCSIM Advanced, con readback y restauracion de entradas.
+    Solo se abre si target == PLCSIM_ADVANCED, Runtime conectado, CPU RUN y hay programa valido.
+    """
+
+    def __init__(
+        self,
+        app: "VozLLMPLCGUI",
+        program: dict[str, Any],
+        target_type: str,
+        runtime_report: dict[str, Any],
+        report_dir: Path,
+        trial_directory: Path | None
+    ) -> None:
+        super().__init__(app)
+        self.app = app
+        self.program = program
+        self.target_type = target_type
+        self.report_dir = report_dir
+        self.trial_directory = trial_directory
+        self.session = plcsim_runtime_io.RuntimeIOSession(program, target_type, runtime_report, app.project_root)
+        self._queue: queue.Queue = queue.Queue()
+        self._busy = False
+        self._closing = False
+        self._last_smoke_report: dict[str, Any] | None = None
+
+        self.title("Prueba de I/O - PLCSIM Advanced")
+        self.geometry("520x560")
+        self.grid_columnconfigure(0, weight=1)
+        self.protocol("WM_DELETE_WINDOW", self.close)
+
+        source = program.get("source")
+        source_text = f"snapshot del ensayo {program.get('trial_id')}" if source == "snapshot" else "variables.json del programa descargado"
+        header = (
+            "MODO SIMULACIÓN\n"
+            f"{self.session.config['instance_name']}   ·   CPU {runtime_report.get('cpu_state')}\n"
+            f"Señales: {source_text}"
+        )
+        ctk.CTkLabel(self, text=header, justify="left", font=app.button_font).grid(row=0, column=0, padx=16, pady=(14, 8), sticky="w")
+
+        inputs = [signal["name"] for signal in plcsim_runtime_io.bool_inputs(program)]
+        outputs = [signal["name"] for signal in plcsim_runtime_io.bool_outputs(program)]
+
+        input_frame = ctk.CTkFrame(self, corner_radius=10)
+        input_frame.grid(row=1, column=0, padx=16, pady=6, sticky="ew")
+        input_frame.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(input_frame, text="Entrada").grid(row=0, column=0, padx=10, pady=8, sticky="w")
+        self.input_var = tk.StringVar(value=inputs[0] if inputs else "")
+        self.input_menu = ctk.CTkOptionMenu(input_frame, variable=self.input_var, values=inputs or ["(sin entradas BOOL)"])
+        self.input_menu.grid(row=0, column=1, padx=10, pady=8, sticky="ew")
+        ctk.CTkLabel(input_frame, text="Valor").grid(row=1, column=0, padx=10, pady=4, sticky="w")
+        self.value_var = tk.StringVar(value="OFF")
+        ctk.CTkSegmentedButton(input_frame, values=["OFF", "ON"], variable=self.value_var).grid(row=1, column=1, padx=10, pady=4, sticky="w")
+        self.write_button = ctk.CTkButton(input_frame, text="ESCRIBIR", command=self.write_input)
+        self.write_button.grid(row=2, column=0, columnspan=2, padx=10, pady=6, sticky="ew")
+        self.readback_var = tk.StringVar(value="Readback: -")
+        ctk.CTkLabel(input_frame, textvariable=self.readback_var).grid(row=3, column=0, columnspan=2, padx=10, pady=(0, 8), sticky="w")
+        if not inputs:
+            self.write_button.configure(state="disabled")
+
+        output_frame = ctk.CTkFrame(self, corner_radius=10)
+        output_frame.grid(row=2, column=0, padx=16, pady=6, sticky="ew")
+        output_frame.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(output_frame, text="Salida").grid(row=0, column=0, padx=10, pady=8, sticky="w")
+        self.output_var = tk.StringVar(value=outputs[0] if outputs else "")
+        self.output_menu = ctk.CTkOptionMenu(output_frame, variable=self.output_var, values=outputs or ["(sin salidas BOOL)"])
+        self.output_menu.grid(row=0, column=1, padx=10, pady=8, sticky="ew")
+        self.read_button = ctk.CTkButton(output_frame, text="LEER", command=self.read_output)
+        self.read_button.grid(row=1, column=0, columnspan=2, padx=10, pady=6, sticky="ew")
+        self.output_value_var = tk.StringVar(value="Valor observado: -")
+        ctk.CTkLabel(output_frame, textvariable=self.output_value_var).grid(row=2, column=0, columnspan=2, padx=10, pady=(0, 8), sticky="w")
+        if not outputs:
+            self.read_button.configure(state="disabled")
+
+        actions = ctk.CTkFrame(self, fg_color="transparent")
+        actions.grid(row=3, column=0, padx=16, pady=6, sticky="ew")
+        actions.grid_columnconfigure((0, 1), weight=1)
+        self.restore_button = ctk.CTkButton(actions, text="RESTAURAR ENTRADAS", command=self.restore_inputs)
+        self.restore_button.grid(row=0, column=0, padx=(0, 4), sticky="ew")
+        self.smoke_button = ctk.CTkButton(actions, text="PRUEBA START/STOP", command=self.run_smoke_test)
+        self.smoke_button.grid(row=0, column=1, padx=(4, 0), sticky="ew")
+
+        self.status_var = tk.StringVar(value="Listo. Las entradas escritas se restauran a OFF al cerrar.")
+        ctk.CTkLabel(self, textvariable=self.status_var, wraplength=480, justify="left").grid(row=4, column=0, padx=16, pady=(6, 14), sticky="w")
+        self._buttons = [self.write_button, self.read_button, self.restore_button, self.smoke_button]
+        self._inputs_available = bool(inputs)
+        self._outputs_available = bool(outputs)
+
+    # -- ejecucion en segundo plano (hilo "plcsim-io") -------------------------------------
+
+    def _run(self, description: str, work: Any, on_done: Any) -> None:
+        if self._busy:
+            return
+        self._busy = True
+        for button in self._buttons:
+            button.configure(state="disabled")
+        self.status_var.set(description + "...")
+
+        def _worker() -> None:
+            try:
+                self._queue.put(("ok", work()))
+            except plcsim_runtime_io.RuntimeIOError as error:
+                self._queue.put(("io_error", error))
+            except Exception as error:  # pragma: no cover - proceso externo
+                self._queue.put(("error", error))
+
+        threading.Thread(target=_worker, name="plcsim-io", daemon=True).start()
+        self._poll(on_done)
+
+    def _poll(self, on_done: Any) -> None:
+        try:
+            outcome, payload = self._queue.get_nowait()
+        except queue.Empty:
+            self.after(150, lambda: self._poll(on_done))
+            return
+        self._busy = False
+        self.write_button.configure(state="normal" if self._inputs_available else "disabled")
+        self.read_button.configure(state="normal" if self._outputs_available else "disabled")
+        self.restore_button.configure(state="normal")
+        self.smoke_button.configure(state="normal")
+        if outcome == "ok":
+            on_done(payload)
+        else:
+            code = getattr(payload, "code", "PLCSIM_RUNTIME_ERROR")
+            self.status_var.set(f"{code}: {getattr(payload, 'detail', payload)}")
+            self.app._log(f"[PLCSIM IO] {code}: {getattr(payload, 'detail', payload)}")
+            if self._closing:
+                self._finish_close()
+
+    @staticmethod
+    def _on_off(value: Any) -> str:
+        return "?" if value is None else ("ON" if value else "OFF")
+
+    # -- acciones --------------------------------------------------------------------------
+
+    def write_input(self) -> None:
+        name, value = self.input_var.get(), self.value_var.get() == "ON"
+        self.app._log(f"[PLCSIM IO] Escribir {name} = {self._on_off(value)}")
+
+        def _done(result: dict[str, Any]) -> None:
+            self.readback_var.set(
+                f"Readback {result['name']} ({result['address']}): {self._on_off(result.get('readback'))}"
+                f"   ·   pedido {self._on_off(result['requested_value'])}   ·   {'OK' if result['match'] else 'NO COINCIDE'}"
+            )
+            self.status_var.set(result["status"] if result["status"] != plcsim_runtime_io.SUCCESS else "Escritura verificada.")
+            self.app._log(f"[PLCSIM IO] {name}: readback {self._on_off(result.get('readback'))} match={result['match']} ({result['status']})")
+
+        self._run(f"Escribiendo {name}", lambda: self.session.write_input(name, value), _done)
+
+    def read_output(self) -> None:
+        name = self.output_var.get()
+
+        def _done(result: dict[str, Any]) -> None:
+            value = result["values"][0].get("value") if result["values"] else None
+            self.output_value_var.set(f"Valor observado {name}: {self._on_off(value)}")
+            self.status_var.set(result["status"] if result["status"] != plcsim_runtime_io.SUCCESS else "Lectura correcta.")
+            self.app._log(f"[PLCSIM IO] Leer {name} = {self._on_off(value)} ({result['status']})")
+
+        self._run(f"Leyendo {name}", lambda: self.session.read_signals([name]), _done)
+
+    def restore_inputs(self) -> None:
+        def _done(result: dict[str, Any]) -> None:
+            if result["status"] == plcsim_runtime_io.SUCCESS:
+                self.status_var.set("Entradas restauradas a OFF: " + (", ".join(result["restored"]) or "(ninguna pendiente)"))
+            else:
+                self.status_var.set(f"{plcsim_runtime_io.ERROR_CLEANUP_FAILED}: pendientes {', '.join(result.get('pending', []))}")
+                messagebox.showerror("Prueba de I/O", f"{plcsim_runtime_io.ERROR_CLEANUP_FAILED}\n\nNo se pudieron restaurar: {', '.join(result.get('pending', []))}", parent=self)
+            self.app._log(f"[PLCSIM IO] Restaurar entradas: {result['status']}")
+            if self._closing:
+                self._finish_close()
+
+        self._run("Restaurando entradas", self.session.restore_inputs, _done)
+
+    def run_smoke_test(self) -> None:
+        if not messagebox.askyesno(
+            "Prueba START/STOP",
+            "Se escribiran entradas en PLCSIM Advanced (Start, Stop) y se leera la salida.\n"
+            "Al terminar todas las entradas vuelven a OFF.\n\n¿Continuar?",
+            parent=self
+        ):
+            return
+
+        def _work() -> dict[str, Any]:
+            return plcsim_runtime_io.run_runtime_io_smoke_test(
+                self.program, self.target_type, self.session.runtime_report, self.app.project_root, report_dir=self.report_dir
+            )
+
+        def _done(report: dict[str, Any]) -> None:
+            self._last_smoke_report = report
+            sequence = " → ".join(self._on_off(value) for value in report.get("output_sequence", []))
+            self.status_var.set(
+                f"runtime_io_test = {report['runtime_io_test']}   ·   {report.get('roles', {}).get('output')}: {sequence}\n"
+                f"Reporte: {report.get('report_path', '-')}"
+            )
+            self.app._log(f"[PLCSIM IO] Prueba START/STOP: {report['runtime_io_test']} (salida {sequence})")
+            self.app._record_runtime_io_report(self.trial_directory, report)
+
+        self._run("Prueba START/STOP", _work, _done)
+
+    def close(self) -> None:
+        if self._busy:
+            return
+        self._closing = True
+        if self.session.touched_inputs:
+            self.restore_inputs()
+            return
+        self._finish_close()
+
+    def _finish_close(self) -> None:
+        if self.session.writes or self.session.reads:
+            report = self.session.build_report()
+            report["report_path"] = str(plcsim_runtime_io.write_io_report(self.report_dir, report))
+            self.app._record_runtime_io_report(self.trial_directory, report)
+        self.app._io_test_window = None
+        self.destroy()
+
+
 class VozLLMPLCGUI(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
@@ -698,7 +1084,7 @@ class VozLLMPLCGUI(ctk.CTk):
         # OpenPLC y CODESYS quedan aislados de la GUI (ver docs/08_decisiones_tecnicas.md).
         # El backend y los adaptadores permanecen intactos para una reintegracion futura.
         self.platform_var = tk.StringVar(value="Siemens TIA V18")
-        self.parser_mode_var = tk.StringVar(value=parser_ui_map.get(resolved_start_mode, "Hibrido"))
+        self.parser_mode_var = tk.StringVar(value=parser_ui_map.get(resolved_start_mode, "LLM"))
         self.active_map_var = tk.StringVar(value="")
         self.active_profile_var = tk.StringVar(value=GENERAL_PROFILE_LABEL)
         self.active_profile_id: str | None = None
@@ -715,6 +1101,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_noise_var = tk.StringVar(value=NOISE_LEVEL_LABELS["none"])
         self.experiment_environment_var = tk.StringVar(value=ENVIRONMENT_LABELS["simulation"])
         self.experiment_status_var = tk.StringVar(value="")
+        self.experiment_stage_var = tk.StringVar(value="")
+        self._experiment_stage_states: dict[str, str] = {}
         self.experiment_next_label_var = tk.StringVar(value="")
         self.experiment_variant_command_var = tk.StringVar(value="")
         self._active_variant_command_text: str = ""
@@ -750,6 +1138,32 @@ class VozLLMPLCGUI(ctk.CTk):
         self._last_successful_tia_package_dir: Path | None = None
         self._download_worker_active = False
         self._download_worker_queue: queue.Queue = queue.Queue()
+        # Proposito de la descarga en curso (normal = boton CARGAR, experiment = auto-descarga
+        # del ensayo a PLCSIM) y el paquete EXACTO que se esta descargando.
+        self._download_purpose: str = DOWNLOAD_PURPOSE_NORMAL
+        self._download_package_dir: Path | None = None
+        self._compile_started_perf: float | None = None
+        # Fase 2A - PLCSIM Advanced Runtime API (solo lectura). CONFIGURADO (download_targets)
+        # y CONECTADO (Runtime API) se muestran por separado; RUN solo si la API lo confirma.
+        self._runtime_worker_active = False
+        self._runtime_worker_queue: queue.Queue = queue.Queue()
+        self._runtime_callbacks: list[Any] = []
+        self._last_runtime_report: dict[str, Any] | None = None
+        # Fase 2B: programa realmente descargado a PLCSIM (snapshot del ensayo o variables.json)
+        # del que la PRUEBA DE I/O toma sus senales, y la ventana abierta (si la hay).
+        self._io_program_context: dict[str, Any] | None = None
+        self._io_test_window: RuntimeIOTestWindow | None = None
+        # Fase 3A: Oracle Runner (hilo 'oracle-runner') y estado del Oracle del caso seleccionado.
+        self._oracle_worker_active = False
+        self._oracle_worker_queue: queue.Queue = queue.Queue()
+        self._oracle_run_context: dict[str, Any] | None = None
+        self.oracle_status_var = tk.StringVar(value="Oracle: -")
+        # Indicador simple de I/O del ensayo: Asignando... -> Resueltas -> Congeladas / Error.
+        self._experiment_io_text = ""
+        self.plc_config_var = tk.StringVar(value="Configurado: -")
+        self.plc_runtime_var = tk.StringVar(value="Runtime: NO VERIFICADO")
+        self.plc_cpu_var = tk.StringVar(value="CPU: -")
+        self.plc_network_var = tk.StringVar(value="Red: -")
         self.voice_audio_path: Path | None = None
         self.voice_transcription: dict[str, Any] | None = None
         self._voice_worker_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
@@ -1128,6 +1542,7 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.button_font
         )
         self.configure_tia_button.grid(row=0, column=0, sticky="ew")
+        self._build_plc_connection_panel(tia_actions_frame)
         # "Diagnosticar Openness" e "Importar y compilar ultimo paquete Siemens" viven ahora
         # en Herramientas avanzadas (panel central) para no duplicar el flujo operativo.
 
@@ -1679,12 +2094,34 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.experiment_status_label.grid(row=17, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
+        self.experiment_stage_label = ctk.CTkLabel(
+            frame,
+            textvariable=self.experiment_stage_var,
+            anchor="w",
+            justify="left",
+            font=self.body_font
+        )
+        self.experiment_stage_label.grid(row=18, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+        self._reset_experiment_stages()
+
         self.start_trial_button = ctk.CTkButton(
             frame, text="EJECUTAR ENSAYO", height=42,
             fg_color="#0F766E", hover_color="#115E59",
             command=self.run_experiment_trial, font=ctk.CTkFont(size=14, weight="bold")
         )
-        self.start_trial_button.grid(row=18, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        self.oracle_status_label = ctk.CTkLabel(
+            frame, textvariable=self.oracle_status_var, anchor="w", justify="left", font=self.body_font
+        )
+        self.oracle_status_label.grid(row=19, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
+        self.view_oracle_button = ctk.CTkButton(frame, text="VER ORACLE", command=self.view_case_oracle, font=self.button_font)
+        self.view_oracle_button.grid(row=20, column=0, padx=(12, 4), pady=(0, 8), sticky="ew")
+        self.approve_oracle_button = ctk.CTkButton(frame, text="APROBAR ORACLE", command=self.approve_case_oracle, font=self.button_font)
+        self.approve_oracle_button.grid(row=20, column=1, padx=(4, 12), pady=(0, 8), sticky="ew")
+        self.review_oracles_button = ctk.CTkButton(
+            frame, text="REVISION DE ORACLES", command=self.open_oracle_review, font=self.button_font
+        )
+        self.review_oracles_button.grid(row=21, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+        self.start_trial_button.grid(row=22, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
 
         frame.grid(row=row, column=0, padx=18, pady=(0, 8), sticky="ew")
         frame.grid_remove()
@@ -2203,13 +2640,13 @@ class VozLLMPLCGUI(ctk.CTk):
         try:
             save_llm_env_settings(dialog.result, self.env_path)
             self._refresh_llm_client_status(announce=True)
-            parser_mode = dialog.result.get("PARSER_MODE", "hybrid").strip().lower()
+            parser_mode = dialog.result.get("PARSER_MODE", "llm").strip().lower()
             parser_ui_map = {
                 "rule_based": "Reglas",
                 "llm": "LLM",
                 "hybrid": "Hibrido"
             }
-            self.parser_mode_var.set(parser_ui_map.get(parser_mode, "Hibrido"))
+            self.parser_mode_var.set(parser_ui_map.get(parser_mode, "LLM"))
             self._log(f"Configuracion LLM guardada en {self.env_path}.")
             messagebox.showinfo(
                 "Configuracion LLM",
@@ -2375,6 +2812,9 @@ class VozLLMPLCGUI(ctk.CTk):
             except Exception as error:  # pragma: no cover - external Siemens process
                 self._tia_worker_queue.put(("error", str(error)))
 
+        self._compile_started_perf = time.perf_counter()
+        if self.active_trial:
+            self._set_experiment_stage("Compilacion", "running")
         threading.Thread(target=_worker, name="tia-openness", daemon=True).start()
         self.after(250, self._poll_tia_worker)
 
@@ -2400,6 +2840,9 @@ class VozLLMPLCGUI(ctk.CTk):
                 directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
                 save_metadata(directory, {"tia_compile_status": "ERROR", "tia_error": str(payload)})
                 self._log(f"Ensayo {self.active_trial['trial_id']}: fallo TIA Openness registrado como evidencia.")
+                self._update_new_trial({"compile": {"status": "ERROR", "error": str(payload)}, "stages": {"compile_success": False}})
+                self._set_experiment_stage("Compilacion", "fail")
+                self._finalize_new_trial(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [f"TIA Openness: {payload}"])
             messagebox.showerror("TIA Openness", f"No se pudo completar la operacion.\n\n{payload}")
             return
 
@@ -2424,10 +2867,40 @@ class VozLLMPLCGUI(ctk.CTk):
             self._refresh_export_options(self.current_result_snapshot)
 
         result_path = str(report.get("result_path", ""))
+        chain_experiment_download = False
         if self.active_trial:
             directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
             save_metadata(directory, {"tia_compile_status": report.get("status", ""), "tia_result_path": result_path})
             self._log(f"Ensayo {self.active_trial['trial_id']}: resultado TIA registrado ({report.get('status')}).")
+            compile_ms = (
+                int(round((time.perf_counter() - self._compile_started_perf) * 1000))
+                if self._compile_started_perf is not None else None
+            )
+            self._update_new_trial({
+                "compile": {
+                    "status": report.get("status"),
+                    "error_count": report.get("error_count"),
+                    "warning_count": report.get("warning_count"),
+                    "result_path": result_path,
+                    "tag_reconciliation": report.get("tag_reconciliation")
+                },
+                "stages": {"compile_success": passed},
+                "timing": {"compile_ms": compile_ms}
+            })
+            self._set_experiment_stage("Compilacion", "ok" if passed else "fail")
+            if passed:
+                self._set_trial_lifecycle(trial_io_map.STATE_COMPILED)
+                self._log("[EXPERIMENT] TIA compile passed")
+                # Modo Experimentacion (Fase 1): compilacion aprobada -> descarga automatica a
+                # PLCSIM Advanced + Start Module. En Modo Normal nunca se descarga automaticamente.
+                chain_experiment_download = bool(result_path) and self.work_mode_var.get() == "Experimentacion"
+            else:
+                for stage in ("Descarga", "CPU Start"):
+                    self._set_experiment_stage(stage, "skipped")
+                new_dir = self._new_trial_dir()
+                if new_dir is not None and result_path:
+                    trial_model.copy_package_artifacts(new_dir, Path(result_path).parent)
+                self._finalize_new_trial(trial_model.FINAL_STATUS_FAIL, [f"Compilacion TIA: {report.get('status')}"])
         report_package_dir = str(Path(result_path).parent) if result_path else ""
         history_updated = False
         for history_record in self.history_records:
@@ -2460,6 +2933,9 @@ class VozLLMPLCGUI(ctk.CTk):
             passed
         )
         self._log(f"TIA Openness finalizo con estado {report.get('status')}.")
+        if chain_experiment_download:
+            self._start_download(Path(report_package_dir), DOWNLOAD_PURPOSE_EXPERIMENT)
+            return
         if passed:
             messagebox.showinfo("TIA Openness", "Los bloques fueron importados y compilados correctamente.")
         else:
@@ -2504,23 +2980,37 @@ class VozLLMPLCGUI(ctk.CTk):
         tia_config = load_tia_config(self.project_root)
         project_path = str(tia_config.get("project_path", "")) or "(no configurado)"
         plc_name = str(tia_config.get("plc_name", "")).strip() or "(unico en el proyecto)"
+        target = resolve_download_target(tia_config, DOWNLOAD_PURPOSE_NORMAL)
+        is_simulation = target["target_type"] == TARGET_TYPE_PLCSIM
+        target_warning = (
+            "Destino: simulador PLCSIM Advanced (no afecta hardware fisico)."
+            if is_simulation else
+            "ATENCION: el destino configurado es un PLC FISICO real. La CPU puede detenerse "
+            "durante la descarga."
+        )
 
         confirmed = messagebox.askyesno(
             "Confirmar descarga al PLC",
-            "Se descargara el programa compilado al PLC configurado en el proyecto TIA actual.\n\n"
+            "Se descargara el programa compilado de ESTA ejecucion y se arrancara la CPU (Start Module).\n\n"
             f"Proyecto TIA: {project_path}\n"
             f"CPU/dispositivo configurado: {plc_name}\n"
+            f"Destino: {target.get('target_name', '')} ({target['target_type']})\n"
+            f"Alcance: {target['download_scope']}\n"
+            f"Paquete: {package_dir}\n"
             f"Ultimo resultado de compilacion: {compile_status}\n"
             f"Timestamp de compilacion: {compile_timestamp}\n\n"
-            "Esta accion afecta hardware fisico real. Solo se descarga el programa (software); "
-            "no se modifica la configuracion de hardware ni se fuerza RUN/STOP mas alla de lo "
-            "que TIA Portal Openness requiera internamente.\n\n"
+            f"{target_warning}\n"
+            "No se modifica la configuracion de red.\n\n"
             "¿Desea continuar?"
         )
         if not confirmed:
             self._log("Descarga al PLC cancelada por el usuario.")
             return
 
+        self._start_download(package_dir, DOWNLOAD_PURPOSE_NORMAL)
+
+    def _start_download(self, package_dir: Path, purpose: str) -> None:
+        """Lanza la descarga del paquete EXACTO indicado (nunca 'el ultimo directorio')."""
         while not self._download_worker_queue.empty():
             try:
                 self._download_worker_queue.get_nowait()
@@ -2528,6 +3018,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 break
 
         self._download_worker_active = True
+        self._download_purpose = purpose
+        self._download_package_dir = package_dir
         self.download_plc_button.configure(state="disabled")
         self.execute_command_button.configure(state="disabled")
         self.start_trial_button.configure(state="disabled")
@@ -2535,15 +3027,18 @@ class VozLLMPLCGUI(ctk.CTk):
         self._set_status("Procesando")
         self._set_textbox_content(
             self.tia_openness_textbox,
-            "Descargando el programa compilado al PLC mediante TIA Portal V18 Openness. "
+            "Descargando el programa compilado mediante TIA Portal V18 Openness (DownloadProvider). "
             "Esta operacion puede tardar varios minutos..."
         )
         self._select_results_tab("TIA Openness")
-        self._log(f"Iniciando descarga al PLC del paquete {package_dir}.")
+        if purpose == DOWNLOAD_PURPOSE_EXPERIMENT:
+            self._set_experiment_stage("Descarga", "running")
+            self._log("[TIA DOWNLOAD] Target validation (experimento: solo PLCSIM Advanced)")
+        self._log(f"[TIA DOWNLOAD] Starting - paquete {package_dir}")
 
         def _worker() -> None:
             try:
-                result = download_program_to_plc(package_dir, self.project_root)
+                result = download_program_to_plc(package_dir, self.project_root, purpose)
                 self._download_worker_queue.put(("success", result))
             except Exception as error:  # pragma: no cover - external Siemens process
                 self._download_worker_queue.put(("error", str(error)))
@@ -2567,32 +3062,513 @@ class VozLLMPLCGUI(ctk.CTk):
         # el mismo paquete (no se proceso un comando nuevo mientras tanto), el boton se reactiva
         # para permitir reintentar sin tener que recompilar.
         self.download_plc_button.configure(state="normal" if self._last_compiled_package_dir else "disabled")
+        purpose = self._download_purpose
 
         if outcome == "error":
             self._set_status("Error")
-            self._log(f"Error al cargar el programa al PLC: {payload}")
+            self._log(f"[TIA DOWNLOAD] FAILED (excepcion): {payload}")
+            if purpose == DOWNLOAD_PURPOSE_EXPERIMENT:
+                self._complete_experiment_download(
+                    {"status": "DOWNLOAD_EXCEPTION", "download_success": False, "start_module_success": False, "errors": [str(payload)]}
+                )
+                return
             messagebox.showerror("Cargar programa al PLC", f"No se pudo cargar el programa al PLC.\n\n{payload}")
             return
 
         report = payload
         self._set_textbox_content(self.tia_openness_textbox, format_json(report))
-        success = bool(report.get("success"))
+        success = bool(report.get("download_success", report.get("success")))
         status = str(report.get("status", ""))
         self._set_status("Listo" if success else "Error")
-        self._log(f"Descarga al PLC finalizada con estado {status}.")
+        self._log(f"[TIA DOWNLOAD] {'Completed' if success else 'FAILED'} - estado {status}")
+
+        if purpose == DOWNLOAD_PURPOSE_EXPERIMENT:
+            self._complete_experiment_download(report)
+            return
 
         if success:
+            self._remember_io_program(None)
+            self._start_runtime_refresh("post-descarga", package_dir=self._download_package_dir)
+            start_text = {True: "Start Module solicitado (CPU en RUN solicitado).", False: "Start Module fallo.", None: "TIA no presento Start Module (la CPU no se detuvo)."}
             messagebox.showinfo(
                 "Cargar programa al PLC",
-                "Programa cargado correctamente al PLC.\n\n"
+                "Programa cargado correctamente.\n\n"
+                f"Destino: {report.get('target_name', '')} ({report.get('target_type', '')})\n"
                 f"Dispositivo: {report.get('device_item_name', '')}\n"
-                f"Fecha/hora: {report.get('timestamp', '')}\n"
+                f"{start_text.get(report.get('start_module_success'), '')}\n"
+                f"Duracion: {report.get('duration_ms', '')} ms\n"
                 f"Resultado: {status}"
             )
         else:
             errors = report.get("errors", [])
             detail = "\n".join(str(item) for item in errors) if errors else "Revise el reporte tecnico en la pestana TIA Openness."
-            messagebox.showerror("Cargar programa al PLC", "No se pudo cargar el programa al PLC.\n\n" + detail)
+            messagebox.showerror("Cargar programa al PLC", f"No se pudo cargar el programa al PLC ({status}).\n\n" + detail)
+
+    def _complete_experiment_download(self, report: dict[str, Any]) -> None:
+        """Cierre del ensayo en Fase 1: PREPARED si llego a PLCSIM y arranco; si no, error de infraestructura."""
+        download_ok = bool(report.get("download_success"))
+        start_success = report.get("start_module_success")
+        self._update_new_trial({
+            "download": {
+                key: report.get(key)
+                for key in (
+                    "status", "bridge_status", "target_type", "target_name", "pc_interface_name",
+                    "target_interface_name", "download_scope", "download_success", "start_module_requested",
+                    "start_module_success", "cpu_run_requested", "cpu_run_confirmed", "download_configurations",
+                    "warnings", "errors", "started_at", "completed_at", "duration_ms"
+                )
+            },
+            "stages": {"download_success": download_ok, "start_module_success": start_success},
+            "timing": {"download_ms": report.get("duration_ms")}
+        })
+        new_dir = self._new_trial_dir()
+        if new_dir is not None:
+            trial_model.copy_package_artifacts(new_dir, self._download_package_dir)
+
+        self._set_experiment_stage("Descarga", "ok" if download_ok else "fail")
+        if download_ok:
+            self._set_trial_lifecycle(trial_io_map.STATE_DOWNLOADED)
+            self._remember_io_program(self._new_trial_dir())
+        if start_success is True:
+            self._set_experiment_stage("CPU Start", "ok")
+        elif start_success is None and download_ok:
+            self._set_experiment_stage("CPU Start", "skipped")
+        else:
+            self._set_experiment_stage("CPU Start", "fail")
+
+        if self.active_trial:
+            legacy_dir = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
+            save_metadata(legacy_dir, {"tia_download_status": report.get("status", "")})
+
+        if download_ok and start_success is not False:
+            # Fase 2A: antes de cerrar como PREPARED se lee el estado REAL de la CPU (Runtime
+            # API, solo lectura). El resultado es informativo: PREPARED no depende de el.
+            self._set_experiment_stage("Runtime", "running")
+            self._start_runtime_refresh(
+                "post-descarga (ensayo)",
+                package_dir=self._download_package_dir,
+                on_done=lambda runtime_report, download_report=report: self._complete_experiment_runtime(
+                    download_report, runtime_report
+                )
+            )
+        else:
+            errors = [str(item) for item in report.get("errors", []) or []]
+            self._finalize_new_trial(
+                trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR,
+                [f"Descarga: {report.get('status')}"] + errors
+            )
+            self.experiment_status_var.set(f"Ensayo no preparado: {report.get('status')}.")
+            messagebox.showerror(
+                "Ejecutar ensayo",
+                f"El ensayo no pudo prepararse en PLCSIM Advanced ({report.get('status')}).\n\n" + "\n".join(errors)
+            )
+
+    def _complete_experiment_runtime(self, download_report: dict[str, Any], runtime_report: dict[str, Any]) -> None:
+        """Rellena trial.runtime / cpu_run_confirmed y cierra el ensayo como PREPARED (Fase 2A)."""
+        confirmed = plcsim_runtime.is_cpu_run_confirmed(download_report, runtime_report)
+        connected = bool(runtime_report.get("connected"))
+        self._update_new_trial({
+            "runtime": plcsim_runtime.trial_runtime_section(runtime_report),
+            "download": {"cpu_run_confirmed": confirmed},
+            "stages": {"runtime_connection_success": connected}
+        })
+        new_dir = self._new_trial_dir()
+        if new_dir is not None:
+            plcsim_runtime.write_runtime_report(new_dir, runtime_report)
+            trial_model.copy_package_artifacts(new_dir, self._download_package_dir)
+        cpu_run = connected and runtime_report.get("cpu_state") == plcsim_runtime.CPU_STATE_RUN
+        self._set_experiment_stage("Runtime", "ok" if cpu_run else "fail")
+        if cpu_run and confirmed:
+            self._set_trial_lifecycle(trial_io_map.STATE_RUNTIME_READY)
+
+        oracle, oracle_error = self._case_oracle_for_active_trial()
+        if oracle is not None or oracle_error is not None:
+            self._run_or_close_with_oracle(oracle, oracle_error, download_report, runtime_report, cpu_run)
+            return
+
+        self._finalize_new_trial(trial_model.FINAL_STATUS_PREPARED)
+        cpu_text = runtime_report.get("cpu_state") if connected else f"no verificado ({runtime_report.get('status')})"
+        self.experiment_status_var.set(f"Ensayo preparado en PLCSIM Advanced. CPU: {cpu_text}.")
+        self._log("[EXPERIMENT] Ensayo preparado en PLCSIM Advanced.")
+        messagebox.showinfo("Ejecutar ensayo", f"Ensayo preparado en PLCSIM Advanced.\n\nCPU (Runtime API): {cpu_text}")
+
+    # ------------------------------------------------------------------------------------------
+    # Fase 3A - Oracle Runner (D03/D07/D12 piloto)
+    # ------------------------------------------------------------------------------------------
+
+    def _selected_case_id(self) -> str | None:
+        profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get()) or {}
+        return profile.get("case_id") or None
+
+    def _refresh_oracle_status(self) -> None:
+        case_id = self._selected_case_id()
+        if not case_id:
+            self.oracle_status_var.set("Oracle: -")
+            return
+        try:
+            oracle = find_case_oracle(self.project_root, case_id)
+        except oracle_schema.OracleError as error:
+            self.oracle_status_var.set(f"Oracle {case_id}: ERROR ({error.code})")
+            return
+        if oracle is None:
+            self.oracle_status_var.set(f"Oracle: {case_id} sin Oracle (el ensayo termina en PREPARED)")
+            return
+        approval = oracle["approval"]
+        pending = oracle_schema.open_review_items(oracle)
+        label = "APROBADO" if oracle_schema.is_formal(oracle) else f"{approval['status']} (solo ensayo de desarrollo)"
+        extra = f" · {len(pending)} punto(s) REVIEW abiertos" if pending else ""
+        self.oracle_status_var.set(f"Oracle: {case_id} v{approval['version']} · {label}{extra}")
+
+    def view_case_oracle(self) -> None:
+        case_id = self._selected_case_id()
+        try:
+            oracle = find_case_oracle(self.project_root, case_id)
+        except oracle_schema.OracleError as error:
+            messagebox.showerror("Oracle", f"{error.code}: {error.detail}\n\n" + "\n".join(error.details[:10]))
+            return
+        if oracle is None:
+            messagebox.showinfo("Oracle", f"El caso {case_id or '-'} todavia no tiene Oracle.")
+            return
+        OracleViewerWindow(self, oracle)
+
+    def open_oracle_review(self) -> None:
+        OracleReviewWindow(self)
+
+    def approve_case_oracle(self) -> None:
+        self.approve_oracle_interactive(self._selected_case_id())
+
+    def approve_oracle_interactive(self, case_id: str | None, parent: Any = None) -> bool:
+        """Aprobacion formal (FROZEN) de UN Oracle, firmada por el investigador."""
+        parent = parent or self
+        if self._oracle_worker_active:
+            messagebox.showwarning("Aprobar Oracle", "Hay un Oracle ejecutandose; espere a que termine.", parent=parent)
+            return False
+        try:
+            oracle = find_case_oracle(self.project_root, case_id)
+        except oracle_schema.OracleError as error:
+            messagebox.showerror("Aprobar Oracle", f"{error.code}: {error.detail}", parent=parent)
+            return False
+        if oracle is None:
+            messagebox.showinfo("Aprobar Oracle", f"El caso {case_id or '-'} todavia no tiene Oracle.", parent=parent)
+            return False
+        if oracle_schema.is_formal(oracle):
+            messagebox.showinfo(
+                "Aprobar Oracle",
+                f"El Oracle {case_id} v{oracle['approval']['version']} ya esta {oracle['approval']['status']}.\n"
+                "Para cambiarlo hay que crear una version nueva.", parent=parent
+            )
+            return False
+        pending = oracle_schema.open_review_items(oracle)
+        review_text = ("\n\nPuntos REVIEW_REQUIRED que quedaran confirmados:\n" + "\n".join(f"- {item['text']}" for item in pending)) if pending else ""
+        if not messagebox.askyesno(
+            "Aprobar Oracle",
+            f"Aprobar y CONGELAR el Oracle {case_id} v{oracle['approval']['version']}?\n"
+            "Despues no podra modificarse (solo crear una version nueva)." + review_text, parent=parent
+        ):
+            return False
+        reviewer = simpledialog.askstring("Aprobar Oracle", "Identificador del investigador que aprueba:", parent=parent)
+        if not reviewer or not reviewer.strip():
+            return False
+        try:
+            approved = oracle_schema.approve_oracle(self.project_root, case_id, reviewer, acknowledge_review_items=True)
+        except (oracle_schema.OracleError, ValueError) as error:
+            messagebox.showerror("Aprobar Oracle", str(error), parent=parent)
+            return False
+        self._log(
+            f"[ORACLE] {case_id} v{approved['approval']['version']} {approved['approval']['status']} por {reviewer} "
+            f"(hash {approved['approval']['hash'][:16]}...)"
+        )
+        self._refresh_oracle_status()
+        return True
+
+    def _case_oracle_for_active_trial(self) -> tuple[dict[str, Any] | None, str | None]:
+        case_id = (self.active_trial or {}).get("case_id")
+        try:
+            return find_case_oracle(self.project_root, case_id), None
+        except oracle_schema.OracleError as error:
+            return None, f"{error.code}: {error.detail}"
+
+    def _run_or_close_with_oracle(
+        self,
+        oracle: dict[str, Any] | None,
+        oracle_error: str | None,
+        download_report: dict[str, Any],
+        runtime_report: dict[str, Any],
+        cpu_run: bool
+    ) -> None:
+        if oracle_error is not None:
+            self._set_experiment_stage("Oracle", "fail")
+            self._log(f"[ORACLE] {oracle_error}")
+            self._close_trial_with_oracle_status(trial_model.FINAL_STATUS_REVIEW, [oracle_error])
+            return
+        if not cpu_run:
+            self._set_experiment_stage("Oracle", "skipped")
+            reason = f"{oracle_runner.RUNTIME_NOT_READY}: CPU no confirmada en RUN ({runtime_report.get('status')}, {runtime_report.get('cpu_state')})."
+            self._log(f"[ORACLE] {reason}")
+            self._update_new_trial({"oracle_reference": oracle_schema.oracle_reference(oracle)})
+            self._close_trial_with_oracle_status(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [reason])
+            return
+        self._start_oracle_run(oracle, runtime_report)
+
+    def _start_oracle_run(self, oracle: dict[str, Any], runtime_report: dict[str, Any]) -> None:
+        new_dir = self._new_trial_dir()
+        snapshot_path = new_dir / trial_io_map.SNAPSHOT_FILENAME if new_dir else None
+        semantic_path = new_dir / "semantic_output.json" if new_dir else None
+        semantic_output = load_json_file(semantic_path) if semantic_path and semantic_path.exists() else None
+        target_type = str(resolve_download_target(load_tia_config(self.project_root), DOWNLOAD_PURPOSE_EXPERIMENT).get("target_type") or "")
+        kind = oracle_runner.TRIAL_KIND_FORMAL if oracle_schema.is_formal(oracle) else oracle_runner.TRIAL_KIND_DEVELOPMENT
+        self._oracle_run_context = {"trial_directory": new_dir, "oracle_id": oracle["oracle_id"]}
+        self._oracle_worker_active = True
+        self._set_trial_lifecycle(trial_io_map.STATE_TESTING)
+        self._set_experiment_stage("Oracle", "running")
+        self.experiment_status_var.set(f"Oracle {oracle['oracle_id']} en ejecucion ({kind})...")
+        self._log(
+            f"[ORACLE] {oracle['oracle_id']} v{oracle['approval']['version']} {oracle['approval']['status']} -> {kind}"
+        )
+
+        def _worker() -> None:
+            try:
+                result = run_oracle(oracle, snapshot_path, runtime_report, target_type, semantic_output, self.project_root)
+                self._oracle_worker_queue.put(("success", result))
+            except Exception as error:  # pragma: no cover - proceso externo
+                self._oracle_worker_queue.put(("error", str(error)))
+
+        threading.Thread(target=_worker, name="oracle-runner", daemon=True).start()
+        self._poll_oracle_worker()
+
+    def _poll_oracle_worker(self) -> None:
+        try:
+            outcome, payload = self._oracle_worker_queue.get_nowait()
+        except queue.Empty:
+            if self._oracle_worker_active:
+                self.after(250, self._poll_oracle_worker)
+            return
+        self._oracle_worker_active = False
+        if outcome == "error":
+            self._set_experiment_stage("Oracle", "fail")
+            self._log(f"[ORACLE] Excepcion del Oracle Runner: {payload}")
+            self._close_trial_with_oracle_status(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [f"ORACLE_RUNNER_EXCEPTION: {payload}"])
+            return
+        self._complete_oracle_run(payload)
+
+    def _complete_oracle_run(self, result: dict[str, Any]) -> None:
+        new_dir = self._new_trial_dir()
+        record = trial_model.load_trial(new_dir) if new_dir else {}
+        stages = record.get("stages") or {}
+        final_status = oracle_runner.decide_final_status(
+            stages.get("compile_success"), stages.get("download_success"), True, result.get("verdict")
+        )
+        artifacts: dict[str, str] = {}
+        if new_dir is not None:
+            report = oracle_runner.build_evaluation_report(record, result, final_status)
+            artifacts = oracle_runner.write_oracle_artifacts(new_dir, result, report)
+        self._update_new_trial(oracle_runner.trial_patch(result, artifacts))
+
+        roles_ok = not (result.get("roles") or {}).get("issues")
+        self._set_experiment_stage("Oracle", "ok" if roles_ok and result.get("verdict") != trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR else "fail")
+        stage_state = {True: "ok", False: "fail", None: "skipped"}
+        self._set_experiment_stage("Functional", stage_state[(result.get("functional") or {}).get("success")])
+        self._set_experiment_stage("Safety", stage_state[(result.get("safety") or {}).get("success")])
+        functional = result.get("functional") or {}
+        safety = result.get("safety") or {}
+        for line in (
+            f"[ORACLE] Roles: " + ", ".join(f"{role}->{entry['functional_name']}" for role, entry in (result.get("roles") or {}).get("roles", {}).items()),
+            f"[ORACLE] Functional: {functional.get('passed_checks')}/{functional.get('total_checks')} -> {functional.get('success')}",
+            f"[ORACLE] Safety: {safety.get('critical_violations')} violaciones criticas -> {safety.get('success')}",
+            f"[ORACLE] Veredicto: {result.get('verdict')} ({result.get('verdict_reason')}) -> final {final_status}",
+        ):
+            self._log(line)
+        errors = [] if final_status == trial_model.FINAL_STATUS_PASS else list(result.get("errors") or [])[:20]
+        self._close_trial_with_oracle_status(final_status, errors, result)
+
+    def _close_trial_with_oracle_status(self, final_status: str, errors: list[str], result: dict[str, Any] | None = None) -> None:
+        self._finalize_new_trial(final_status, errors or None)
+        result = result or {}
+        functional = result.get("functional") or {}
+        safety = result.get("safety") or {}
+        kind = result.get("trial_kind") or "-"
+        summary = (
+            f"Ensayo {final_status} · funcional {functional.get('passed_checks', '-')}/{functional.get('total_checks', '-')} · "
+            f"seguridad {'OK' if safety.get('success') else ('VIOLACION' if safety.get('success') is False else '-')} · {kind}"
+        )
+        self.experiment_status_var.set(summary)
+        self._log(f"[EXPERIMENT] {summary}")
+        details = "\n".join(errors[:8])
+        messagebox.showinfo("Ejecutar ensayo", summary + (f"\n\n{details}" if details else ""))
+
+    # ------------------------------------------------------------------------------------------
+    # Fase 2A - Conexion PLC / Simulacion (PLCSIM Advanced Runtime API, solo lectura)
+    # ------------------------------------------------------------------------------------------
+
+    def _build_plc_connection_panel(self, parent: ctk.CTkFrame) -> None:
+        panel = ctk.CTkFrame(parent, corner_radius=12)
+        panel.grid(row=1, column=0, pady=(8, 0), sticky="ew")
+        panel.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(panel, text="Conexión PLC / Simulación", font=self.button_font).grid(
+            row=0, column=0, padx=12, pady=(10, 2), sticky="w"
+        )
+        for row, variable in enumerate(
+            (self.plc_config_var, self.plc_runtime_var, self.plc_cpu_var, self.plc_network_var), start=1
+        ):
+            ctk.CTkLabel(panel, textvariable=variable, font=self.body_font, anchor="w", justify="left", wraplength=260).grid(
+                row=row, column=0, padx=12, pady=0, sticky="ew"
+            )
+        self.refresh_runtime_button = ctk.CTkButton(
+            panel, text="ACTUALIZAR ESTADO", command=self.refresh_plc_runtime_status, font=self.button_font
+        )
+        self.refresh_runtime_button.grid(row=5, column=0, padx=12, pady=(6, 4), sticky="ew")
+        self.io_test_button = ctk.CTkButton(
+            panel, text="PRUEBA DE I/O", command=self.open_runtime_io_test, font=self.button_font
+        )
+        self.io_test_button.grid(row=6, column=0, padx=12, pady=(0, 10), sticky="ew")
+        self._render_configured_target()
+
+    def _render_configured_target(self) -> None:
+        """Lo CONFIGURADO para la descarga (nunca implica conexion)."""
+        try:
+            target = resolve_download_target(load_tia_config(self.project_root), DOWNLOAD_PURPOSE_NORMAL)
+        except Exception:  # pragma: no cover - configuracion ilegible
+            target = {}
+        interface = target.get("target_interface") or "?"
+        self.plc_config_var.set(f"Configurado: {target.get('target_name') or '-'} · {interface}")
+
+    def refresh_plc_runtime_status(self) -> None:
+        self._start_runtime_refresh("manual")
+
+    def _start_runtime_refresh(self, reason: str, package_dir: Path | None = None, on_done: Any = None) -> None:
+        """Lectura no bloqueante (hilo 'plcsim-runtime'); nunca hay polling continuo."""
+        self._runtime_callbacks.append((package_dir, on_done))
+        if self._runtime_worker_active:
+            return
+        self._runtime_worker_active = True
+        self.refresh_runtime_button.configure(state="disabled")
+        self.plc_runtime_var.set("Runtime: consultando...")
+        self._log(f"[PLCSIM RUNTIME] Consultando estado ({reason})")
+
+        def _worker() -> None:
+            try:
+                self._runtime_worker_queue.put(("success", get_plcsim_runtime_status(self.project_root)))
+            except Exception as error:  # pragma: no cover - proceso externo
+                self._runtime_worker_queue.put(("error", str(error)))
+
+        threading.Thread(target=_worker, name="plcsim-runtime", daemon=True).start()
+        self._poll_runtime_worker()
+
+    def _poll_runtime_worker(self) -> None:
+        try:
+            outcome, payload = self._runtime_worker_queue.get_nowait()
+        except queue.Empty:
+            if self._runtime_worker_active:
+                self.after(250, self._poll_runtime_worker)
+            return
+
+        self._runtime_worker_active = False
+        self.refresh_runtime_button.configure(state="normal")
+        if outcome == "error":
+            report = plcsim_runtime.evaluate_runtime_report(
+                {"status": plcsim_runtime.STATUS_RUNTIME_ERROR, "errors": [str(payload)]},
+                load_tia_config(self.project_root)
+            )
+        else:
+            report = payload
+        self._last_runtime_report = report
+        self._render_runtime_report(report)
+        for line in plcsim_runtime.format_log_lines(report):
+            self._log(line)
+
+        callbacks, self._runtime_callbacks = self._runtime_callbacks, []
+        for package_dir, on_done in callbacks:
+            if package_dir is not None:
+                plcsim_runtime.write_runtime_report(package_dir, report)
+                confirmed = plcsim_runtime.apply_runtime_confirmation(package_dir, report)
+                self._log(f"[PLCSIM RUNTIME] cpu_run_confirmed = {confirmed}")
+            if on_done is not None:
+                on_done(report)
+
+    # ------------------------------------------------------------------------------------------
+    # Fase 2B - PRUEBA DE I/O (Runtime I/O BOOL, herramienta tecnica)
+    # ------------------------------------------------------------------------------------------
+
+    def _remember_io_program(self, trial_directory: Path | None) -> None:
+        """El programa que ACABA de descargarse a PLCSIM es la unica fuente de senales de la prueba."""
+        snapshot = None
+        if trial_directory is not None and (trial_directory / trial_io_map.SNAPSHOT_FILENAME).exists():
+            snapshot = trial_directory / trial_io_map.SNAPSHOT_FILENAME
+        self._io_program_context = {
+            "snapshot_path": snapshot,
+            "package_dir": self._download_package_dir,
+            "trial_dir": trial_directory,
+            "purpose": self._download_purpose
+        }
+
+    def _load_io_program(self) -> dict[str, Any]:
+        context = self._io_program_context or {}
+        package_dir = context.get("package_dir")
+        return plcsim_runtime_io.load_program_signals(
+            context.get("snapshot_path"), Path(package_dir) / "variables.json" if package_dir else None
+        )
+
+    def _io_test_target_type(self) -> str:
+        purpose = (self._io_program_context or {}).get("purpose") or DOWNLOAD_PURPOSE_NORMAL
+        return str(resolve_download_target(load_tia_config(self.project_root), purpose).get("target_type") or "")
+
+    def _io_test_blocked_reason(self, runtime_report: dict[str, Any] | None) -> tuple[dict[str, Any] | None, str | None]:
+        program = None
+        try:
+            program = self._load_io_program()
+        except plcsim_runtime_io.RuntimeIOError:
+            program = None
+        instance = plcsim_runtime.load_runtime_config(load_tia_config(self.project_root))["instance_name"]
+        allowed, reason = plcsim_runtime_io.io_test_availability(self._io_test_target_type(), runtime_report, instance, program)
+        return (program, None) if allowed else (program, reason)
+
+    def open_runtime_io_test(self) -> None:
+        """Refresca el estado REAL de PLCSIM y solo entonces decide si se puede abrir la prueba."""
+        if self._io_test_window is not None:
+            self._io_test_window.focus()
+            return
+        self._start_runtime_refresh("prueba de I/O", on_done=self._open_runtime_io_window_if_allowed)
+
+    def _open_runtime_io_window_if_allowed(self, runtime_report: dict[str, Any]) -> None:
+        program, reason = self._io_test_blocked_reason(runtime_report)
+        if reason:
+            self._log(f"[PLCSIM IO] Prueba de I/O no disponible: {reason}")
+            messagebox.showwarning("Prueba de I/O", f"La prueba de I/O no esta disponible.\n\n{reason}")
+            return
+        context = self._io_program_context or {}
+        trial_directory = context.get("trial_dir")
+        report_dir = Path(trial_directory or context.get("package_dir") or (self.project_root / "plcsim_runtime_bridge"))
+        self._io_test_window = RuntimeIOTestWindow(
+            self, program, self._io_test_target_type(), runtime_report, report_dir, trial_directory
+        )
+
+    def _record_runtime_io_report(self, trial_directory: Path | None, report: dict[str, Any]) -> None:
+        """Diagnostico de infraestructura en trial.json (runtime_io); nunca functional/PASS."""
+        if trial_directory is None:
+            return
+        try:
+            trial_model.update_trial(Path(trial_directory), {"runtime_io": plcsim_runtime_io.trial_runtime_io_section(report)})
+        except (OSError, ValueError) as error:  # pragma: no cover - GUI feedback path
+            self._log(f"[PLCSIM IO] No se pudo registrar runtime_io en trial.json: {error}")
+
+    def _render_runtime_report(self, report: dict[str, Any]) -> None:
+        self._render_configured_target()
+        if report.get("connected"):
+            self.plc_runtime_var.set(f"Runtime: CONECTADO · {report.get('instance_name')}")
+            # RUN / STOP / ... es exactamente lo que reporta la Runtime API (OperatingState).
+            detail = " · ".join(
+                str(item) for item in (report.get("controller_name"), report.get("controller_short_designation")) if item
+            )
+            self.plc_cpu_var.set(f"CPU: {report.get('cpu_state') or '?'}" + (f" ({detail})" if detail else ""))
+            match_text = {True: "misma subred", False: "SUBRED DISTINTA", None: "sin comprobar"}[report.get("network_match")]
+            self.plc_network_var.set(
+                f"Red: PLC {report.get('controller_ip') or '?'} · PC {report.get('adapter_ip') or '?'} · {match_text}"
+            )
+        else:
+            self.plc_runtime_var.set(f"Runtime: NO CONECTADO ({report.get('status')})")
+            self.plc_cpu_var.set("CPU: no verificado")
+            adapter_ip = report.get("adapter_ip")
+            self.plc_network_var.set(f"Red: PC {adapter_ip}" if adapter_ip else "Red: -")
 
     def _apply_tia_report_to_snapshot(
         self,
@@ -3463,6 +4439,17 @@ class VozLLMPLCGUI(ctk.CTk):
         """Add newly auto-created functional variables (e.g. a setpoint) to the active map and save it."""
         if not generated_functional_variables:
             return
+        trial_info = self._trial_io()
+        if trial_info is not None:
+            # Ensayo: las variables internas generadas se registran como evidencia en el snapshot
+            # congelado; el mapa base de Modo Normal no se modifica.
+            try:
+                added = trial_io_map.record_generated_internal_variables(trial_info["io_map"], generated_functional_variables)
+                if added:
+                    self._log("[EXPERIMENT IO] Variables internas generadas registradas en el snapshot: " + ", ".join(added))
+            except (OSError, ValueError) as error:  # pragma: no cover - GUI feedback path
+                self._log(f"[EXPERIMENT IO] No se pudieron registrar las variables internas generadas: {error}")
+            return
 
         existing_names = {row["name"] for row in self._collect_io_variables()}
         added_labels: list[str] = []
@@ -3496,9 +4483,16 @@ class VozLLMPLCGUI(ctk.CTk):
             self._log(f"No se pudo persistir la variable funcional nueva en el mapa activo: {error}")
 
     def _load_runtime_configuration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-        io_map = load_json_file(self.io_map_path)
-        active_profile = get_profile(self.project_root, self.active_profile_id) if self.active_profile_id else None
-        io_map = apply_profile_filter(io_map, active_profile)
+        trial_info = self._trial_io()
+        if trial_info is not None:
+            # Ensayo experimental: el working map del ensayo (inventario fisico completo, mismo
+            # IOAllocator que Modo Normal). El filtro allowed_variables del perfil es la politica
+            # legacy de "mapa congelado" y no se aplica: impedia usar canales FREE.
+            io_map = trial_io_map.load_working_map(Path(trial_info["io_map"]["working_map_path"]))
+        else:
+            io_map = load_json_file(self.io_map_path)
+            active_profile = get_profile(self.project_root, self.active_profile_id) if self.active_profile_id else None
+            io_map = apply_profile_filter(io_map, active_profile)
         intents_catalog = load_json_file(self.intents_catalog_path)
         safety_rules = load_json_file(self.safety_rules_path)
         return io_map, intents_catalog, safety_rules
@@ -4287,11 +5281,10 @@ class VozLLMPLCGUI(ctk.CTk):
         if not readiness["hardware_ready"] and readiness["missing_hardware_variables"]:
             lines.append("Faltan: " + ", ".join(readiness["missing_hardware_variables"]))
 
-        blocked = environment == "hardware" and not readiness["hardware_ready"]
-        if blocked:
-            lines.append(f"{profile['name']} no esta listo para hardware.")
+        if environment == "hardware" and not readiness["hardware_ready"]:
+            lines.append("(Nombres del perfil legacy ausentes: se asignaran dinamicamente en el ensayo.)")
         self.experiment_status_var.set("\n".join(lines))
-        self.start_trial_button.configure(state="disabled" if blocked else "normal")
+        self.start_trial_button.configure(state="normal")
 
         condition_code = self._selected_condition()["code"]
         case_id = profile.get("case_id", "")
@@ -4299,6 +5292,213 @@ class VozLLMPLCGUI(ctk.CTk):
         next_repetition = compute_next_repetition(self.project_root, condition_code, case_id, variant)
         next_label = build_experiment_label(condition_code, case_id, variant, next_repetition)
         self.experiment_next_label_var.set(f"Proximo ensayo: {next_label}")
+        self._refresh_oracle_status()
+
+    EXPERIMENT_STAGES = (
+        "Semantica", "I/O", "Generacion", "Verificacion", "Compilacion", "Descarga", "CPU Start", "Runtime",
+        "Oracle", "Functional", "Safety"
+    )
+    _STAGE_SYMBOLS = {"pending": "·", "running": "…", "ok": "✓", "fail": "✗", "skipped": "—"}
+
+    def _reset_experiment_stages(self) -> None:
+        self._experiment_stage_states = {stage: "pending" for stage in self.EXPERIMENT_STAGES}
+        self._experiment_io_text = ""
+        self._render_experiment_stages()
+
+    def _set_experiment_io(self, text: str) -> None:
+        self._experiment_io_text = text
+        self._render_experiment_stages()
+
+    def _set_experiment_stage(self, stage: str, state: str) -> None:
+        self._experiment_stage_states[stage] = state
+        self._render_experiment_stages()
+
+    def _render_experiment_stages(self) -> None:
+        stages_text = "   ".join(
+            f"{self._STAGE_SYMBOLS.get(self._experiment_stage_states.get(stage, 'pending'), '·')} {stage}"
+            for stage in self.EXPERIMENT_STAGES
+        )
+        io_text = getattr(self, "_experiment_io_text", "")
+        self.experiment_stage_var.set(stages_text + (f"\nI/O: {io_text}" if io_text else ""))
+
+    def _new_trial_dir(self) -> Path | None:
+        info = (self.active_trial or {}).get("new_trial")
+        return Path(info["dir"]) if info else None
+
+    def _update_new_trial(self, patch: dict[str, Any]) -> None:
+        directory = self._new_trial_dir()
+        if directory is None:
+            return
+        try:
+            trial_model.update_trial(directory, patch)
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo actualizar trial.json: {error}")
+
+    def _finalize_new_trial(self, final_status: str, errors: list[str] | None = None) -> None:
+        directory = self._new_trial_dir()
+        if directory is None:
+            return
+        try:
+            started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
+            if started_perf is not None:
+                trial_model.update_trial(
+                    directory, {"timing": {"end_to_end_ms": int(round((time.perf_counter() - started_perf) * 1000))}}
+                )
+            self._discard_trial_working_map(final_status)
+            trial_model.finalize_trial(directory, final_status, errors)
+            self._log(f"[EXPERIMENT] Status -> {final_status}")
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo cerrar trial.json: {error}")
+
+    # ------------------------------------------------------------------------------------------
+    # Trial-scoped working I/O map (trial_experiments/trial_io_map.py)
+    # ------------------------------------------------------------------------------------------
+
+    def _trial_io(self) -> dict[str, Any] | None:
+        """Info del ensayo nuevo si tiene working map vigente (no descartado); si no, None."""
+        info = (self.active_trial or {}).get("new_trial") or {}
+        reference = info.get("io_map")
+        if not reference or reference.get("discarded"):
+            return None
+        return info
+
+    def _set_trial_lifecycle(self, state: str) -> None:
+        info = (self.active_trial or {}).get("new_trial")
+        if not info:
+            return
+        info["lifecycle_state"] = state
+        self._update_new_trial({"lifecycle_state": state})
+
+    def _prepare_trial_working_map(self) -> bool:
+        """Copia el mapa base (inventario fisico del mapa activo, sin residuos) al ensayo."""
+        info = (self.active_trial or {}).get("new_trial")
+        if not info:
+            return True
+        try:
+            reference = trial_io_map.create_working_map(Path(info["dir"]), self.io_map_path)
+        except trial_io_map.ExperimentIOError as error:
+            self._log(f"[EXPERIMENT IO] {error}")
+            self._update_new_trial({"io_map": {"error": error.code}})
+            self._finalize_new_trial(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [str(error)])
+            self._cancel_active_trial(error.code)
+            messagebox.showerror("Ejecutar ensayo", f"No se pudo preparar el mapa del ensayo.\n\n{error.detail}")
+            return False
+        info["io_map"] = reference
+        info["lifecycle_state"] = trial_io_map.STATE_PREPARING
+        self._update_new_trial({
+            "io_map": trial_io_map.trial_record_reference(reference),
+            "lifecycle_state": trial_io_map.STATE_PREPARING
+        })
+        self._log(
+            f"[EXPERIMENT IO] Working map creado desde {reference['base_map_id']} "
+            f"({reference['physical_channel_count']} canales fisicos)."
+        )
+        return True
+
+    def _freeze_trial_io(self, semantic_output: dict[str, Any]) -> bool:
+        """Freeze de bindings + io_map_snapshot.json, antes de IR/SCL/TIA. True si no aplica."""
+        info = self._trial_io()
+        if info is None:
+            return True
+        try:
+            reference = trial_io_map.freeze_working_map(
+                info["io_map"], semantic_output, info.get("lifecycle_state"), info.get("trial_id")
+            )
+        except trial_io_map.ExperimentIOError as error:
+            self._log(f"[EXPERIMENT IO] {error}")
+            self._fail_trial_io(error.code, error.detail)
+            messagebox.showerror("Ejecutar ensayo", error.detail)
+            return False
+        info["io_map"] = reference
+        info["lifecycle_state"] = trial_io_map.STATE_IO_RESOLVED
+        self._update_new_trial({
+            "io_map": trial_io_map.trial_record_reference(reference),
+            "lifecycle_state": trial_io_map.STATE_IO_RESOLVED
+        })
+        self._set_experiment_io("Congeladas")
+        self._log(
+            f"[EXPERIMENT IO] I/O congeladas: {reference.get('bound_channels')} canales ligados -> "
+            f"{trial_io_map.SNAPSHOT_FILENAME}"
+        )
+        return True
+
+    def _fail_trial_io(self, code: str | None, detail: str) -> None:
+        """Cierra el ensayo por un fallo de I/O: nunca compila ni descarga despues de esto."""
+        if not self.active_trial:
+            return
+        trial_id = self.active_trial.get("trial_id", "")
+        self._set_experiment_stage("I/O", "fail")
+        self._set_experiment_io("Error")
+        if code:
+            self._update_new_trial({"io_map": {"error": code}})
+        final_status = (
+            trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR
+            if code == trial_io_map.ERROR_SNAPSHOT_FAILED
+            else trial_model.FINAL_STATUS_FAIL
+        )
+        self._finalize_new_trial(final_status, [f"{code}: {detail}" if code else detail])
+        try:
+            directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
+            save_metadata(directory, {"state": "ERROR", "timestamp_end": datetime.now().isoformat(timespec="seconds")})
+            self._finalize_trial_summary(compile_result="N/A", execution_result="", error_type="E3")
+        except Exception as error:  # pragma: no cover - GUI feedback path
+            self._log(f"No se pudo registrar el fallo de I/O del ensayo: {error}")
+        finally:
+            self._log(f"[EXPERIMENT IO] Ensayo {trial_id} detenido: {code or 'SIN_LOGICA'} - {detail}")
+            self.active_trial = None
+
+    def _discard_trial_working_map(self, final_status: str | None) -> None:
+        info = (self.active_trial or {}).get("new_trial") or {}
+        reference = info.get("io_map")
+        if not reference or reference.get("discarded"):
+            return
+        trial_io_map.discard_working_map(reference)
+        reference["discarded"] = True
+        patch: dict[str, Any] = {"io_map": {"discarded": True}}
+        if final_status in trial_io_map.LIFECYCLE_STATES:
+            info["lifecycle_state"] = final_status
+            patch["lifecycle_state"] = final_status
+        self._update_new_trial(patch)
+
+    def _create_new_trial_record(self, profile: dict[str, Any], case_id: str, variant: str, condition: dict[str, Any]) -> None:
+        """Nuevo modelo de ensayo (Fase 1) en paralelo al registro legacy TRIAL_000NNN."""
+        try:
+            input_mode = trial_model.input_mode_from_selection(
+                bool(condition.get("requires_voice")), self._selected_noise_level()
+            )
+            number = trial_model.next_trial_number(self.project_root, case_id, variant, input_mode)
+            record = trial_model.new_trial_record(
+                case_id,
+                variant,
+                input_mode,
+                number,
+                complexity=profile.get("complexity"),
+                extra={
+                    "legacy_trial_id": self.active_trial.get("trial_id"),
+                    "legacy_experiment_label": self.active_trial.get("experiment_label"),
+                    "legacy_condition": condition.get("code"),
+                    "parser_mode": condition.get("parser_mode"),
+                    "speaker_id": self.active_trial.get("speaker_id"),
+                    "noise_level": self.active_trial.get("noise_level"),
+                    "map_name": self.active_trial.get("map_name"),
+                    "profile_id": self.active_trial.get("profile_id"),
+                    "reference_command_text": self.active_trial.get("reference_command_text"),
+                    "git_commit": self.active_trial.get("git_commit"),
+                    **{key: value for key, value in benchmark_catalog.trial_benchmark_reference(self.project_root, case_id, variant).items()
+                       if key in ("benchmark_version", "canonical_case_hash", "variant_hash")}
+                }
+            )
+            directory = trial_model.trial_directory(self.project_root, case_id, variant, record["trial_id"])
+            trial_model.save_trial(directory, record)
+            self.active_trial["new_trial"] = {
+                "trial_id": record["trial_id"],
+                "dir": str(directory),
+                "started_perf": time.perf_counter()
+            }
+            self._log(f"[EXPERIMENT] Trial: {record['trial_id']}")
+            self._log("[EXPERIMENT] Generation started")
+        except (ValueError, OSError) as error:
+            self._log(f"No se pudo crear el registro de ensayo nuevo (trial.json): {error}")
 
     def start_trial(self) -> bool:
         """Arma un nuevo ensayo (trial_id + metadata inicial) sin ejecutar el pipeline todavia."""
@@ -4315,12 +5515,13 @@ class VozLLMPLCGUI(ctk.CTk):
         environment = self._selected_environment()
         readiness = profile_readiness_summary(self.project_root, profile)
         if environment == "hardware" and not readiness["hardware_ready"]:
-            messagebox.showwarning(
-                "Ejecutar ensayo",
-                f"{profile['name']} no esta listo para hardware.\n\nFaltan: "
-                + ", ".join(readiness["missing_hardware_variables"])
+            # Legacy (perfiles D01-D20 con mapa congelado): los nombres de allowed_variables ya no
+            # tienen que existir de antemano - el ensayo los resuelve dinamicamente con el
+            # IOAllocator sobre su working map. Solo informativo.
+            self._log(
+                f"[EXPERIMENT IO] Perfil legacy {profile['profile_id']}: nombres no presentes en el mapa "
+                f"({', '.join(readiness['missing_hardware_variables'])}); se asignaran dinamicamente."
             )
-            return False
 
         trial_id = next_trial_id(self.project_root)
         case_id = profile.get("case_id", "")
@@ -4356,6 +5557,10 @@ class VozLLMPLCGUI(ctk.CTk):
 
         directory = trial_dir(self.project_root, case_id, trial_id)
         save_metadata(directory, self.active_trial)
+        self._reset_experiment_stages()
+        self._create_new_trial_record(profile, case_id, variant, condition)
+        if not self._prepare_trial_working_map():
+            return False
 
         self.manual_result_frame.grid_remove()
         self.experiment_status_var.set(f"Ensayo {trial_id} ({experiment_label}) creado.")
@@ -4406,6 +5611,7 @@ class VozLLMPLCGUI(ctk.CTk):
             return
         trial_id = self.active_trial.get("trial_id", "")
         try:
+            self._discard_trial_working_map(None)
             directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
             save_metadata(directory, {"state": "CANCELLED", "timestamp_end": datetime.now().isoformat(timespec="seconds")})
             self._finalize_trial_summary(compile_result="N/A", execution_result="", error_type=NO_ERROR_LABEL)
@@ -4432,6 +5638,29 @@ class VozLLMPLCGUI(ctk.CTk):
                 "state": "RUNNING"
             })
             self._log(f"Ensayo {self.active_trial['trial_id']}: interpretacion capturada.")
+
+            semantic_validation = semantic_output.get("semantic_validation", {}) or {}
+            semantic_ok = bool(semantic_validation.get("is_valid"))
+            self._update_new_trial({
+                "command_text": command_text,
+                "transcript": transcript or None,
+                "semantic": {
+                    "intent_id": semantic_output.get("intent_id"),
+                    "parameters": semantic_output.get("parameters", {}),
+                    "functional_requirements": semantic_output.get("functional_requirements", []),
+                    "requires_clarification": bool(semantic_output.get("requires_clarification")),
+                    "parser_mode_used": semantic_output.get("parser_mode_used"),
+                    "semantic_validation": semantic_validation
+                },
+                "io": {"io_assignment_proposals": semantic_validation.get("io_assignment_proposals", [])},
+                "stages": {"semantic_success": semantic_ok}
+            })
+            new_dir = self._new_trial_dir()
+            if new_dir is not None:
+                trial_model.write_text_artifact(new_dir, "command.txt", command_text)
+                trial_model.write_json_artifact(new_dir, "semantic_output.json", semantic_output)
+            self._set_experiment_stage("Semantica", "ok" if semantic_ok else "fail")
+            self._set_experiment_stage("I/O", "ok" if semantic_ok else "skipped")
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo registrar la interpretacion del ensayo: {error}")
 
@@ -4442,6 +5671,9 @@ class VozLLMPLCGUI(ctk.CTk):
             return
         trial_id = self.active_trial.get("trial_id", "")
         try:
+            self._update_new_trial({"command_text": command_text, "stages": {"semantic_success": False}})
+            self._set_experiment_stage("Semantica", "fail")
+            self._finalize_new_trial(trial_model.FINAL_STATUS_FAIL, [f"Interpretacion no valida ({error_code})."])
             directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
             write_trial_files(directory, {"command.txt": command_text})
             save_metadata(directory, {
@@ -4489,6 +5721,28 @@ class VozLLMPLCGUI(ctk.CTk):
                 "timestamp_end": datetime.now().isoformat(timespec="seconds")
             })
 
+            started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
+            generation_ms = int(round((time.perf_counter() - started_perf) * 1000)) if started_perf is not None else None
+            self._update_new_trial({
+                "verification": {
+                    "is_valid": is_valid,
+                    "errors": errors,
+                    "warnings": warnings,
+                    "package_dir": saved_paths.get("package_dir", "")
+                },
+                "stages": {"verification_success": is_valid},
+                "timing": {"generation_ms": generation_ms}
+            })
+            self._set_experiment_stage("Generacion", "ok")
+            self._set_experiment_stage("Verificacion", "ok" if is_valid else "fail")
+            if is_valid:
+                self._log("[EXPERIMENT] Verification passed")
+            else:
+                # Sin verificacion no hay compilacion ni descarga (execute_full_pipeline se detiene).
+                for stage in ("Compilacion", "Descarga", "CPU Start"):
+                    self._set_experiment_stage(stage, "skipped")
+                self._finalize_new_trial(trial_model.FINAL_STATUS_FAIL, [str(error) for error in errors] or ["Verificacion fallida."])
+
             self.manual_result_var.set(PHYSICAL_RESULT_OPTIONS[0])
             self.manual_safety_var.set("No")
             self.manual_error_var.set(NO_ERROR_LABEL)
@@ -4507,6 +5761,7 @@ class VozLLMPLCGUI(ctk.CTk):
             return
         trial_id = self.active_trial.get("trial_id", "")
         try:
+            self._finalize_new_trial(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [f"{stage}: {error_text}"])
             directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
             save_metadata(directory, {
                 "state": "ERROR",
@@ -4801,15 +6056,29 @@ class VozLLMPLCGUI(ctk.CTk):
         semantic_output (re-validated against the now-updated map) to let process_command
         continue into its normal intent/logic flow for a combined command (section 14).
         """
-        block_message = block_map_config_message(self.active_trial, self.active_profile_id)
-        if block_message:
-            self._log("MAP_CONFIG rechazado: ensayo/perfil experimental activo.")
-            messagebox.showwarning("Configuracion de mapa", block_message)
-            return None
+        trial_info = self._trial_io()
+        if trial_info is None:
+            # Sin working map de ensayo: politica legacy (Modo Normal con un perfil Dxx/Pxx
+            # seleccionado = "mapa congelado"). Durante un ensayo con working map, la asignacion
+            # AUTOMATICA del pipeline nunca pasa por aqui: se rige por la fase del ensayo.
+            block_message = block_map_config_message(self.active_trial, self.active_profile_id)
+            if block_message:
+                self._log("MAP_CONFIG rechazado: ensayo/perfil experimental activo.")
+                messagebox.showwarning("Configuracion de mapa", block_message)
+                return None
+        else:
+            try:
+                trial_io_map.assert_mutation_allowed(trial_info.get("lifecycle_state"))
+            except trial_io_map.ExperimentIOError as error:
+                self._fail_trial_io(error.code, error.detail)
+                messagebox.showerror("Configuracion de mapa", error.detail)
+                return None
 
         proposals = semantic_output.get("semantic_validation", {}).get("io_assignment_proposals", [])
         if not proposals:
             self._log("MAP_CONFIG detectado pero sin propuestas validas (revise el mapa activo).")
+            if trial_info is not None:
+                self._fail_trial_io(trial_io_map.ERROR_ALLOCATION_FAILED, "Sin propuestas de asignacion validas.")
             messagebox.showwarning(
                 "Configuracion de mapa",
                 "No se pudo generar una propuesta de asignacion valida para este comando."
@@ -4824,12 +6093,30 @@ class VozLLMPLCGUI(ctk.CTk):
         to_apply = [proposal for proposal in proposals if not proposal.get("blocked")]
 
         if not to_apply:
+            reasons = "\n".join(f"- {proposal.get('reason')}" for proposal in blocked)
+            if trial_info is not None:
+                self._fail_trial_io(trial_io_map.ERROR_ALLOCATION_FAILED, reasons or "Ninguna asignacion aplicable.")
             if blocked:
-                reasons = "\n".join(f"- {proposal.get('reason')}" for proposal in blocked)
                 messagebox.showerror("Configuracion de mapa", f"No se aplico ninguna asignacion:\n\n{reasons}")
             self._log("MAP_CONFIG: no se aplico ninguna asignacion.")
             return None
 
+        if trial_info is not None:
+            # Ensayo: MISMO apply_assignments que Modo Normal, sobre el working map del ensayo,
+            # de forma transaccional (trial_io_map). El mapa base no se toca.
+            try:
+                trial_io_map.apply_proposals_to_working_map(
+                    Path(trial_info["io_map"]["working_map_path"]),
+                    to_apply,
+                    "TEXT_EXPLICIT",
+                    trial_info.get("lifecycle_state")
+                )
+            except trial_io_map.ExperimentIOError as error:
+                self._log(f"[EXPERIMENT IO] {error}")
+                self._fail_trial_io(error.code, error.detail)
+                messagebox.showerror("Configuracion de mapa", f"No se pudo aplicar la asignacion.\n\n{error.detail}")
+                return None
+            self._set_experiment_io("Resueltas")
         try:
             # CRITICO: el parche SIEMPRE se aplica sobre el inventario fisico COMPLETO, leido de
             # nuevo directamente del archivo - nunca sobre `io_map` (el parametro recibido), que
@@ -4839,17 +6126,19 @@ class VozLLMPLCGUI(ctk.CTk):
             # bug reportado (el "Mapa I/O completo" mostraba solo los canales usados). El filtro de
             # perfil es correcto para INTERPRETAR/VALIDAR que puede referenciar un comando; nunca
             # debe ser la base de una escritura al mapa real.
-            full_io_map = load_json_file(self.io_map_path)
-            updated_map, history_entries = apply_assignments(full_io_map, to_apply, source="TEXT_EXPLICIT")
-            save_plc_map(self.io_map_path, updated_map["variables"], history_entries=history_entries)
+            if trial_info is None:
+                full_io_map = load_json_file(self.io_map_path)
+                updated_map, history_entries = apply_assignments(full_io_map, to_apply, source="TEXT_EXPLICIT")
+                save_plc_map(self.io_map_path, updated_map["variables"], history_entries=history_entries)
         except ValueError as error:
             messagebox.showerror("Configuracion de mapa", f"No se pudo aplicar la asignacion.\n\n{error}")
             self._log(f"MAP_CONFIG fallo al aplicar: {error}")
             return None
 
-        self.io_variables = load_io_map_variables(self.io_map_path)
-        self._load_active_map_metadata_shadow()
-        self._load_io_map_table()
+        if trial_info is None:
+            self.io_variables = load_io_map_variables(self.io_map_path)
+            self._load_active_map_metadata_shadow()
+            self._load_io_map_table()
 
         # Resumen compacto seccion 23: separa lo que ya era exactamente ese nombre (conservado,
         # sin cambio real) de lo que efectivamente cambio de nombre (reasignado).
@@ -4897,6 +6186,8 @@ class VozLLMPLCGUI(ctk.CTk):
             # ahora.
             summary_text += "\n\n(El comando no incluia logica PLC adicional; no se genero ningun programa.)"
             self._last_map_config_summary = None
+            if trial_info is not None:
+                self._fail_trial_io(None, "El comando solo configura I/O; no hay logica PLC que ensayar.")
             messagebox.showinfo("Configuracion de mapa", summary_text)
             return None
 
@@ -4923,9 +6214,13 @@ class VozLLMPLCGUI(ctk.CTk):
         # el mapa.
         self._last_map_config_summary = None
 
-        if not self.save_io_map(show_success=False):
+        # Durante un ensayo el pipeline trabaja sobre el working map del ensayo: guardar la tabla
+        # de la GUI aqui reescribiria el mapa base (updated_at incluido) por efecto del ensayo.
+        if self._trial_io() is None and not self.save_io_map(show_success=False):
             self._set_status("Error")
             return False
+        if self._trial_io() is not None:
+            self._set_experiment_io("Asignando...")
 
         self._set_status("Procesando")
         self._log("Comando recibido.")
@@ -5047,6 +6342,9 @@ class VozLLMPLCGUI(ctk.CTk):
             self._log("[PIPELINE] IO allocation OK")
             if self.active_trial:
                 self._capture_trial_parse_result(command_text, semantic_output)
+            if not self._freeze_trial_io(semantic_output):
+                self._set_status("Error")
+                return False
             self._set_status("Listo")
             return True
         except Exception as error:  # pragma: no cover - GUI feedback path

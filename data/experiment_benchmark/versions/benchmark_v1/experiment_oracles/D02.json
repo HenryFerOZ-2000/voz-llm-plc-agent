@@ -1,0 +1,182 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D02",
+  "case_id": "D02",
+  "title": "D02 - Piloto que sigue al sensor",
+  "description": "El piloto luminoso esta encendido mientras el sensor este activo y apagado en caso contrario.",
+  "complexity": "LOW",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D02 (INT_DIRECT_OUTPUT)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Barrido de programas triviales: solo 'piloto = sensor' pasa, que es el programa correcto."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D02 - Lampara por sensor",
+    "description": "Encender un piloto luminoso mientras un sensor este activo.",
+    "reference_intent": "INT_DIRECT_OUTPUT",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Sensor1",
+      "Q_Pilot_Run"
+    ],
+    "variants": {
+      "V1": "Enciende el piloto de marcha mientras el sensor este activo.",
+      "V2": "Activa Q_Pilot_Run cuando el sensor detecte presencia.",
+      "V3": "Haz que la lampara siga el estado del sensor principal."
+    },
+    "researcher_summary": "Encender una lampara cuando una entrada digital este activa."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_DIRECT_OUTPUT"
+    ],
+    "required_functions": [
+      "direct_output"
+    ],
+    "required_roles": [
+      "SENSOR",
+      "LAMP"
+    ]
+  },
+  "roles": {
+    "SENSOR": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Sensor de presencia.",
+      "semantic_paths": [
+        "sensor_input",
+        "trigger_input"
+      ]
+    },
+    "LAMP": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Piloto luminoso.",
+      "semantic_paths": [
+        "output",
+        "pilot_output",
+        "run_indicator",
+        "lamp_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-D02",
+      "text": "'Mientras el sensor este activo' se verifica en dos ciclos ON/OFF para detectar memoria indebida."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sensor inactivo (estado inicial).",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_0",
+      "description": "Sensor inactivo: piloto apagado.",
+      "wait_ms": 300,
+      "expect": {
+        "LAMP": false
+      }
+    },
+    {
+      "id": "step_1",
+      "description": "Sensor activo: piloto encendido.",
+      "set": {
+        "SENSOR": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "LAMP": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Sensor inactivo: piloto apagado (no hay memoria).",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "LAMP": false
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Sensor activo de nuevo: piloto encendido.",
+      "set": {
+        "SENSOR": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "LAMP": true
+      }
+    },
+    {
+      "id": "step_4",
+      "description": "Sensor inactivo de nuevo: piloto apagado.",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "LAMP": false
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

@@ -1,0 +1,162 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D03",
+  "case_id": "D03",
+  "title": "D03 - Arranque/parada de motor con memoria de marcha",
+  "description": "Arranque y paro de un motor con pulsadores independientes START y STOP. Un pulso de START enciende el motor y este permanece encendido al soltar START (memoria de marcha); STOP lo apaga y tiene prioridad.",
+  "complexity": "LOW",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry",
+    "approved_at": "2026-09-29T17:27:21",
+    "version": 1,
+    "hash": "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92",
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion legacy D03",
+    "legacy_reference": "data/plc_maps/profiles.json D03 (INT_MOTOR_START_STOP)"
+  },
+  "semantic_expectations": {
+    "accepted_intents": [
+      "INT_MOTOR_START_STOP"
+    ],
+    "required_functions": [
+      "motor_start_stop",
+      "maintained_run"
+    ],
+    "required_roles": [
+      "START",
+      "STOP",
+      "MOTOR_MAIN"
+    ],
+    "required_parameters": {},
+    "forbidden_intents": [
+      "INT_DELAYED_START",
+      "INT_TIMED_PULSE"
+    ],
+    "notes": "maintained_run se evidencia por el intent canonico INT_MOTOR_START_STOP (latch) y se verifica funcionalmente en step_2."
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de marcha (pulsador de inicio).",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "STOP": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de paro (pulsador de paro).",
+      "semantic_paths": [
+        "stop_input"
+      ]
+    },
+    "MOTOR_MAIN": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida de marcha del motor.",
+      "semantic_paths": [
+        "motor_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto en el piloto."
+  },
+  "preconditions": [
+    {
+      "id": "pre_stop",
+      "description": "Forzar estado inicial: STOP activo apaga cualquier marcha enclavada de pruebas anteriores.",
+      "set": {
+        "START": false,
+        "STOP": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "description": "Soltar STOP: el motor debe seguir apagado.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "START pulsado: el motor arranca.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "START soltado: el motor permanece encendido (memoria de marcha).",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "STOP pulsado: el motor se apaga.",
+      "set": {
+        "STOP": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "step_4",
+      "description": "STOP soltado: el motor permanece apagado.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Todas las entradas a OFF.",
+      "set": {
+        "START": false,
+        "STOP": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": []
+}

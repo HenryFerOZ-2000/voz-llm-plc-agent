@@ -11,6 +11,7 @@ using Siemens.Engineering;
 using Siemens.Engineering.Compiler;
 using Siemens.Engineering.Connection;
 using Siemens.Engineering.Download;
+using Siemens.Engineering.Download.Configurations;
 using Siemens.Engineering.HW;
 using Siemens.Engineering.HW.Features;
 using Siemens.Engineering.SW;
@@ -99,9 +100,73 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             return GetString(report, "status", "").EndsWith("PASSED", StringComparison.Ordinal) ? 0 : 1;
         }
 
+        private sealed class ReconciliationTagInfo
+        {
+            public string Name;
+            public string Address;
+        }
+
         /// <summary>
-        /// Deterministic assertions for NormalizeAddress (section 18/21.7) - runs without opening
-        /// TIA Portal. Invoke with a request file containing only {"action": "self_test"}.
+        /// Pure, TIA-independent classification mirroring the decision rules EnsureTags applies
+        /// inline (section 8/9/26): given the tags currently in PLC_Agent_IO and the desired set
+        /// for the current program, returns which names to keep unchanged, update (address
+        /// differs), create (absent), or delete (orphan - existing name not in desired). No
+        /// Siemens API involved, so it can run as a self-test without TIA Portal open.
+        /// </summary>
+        private static Dictionary<string, List<string>> PlanTagReconciliation(
+            List<ReconciliationTagInfo> existingTags, List<ReconciliationTagInfo> desiredTags)
+        {
+            Dictionary<string, string> existingAddressByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ReconciliationTagInfo tag in existingTags)
+            {
+                existingAddressByName[tag.Name] = tag.Address;
+            }
+
+            List<string> keep = new List<string>();
+            List<string> update = new List<string>();
+            List<string> create = new List<string>();
+            List<string> delete = new List<string>();
+
+            HashSet<string> desiredNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ReconciliationTagInfo tag in desiredTags)
+            {
+                desiredNames.Add(tag.Name);
+                string existingAddress;
+                if (!existingAddressByName.TryGetValue(tag.Name, out existingAddress))
+                {
+                    create.Add(tag.Name);
+                    continue;
+                }
+                bool sameAddress = String.Equals(
+                    NormalizeAddress(existingAddress), NormalizeAddress(tag.Address), StringComparison.OrdinalIgnoreCase
+                );
+                if (sameAddress)
+                {
+                    keep.Add(tag.Name);
+                }
+                else
+                {
+                    update.Add(tag.Name);
+                }
+            }
+            foreach (ReconciliationTagInfo tag in existingTags)
+            {
+                if (!desiredNames.Contains(tag.Name))
+                {
+                    delete.Add(tag.Name);
+                }
+            }
+
+            return new Dictionary<string, List<string>>
+            {
+                { "keep", keep }, { "update", update }, { "create", create }, { "delete", delete }
+            };
+        }
+
+        /// <summary>
+        /// Deterministic assertions for NormalizeAddress (section 18/21.7) and for
+        /// PlanTagReconciliation (section 26/27/28) - runs without opening TIA Portal. Invoke
+        /// with a request file containing only {"action": "self_test"}.
         /// </summary>
         private static Dictionary<string, object> RunSelfTest()
         {
@@ -139,6 +204,117 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             assertEqual("%I0.0", "%I16.0", false);
             assertEqual("%Q8.0", "%Q8.1", false);
             assertEqual(" %ix16.0 ", "%I16.0", true);
+
+            Action<string, List<string>, string[]> assertPlanBucket = (bucketName, actual, expected) =>
+            {
+                HashSet<string> actualSet = new HashSet<string>(actual, StringComparer.OrdinalIgnoreCase);
+                HashSet<string> expectedSet = new HashSet<string>(expected, StringComparer.OrdinalIgnoreCase);
+                bool passed = actualSet.SetEquals(expectedSet);
+                checks.Add(new Dictionary<string, object>
+                {
+                    { "bucket", bucketName },
+                    { "expected", expected },
+                    { "actual", actual },
+                    { "passed", passed }
+                });
+                if (!passed)
+                {
+                    AddError(
+                        report,
+                        "PlanTagReconciliation[" + bucketName + "]: expected [" + String.Join(",", expected)
+                        + "] but got [" + String.Join(",", actual) + "]"
+                    );
+                }
+            };
+
+            // Seccion 26: existing A@1,B@2,C@3 - desired A@1,D@2 -> keep A, delete B y C, create D.
+            List<ReconciliationTagInfo> existingAbc = new List<ReconciliationTagInfo>
+            {
+                new ReconciliationTagInfo { Name = "A", Address = "%I0.0" },
+                new ReconciliationTagInfo { Name = "B", Address = "%I0.1" },
+                new ReconciliationTagInfo { Name = "C", Address = "%I0.2" }
+            };
+            List<ReconciliationTagInfo> desiredAd = new List<ReconciliationTagInfo>
+            {
+                new ReconciliationTagInfo { Name = "A", Address = "%I0.0" },
+                new ReconciliationTagInfo { Name = "D", Address = "%I0.1" }
+            };
+            Dictionary<string, List<string>> planAbcToAd = PlanTagReconciliation(existingAbc, desiredAd);
+            assertPlanBucket("section26.keep", planAbcToAd["keep"], new[] { "A" });
+            assertPlanBucket("section26.update", planAbcToAd["update"], new string[0]);
+            assertPlanBucket("section26.create", planAbcToAd["create"], new[] { "D" });
+            assertPlanBucket("section26.delete", planAbcToAd["delete"], new[] { "B", "C" });
+
+            // Seccion 16/17/29: programa A (I_Start,I_Stop,Q_Motor,Q_Pilot_Run) -> programa B
+            // (I_Start,I_Stop,Q_Valve en la MISMA direccion que Q_Motor) - el resultado final NO
+            // debe conservar Q_Motor ni Q_Pilot_Run.
+            List<ReconciliationTagInfo> programA = new List<ReconciliationTagInfo>
+            {
+                new ReconciliationTagInfo { Name = "I_Start", Address = "%I16.0" },
+                new ReconciliationTagInfo { Name = "I_Stop", Address = "%I16.1" },
+                new ReconciliationTagInfo { Name = "Q_Motor", Address = "%Q8.0" },
+                new ReconciliationTagInfo { Name = "Q_Pilot_Run", Address = "%Q8.1" }
+            };
+            List<ReconciliationTagInfo> programB = new List<ReconciliationTagInfo>
+            {
+                new ReconciliationTagInfo { Name = "I_Start", Address = "%I16.0" },
+                new ReconciliationTagInfo { Name = "I_Stop", Address = "%I16.1" },
+                new ReconciliationTagInfo { Name = "Q_Valve", Address = "%Q8.0" }
+            };
+            Dictionary<string, List<string>> planAtoB = PlanTagReconciliation(programA, programB);
+            assertPlanBucket("section16.keep", planAtoB["keep"], new[] { "I_Start", "I_Stop" });
+            assertPlanBucket("section16.create", planAtoB["create"], new[] { "Q_Valve" });
+            assertPlanBucket("section16.delete", planAtoB["delete"], new[] { "Q_Motor", "Q_Pilot_Run" });
+
+            // Seccion 27: LOCKED persistentes (I_Start/I_Stop) permanecen aunque el programa
+            // actual solo necesite Q_Motor - deben llegar en `desired` (Python las agrega, ver
+            // tia_openness._build_tag_payload) y quedar en "keep", nunca en "delete".
+            List<ReconciliationTagInfo> existingWithLocked = new List<ReconciliationTagInfo>
+            {
+                new ReconciliationTagInfo { Name = "I_Start", Address = "%I16.0" },
+                new ReconciliationTagInfo { Name = "I_Stop", Address = "%I16.1" },
+                new ReconciliationTagInfo { Name = "Q_OldMotor", Address = "%Q8.0" }
+            };
+            List<ReconciliationTagInfo> desiredWithLocked = new List<ReconciliationTagInfo>
+            {
+                new ReconciliationTagInfo { Name = "I_Start", Address = "%I16.0" },
+                new ReconciliationTagInfo { Name = "I_Stop", Address = "%I16.1" },
+                new ReconciliationTagInfo { Name = "Q_Motor", Address = "%Q8.0" }
+            };
+            Dictionary<string, List<string>> planLocked = PlanTagReconciliation(existingWithLocked, desiredWithLocked);
+            assertPlanBucket("section27.keep", planLocked["keep"], new[] { "I_Start", "I_Stop" });
+            assertPlanBucket("section27.create", planLocked["create"], new[] { "Q_Motor" });
+            assertPlanBucket("section27.delete", planLocked["delete"], new[] { "Q_OldMotor" });
+
+            // Fase 1 - politica de DownloadConfiguration (sin TIA).
+            Action<string, string, string, bool, bool, string> assertDecision = (checkName, typeName, targetType, startModules, expectedAllowed, expectedSelection) =>
+            {
+                bool allowed;
+                string selection = DecideDownloadConfiguration(typeName, targetType, startModules, out allowed);
+                bool passed = allowed == expectedAllowed && String.Equals(selection, expectedSelection, StringComparison.Ordinal);
+                checks.Add(new Dictionary<string, object>
+                {
+                    { "decision", checkName },
+                    { "type", typeName },
+                    { "target_type", targetType },
+                    { "allowed", allowed },
+                    { "selection", selection },
+                    { "passed", passed }
+                });
+                if (!passed)
+                {
+                    AddError(report, "DecideDownloadConfiguration[" + checkName + "]: got allowed=" + allowed + " selection=" + selection);
+                }
+            };
+            assertDecision("plcsim.start", "StartModules", "PLCSIM_ADVANCED", true, true, "StartModule");
+            assertDecision("plcsim.start_disabled", "StartModules", "PLCSIM_ADVANCED", false, true, "NoAction");
+            assertDecision("plcsim.stop", "StopModules", "PLCSIM_ADVANCED", true, true, "StopAll");
+            assertDecision("plcsim.certificate", "DownloadCertificate", "PLCSIM_ADVANCED", true, true, "");
+            assertDecision("plcsim.unknown", "ProtectionLevelChanged", "PLCSIM_ADVANCED", true, false, null);
+            assertDecision("plcsim.password", "ModuleWriteAccessPassword", "PLCSIM_ADVANCED", true, false, null);
+            assertDecision("physical.reinit", "DataBlockReinitialization", "PHYSICAL_PLC", true, false, null);
+            assertDecision("physical.certificate", "DownloadCertificate", "PHYSICAL_PLC", true, false, null);
+            assertDecision("physical.start", "StartModules", "PHYSICAL_PLC", true, true, "StartModule");
 
             if (((List<string>)report["errors"]).Count > 0)
             {
@@ -221,7 +397,12 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
 
                 if (createTags)
                 {
-                    report["tags"] = EnsureTags(plcSoftware, request);
+                    Dictionary<string, object> tagReconciliation = EnsureTags(plcSoftware, request);
+                    report["tags"] = tagReconciliation;
+                    // Seccion 22: mismo contenido, nombre explicito para quien lea
+                    // tia_compile_report.json buscando especificamente el resumen de
+                    // reconciliacion de tags (desired/created/updated/existing/removed).
+                    report["tag_reconciliation"] = tagReconciliation;
                 }
 
                 PlcExternalSource existing = plcSoftware.ExternalSourceGroup.ExternalSources.Find(sourceName);
@@ -307,28 +488,31 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             }
         }
 
-        /// <summary>
-        /// Reconciles the PLC tags the current package needs against TIA's own PLC_Agent_IO tag
-        /// table, treating the ACTIVE map (the request's `tags` payload, already resolved by the
-        /// Python IOAllocator) as the single source of truth - never the other way around
-        /// (section 1). PLC_Agent_IO is a table this application creates and exclusively owns:
-        /// every tag inside it is, by construction, "administered" (section 4/15) - nothing else
-        /// plausibly writes into a table named for this app, so no tag outside PLC_Agent_IO is
-        /// ever read or touched here.
+/// <summary>
+        /// Full reconciliation (section 8/9) of the PLC_Agent_IO tag table against the request's
+        /// `tags` payload - the DESIRED set, already computed by Python as "external tags the
+        /// current program actually uses, plus any LOCKED map entry with a functional name"
+        /// (tia_openness.py::_build_tag_payload). Treats it as the single source of truth (never
+        /// the other way around): after this method returns, set(PLC_Agent_IO) == set(desired)
+        /// (section 10). PLC_Agent_IO is a table this application creates and exclusively owns -
+        /// every tag inside it is, by construction, "administered" (section 4/15/19); no other
+        /// tag table is ever enumerated or touched here.
         ///
-        /// Policy per requested tag (section 3):
-        ///   A. name exists, type matches, address matches -> left untouched.
-        ///   B. name exists, type matches, address differs  -> PlcTag.LogicalAddress has a public
-        ///      setter (confirmed via reflection against Siemens.Engineering.dll - PlcTag does
-        ///      NOT support renaming, but DOES support editing LogicalAddress/DataTypeName in
-        ///      place), so the existing tag is updated directly - no Delete/Create needed.
-        ///   C. name does not exist -> created with the requested name/type/address.
-        ///   D. name exists, type incompatible -> hard error (TagSynchronizationException), never
-        ///      a silent type conversion.
-        ///   E. requested address already occupied by a DIFFERENT tag name inside PLC_Agent_IO
-        ///      (e.g. IOAllocator reassigned %QX8.0 from Q_Motor to Q_Valve) -> the stale
-        ///      occupant is deleted before creating/updating the current tag, so the same address
-        ///      is never claimed by two active tags at once (section 9/10).
+        /// Order (section 9, avoids transient address collisions):
+        ///   1. validate the desired set itself (no duplicate names, no two names sharing an
+        ///      address);
+        ///   2. delete every EXISTING tag whose name is not in the desired set (orphans of a
+        ///      previous program) - this frees every address a later create/update might need,
+        ///      before anything is created or moved;
+        ///   3. for each desired tag: same name+type+address -> keep; same name+type, different
+        ///      address -> update LogicalAddress in place (PlcTag has no rename, but DOES expose
+        ///      a settable LogicalAddress/DataTypeName, confirmed via reflection against
+        ///      Siemens.Engineering.dll); same name, incompatible type -> hard error, never a
+        ///      silent conversion; name absent -> create.
+        ///   4. verify the final table matches the desired set exactly.
+        /// A deletion or creation failure never continues silently (section 23) - it raises
+        /// TagSynchronizationException with the tag name/address/reason, surfaced by Main() as a
+        /// distinct TIA_TAG_SYNC_ERROR status.
         /// </summary>
         private static Dictionary<string, object> EnsureTags(PlcSoftware plcSoftware, Dictionary<string, object> request)
         {
@@ -337,10 +521,7 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             {
                 table = plcSoftware.TagTableGroup.TagTables.Create("PLC_Agent_IO");
             }
-            int created = 0;
-            int updated = 0;
-            int unchanged = 0;
-            int requested = 0;
+
             object rawTags;
             IEnumerable tagItems = null;
             if (request.TryGetValue("tags", out rawTags))
@@ -362,51 +543,83 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 }
                 tagRequests.Add(tag);
             }
-
-            HashSet<string> requestedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (Dictionary<string, object> tag in tagRequests)
+            if (tagRequests.Count == 0)
             {
-                requestedNames.Add(GetRequiredString(tag, "name"));
+                throw new InvalidOperationException("No authorized PLC tags were received; block generation was stopped.");
             }
 
+            // Paso 1: validar el conjunto deseado en si mismo antes de tocar nada en TIA.
+            Dictionary<string, string> desiredAddressByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> desiredTypeByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> occupantByNormalizedAddress = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (Dictionary<string, object> tag in tagRequests)
             {
-                requested++;
                 string name = GetRequiredString(tag, "name");
                 string dataType = GetString(tag, "data_type", "Bool");
                 string address = GetRequiredString(tag, "address");
+                if (desiredAddressByName.ContainsKey(name))
+                {
+                    throw new TagSynchronizationException("Duplicate desired tag name: " + name + ".");
+                }
                 string normalizedAddress = NormalizeAddress(address);
+                string otherName;
+                if (occupantByNormalizedAddress.TryGetValue(normalizedAddress, out otherName))
+                {
+                    throw new TagSynchronizationException(
+                        "Two desired tags target the same address " + address + ": " + name + " and " + otherName + "."
+                    );
+                }
+                occupantByNormalizedAddress[normalizedAddress] = name;
+                desiredAddressByName[name] = address;
+                desiredTypeByName[name] = dataType;
+            }
+            Log("[TIA TAGS] Desired tags: " + desiredAddressByName.Count);
 
-                // Caso E: liberar la direccion si otra tag administrada (misma tabla) la ocupa
-                // bajo un nombre distinto.
-                List<PlcTag> staleOccupants = new List<PlcTag>();
-                foreach (PlcTag candidate in table.Tags)
+            // Paso 2: eliminar huerfanas - cualquier tag EXISTENTE en PLC_Agent_IO cuyo nombre ya
+            // no forme parte del conjunto deseado. Se hace ANTES de crear/actualizar nada, para
+            // que ninguna direccion quede reclamada por dos nombres a la vez transitoriamente
+            // (seccion 9).
+            List<PlcTag> existingSnapshot = new List<PlcTag>();
+            foreach (PlcTag tag in table.Tags)
+            {
+                existingSnapshot.Add(tag);
+            }
+            Log("[TIA TAGS] Existing managed tags: " + existingSnapshot.Count);
+
+            int removed = 0;
+            foreach (PlcTag existingTag in existingSnapshot)
+            {
+                if (desiredAddressByName.ContainsKey(existingTag.Name))
                 {
-                    if (String.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-                    if (String.Equals(NormalizeAddress(candidate.LogicalAddress), normalizedAddress, StringComparison.OrdinalIgnoreCase))
-                    {
-                        staleOccupants.Add(candidate);
-                    }
+                    continue;
                 }
-                foreach (PlcTag stale in staleOccupants)
+                string orphanName = existingTag.Name;
+                string orphanAddress = existingTag.LogicalAddress;
+                try
                 {
-                    if (requestedNames.Contains(stale.Name))
-                    {
-                        // La otra tag TAMBIEN esta en esta misma solicitud (se reconciliara en su
-                        // propia iteracion) - dos nombres pidiendo la misma direccion a la vez es
-                        // un conflicto real (nunca deberia ocurrir si el IOAllocator es correcto),
-                        // no algo que este metodo pueda resolver de forma segura.
-                        throw new TagSynchronizationException(
-                            "Two requested tags target the same address " + address + ": "
-                            + name + " and " + stale.Name + "."
-                        );
-                    }
-                    Log("[TIA TAGS] Releasing stale tag " + stale.Name + " at " + stale.LogicalAddress + " (reassigned to " + name + ")");
-                    stale.Delete();
+                    existingTag.Delete();
                 }
+                catch (Exception exception)
+                {
+                    throw new TagSynchronizationException(
+                        "Could not remove orphan tag " + orphanName + " at " + orphanAddress
+                        + " from PLC_Agent_IO: " + exception.Message
+                    );
+                }
+                Log("[TIA TAGS] Removing orphan: " + orphanName + " at " + orphanAddress);
+                removed++;
+            }
+
+            // Paso 3: crear/actualizar cada tag deseada (huerfanas ya fuera de camino).
+            int created = 0;
+            int updated = 0;
+            int unchanged = 0;
+            foreach (Dictionary<string, object> tag in tagRequests)
+            {
+                string name = GetRequiredString(tag, "name");
+                string dataType = desiredTypeByName[name];
+                string address = desiredAddressByName[name];
+                string normalizedAddress = NormalizeAddress(address);
 
                 PlcTag existingTag = table.Tags.Find(name);
                 if (existingTag == null)
@@ -436,6 +649,7 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 );
                 if (sameAddress)
                 {
+                    Log("[TIA TAGS] Keeping: " + name + " at " + address);
                     unchanged++;
                     continue;
                 }
@@ -446,18 +660,40 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 updated++;
                 Log("[TIA TAGS] " + name + " synchronized");
             }
-            if (requested == 0)
+
+            // Paso 4: el estado final debe coincidir exactamente con lo deseado (seccion 10/11).
+            int finalCount = 0;
+            List<string> unexpected = new List<string>();
+            foreach (PlcTag tag in table.Tags)
             {
-                throw new InvalidOperationException("No authorized PLC tags were received; block generation was stopped.");
+                finalCount++;
+                if (!desiredAddressByName.ContainsKey(tag.Name))
+                {
+                    unexpected.Add(tag.Name);
+                }
             }
-            Log("[TIA TAGS] Tag synchronization completed");
+            if (unexpected.Count > 0 || finalCount != desiredAddressByName.Count)
+            {
+                throw new TagSynchronizationException(
+                    "PLC_Agent_IO does not match the desired tag set after reconciliation. "
+                    + "Unexpected: " + String.Join(", ", unexpected)
+                    + ". Expected " + desiredAddressByName.Count + " tags, found " + finalCount + "."
+                );
+            }
+
+            Log("[TIA TAGS] Reconciliation completed");
+            Log("[TIA TAGS] Final managed tags: " + finalCount);
             return new Dictionary<string, object>
             {
                 { "table", table.Name },
-                { "requested", requested },
+                { "desired", tagRequests.Count },
+                { "requested", tagRequests.Count },
                 { "created", created },
                 { "updated", updated },
-                { "existing", unchanged }
+                { "existing", unchanged },
+                { "kept", unchanged },
+                { "removed", removed },
+                { "final_count", finalCount }
             };
         }
 
@@ -796,23 +1032,85 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                     throw new InvalidOperationException("The target PLC device does not expose a download service.");
                 }
 
-                IConfiguration targetConfiguration = ResolveUnambiguousTargetInterface(downloadProvider.Configuration, report);
+                string targetType = GetString(request, "target_type", "PLCSIM_ADVANCED").Trim().ToUpperInvariant();
+                bool requireSimulation = GetBool(request, "require_simulation", false);
+                bool startModules = GetBool(request, "start_modules", true);
+                string downloadScope = GetString(request, "download_scope", "SOFTWARE").Trim().ToUpperInvariant();
+                report["target_type"] = targetType;
+                report["target_name"] = GetString(request, "target_name", "");
+                report["require_simulation"] = requireSimulation;
+                report["download_scope"] = downloadScope;
+                report["start_module_requested"] = false;
+                report["start_module_configuration_seen"] = false;
+                report["cpu_run_requested"] = false;
+                report["cpu_run_confirmed"] = null;
+
+                Log("[TIA DOWNLOAD] Target validation");
+                if (requireSimulation && targetType != TargetTypePlcsimAdvanced)
+                {
+                    report["status"] = "EXPERIMENT_TARGET_NOT_SIMULATION";
+                    AddError(report, "El destino configurado no es PLCSIM_ADVANCED (target_type=" + targetType + "). Modo Experimentacion nunca descarga a un PLC fisico.");
+                    return report;
+                }
+
+                ConfigurationPcInterface pcInterface;
+                IConfiguration targetConfiguration = ResolveDownloadTarget(downloadProvider.Configuration, request, targetType, report, out pcInterface);
                 if (targetConfiguration == null)
                 {
                     report["status"] = "TIA_DOWNLOAD_AMBIGUOUS_TARGET";
                     return report;
                 }
 
-                // Software-only download: never touches hardware configuration, IP addresses,
-                // racks or modules. preDownloadConfigurationDelegate/postDownloadConfigurationDelegate
-                // are intentionally null - this reuses whatever online/download connection is
-                // already configured and saved in the project instead of auto-selecting one.
-                DownloadResult downloadResult = downloadProvider.Download(
-                    targetConfiguration,
-                    null,
-                    null,
-                    DownloadOptions.Software
-                );
+                // Guardia de simulacion (seccion 4): ademas de lo DECLARADO en la configuracion,
+                // la interfaz PG/PC realmente resuelta en TIA debe ser la del simulador. Si no se
+                // puede confirmar, se aborta sin descargar - nunca se adivina.
+                string pcInterfaceName = pcInterface != null ? pcInterface.Name : "";
+                bool simulatedInterface = pcInterfaceName.IndexOf("PLCSIM", StringComparison.OrdinalIgnoreCase) >= 0;
+                report["simulation_interface_confirmed"] = simulatedInterface;
+                if (requireSimulation && !simulatedInterface)
+                {
+                    report["status"] = "EXPERIMENT_TARGET_NOT_SIMULATION";
+                    AddError(report, "La interfaz PG/PC resuelta ('" + pcInterfaceName + "') no corresponde a PLCSIM. Descarga experimental abortada.");
+                    return report;
+                }
+                if (requireSimulation)
+                {
+                    Log("[TIA DOWNLOAD] PLCSIM Advanced confirmed (" + pcInterfaceName + ")");
+                }
+
+                DownloadOptions options = downloadScope == "HARDWARE_AND_SOFTWARE"
+                    ? DownloadOptions.Hardware | DownloadOptions.Software
+                    : DownloadOptions.Software;
+
+                List<object> handledConfigurations = new List<object>();
+                report["download_configurations"] = handledConfigurations;
+                DownloadConfigurationDelegate handler = configuration =>
+                    HandleDownloadConfiguration(configuration, targetType, startModules, handledConfigurations, report);
+
+                Log("[TIA DOWNLOAD] Starting");
+                DownloadResult downloadResult;
+                try
+                {
+                    downloadResult = downloadProvider.Download(targetConfiguration, handler, handler, options);
+                }
+                catch (DownloadConfigurationRejectedException rejected)
+                {
+                    report["status"] = "DOWNLOAD_CONFIGURATION_UNSUPPORTED";
+                    AddError(report, rejected.Message);
+                    return report;
+                }
+                catch (Exception exception)
+                {
+                    // Openness puede envolver la excepcion lanzada dentro del delegado.
+                    DownloadConfigurationRejectedException inner = FindInner<DownloadConfigurationRejectedException>(exception);
+                    if (inner != null)
+                    {
+                        report["status"] = "DOWNLOAD_CONFIGURATION_UNSUPPORTED";
+                        AddError(report, inner.Message);
+                        return report;
+                    }
+                    throw;
+                }
 
                 int errorCount = downloadResult.ErrorCount;
                 int warningCount = downloadResult.WarningCount;
@@ -823,7 +1121,21 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 report["download_warning_count"] = warningCount;
                 report["download_messages"] = FlattenDownloadMessages(downloadResult.Messages);
                 report["success"] = success;
+                report["download_success"] = success;
+                bool startRequested = (bool)report["start_module_requested"];
+                // Start Module solo se considera exitoso si TIA lo presento, se selecciono
+                // StartModule y la descarga termino sin errores. Si TIA nunca presento
+                // StartModules (la CPU no se detuvo), el resultado es "no aplica" (null), nunca
+                // un exito inventado. cpu_run_confirmed queda null hasta tener Runtime API.
+                report["start_module_success"] = startRequested ? (object)success : null;
+                report["cpu_run_requested"] = startRequested && success;
                 report["status"] = success ? "TIA_DOWNLOAD_PASSED" : "TIA_DOWNLOAD_FAILED";
+                Log(success ? "[TIA DOWNLOAD] Download completed" : "[TIA DOWNLOAD] Download failed");
+                if (startRequested && success)
+                {
+                    Log("[TIA DOWNLOAD] Start module requested");
+                }
+                Log("[TIA DOWNLOAD] Completed");
             }
             finally
             {
@@ -839,6 +1151,203 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             return report;
         }
 
+        private const string TargetTypePlcsimAdvanced = "PLCSIM_ADVANCED";
+
+        private sealed class DownloadConfigurationRejectedException : InvalidOperationException
+        {
+            public DownloadConfigurationRejectedException(string message) : base(message)
+            {
+            }
+        }
+
+        // Politica explicita por tipo de DownloadConfiguration (nombres verificados por reflexion
+        // contra Siemens.Engineering.dll V18). Valor = seleccion a aplicar ("" = el tipo no expone
+        // seleccion, solo se permite continuar). Cualquier tipo ausente se RECHAZA: nunca se acepta
+        // silenciosamente una configuracion desconocida (seccion 7).
+        private static readonly Dictionary<string, string> PlcsimAllowedConfigurations = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "StopModules", "StopAll" },
+            { "StartModules", "StartModule" },
+            { "ConsistentBlocksDownload", "ConsistentDownload" },
+            { "AlarmTextLibrariesDownload", "ConsistentDownload" },
+            { "AllBlocksDownload", "DownloadAllBlocks" },
+            { "DataBlockReinitialization", "StopPlcAndReinitialize" },
+            { "OverwriteSystemData", "Overwrite" },
+            { "LoadIdentificationData", "LoadNothing" },
+            { "WaitOnReboot", "Wait" },
+            { "DownloadCertificate", "" }
+        };
+
+        // PLC fisico: solo lo imprescindible para cargar software; nada que reinicialice datos,
+        // sobrescriba configuracion de sistema o acepte certificados automaticamente.
+        private static readonly Dictionary<string, string> PhysicalAllowedConfigurations = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "StopModules", "StopAll" },
+            { "StartModules", "StartModule" },
+            { "ConsistentBlocksDownload", "ConsistentDownload" },
+            { "AlarmTextLibrariesDownload", "ConsistentDownload" },
+            { "AllBlocksDownload", "DownloadAllBlocks" },
+            { "LoadIdentificationData", "LoadNothing" }
+        };
+
+        /// <summary>
+        /// Pure decision (no Siemens API): which selection to apply to a DownloadConfiguration
+        /// type for a given target, or null + allowed=false if it must abort the download.
+        /// </summary>
+        private static string DecideDownloadConfiguration(string typeName, string targetType, bool startModules, out bool allowed)
+        {
+            if (typeName == "StartModules" && !startModules)
+            {
+                allowed = true;
+                return "NoAction";
+            }
+            Dictionary<string, string> policy = targetType == TargetTypePlcsimAdvanced
+                ? PlcsimAllowedConfigurations
+                : PhysicalAllowedConfigurations;
+            string selection;
+            allowed = policy.TryGetValue(typeName, out selection);
+            return allowed ? selection : null;
+        }
+
+        private static void HandleDownloadConfiguration(
+            DownloadConfiguration configuration,
+            string targetType,
+            bool startModules,
+            List<object> handledConfigurations,
+            Dictionary<string, object> report)
+        {
+            string typeName = configuration.GetType().Name;
+            bool allowed;
+            string selection = DecideDownloadConfiguration(typeName, targetType, startModules, out allowed);
+            handledConfigurations.Add(new Dictionary<string, object>
+            {
+                { "type", typeName },
+                { "message", configuration.Message },
+                { "selection", selection },
+                { "allowed", allowed }
+            });
+            if (!allowed)
+            {
+                Log("[TIA DOWNLOAD] Unsupported configuration: " + typeName);
+                throw new DownloadConfigurationRejectedException(
+                    "Configuracion de descarga no soportada para " + targetType + ": " + typeName
+                    + " (" + configuration.Message + "). Descarga abortada."
+                );
+            }
+            if (!String.IsNullOrEmpty(selection))
+            {
+                PropertyInfo selectionProperty = configuration.GetType().GetProperty("CurrentSelection");
+                if (selectionProperty == null)
+                {
+                    throw new DownloadConfigurationRejectedException(
+                        "La configuracion " + typeName + " no expone CurrentSelection; no se puede aplicar '" + selection + "'."
+                    );
+                }
+                selectionProperty.SetValue(configuration, Enum.Parse(selectionProperty.PropertyType, selection), null);
+            }
+            if (typeName == "StartModules")
+            {
+                report["start_module_configuration_seen"] = true;
+                report["start_module_requested"] = selection == "StartModule";
+            }
+            Log("[TIA DOWNLOAD] Configuration " + typeName + " -> " + (String.IsNullOrEmpty(selection) ? "(continuar, sin seleccion)" : selection));
+        }
+
+        private static T FindInner<T>(Exception exception) where T : Exception
+        {
+            while (exception != null)
+            {
+                T match = exception as T;
+                if (match != null)
+                {
+                    return match;
+                }
+                exception = exception.InnerException;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Selects Mode -> PC interface -> target interface by the names configured in the request
+        /// (configuration_mode / pc_interface / target_interface). With no pc_interface configured,
+        /// a PLCSIM_ADVANCED target auto-selects the single PC interface whose name contains
+        /// "PLCSIM"; any other target requires exactly one PC interface overall. Never scans the
+        /// network, never changes addresses, never picks among several candidates.
+        /// </summary>
+        private static IConfiguration ResolveDownloadTarget(
+            ConnectionConfiguration connectionConfiguration,
+            Dictionary<string, object> request,
+            string targetType,
+            Dictionary<string, object> report,
+            out ConfigurationPcInterface pcInterface)
+        {
+            pcInterface = null;
+            string modeName = GetString(request, "configuration_mode", "").Trim();
+            string pcName = GetString(request, "pc_interface", "").Trim();
+            string targetName = GetString(request, "target_interface", "").Trim();
+
+            List<object> available = new List<object>();
+            List<KeyValuePair<ConfigurationMode, ConfigurationPcInterface>> candidates = new List<KeyValuePair<ConfigurationMode, ConfigurationPcInterface>>();
+            foreach (ConfigurationMode mode in connectionConfiguration.Modes)
+            {
+                foreach (ConfigurationPcInterface candidate in mode.PcInterfaces)
+                {
+                    available.Add(new Dictionary<string, object>
+                    {
+                        { "mode", mode.Name },
+                        { "pc_interface", candidate.Name },
+                        { "number", candidate.Number },
+                        { "target_interfaces", candidate.TargetInterfaces.Select(t => t.Name).ToList() }
+                    });
+                    if (modeName.Length > 0 && !String.Equals(mode.Name, modeName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                    bool match = pcName.Length > 0
+                        ? String.Equals(candidate.Name, pcName, StringComparison.OrdinalIgnoreCase)
+                        : targetType != TargetTypePlcsimAdvanced || candidate.Name.IndexOf("PLCSIM", StringComparison.OrdinalIgnoreCase) >= 0;
+                    if (match)
+                    {
+                        candidates.Add(new KeyValuePair<ConfigurationMode, ConfigurationPcInterface>(mode, candidate));
+                    }
+                }
+            }
+            report["available_connections"] = available;
+
+            if (candidates.Count != 1)
+            {
+                AddError(
+                    report,
+                    "No se pudo determinar de forma inequivoca la interfaz PG/PC de descarga (" + candidates.Count
+                    + " candidatas). Configure 'pc_interface' en download_targets (ver available_connections)."
+                );
+                return null;
+            }
+
+            pcInterface = candidates[0].Value;
+            report["configuration_mode"] = candidates[0].Key.Name;
+            report["pc_interface_name"] = pcInterface.Name;
+
+            List<ConfigurationTargetInterface> targets = pcInterface.TargetInterfaces.ToList();
+            ConfigurationTargetInterface target = null;
+            if (targetName.Length > 0)
+            {
+                target = targets.FirstOrDefault(t => String.Equals(t.Name, targetName, StringComparison.OrdinalIgnoreCase));
+            }
+            else if (targets.Count == 1)
+            {
+                target = targets[0];
+            }
+            if (target == null)
+            {
+                report["available_target_interfaces"] = targets.Select(t => t.Name).ToList();
+                AddError(report, "No se pudo determinar de forma inequivoca la interfaz destino del PLC. Configure 'target_interface'.");
+                return null;
+            }
+            report["target_interface_name"] = target.Name;
+            return target;
+        }
+
         private static void CollectPlcCandidates(DeviceItem item, IList<KeyValuePair<DeviceItem, PlcSoftware>> result)
         {
             SoftwareContainer container = item.GetService<SoftwareContainer>();
@@ -850,41 +1359,6 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             {
                 CollectPlcCandidates(child, result);
             }
-        }
-
-        /// <summary>
-        /// Walks Modes -> PcInterfaces -> TargetInterfaces and only returns a target when each
-        /// level has exactly one candidate. Never scans the network or picks arbitrarily among
-        /// several - if more than one option exists anywhere, the caller must abort.
-        /// </summary>
-        private static IConfiguration ResolveUnambiguousTargetInterface(ConnectionConfiguration connectionConfiguration, Dictionary<string, object> report)
-        {
-            List<ConfigurationMode> modes = connectionConfiguration.Modes.ToList();
-            if (modes.Count != 1)
-            {
-                report["available_modes"] = modes.Select(m => m.Name).ToList();
-                AddError(report, "No se pudo determinar de forma inequivoca el modo de conexion (PN/IE, MPI, etc.) del PLC objetivo.");
-                return null;
-            }
-
-            List<ConfigurationPcInterface> pcInterfaces = modes[0].PcInterfaces.ToList();
-            if (pcInterfaces.Count != 1)
-            {
-                report["available_pc_interfaces"] = pcInterfaces.Select(i => i.Name).ToList();
-                AddError(report, "No se pudo determinar de forma inequivoca la interfaz PC/PG para descargar al PLC.");
-                return null;
-            }
-
-            List<ConfigurationTargetInterface> targetInterfaces = pcInterfaces[0].TargetInterfaces.ToList();
-            if (targetInterfaces.Count != 1)
-            {
-                report["available_target_interfaces"] = targetInterfaces.Select(i => i.Name).ToList();
-                AddError(report, "No se pudo determinar de forma inequivoca el dispositivo objetivo accesible para el PLC.");
-                return null;
-            }
-
-            report["target_interface_name"] = targetInterfaces[0].Name;
-            return targetInterfaces[0];
         }
 
         private static List<Dictionary<string, object>> FlattenDownloadMessages(DownloadResultMessageComposition messages)

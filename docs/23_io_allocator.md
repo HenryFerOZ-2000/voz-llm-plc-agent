@@ -140,13 +140,33 @@ sin volver a interpretar el texto) - si el intent ya no es `INT_UNKNOWN`, el flu
 exactamente como cualquier otro comando (IR → SCL → TIA, con su propia confirmación humana ya
 existente antes de generar).
 
-## Modo Experimentación: bloqueado
+## Modo Experimentación: working map por ensayo
 
-`io_allocator.block_map_config_message(active_trial, active_profile_id)` devuelve el mensaje exacto
-pedido ("La reasignación de I/O no está permitida durante un ensayo experimental activo.") si hay
-un ensayo corriendo **o** un perfil Dxx/Pxx seleccionado - MAP_CONFIG es exclusivamente Modo Normal
-(sección 23/24). `gui.py::_handle_map_config_command` lo comprueba antes de mostrar cualquier
-propuesta.
+El ensayo usa **el mismo inventario físico y el mismo IOAllocator** que Modo Normal, pero nunca
+escribe el mapa activo. `trial_experiments/trial_io_map.py`:
+
+1. `start_trial` → `create_working_map`: el **mapa base** es el mapa activo normalizado (LOCKED se
+   conserva; ASSIGNED/FREE vuelven a FREE con su nombre genérico `I_Free16_6`/`Q_Free8_3`/`AI_IW0`/
+   `AO_QW0` y sin aliases; internas no LOCKED se descartan). Se escribe en
+   `results/experiments/<case>/<variant>/<trial_id>/working_io_map.json`.
+2. `PREPARING`: el pipeline (`process_command` → `_handle_map_config_command`) asigna FREE,
+   reasigna ASSIGNED, reutiliza LOCKED compatibles y acepta direcciones explícitas con
+   `propose_assignment`/`apply_assignments` sin cambios, sobre el working map
+   (`apply_proposals_to_working_map`: candidato → validación → escritura atómica; si falla, el
+   archivo queda intacto). No se aplica el filtro legacy `allowed_variables` del perfil.
+3. Antes de IR/SCL: `freeze_working_map` → `io_map_snapshot.json` (24 canales, bindings activos,
+   `parameter_bindings` rol → nombre → dirección) y `lifecycle_state = IO_RESOLVED`. Desde ahí
+   cualquier mutación falla con `EXPERIMENT_IO_FROZEN`.
+4. Al finalizar (o cancelar) el ensayo, `working_io_map.json` se descarta; el snapshot queda como
+   evidencia y `trial.json.io_map` lo referencia.
+
+Errores: `EXPERIMENT_IO_BASE_UNAVAILABLE`, `EXPERIMENT_IO_ALLOCATION_FAILED`, `EXPERIMENT_IO_FROZEN`,
+`EXPERIMENT_IO_SNAPSHOT_FAILED`. Un fallo de I/O cierra el ensayo (FAIL / INFRASTRUCTURE_ERROR) sin
+compilar ni descargar.
+
+`io_allocator.block_map_config_message(active_trial, active_profile_id)` se conserva **solo** para la
+edición MANUAL del mapa durante un ensayo (`IOMapWindow` en solo lectura) y para el caso legacy de
+Modo Normal con un perfil Dxx/Pxx seleccionado. Ya no bloquea al allocator del ensayo.
 
 ## GUI
 

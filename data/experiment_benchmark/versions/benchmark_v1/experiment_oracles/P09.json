@@ -1,0 +1,197 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P09",
+  "case_id": "P09",
+  "title": "P09 - Fallo de sensor por valor fuera de rango",
+  "description": "Si el nivel esta fuera del rango fisico valido (0-100 %) se activa el fallo de sensor y se deshabilita el PID.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P09 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "P09 - Fallo de sensor fuera de rango",
+    "description": "Detectar fallo de sensor cuando el valor de nivel este fuera del rango fisico valido y deshabilitar el PID.",
+    "reference_intent": "INT_PID_SUPERVISOR",
+    "authorized_signals": [
+      "I_Emergency"
+    ],
+    "variants": {
+      "V1": "Detecta un fallo de sensor si el valor de nivel esta fuera de rango.",
+      "V2": "Quiero que se marque una falla si la lectura del sensor de nivel es invalida.",
+      "V3": "Activa Sensor_Fault cuando Level_PV salga del rango valido."
+    },
+    "researcher_summary": "Fallo de sensor por valor fuera de rango."
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "REAL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "sensor_range_fault"
+    ],
+    "required_functions": [
+      "sensor_range_fault"
+    ],
+    "required_roles": [
+      "LEVEL_PV",
+      "SENSOR_FAULT",
+      "PID_ENABLE"
+    ]
+  },
+  "roles": {
+    "LEVEL_PV": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Nivel medido (simulado, %).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_PV"
+      ]
+    },
+    "SENSOR_FAULT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Fallo de sensor.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Sensor_Fault"
+      ]
+    },
+    "PID_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion del PID.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "PID_Enable"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 0,
+    "expected_bound_outputs": 0,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Limites tomados de config/pid_supervisor_config.json (setpoint 10-90 %, alarma alta 90 %, baja 10 %, sobrellenado 95 %, rango valido del sensor 0-100 %). Level_PV se inyecta como valor de proceso simulado."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_normal",
+      "description": "Nivel valido: sin fallo.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SENSOR_FAULT": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Nivel 150 %: fallo de sensor y PID deshabilitado.",
+      "set": {
+        "LEVEL_PV": 150.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SENSOR_FAULT": true,
+        "PID_ENABLE": false
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Nivel valido: fallo desaparece.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SENSOR_FAULT": false
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Nivel -5 %: fallo de sensor y PID deshabilitado.",
+      "set": {
+        "LEVEL_PV": -5.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SENSOR_FAULT": true,
+        "PID_ENABLE": false
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_FAULT_PID",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "SENSOR_FAULT",
+        "PID_ENABLE"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "Con fallo de sensor el PID nunca esta habilitado."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_level",
+      "description": "Nivel a valor base seguro.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

@@ -1,6 +1,6 @@
 {
   "tia_version": "V18",
-  "project_path": "D:/Documentos/Automatizacion para la Industria 4.0/TESIS/Software/voz_llm_plc_agent/tia_projects/TESIS_PRUEBA_1/TESIS_PRUEBA_1.ap18",
+  "project_path": "D:/Documentos/Automatizacion para la Industria 4.0/TESIS/Software/voz_llm_plc_agent/tia_projects/S71500_Prueba/S71500_Prueba.ap18",
   "plc_name": "",
   "attach_to_running": true,
   "with_user_interface": true,
@@ -8,5 +8,33 @@
   "save_project_on_success": true,
   "compile_after_import": true,
   "timeout_seconds": 300,
+  "download_targets": {
+    "normal": {
+      "target_type": "PLCSIM_ADVANCED",
+      "target_name": "PLCSIM Advanced - TESIS_PLC_SIM",
+      "configuration_mode": "PN/IE",
+      "pc_interface": "Siemens PLCSIM Virtual Ethernet Adapter",
+      "target_interface": "1 X1",
+      "download_scope": "SOFTWARE",
+      "start_modules": true
+    },
+    "experiment": {
+      "target_type": "PLCSIM_ADVANCED",
+      "target_name": "PLCSIM Advanced - TESIS_PLC_SIM",
+      "configuration_mode": "PN/IE",
+      "pc_interface": "Siemens PLCSIM Virtual Ethernet Adapter",
+      "target_interface": "1 X1",
+      "download_scope": "SOFTWARE",
+      "start_modules": true
+    }
+  },
+  "plcsim_runtime": {
+    "api_dll_path": "C:/Program Files (x86)/Common Files/Siemens/PLCSIMADV/API/5.0/Siemens.Simatic.Simulation.Runtime.Api.x64.dll",
+    "instance_name": "TESIS_PLC_SIM",
+    "windows_adapter_match": "PLCSIM Virtual Ethernet Adapter",
+    "timeout_seconds": 20,
+    "io_settle_ms": 500,
+    "io_timeout_seconds": 60
+  },
   "api_dll_path": "C:/Program Files/Siemens/Automation/Portal V18/PublicAPI/V18/Siemens.Engineering.dll"
 }

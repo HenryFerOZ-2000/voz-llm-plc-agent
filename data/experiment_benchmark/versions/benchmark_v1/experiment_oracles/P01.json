@@ -1,0 +1,145 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P01",
+  "case_id": "P01",
+  "title": "P01 - Habilitar el modo automatico",
+  "description": "Tras ejecutar la orden, el supervisor deja el proceso en modo automatico (sin emergencia).",
+  "complexity": "LOW",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P01 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "P01 - Habilitar modo automatico",
+    "description": "Habilitar el modo automatico del proceso PID (supervision, no redisena el PID).",
+    "reference_intent": "INT_PID_SUPERVISOR",
+    "authorized_signals": [
+      "I_Emergency"
+    ],
+    "variants": {
+      "V1": "Habilita el modo automatico.",
+      "V2": "Quiero que el sistema pase a modo automatico.",
+      "V3": "Activa Auto_Mode."
+    },
+    "researcher_summary": "Habilitar modo automatico."
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "INTERNAL_TAG_READ"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "set_auto_mode"
+    ],
+    "required_functions": [
+      "set_auto_mode"
+    ],
+    "required_roles": [
+      "AUTO_MODE"
+    ]
+  },
+  "roles": {
+    "EMERGENCY": {
+      "kind": "INPUT",
+      "required": false,
+      "description": "Emergencia (activa = TRUE).",
+      "semantic_paths": [
+        "emergency_input"
+      ]
+    },
+    "AUTO_MODE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Modo automatico del PID.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Auto_Mode"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 0,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Limites tomados de config/pid_supervisor_config.json (setpoint 10-90 %, alarma alta 90 %, baja 10 %, sobrellenado 95 %, rango valido del sensor 0-100 %). Level_PV se inyecta como valor de proceso simulado."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_emergency_off",
+      "description": "Sin emergencia.",
+      "set": {
+        "EMERGENCY": false
+      },
+      "wait_ms": 300,
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "El proceso queda en modo automatico.",
+      "wait_ms": 500,
+      "expect": {
+        "AUTO_MODE": true
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_emergency",
+      "description": "Emergencia a OFF.",
+      "set": {
+        "EMERGENCY": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

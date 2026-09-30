@@ -7,7 +7,7 @@
     "description": "Mapa del hardware fisico real confirmado del banco de pruebas (24 canales: 8 DI en %IX16.0-%IX16.7, 8 DO en %QX8.0-%QX8.7, 4 AI en %IW0/%IW2/%IW4/%IW6, 4 AO en %QW0/%QW2/%QW4/%QW6). Cada variable tiene un estado FREE/ASSIGNED/LOCKED (docs/23_io_allocator.md). El 2026-09-10 este archivo fue contaminado por scripts de diagnostico propios (llamadas reales al LLM contra la app SIN redirigir io_map_path, para reproducir el bug de SEMANTIC_AMBIGUITY) que aplicaron MAP_CONFIG real varias veces con respuestas no deterministas del LLM, agregando I_Start_Motor_1/I_Emergency/I_Reset/Q_Alarm/Q_Motor_Enable/Q_Pilot_Fault/Q_Pilot_Run - I_Emergency en particular viola la regla establecida de que el paro de emergencia esta cableado externo al PLC en este banco. Restaurado al estado real confirmado por el usuario (motor 1 reutiliza I_Start general, motor 2/3 en I_Start_Motor_2/3, sin I_Emergency).",
     "target_platform": "SIEMENS_SCL_V18",
     "created_at": "2026-08-27T12:27:44",
-    "updated_at": "2026-09-10T23:20:32",
+    "updated_at": "2026-09-28T17:05:35",
     "tia_project_path": "",
     "tia_plc_name": "",
     "sync_status": "error",
@@ -132,7 +132,7 @@
       "state": "ASSIGNED"
     },
     {
-      "name": "I_Free16_6",
+      "name": "I_Piece_Sensor",
       "class": "input",
       "type": "BOOL",
       "location": "%IX16.6",
@@ -146,7 +146,7 @@
       "min": null,
       "max": null,
       "comments": "",
-      "state": "FREE"
+      "state": "ASSIGNED"
     },
     {
       "name": "I_Free16_7",
@@ -558,6 +558,15 @@
       "address": "%IX16.5",
       "old_name": "I_Free16_5",
       "new_name": "I_Start_Motor_1",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-22T16:49:57",
+      "address": "%IX16.6",
+      "old_name": "I_Free16_6",
+      "new_name": "I_Piece_Sensor",
       "old_state": "FREE",
       "new_state": "ASSIGNED",
       "source": "AUTO_ALLOCATOR"

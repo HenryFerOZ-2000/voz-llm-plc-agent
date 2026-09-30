@@ -5,10 +5,13 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from plc_maps.registry import resolve_active_map_path
+from platforms.siemens_scl_adapter import SIEMENS_TYPE_MAP
 from utils import get_project_root, load_json_file
 
 
@@ -256,24 +259,79 @@ def run_openness_bridge_diagnostic(project_root: Path | None = None) -> dict[str
     return report
 
 
-def _build_tag_payload(variables_path: Path) -> list[dict[str, str]]:
-    variables = load_json_file(variables_path)
-    if not isinstance(variables, list):
+def _normalize_siemens_address(raw_address: str) -> str:
+    return str(raw_address or "").replace("%IX", "%I").replace("%QX", "%Q").replace("%MX", "%M")
+
+
+def _load_locked_persistent_tags(project_root: Path) -> list[dict[str, str]]:
+    """
+    LOCKED entries in the active map represent the bench's fixed, physical configuration
+    (I_Start/I_Stop-style pushbuttons wired once) - they must stay in PLC_Agent_IO across
+    programs even when a specific program doesn't reference them directly, so the orphan-cleanup
+    in EnsureTags (section 5/18/27) never deletes them. Reads the active map directly (not any
+    per-package variables.json, which only ever lists the CURRENT program's own IR variables) -
+    returns [] on any map-loading problem rather than failing the whole TIA request over this.
+    """
+    try:
+        map_path = resolve_active_map_path(project_root)
+        io_map = load_json_file(map_path)
+    except (FileNotFoundError, ValueError, OSError):
+        return []
+    if not isinstance(io_map, dict):
         return []
     tags: list[dict[str, str]] = []
-    for variable in variables:
-        if not isinstance(variable, dict) or variable.get("class") not in {"input", "output"}:
+    for variable in io_map.get("variables", []):
+        if not isinstance(variable, dict) or variable.get("state") != "LOCKED":
             continue
-        address = str(variable.get("siemens_address") or variable.get("location") or "")
-        address = address.replace("%IX", "%I").replace("%QX", "%Q").replace("%MX", "%M")
+        if variable.get("class") not in {"input", "output"}:
+            continue
+        name = str(variable.get("name") or "").strip()
+        address = _normalize_siemens_address(str(variable.get("location") or ""))
+        if not name or not address:
+            continue
+        iec_type = str(variable.get("type") or "BOOL").upper()
         tags.append(
             {
-                "name": str(variable.get("name", "")),
-                "data_type": str(variable.get("siemens_type") or "Bool"),
+                "name": name,
+                "data_type": SIEMENS_TYPE_MAP.get(iec_type, "Bool"),
                 "address": address
             }
         )
     return tags
+
+
+def _build_tag_payload(variables_path: Path, project_root: Path | None = None) -> list[dict[str, str]]:
+    """
+    Section 3/4: the DESIRED PLC tag set sent to Openness for reconciliation - every external
+    tag the current program's IR actually declares (class input/output; internal M_/T_/C_/R_/F_
+    variables are filtered out here, they never reach PLC_Agent_IO - section 20), PLUS any
+    LOCKED map entry with a functional name, which persists across programs regardless of
+    whether this specific program references it (section 5/18). A FREE channel with no
+    functional_name never appears in `variables` (the IR never declares it), so it is never sent
+    here either (section 19) - EnsureTags on the bridge side then deletes anything already in
+    PLC_Agent_IO that is not in this set (orphans of a previous program).
+    """
+    variables = load_json_file(variables_path)
+    if not isinstance(variables, list):
+        variables = []
+    tags_by_name: dict[str, dict[str, str]] = {}
+    for variable in variables:
+        if not isinstance(variable, dict) or variable.get("class") not in {"input", "output"}:
+            continue
+        name = str(variable.get("name", ""))
+        address = str(variable.get("siemens_address") or variable.get("location") or "")
+        address = _normalize_siemens_address(address)
+        tags_by_name[name] = {
+            "name": name,
+            "data_type": str(variable.get("siemens_type") or "Bool"),
+            "address": address
+        }
+
+    root = project_root or get_project_root()
+    for locked_tag in _load_locked_persistent_tags(root):
+        tags_by_name.setdefault(locked_tag["name"], locked_tag)
+
+    return list(tags_by_name.values())
 
 
 def prepare_tia_request(
@@ -305,7 +363,7 @@ def prepare_tia_request(
         "create_plc_tags": bool(config.get("create_plc_tags", True)),
         "save_project_on_success": bool(config.get("save_project_on_success", True)),
         "compile_after_import": bool(config.get("compile_after_import", True)),
-        "tags": _build_tag_payload(variables_path),
+        "tags": _build_tag_payload(variables_path, project_root=root),
         "physical_download_allowed": False
     }
     request_path.write_text(json.dumps(request, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -373,13 +431,47 @@ def validate_package_with_tia(
     return report
 
 
+TARGET_TYPE_PLCSIM = "PLCSIM_ADVANCED"
+TARGET_TYPE_PHYSICAL = "PHYSICAL_PLC"
+DOWNLOAD_PURPOSE_NORMAL = "normal"
+DOWNLOAD_PURPOSE_EXPERIMENT = "experiment"
+DOWNLOAD_SCOPES = ("SOFTWARE", "HARDWARE_AND_SOFTWARE")
+
+# Destino por defecto si config/tia_openness_config.json no define "download_targets": PLCSIM
+# Advanced, solo software, Start Module automatico. pc_interface/target_interface vacios = el
+# bridge elige la UNICA interfaz PG/PC cuyo nombre contiene "PLCSIM" (o aborta si hay 0 o >1).
+# La red (IP, mascara, adaptadores) nunca se modifica: se reutiliza la del proyecto TIA.
+DEFAULT_DOWNLOAD_TARGET: dict[str, Any] = {
+    "target_type": TARGET_TYPE_PLCSIM,
+    "target_name": "PLCSIM Advanced",
+    "configuration_mode": "",
+    "pc_interface": "",
+    "target_interface": "",
+    "download_scope": "SOFTWARE",
+    "start_modules": True
+}
+
+
+def resolve_download_target(config: dict[str, Any], purpose: str = DOWNLOAD_PURPOSE_NORMAL) -> dict[str, Any]:
+    """download_targets.<purpose> de la config TIA, completado con DEFAULT_DOWNLOAD_TARGET."""
+    targets = config.get("download_targets") if isinstance(config.get("download_targets"), dict) else {}
+    raw = targets.get(purpose) if isinstance(targets.get(purpose), dict) else {}
+    target = {**DEFAULT_DOWNLOAD_TARGET, **raw}
+    target["target_type"] = str(target.get("target_type") or TARGET_TYPE_PLCSIM).strip().upper()
+    scope = str(target.get("download_scope") or "SOFTWARE").strip().upper()
+    target["download_scope"] = scope if scope in DOWNLOAD_SCOPES else "SOFTWARE"
+    target["start_modules"] = bool(target.get("start_modules", True))
+    return target
+
+
 def prepare_download_request(
     package_dir: Path,
-    project_root: Path | None = None
+    project_root: Path | None = None,
+    purpose: str = DOWNLOAD_PURPOSE_NORMAL
 ) -> tuple[Path, Path, dict[str, Any]]:
     root = project_root or get_project_root()
     config = load_tia_config(root)
-    compile_report_path = package_dir / "tia_compile_report.json"
+    target = resolve_download_target(config, purpose)
 
     request_path = package_dir / "tia_download_request.json"
     result_path = package_dir / "tia_download_report.json"
@@ -391,47 +483,103 @@ def prepare_download_request(
         "plc_name": str(config.get("plc_name", "")),
         "result_path": str(result_path.resolve()),
         "attach_to_running": bool(config.get("attach_to_running", True)),
-        "with_user_interface": bool(config.get("with_user_interface", True))
+        "with_user_interface": bool(config.get("with_user_interface", True)),
+        "purpose": purpose,
+        "require_simulation": purpose == DOWNLOAD_PURPOSE_EXPERIMENT,
+        "target_type": target["target_type"],
+        "target_name": str(target.get("target_name", "")),
+        "configuration_mode": str(target.get("configuration_mode", "")),
+        "pc_interface": str(target.get("pc_interface", "")),
+        "target_interface": str(target.get("target_interface", "")),
+        "download_scope": target["download_scope"],
+        "start_modules": target["start_modules"]
     }
     request_path.write_text(json.dumps(request, indent=2, ensure_ascii=False), encoding="utf-8")
     return request_path, result_path, request
 
 
-def download_program_to_plc(
-    package_dir: Path,
-    project_root: Path | None = None
+def _finalize_download_report(
+    raw: dict[str, Any],
+    target: dict[str, Any],
+    purpose: str,
+    started_at: datetime,
+    started_perf: float
 ) -> dict[str, Any]:
     """
-    Downloads the already-compiled PLC software (software/program only - never hardware
-    configuration) to the target PLC configured in the current TIA project. Never recompiles,
-    never creates or auto-detects hardware. The bridge itself refuses to guess an ambiguous
-    PLC or connection target (see Program.cs ExecuteDownload/ResolveUnambiguousTargetInterface).
+    Normaliza el reporte al schema de tia_download_report.json (seccion 9): estados SEPARADOS
+    (download_success / start_module_success / cpu_run_requested) y cpu_run_confirmed siempre
+    null hasta que exista lectura real del estado de la CPU (Runtime API, fase posterior).
+    """
+    completed_at = datetime.now()
+    bridge_status = str(raw.get("status", "TIA_DOWNLOAD_FAILED"))
+    download_success = bridge_status == "TIA_DOWNLOAD_PASSED" and bool(raw.get("success", True))
+    report = dict(raw)
+    report.update(
+        {
+            "status": "SUCCESS" if download_success else bridge_status,
+            "bridge_status": bridge_status,
+            "purpose": purpose,
+            "target_type": raw.get("target_type", target["target_type"]),
+            "target_name": raw.get("target_name") or target.get("target_name", ""),
+            "download_success": download_success,
+            "start_module_requested": bool(raw.get("start_module_requested", False)),
+            "start_module_success": raw.get("start_module_success") if download_success else False,
+            "cpu_run_requested": bool(raw.get("cpu_run_requested", False)) and download_success,
+            "cpu_run_confirmed": None,
+            "warnings": list(raw.get("warnings", []) or []),
+            "errors": list(raw.get("errors", []) or []),
+            "started_at": started_at.isoformat(timespec="seconds"),
+            "completed_at": completed_at.isoformat(timespec="seconds"),
+            "duration_ms": int(round((time.perf_counter() - started_perf) * 1000)),
+            "success": download_success
+        }
+    )
+    return report
+
+
+def download_program_to_plc(
+    package_dir: Path,
+    project_root: Path | None = None,
+    purpose: str = DOWNLOAD_PURPOSE_NORMAL
+) -> dict[str, Any]:
+    """
+    Downloads the already-compiled program of THIS package to the configured download target
+    (config download_targets.<purpose>), with explicit DownloadConfiguration handling and Start
+    Module in the bridge. Never recompiles, never touches network settings. purpose="experiment"
+    only ever accepts a PLCSIM_ADVANCED target: anything else aborts with
+    EXPERIMENT_TARGET_NOT_SIMULATION before the bridge is even invoked (and the bridge re-checks
+    the PC interface it actually resolved).
     """
     root = project_root or get_project_root()
+    started_at = datetime.now()
+    started_perf = time.perf_counter()
+    target = resolve_download_target(load_tia_config(root), purpose)
+    result_path = package_dir / "tia_download_report.json"
+
+    def _early(status: str, errors: list[str], extra: dict[str, Any] | None = None) -> dict[str, Any]:
+        raw = {"executed": False, "success": False, "status": status, "errors": errors, **(extra or {})}
+        report = _finalize_download_report(raw, target, purpose, started_at, started_perf)
+        package_dir.mkdir(parents=True, exist_ok=True)
+        result_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        return report
+
+    if purpose == DOWNLOAD_PURPOSE_EXPERIMENT and target["target_type"] != TARGET_TYPE_PLCSIM:
+        return _early(
+            "EXPERIMENT_TARGET_NOT_SIMULATION",
+            [f"El destino experimental configurado es {target['target_type']}; solo se admite {TARGET_TYPE_PLCSIM}."]
+        )
+
     diagnostic = diagnose_tia_openness(root)
     if not diagnostic["checks"].get("bridge_built"):
         build_result = build_openness_bridge(root)
         if not build_result.get("built"):
-            return {
-                "executed": False,
-                "success": False,
-                "status": "BRIDGE_BUILD_FAILED",
-                "diagnostic": diagnostic,
-                "build": build_result,
-                "errors": build_result.get("errors", [])
-            }
+            return _early("BRIDGE_BUILD_FAILED", list(build_result.get("errors", [])), {"build": build_result})
         diagnostic = diagnose_tia_openness(root)
 
     if not diagnostic.get("is_ready"):
-        return {
-            "executed": False,
-            "success": False,
-            "status": "TIA_NOT_READY",
-            "diagnostic": diagnostic,
-            "errors": diagnostic.get("warnings", [])
-        }
+        return _early("TIA_NOT_READY", list(diagnostic.get("warnings", [])), {"diagnostic": diagnostic})
 
-    request_path, result_path, request = prepare_download_request(package_dir, root)
+    request_path, result_path, request = prepare_download_request(package_dir, root, purpose)
     timeout_seconds = int(load_tia_config(root).get("timeout_seconds", 300))
     environment = os.environ.copy()
     portal_bin = str(DEFAULT_PORTAL_ROOT / "Bin")
@@ -445,12 +593,12 @@ def download_program_to_plc(
         check=False,
         env=environment
     )
-    report: dict[str, Any] = {}
+    raw: dict[str, Any] = {}
     if result_path.exists():
         payload = load_json_file(result_path)
         if isinstance(payload, dict):
-            report = payload
-    report.update(
+            raw = payload
+    raw.update(
         {
             "executed": True,
             "bridge_return_code": result.returncode,
@@ -461,6 +609,7 @@ def download_program_to_plc(
             "compile_report": str(package_dir / "tia_compile_report.json")
         }
     )
+    report = _finalize_download_report(raw, target, purpose, started_at, started_perf)
     result_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     return report
 

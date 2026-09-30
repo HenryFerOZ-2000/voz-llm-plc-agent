@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "variants": {
+    "D01": [
+      {"variant": "V1", "command": "Activa una salida durante cinco segundos cuando se presione el pulsador de inicio."},
+      {"variant": "V2", "command": "Genera un pulso de 5 segundos con Start."},
+      {"variant": "V3", "command": "Enciende la salida auxiliar por 5 segundos usando I_Start."}
+    ],
+    "D02": [
+      {"variant": "V1", "command": "Enciende el piloto de marcha mientras el sensor este activo."},
+      {"variant": "V2", "command": "Activa Q_Pilot_Run cuando el sensor detecte presencia."},
+      {"variant": "V3", "command": "Haz que la lampara siga el estado del sensor principal."}
+    ],
+    "D03": [
+      {"variant": "V1", "command": "Programa un arranque y parada de motor con los pulsadores de inicio y paro."},
+      {"variant": "V2", "command": "Haz que el motor se encienda con Start y se apague con Stop."},
+      {"variant": "V3", "command": "Genera la logica para arrancar el motor con I_Start y detenerlo con I_Stop."}
+    ],
+    "D04": [
+      {"variant": "V1", "command": "Manten el motor enclavado hasta que se presione el paro."},
+      {"variant": "V2", "command": "Haz un latch de marcha para el motor con Start y Stop."},
+      {"variant": "V3", "command": "Activa memoria de marcha para el motor usando I_Start."}
+    ],
+    "D05": [
+      {"variant": "V1", "command": "El paro de emergencia debe apagar el motor siempre."},
+      {"variant": "V2", "command": "Si hay emergencia, apaga el motor de inmediato."},
+      {"variant": "V3", "command": "La emergencia debe tener prioridad absoluta sobre el arranque del motor."}
+    ],
+    "D06": [
+      {"variant": "V1", "command": "Arranca el motor solo si el sensor confirma la condicion de seguridad, si no activa la alarma."},
+      {"variant": "V2", "command": "Permite el arranque unicamente cuando el sensor este activo, sino suena la alarma."},
+      {"variant": "V3", "command": "Habilita el motor con Start solo si I_Sensor1 esta activo, caso contrario activa Q_Alarm."}
+    ],
+    "D07": [
+      {"variant": "V1", "command": "Arranca el motor despues de un retardo de tres segundos."},
+      {"variant": "V2", "command": "Luego de 3 segundos, enciende el motor con Start."},
+      {"variant": "V3", "command": "Genera un arranque retardado de 3 segundos usando I_Start."}
+    ],
+    "D08": [
+      {"variant": "V1", "command": "Detén el motor 10 segundos despues de presionar el paro."},
+      {"variant": "V2", "command": "Apaga el motor 10 segundos despues de presionar Stop."},
+      {"variant": "V3", "command": "Genera un apagado retardado de 10 segundos con I_Stop."}
+    ],
+    "D09": [
+      {"variant": "V1", "command": "Cuenta cinco pulsos del sensor y activa la alarma."},
+      {"variant": "V2", "command": "Cuenta 5 pulsos con el sensor principal y enciende Q_Aux_Output."},
+      {"variant": "V3", "command": "Genera un contador de pulsos con preset 5 usando I_Sensor1."}
+    ],
+    "D10": [
+      {"variant": "V1", "command": "Reinicia el contador de pulsos con el pulsador de reset."},
+      {"variant": "V2", "command": "Resetea el contador de pulsos."},
+      {"variant": "V3", "command": "Genera la logica de reinicio del contador usando I_Reset."}
+    ],
+    "D11": [
+      {"variant": "V1", "command": "Arranca y detén el contactor A con los pulsadores de inicio y paro."},
+      {"variant": "V2", "command": "Haz que Q_Contactor_A se encienda con Start y se apague con Stop."},
+      {"variant": "V3", "command": "Genera el control de arranque y paro del contactor A con proteccion de emergencia."}
+    ],
+    "D12": [
+      {"variant": "V1", "command": "Evita que los dos contactores se activen al mismo tiempo."},
+      {"variant": "V2", "command": "Genera un enclavamiento mutuo entre el contactor A y el contactor B."},
+      {"variant": "V3", "command": "Programa el interbloqueo de Q_Contactor_A y Q_Contactor_B."}
+    ],
+    "D13": [
+      {"variant": "V1", "command": "Habilita el variador solo si no existe una alarma activa."},
+      {"variant": "V2", "command": "Permite el arranque del motor unicamente cuando no haya alarma."},
+      {"variant": "V3", "command": "Genera la habilitacion del motor con bloqueo por alarma activa."}
+    ],
+    "D14": [
+      {"variant": "V1", "command": "Selecciona la velocidad baja, media o alta del motor."},
+      {"variant": "V2", "command": "Permite elegir entre tres velocidades de operacion."},
+      {"variant": "V3", "command": "Genera el control de seleccion de velocidad del motor."}
+    ],
+    "D15": [
+      {"variant": "V1", "command": "Permite alternar el motor entre modo manual y modo automatico."},
+      {"variant": "V2", "command": "Cambia el control del motor entre manual y automatico."},
+      {"variant": "V3", "command": "Genera la logica de seleccion de modo manual o automatico para el motor."}
+    ],
+    "D16": [
+      {"variant": "V1", "command": "Ejecuta una secuencia automatica de tres pasos para el motor."},
+      {"variant": "V2", "command": "Genera una secuencia de 3 pasos controlada por Start."},
+      {"variant": "V3", "command": "Programa el paso a paso automatico del motor en tres etapas."}
+    ],
+    "D17": [
+      {"variant": "V1", "command": "Activa la alarma si el sensor no cambia de estado durante cinco segundos."},
+      {"variant": "V2", "command": "Genera un timeout de 5 segundos para el sensor principal."},
+      {"variant": "V3", "command": "Si el sensor permanece sin cambios por 5 segundos, activa Q_Alarm."}
+    ],
+    "D18": [
+      {"variant": "V1", "command": "Bloquea el arranque del motor mientras el modo mantenimiento este activo."},
+      {"variant": "V2", "command": "Impide encender el motor si esta en mantenimiento."},
+      {"variant": "V3", "command": "Genera el bloqueo de arranque por mantenimiento usando I_Maintenance."}
+    ],
+    "D19": [
+      {"variant": "V1", "command": "Indica mediante pilotos el estado detenido, en marcha o en falla."},
+      {"variant": "V2", "command": "Genera las senales de piloto para detenido, marcha y falla."},
+      {"variant": "V3", "command": "Muestra el estado del sistema con tres pilotos: detenido, marcha y falla."}
+    ],
+    "D20": [
+      {"variant": "V1", "command": "Ejecuta un ciclo automatico completo con reinicio y manejo de alarma."},
+      {"variant": "V2", "command": "Genera un ciclo automatico del motor con reset y alarma."},
+      {"variant": "V3", "command": "Programa el ciclo automatico completo usando Start, Stop, Reset y Emergency."}
+    ],
+    "P01": [
+      {"variant": "V1", "command": "Habilita el modo automatico."},
+      {"variant": "V2", "command": "Quiero que el sistema pase a modo automatico."},
+      {"variant": "V3", "command": "Activa Auto_Mode."}
+    ],
+    "P02": [
+      {"variant": "V1", "command": "Establece el nivel del tanque en 60 %."},
+      {"variant": "V2", "command": "Quiero que el sistema trabaje con un setpoint de nivel del sesenta por ciento."},
+      {"variant": "V3", "command": "Configura Level_SP en 60 %."}
+    ],
+    "P03": [
+      {"variant": "V1", "command": "Pon el nivel al 150 %."},
+      {"variant": "V2", "command": "Quiero un setpoint de nivel del ciento cincuenta por ciento."},
+      {"variant": "V3", "command": "Configura Level_SP en 150 %."}
+    ],
+    "P04": [
+      {"variant": "V1", "command": "Activa una alarma si el nivel supera el 90 %."},
+      {"variant": "V2", "command": "Quiero que suene la alarma cuando el nivel pase del noventa por ciento."},
+      {"variant": "V3", "command": "Genera alarma de nivel alto cuando Level_PV supere 90 %."}
+    ],
+    "P05": [
+      {"variant": "V1", "command": "Activa una alarma si el nivel baja del 10 %."},
+      {"variant": "V2", "command": "Quiero que suene la alarma cuando el nivel este por debajo del diez por ciento."},
+      {"variant": "V3", "command": "Genera alarma de nivel bajo cuando Level_PV caiga bajo 10 %."}
+    ],
+    "P06": [
+      {"variant": "V1", "command": "Habilita el PID solamente cuando el sistema este en automatico."},
+      {"variant": "V2", "command": "Quiero que el control PID solo funcione en modo automatico."},
+      {"variant": "V3", "command": "Condiciona PID_Enable a que Auto_Mode este activo."}
+    ],
+    "P07": [
+      {"variant": "V1", "command": "Desactiva el control PID si se activa la emergencia."},
+      {"variant": "V2", "command": "Quiero que el PID se deshabilite ante una parada de emergencia."},
+      {"variant": "V3", "command": "Fuerza PID_Enable a falso cuando ocurra I_Emergency."}
+    ],
+    "P08": [
+      {"variant": "V1", "command": "Permite operar la bomba en modo manual de forma limitada."},
+      {"variant": "V2", "command": "Quiero controlar la bomba manualmente sin perder las protecciones de seguridad."},
+      {"variant": "V3", "command": "Habilita Manual_Mode con operacion limitada de Q_Pump_Enable."}
+    ],
+    "P09": [
+      {"variant": "V1", "command": "Detecta un fallo de sensor si el valor de nivel esta fuera de rango."},
+      {"variant": "V2", "command": "Quiero que se marque una falla si la lectura del sensor de nivel es invalida."},
+      {"variant": "V3", "command": "Activa Sensor_Fault cuando Level_PV salga del rango valido."}
+    ],
+    "P10": [
+      {"variant": "V1", "command": "Permite el reset de la alarma solo cuando la condicion de fallo haya desaparecido."},
+      {"variant": "V2", "command": "Quiero reiniciar la alarma unicamente si ya no hay ninguna falla activa."},
+      {"variant": "V3", "command": "Condiciona el reset de alarma a que no existan fallos activos."}
+    ],
+    "P11": [
+      {"variant": "V1", "command": "Detén de forma segura la bomba y genera una alarma si el tanque alcanza un nivel de sobrellenado."},
+      {"variant": "V2", "command": "Quiero una parada segura de la bomba con alarma si el nivel llega a sobrellenado."},
+      {"variant": "V3", "command": "Activa Safe_Stop, desactiva Q_Pump_Enable y genera Q_Alarm ante sobrellenado."}
+    ],
+    "P12": [
+      {"variant": "V1", "command": "Activa el modo automatico, establece el setpoint en 60 %, habilita el PID, genera alarma si el nivel supera el 90 % y detén todo de forma segura ante sobrellenado, permitiendo reset solo cuando la falla desaparezca."},
+      {"variant": "V2", "command": "Quiero automatico con setpoint de sesenta por ciento, PID habilitado, alarma de nivel alto y parada segura con reset condicionado ante sobrellenado."},
+      {"variant": "V3", "command": "Configura Auto_Mode, Level_SP=60%, PID_Enable, High_Level_Alarm en 90%, Safe_Stop por sobrellenado y reset condicionado de alarma."}
+    ]
+  }
+}

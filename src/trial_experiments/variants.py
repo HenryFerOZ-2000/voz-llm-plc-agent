@@ -11,7 +11,22 @@ def get_variants_path(project_root: Path) -> Path:
     return project_root / "data" / "plc_maps" / VARIANTS_FILENAME
 
 
+def _catalog_variants(project_root: Path) -> dict[str, list[dict[str, str]]]:
+    """Benchmark v2: la fuente de verdad de los comandos es el catalogo canonico."""
+    from trial_experiments.benchmark_catalog import VARIANT_IDS, load_catalog
+
+    catalog = load_catalog(project_root)
+    return {
+        case["case_id"]: [{"variant": vid, "command": case["variants"][vid]} for vid in VARIANT_IDS if vid in case.get("variants", {})]
+        for case in catalog.get("cases", [])
+    }
+
+
 def load_all_variants(project_root: Path) -> dict[str, list[dict[str, str]]]:
+    catalog = _catalog_variants(project_root)
+    if catalog:
+        return catalog
+    # Compatibilidad: sin catalogo canonico se usa el archivo legacy (derivado del catalogo en v2).
     path = get_variants_path(project_root)
     if not path.exists():
         return {}

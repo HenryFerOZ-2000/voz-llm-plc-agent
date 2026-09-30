@@ -80,12 +80,23 @@ def test_bridge_normalize_address_self_test(tmp_path: Path) -> None:
 
     report = json.loads(result_path.read_text(encoding="utf-8"))
     assert report["status"] == "SELF_TEST_PASSED", report.get("errors")
-    checks = {(check["left"], check["right"]): check for check in report["checks"]}
-    assert checks[("%IX16.0", "%I16.0")]["actual_equal"] is True
-    assert checks[("%QX8.0", "%Q8.0")]["actual_equal"] is True
-    assert checks[("%MX0.3", "%M0.3")]["actual_equal"] is True
-    assert checks[("%I0.0", "%I16.0")]["actual_equal"] is False
-    assert checks[("%Q8.0", "%Q8.1")]["actual_equal"] is False
+    address_checks = {
+        (check["left"], check["right"]): check for check in report["checks"] if "left" in check
+    }
+    assert address_checks[("%IX16.0", "%I16.0")]["actual_equal"] is True
+    assert address_checks[("%QX8.0", "%Q8.0")]["actual_equal"] is True
+    assert address_checks[("%MX0.3", "%M0.3")]["actual_equal"] is True
+    assert address_checks[("%I0.0", "%I16.0")]["actual_equal"] is False
+    assert address_checks[("%Q8.0", "%Q8.1")]["actual_equal"] is False
+
+    # Seccion 26/16/27: PlanTagReconciliation (huerfanas, LOCKED persistentes, programa A -> B).
+    plan_checks = {check["bucket"]: check for check in report["checks"] if "bucket" in check}
+    assert plan_checks["section26.delete"]["actual"] == ["B", "C"]
+    assert plan_checks["section26.create"]["actual"] == ["D"]
+    assert plan_checks["section16.delete"]["actual"] == ["Q_Motor", "Q_Pilot_Run"]
+    assert plan_checks["section27.delete"]["actual"] == ["Q_OldMotor"]
+    assert set(plan_checks["section27.keep"]["actual"]) == {"I_Start", "I_Stop"}
+
     assert all(check["passed"] for check in report["checks"])
 
 

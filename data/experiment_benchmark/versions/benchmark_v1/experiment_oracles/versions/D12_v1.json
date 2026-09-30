@@ -1,0 +1,199 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D12",
+  "case_id": "D12",
+  "title": "D12 - Enclavamiento mutuo de dos contactores",
+  "description": "Impedir que dos contactores se activen simultaneamente. La orden de A activa el contactor A si B no esta activo; en ningun instante pueden estar A y B activos a la vez.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry",
+    "approved_at": "2026-09-29T17:28:07",
+    "version": 1,
+    "hash": "6072d98f37925aa2ab9df651b92a79a492ea2fb286046fa2692dcb6d8c3bef9d",
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion legacy D12",
+    "legacy_reference": "data/plc_maps/profiles.json D12 (INT_MUTUAL_INTERLOCK)"
+  },
+  "semantic_expectations": {
+    "accepted_intents": [
+      "INT_MUTUAL_INTERLOCK"
+    ],
+    "required_functions": [
+      "mutual_interlock"
+    ],
+    "required_roles": [
+      "COMMAND_A",
+      "COMMAND_B",
+      "CONTACTOR_A",
+      "CONTACTOR_B"
+    ],
+    "required_parameters": {},
+    "forbidden_intents": [],
+    "notes": "El enclavamiento se evidencia por el intent canonico INT_MUTUAL_INTERLOCK y se verifica con la invariante NEVER_TRUE_TOGETHER."
+  },
+  "roles": {
+    "COMMAND_A": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de activacion del contactor A.",
+      "semantic_paths": [
+        "command_a",
+        "contactor_a_command",
+        "start_a",
+        "trigger_input"
+      ]
+    },
+    "COMMAND_B": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de activacion del contactor B.",
+      "semantic_paths": [
+        "command_b",
+        "contactor_b_command",
+        "start_b",
+        "stop_input"
+      ]
+    },
+    "CONTACTOR_A": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Contactor A.",
+      "semantic_paths": [
+        "contactor_a"
+      ]
+    },
+    "CONTACTOR_B": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Contactor B.",
+      "semantic_paths": [
+        "contactor_b"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 2,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso."
+  },
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin ordenes, ambos contactores apagados. D12 legacy no define apagado: el estado inicial depende del reinicio no retentivo de la descarga.",
+      "set": {
+        "COMMAND_A": false,
+        "COMMAND_B": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Orden de A desde reposo: A se activa y B permanece apagado.",
+      "set": {
+        "COMMAND_A": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR_A": true,
+        "CONTACTOR_B": false
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Orden de B con A activo y su orden mantenida. Prioridad o transferencia no definidas por D12: solo se evalua la invariante.",
+      "set": {
+        "COMMAND_B": true
+      },
+      "wait_ms": 500,
+      "unspecified": [
+        "CONTACTOR_A",
+        "CONTACTOR_B"
+      ]
+    },
+    {
+      "id": "step_3",
+      "description": "Se retira la orden de A manteniendo B. Comportamiento no definido: solo invariante.",
+      "set": {
+        "COMMAND_A": false
+      },
+      "wait_ms": 500,
+      "unspecified": [
+        "CONTACTOR_A",
+        "CONTACTOR_B"
+      ]
+    },
+    {
+      "id": "step_4",
+      "description": "Ordenes simultaneas de A y B (desde el estado resultante). Resultado no definido por D12: solo invariante.",
+      "set": {
+        "COMMAND_A": true,
+        "COMMAND_B": true
+      },
+      "wait_ms": 500,
+      "unspecified": [
+        "CONTACTOR_A",
+        "CONTACTOR_B"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_AB_EXCLUSIVE",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "CONTACTOR_A",
+        "CONTACTOR_B"
+      ],
+      "severity": "CRITICAL",
+      "description": "CONTACTOR_A y CONTACTOR_B nunca pueden estar activos a la vez."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Ordenes a OFF.",
+      "set": {
+        "COMMAND_A": false,
+        "COMMAND_B": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence deben cumplirse.",
+    "safety_rule": "INV_AB_EXCLUSIVE se evalua en TODAS las muestras (precondicion, prueba y limpieza).",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D12-R1",
+      "status": "ACKNOWLEDGED",
+      "text": "La definicion legacy D12 no especifica que ocurre cuando ambas ordenes llegan simultaneamente, ni si una orden de B con A activo debe ignorarse o transferir. El Oracle NO fija un resultado: solo exige la invariante NEVER_TRUE_TOGETHER en steps 2-4.",
+      "acknowledged_by": "Henry",
+      "acknowledged_at": "2026-09-29T17:28:07"
+    },
+    {
+      "id": "D12-R2",
+      "status": "ACKNOWLEDGED",
+      "text": "D12 no define ordenes de mando propias. La plantilla INT_MUTUAL_INTERLOCK usa trigger_input como orden de A y stop_input como orden de B; los roles COMMAND_A/COMMAND_B aceptan esas rutas.",
+      "acknowledged_by": "Henry",
+      "acknowledged_at": "2026-09-29T17:28:07"
+    },
+    {
+      "id": "D12-R3",
+      "status": "ACKNOWLEDGED",
+      "text": "D12 no define un mecanismo de desactivacion de los contactores: el Oracle solo puede comprobar la activacion de A desde reposo. La precondicion (ambos OFF) depende del reinicio no retentivo tras la descarga; si no se cumple el resultado es REVIEW (ORACLE_PRECONDITION_FAILED).",
+      "acknowledged_by": "Henry",
+      "acknowledged_at": "2026-09-29T17:28:07"
+    }
+  ]
+}

@@ -1,0 +1,333 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D11",
+  "case_id": "D11",
+  "title": "D11 - Contactor con enclavamiento logico y proteccion de emergencia",
+  "description": "Arranque y paro de un contactor con autoretencion (START lo activa y queda enclavado; STOP lo desactiva). Si el programa liga una emergencia, esta desactiva el contactor y tiene prioridad.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D11 (INT_MOTOR_START_STOP)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D11 - Control de contactor",
+    "description": "Arranque y paro de un contactor individual con proteccion de emergencia.",
+    "reference_intent": "INT_MOTOR_START_STOP",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Reset",
+      "I_Start",
+      "I_Stop",
+      "Q_Alarm",
+      "Q_Contactor_A",
+      "Q_Pilot_Fault",
+      "Q_Pilot_Run"
+    ],
+    "variants": {
+      "V1": "Arranca y detén el contactor A con los pulsadores de inicio y paro.",
+      "V2": "Haz que Q_Contactor_A se encienda con Start y se apague con Stop.",
+      "V3": "Genera el control de arranque y paro del contactor A con proteccion de emergencia."
+    },
+    "researcher_summary": "Control de contactor con enclavamiento electrico/logico."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_MOTOR_START_STOP",
+      "INT_MOTOR_LATCH"
+    ],
+    "required_functions": [
+      "contactor_latch"
+    ],
+    "required_roles": [
+      "START",
+      "STOP",
+      "CONTACTOR"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de marcha.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "STOP": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de paro.",
+      "semantic_paths": [
+        "stop_input"
+      ]
+    },
+    "EMERGENCY": {
+      "kind": "INPUT",
+      "required": false,
+      "description": "Emergencia (opcional: solo la variante V3 la pide).",
+      "semantic_paths": [
+        "emergency_input"
+      ]
+    },
+    "CONTACTOR": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Contactor controlado.",
+      "semantic_paths": [
+        "contactor_output",
+        "contactor_a",
+        "motor_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 3,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    },
+    {
+      "id": "C-EMERGENCY",
+      "text": "Emergencia activa = TRUE (convencion del sistema: 'IF emergency THEN'). En el banco fisico el paro de emergencia es externo al PLC: este Oracle solo es evaluable en simulacion y nunca exige una senal I_Emergency en el mapa fisico; el rol solo existe si el programa del ensayo la liga."
+    },
+    {
+      "id": "C-D11-EM",
+      "text": "La emergencia solo aparece en la variante V3: sus pasos e invariante se evaluan unicamente si el programa la liga (rol opcional)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_emergency_off",
+      "description": "Si existe emergencia: inactiva.",
+      "set": {
+        "EMERGENCY": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    },
+    {
+      "id": "pre_stop",
+      "description": "STOP activo apaga cualquier enclavamiento previo.",
+      "set": {
+        "START": false,
+        "STOP": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "description": "Soltar STOP.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "START pulsado: el contactor se activa.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "START soltado: el contactor queda enclavado.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR": true
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "STOP pulsado: el contactor se desactiva.",
+      "set": {
+        "STOP": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": false
+      }
+    },
+    {
+      "id": "step_4",
+      "description": "STOP soltado: sigue desactivado.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR": false
+      }
+    },
+    {
+      "id": "em_1",
+      "description": "Con emergencia ligada: START activa el contactor.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": true
+      },
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    },
+    {
+      "id": "em_2",
+      "description": "Soltar START.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": true
+      },
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    },
+    {
+      "id": "em_3",
+      "description": "Emergencia: el contactor se desactiva.",
+      "set": {
+        "EMERGENCY": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": false
+      },
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    },
+    {
+      "id": "em_4",
+      "description": "START durante la emergencia: se ignora.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR": false
+      },
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    },
+    {
+      "id": "em_5",
+      "description": "Emergencia y START retirados: rearranque no definido.",
+      "set": {
+        "EMERGENCY": false,
+        "START": false
+      },
+      "wait_ms": 500,
+      "unspecified": [
+        "CONTACTOR"
+      ],
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_EMERGENCY_CONTACTOR",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "EMERGENCY",
+        "CONTACTOR"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "Con emergencia activa el contactor nunca esta activo (solo si el programa liga la emergencia)."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_stop",
+      "description": "Dejar el contactor desactivado.",
+      "set": {
+        "START": false,
+        "STOP": true
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "cleanup_release",
+      "description": "Entradas a OFF.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "cleanup_emergency",
+      "description": "Emergencia a OFF.",
+      "set": {
+        "EMERGENCY": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

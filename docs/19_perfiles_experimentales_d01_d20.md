@@ -1,5 +1,7 @@
 # 19 Mapas y Perfiles Experimentales D01-D20
 
+> **Benchmark v2.** La definicion funcional de cada caso (comando canonico y variantes V1/V2/V3) vive ahora en `data/experiment_cases/canonical_cases.json` (ver `experiment_command_catalog.md`); `profiles.json` y `experiment_variants.json` se generan desde ese catalogo. Esta pagina documenta el diseno de perfiles del benchmark v1: `allowed_variables` se conserva como metadata historica y ya no restringe el sistema experimental.
+
 ## Proposito
 
 Organiza el banco discreto de pruebas D01-D20 dentro del Mapa Maestro PLC (`18_mapa_maestro_plc.md`) sin crear un sistema paralelo: reutiliza el mismo formato de mapa, la misma biblioteca y la misma GUI. Introduce el concepto de **perfil**: un subconjunto minimo de variables fisicas autorizadas para un caso experimental especifico, aplicado como filtro sobre el mapa activo.
@@ -41,7 +43,7 @@ La lista original que definia cada perfil (segun la descripcion funcional del ca
 | D05 | media | I_Emergency, I_Start, Q_Alarm, Q_Aux_Output, Q_Motor_Enable | INT_EMERGENCY_PRIORITY |
 | D06 | media | I_Emergency, I_Reset, I_Sensor1, I_Start, Q_Alarm, Q_Motor_Enable | INT_SAFE_START_ALARM |
 | D07 | media | I_Emergency, I_Start, I_Stop, Q_Motor_Enable | INT_DELAYED_START |
-| D08 | media | I_Emergency, I_Start, I_Stop, Q_Motor_Enable | INT_DELAYED_STOP |
+| D08 | media | I_Emergency, I_Start, I_Stop, Q_Motor_Enable | INT_AUTO_STOP_TIMER (v2: paro tras 10 s de funcionamiento continuo; v1 usaba INT_DELAYED_STOP) |
 | D09 | media | I_Emergency, I_Reset, I_Sensor1, Q_Alarm, Q_Aux_Output | INT_COUNTER_PULSES |
 | D10 | media | I_Reset, I_Sensor1, Q_Aux_Output | INT_COUNTER_RESET |
 | D11 | alta | I_Emergency, I_Reset, I_Start, I_Stop, Q_Alarm, Q_Contactor_A, Q_Pilot_Fault, Q_Pilot_Run | INT_MOTOR_START_STOP (motor_output -> Q_Contactor_A) |

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from pathlib import Path
 
 from trial_experiments import (
@@ -123,7 +125,10 @@ def test_build_experiment_label_matches_required_format() -> None:
 def test_variants_are_loaded_from_json_not_hardcoded(project_root: Path) -> None:
     variants = load_variants_for_case(project_root, "D03")
     assert [entry["variant"] for entry in variants] == ["V1", "V2", "V3"]
-    assert get_variant_command(project_root, "D03", "V2") == "Haz que el motor se encienda con Start y se apague con Stop."
+    # Benchmark v2: la fuente de verdad de las variantes es el catalogo canonico (no el codigo).
+    catalog = json.loads((project_root / "data" / "experiment_cases" / "canonical_cases.json").read_text(encoding="utf-8"))
+    d03 = next(case for case in catalog["cases"] if case["case_id"] == "D03")
+    assert get_variant_command(project_root, "D03", "V2") == d03["variants"]["V2"]
 
 
 def test_all_twenty_cases_have_at_least_three_variants(project_root: Path) -> None:

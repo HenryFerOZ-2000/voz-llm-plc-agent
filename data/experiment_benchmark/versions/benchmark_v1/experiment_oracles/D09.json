@@ -1,0 +1,299 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D09",
+  "case_id": "D09",
+  "title": "D09 - Contar 5 pulsos y activar una salida",
+  "description": "Cada pulso del sensor incrementa un contador; al alcanzar 5 pulsos se activa la salida.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D09 (INT_COUNTER_PULSES)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D09 - Contar pulsos y activar salida",
+    "description": "Contar eventos discretos de un sensor y activar una salida al alcanzar un umbral.",
+    "reference_intent": "INT_COUNTER_PULSES",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Reset",
+      "I_Sensor1",
+      "Q_Alarm",
+      "Q_Aux_Output"
+    ],
+    "variants": {
+      "V1": "Cuenta cinco pulsos del sensor y activa la alarma.",
+      "V2": "Cuenta 5 pulsos con el sensor principal y enciende Q_Aux_Output.",
+      "V3": "Genera un contador de pulsos con preset 5 usando I_Sensor1."
+    },
+    "researcher_summary": "Contar 5 pulsos y activar una salida."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {
+      "preset": {
+        "type": "INTEGER",
+        "value": 5,
+        "if_missing": "NOT_EVALUABLE"
+      }
+    },
+    "accepted_intents": [
+      "INT_COUNTER_PULSES"
+    ],
+    "required_functions": [
+      "pulse_counter"
+    ],
+    "required_roles": [
+      "PULSE_INPUT",
+      "COUNT_OUTPUT"
+    ]
+  },
+  "roles": {
+    "PULSE_INPUT": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Sensor que genera los pulsos.",
+      "semantic_paths": [
+        "pulse_input",
+        "sensor_input",
+        "count_input"
+      ]
+    },
+    "RESET": {
+      "kind": "INPUT",
+      "required": false,
+      "description": "Reset del contador (opcional: solo para el estado inicial).",
+      "semantic_paths": [
+        "reset_input"
+      ]
+    },
+    "COUNT_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida activada al llegar a 5.",
+      "semantic_paths": [
+        "output",
+        "alarm_output",
+        "aux_output",
+        "count_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-D09-PULSE",
+      "text": "Pulsos de 200 ms ON / 200 ms OFF (flancos claros para cualquier detector de flanco)."
+    },
+    {
+      "id": "C-D09-HOLD",
+      "text": "'Activar una salida al alcanzar el umbral': la salida permanece activa tras el quinto pulso."
+    },
+    {
+      "id": "C-D09-INIT",
+      "text": "El contador parte de cero: con RESET ligado se pulsa; sin RESET se confia en el reinicio no retentivo de la descarga (si la salida ya estuviera activa, la precondicion falla -> REVIEW)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_reset_on",
+      "description": "Si existe RESET: contador a cero.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "requires_roles": [
+        "RESET"
+      ]
+    },
+    {
+      "id": "pre_reset_off",
+      "description": "Soltar RESET.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 300,
+      "requires_roles": [
+        "RESET"
+      ]
+    },
+    {
+      "id": "pre_idle",
+      "description": "Sin pulsos: salida apagada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "p1_on",
+      "description": "Pulso 1: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "p1_off",
+      "description": "Pulso 1: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "p2_on",
+      "description": "Pulso 2: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "p2_off",
+      "description": "Pulso 2: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "p3_on",
+      "description": "Pulso 3: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "p3_off",
+      "description": "Pulso 3: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "p4_on",
+      "description": "Pulso 4: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "p4_off",
+      "description": "Pulso 4: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "p5_on",
+      "description": "Quinto pulso: se alcanza el umbral.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "description": "Tras el quinto pulso la salida sigue activa.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": true
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "cleanup_reset_on",
+      "description": "Si existe RESET: contador a cero.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "requires_roles": [
+        "RESET"
+      ]
+    },
+    {
+      "id": "cleanup_reset_off",
+      "description": "RESET a OFF.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "RESET"
+      ]
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

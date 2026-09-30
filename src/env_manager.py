@@ -13,7 +13,7 @@ ENV_DEFAULTS = {
     "OPENAI_API_KEY": "",
     "PLC_LLM_MODEL": "",
     "PLC_TRANSCRIPTION_MODEL": "",
-    "PARSER_MODE": "hybrid",
+    "PARSER_MODE": "llm",
     "LLM_CONFIDENCE_THRESHOLD": "0.85",
     "ENABLE_LLM": "true",
     "ENABLE_VOICE": "true"
@@ -31,7 +31,7 @@ def _default_env_text() -> str:
         "OPENAI_API_KEY=\n"
         "PLC_LLM_MODEL=\n"
         "PLC_TRANSCRIPTION_MODEL=\n"
-        "PARSER_MODE=hybrid\n"
+        "PARSER_MODE=llm\n"
         "LLM_CONFIDENCE_THRESHOLD=0.85\n"
         "ENABLE_LLM=true\n"
         "ENABLE_VOICE=true\n"

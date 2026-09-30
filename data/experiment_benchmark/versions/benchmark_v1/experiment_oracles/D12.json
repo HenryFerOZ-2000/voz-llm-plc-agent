@@ -1,0 +1,249 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D12",
+  "case_id": "D12",
+  "title": "D12 - Evitar la activacion simultanea de dos contactores",
+  "description": "Cada contactor sigue su propia solicitud; nunca pueden estar activos los dos a la vez. No se define prioridad ni transferencia.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 2,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D12 (INT_MUTUAL_INTERLOCK)",
+    "previous_hash": "6072d98f37925aa2ab9df651b92a79a492ea2fb286046fa2692dcb6d8c3bef9d",
+    "change_log": "v2: redefinicion del investigador (Fase 3B s4): roles REQUEST_A/REQUEST_B, tests 1-4, sin prioridad ni transferencia; se cierran D12-R1/R2/R3.",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T18:41:48",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D12 - Enclavamiento de dos contactores",
+    "description": "Impedir que dos contactores se activen simultaneamente (interbloqueo mutuo).",
+    "reference_intent": "INT_MUTUAL_INTERLOCK",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Start",
+      "I_Stop",
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "variants": {
+      "V1": "Evita que los dos contactores se activen al mismo tiempo.",
+      "V2": "Genera un enclavamiento mutuo entre el contactor A y el contactor B.",
+      "V3": "Programa el interbloqueo de Q_Contactor_A y Q_Contactor_B."
+    },
+    "researcher_summary": "Evitar activacion simultanea de dos contactores."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_MUTUAL_INTERLOCK"
+    ],
+    "required_functions": [
+      "mutual_interlock"
+    ],
+    "required_roles": [
+      "REQUEST_A",
+      "REQUEST_B",
+      "CONTACTOR_A",
+      "CONTACTOR_B"
+    ]
+  },
+  "roles": {
+    "REQUEST_A": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Solicitud del contactor A.",
+      "semantic_paths": [
+        "request_a",
+        "command_a",
+        "contactor_a_request",
+        "start_a",
+        "input_a"
+      ]
+    },
+    "REQUEST_B": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Solicitud del contactor B.",
+      "semantic_paths": [
+        "request_b",
+        "command_b",
+        "contactor_b_request",
+        "start_b",
+        "input_b"
+      ]
+    },
+    "CONTACTOR_A": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Contactor A.",
+      "semantic_paths": [
+        "contactor_a"
+      ]
+    },
+    "CONTACTOR_B": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Contactor B.",
+      "semantic_paths": [
+        "contactor_b"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 2,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-D12-REQ",
+      "text": "Las solicitudes son senales mantenidas; cada contactor sigue su solicitud (tests 1-3, definidos por el investigador). No se exige transferencia, prioridad A/B, Stop general ni enclavamiento mantenido."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin solicitudes (estado inicial).",
+      "set": {
+        "REQUEST_A": false,
+        "REQUEST_B": false
+      },
+      "wait_ms": 500
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "test_1",
+      "description": "Solo A solicitado: A activo, B inactivo.",
+      "set": {
+        "REQUEST_A": true,
+        "REQUEST_B": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR_A": true,
+        "CONTACTOR_B": false
+      }
+    },
+    {
+      "id": "test_2",
+      "description": "Solo B solicitado: A inactivo, B activo.",
+      "set": {
+        "REQUEST_A": false,
+        "REQUEST_B": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": true
+      }
+    },
+    {
+      "id": "test_3",
+      "description": "Ninguna solicitud: ambos inactivos.",
+      "set": {
+        "REQUEST_A": false,
+        "REQUEST_B": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "description": "Ambas solicitudes a la vez: no se define cual gana; solo se exige la invariante.",
+      "set": {
+        "REQUEST_A": true,
+        "REQUEST_B": true
+      },
+      "wait_ms": 500,
+      "unspecified": [
+        "CONTACTOR_A",
+        "CONTACTOR_B"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_AB_EXCLUSIVE",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "CONTACTOR_A",
+        "CONTACTOR_B"
+      ],
+      "severity": "CRITICAL",
+      "description": "CONTACTOR_A y CONTACTOR_B nunca activos a la vez (todas las muestras)."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Solicitudes a OFF.",
+      "set": {
+        "REQUEST_A": false,
+        "REQUEST_B": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D12-R1",
+      "status": "RESOLVED",
+      "text": "La definicion legacy D12 no especifica que ocurre cuando ambas ordenes llegan simultaneamente, ni si una orden de B con A activo debe ignorarse o transferir. El Oracle NO fija un resultado: solo exige la invariante NEVER_TRUE_TOGETHER en steps 2-4.",
+      "resolution": "Resuelto en v2: test_4 no define ganador; solo la invariante NEVER_TRUE_TOGETHER (decision del investigador)."
+    },
+    {
+      "id": "D12-R2",
+      "status": "RESOLVED",
+      "text": "D12 no define ordenes de mando propias. La plantilla INT_MUTUAL_INTERLOCK usa trigger_input como orden de A y stop_input como orden de B; los roles COMMAND_A/COMMAND_B aceptan esas rutas.",
+      "resolution": "Resuelto en v2: roles REQUEST_A/REQUEST_B propios; se eliminan trigger_input/stop_input como sustitutos artificiales."
+    },
+    {
+      "id": "D12-R3",
+      "status": "RESOLVED",
+      "text": "D12 no define un mecanismo de desactivacion de los contactores: el Oracle solo puede comprobar la activacion de A desde reposo. La precondicion (ambos OFF) depende del reinicio no retentivo tras la descarga; si no se cumple el resultado es REVIEW (ORACLE_PRECONDITION_FAILED).",
+      "resolution": "Resuelto en v2: los tests 1-3 definen la desactivacion (cada contactor sigue su solicitud)."
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D12",
+      "expected_capability": "Cada contactor sigue su solicitud (REQUEST_A/B) con exclusion mutua.",
+      "current_behavior": "INT_MUTUAL_INTERLOCK usa trigger_input/stop_input como ordenes y enclava los contactores (nunca los desactiva).",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla con solicitudes request_a/request_b y contactores que siguen su solicitud.",
+      "text": "INT_MUTUAL_INTERLOCK usa trigger_input/stop_input como ordenes y enclava los contactores (nunca los desactiva)."
+    }
+  ]
+}

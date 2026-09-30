@@ -1,0 +1,213 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D13",
+  "case_id": "D13",
+  "title": "D13 - Variador habilitado solo sin alarma",
+  "description": "Con solicitud de marcha, el variador se habilita solo si no existe alarma activa; con alarma activa nunca se habilita.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D13 (INT_VFD_ENABLE_NO_ALARM)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T18:41:48",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D13 - Variador habilitado solo sin alarma",
+    "description": "Habilitar el variador unicamente cuando no exista una condicion de alarma activa.",
+    "reference_intent": "INT_VFD_ENABLE_NO_ALARM",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Start",
+      "I_Stop",
+      "Q_Alarm",
+      "Q_Motor_Enable"
+    ],
+    "variants": {
+      "V1": "Habilita el variador solo si no existe una alarma activa.",
+      "V2": "Permite el arranque del motor unicamente cuando no haya alarma.",
+      "V3": "Genera la habilitacion del motor con bloqueo por alarma activa."
+    },
+    "researcher_summary": "Activar variador solo si no existe alarma."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_VFD_ENABLE_NO_ALARM"
+    ],
+    "required_functions": [
+      "vfd_enable_without_alarm"
+    ],
+    "required_roles": [
+      "RUN_REQUEST",
+      "ALARM_ACTIVE",
+      "VFD_ENABLE"
+    ]
+  },
+  "roles": {
+    "RUN_REQUEST": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Solicitud de marcha del variador.",
+      "semantic_paths": [
+        "run_request",
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "ALARM_ACTIVE": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Condicion de alarma activa (entrada).",
+      "semantic_paths": [
+        "alarm_active",
+        "alarm_input",
+        "alarm_active_input",
+        "fault_input"
+      ]
+    },
+    "VFD_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion del variador.",
+      "semantic_paths": [
+        "vfd_enable_output",
+        "motor_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: activar variador solo si no existe alarma."
+    },
+    {
+      "id": "C-D13-ALARM",
+      "text": "ALARM_ACTIVE es una condicion de ENTRADA del ensayo (simulada). No se exige como se genera. Corrige la convencion legacy que trataba la alarma como salida (Q_Alarm)."
+    },
+    {
+      "id": "C-D13-REQUEST",
+      "text": "RUN_REQUEST es la orden de habilitacion: sin ella el variador no se habilita (step_0)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin solicitud ni alarma.",
+      "set": {
+        "RUN_REQUEST": false,
+        "ALARM_ACTIVE": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_0",
+      "description": "Sin solicitud de marcha: variador deshabilitado.",
+      "wait_ms": 300,
+      "expect": {
+        "VFD_ENABLE": false
+      }
+    },
+    {
+      "id": "step_1",
+      "description": "Solicitud sin alarma: variador habilitado.",
+      "set": {
+        "RUN_REQUEST": true,
+        "ALARM_ACTIVE": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "VFD_ENABLE": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Solicitud con alarma activa: variador deshabilitado.",
+      "set": {
+        "ALARM_ACTIVE": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "VFD_ENABLE": false
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_ALARM_VFD",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "ALARM_ACTIVE",
+        "VFD_ENABLE"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "ALARM_ACTIVE => NOT VFD_ENABLE."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "RUN_REQUEST": false,
+        "ALARM_ACTIVE": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D13-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define la fuente de la 'alarma activa'. El perfil legacy lista Q_Alarm (una SALIDA). Para que el caso sea verificable por I/O, el Oracle trata la alarma como una condicion de ENTRADA forzable. Confirmar; si la alarma debe ser una salida interna del programa, hace falta definir que la provoca.",
+      "resolution": "ALARM_ACTIVE es una condicion de entrada del ensayo (C-D13-ALARM) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D13",
+      "expected_capability": "Habilitacion del variador bloqueada por una condicion de alarma de ENTRADA.",
+      "current_behavior": "INT_VFD_ENABLE_NO_ALARM lee alarm_output (una salida que nadie escribe): ALARM_ACTIVE no se resuelve -> REVIEW.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Aceptar alarm_input (condicion de entrada) en la plantilla INT_VFD_ENABLE_NO_ALARM.",
+      "text": "INT_VFD_ENABLE_NO_ALARM lee alarm_output (una salida que nadie escribe): ALARM_ACTIVE no se resuelve -> REVIEW."
+    }
+  ]
+}

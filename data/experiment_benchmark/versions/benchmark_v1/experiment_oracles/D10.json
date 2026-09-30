@@ -1,0 +1,390 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D10",
+  "case_id": "D10",
+  "title": "D10 - Reinicio del contador mediante pulsador",
+  "description": "Tras contar hasta el umbral (salida activa), el pulsador de reinicio devuelve el contador a su estado inicial.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D10 (INT_COUNTER_RESET)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T18:41:48",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D10 - Reset de contador",
+    "description": "Permitir reiniciar manualmente el conteo de pulsos.",
+    "reference_intent": "INT_COUNTER_RESET",
+    "authorized_signals": [
+      "I_Reset",
+      "I_Sensor1",
+      "Q_Aux_Output"
+    ],
+    "variants": {
+      "V1": "Reinicia el contador de pulsos con el pulsador de reset.",
+      "V2": "Resetea el contador de pulsos.",
+      "V3": "Genera la logica de reinicio del contador usando I_Reset."
+    },
+    "researcher_summary": "Resetear contador mediante pulsador."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_COUNTER_RESET",
+      "INT_COUNTER_PULSES"
+    ],
+    "required_functions": [
+      "counter_reset"
+    ],
+    "required_roles": [
+      "PULSE_INPUT",
+      "RESET",
+      "COUNT_OUTPUT"
+    ]
+  },
+  "roles": {
+    "PULSE_INPUT": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Sensor que genera los pulsos.",
+      "semantic_paths": [
+        "pulse_input",
+        "sensor_input",
+        "count_input"
+      ]
+    },
+    "RESET": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Pulsador de reinicio del contador.",
+      "semantic_paths": [
+        "reset_input"
+      ]
+    },
+    "COUNT_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida del umbral del contador.",
+      "semantic_paths": [
+        "output",
+        "aux_output",
+        "count_output",
+        "alarm_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: resetear contador mediante pulsador de reinicio."
+    },
+    {
+      "id": "C-D10-D09",
+      "text": "D10 se evalua como extension del contador de D09: umbral 5 pulsos, salida activa al alcanzarlo."
+    },
+    {
+      "id": "C-D10-COUNTED",
+      "text": "Antes del reset se comprueba que existio un estado contado (salida activa tras 5 pulsos)."
+    },
+    {
+      "id": "C-D10-INITIAL",
+      "text": "'Estado inicial' se verifica con 4 pulsos tras el reset: la salida no se activa (el conteo parte de cero y no continua desde 5)."
+    },
+    {
+      "id": "C-D09-PULSE",
+      "text": "Pulsos de 200 ms ON / 200 ms OFF."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_reset_on",
+      "description": "Contador a cero.",
+      "set": {
+        "RESET": true,
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "pre_reset_off",
+      "description": "Soltar RESET: salida apagada.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "a1_on",
+      "description": "Pulso 1: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "a1_off",
+      "description": "Pulso 1: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "description": "Pulso 2: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "a2_off",
+      "description": "Pulso 2: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "description": "Pulso 3: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "a3_off",
+      "description": "Pulso 3: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "description": "Pulso 4: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "a4_off",
+      "description": "Pulso 4: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "a5_on",
+      "description": "Quinto pulso: estado contado (salida activa).",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "description": "El estado contado se mantiene antes del reset.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": true
+      }
+    },
+    {
+      "id": "reset_on",
+      "description": "RESET: la salida se desactiva.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "description": "RESET soltado: estado inicial (salida apagada).",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "description": "Pulso 1: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "b1_off",
+      "description": "Pulso 1: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "description": "Pulso 2: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "b2_off",
+      "description": "Pulso 2: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "description": "Pulso 3: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "b3_off",
+      "description": "Pulso 3: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "description": "Pulso 4: flanco de subida.",
+      "set": {
+        "PULSE_INPUT": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "b4_off",
+      "description": "Pulso 4: flanco de bajada.",
+      "set": {
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 200,
+      "expect": {
+        "COUNT_OUTPUT": false
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_reset_on",
+      "description": "Contador a cero.",
+      "set": {
+        "RESET": true,
+        "PULSE_INPUT": false
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "cleanup_reset_off",
+      "description": "Entradas a OFF.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D10-R1",
+      "status": "RESOLVED",
+      "text": "D10 no define el umbral ni la salida del contador. Convencion: el mismo contador de D09 (umbral 5, salida activa al alcanzarlo). Si D10 debe evaluarse sin salida observable, el caso no es verificable por I/O.",
+      "resolution": "D10 se evalua como extension del contador de D09 (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D10",
+      "expected_capability": "Contador con umbral y salida observable que el pulsador de reinicio pone a cero.",
+      "current_behavior": "INT_COUNTER_RESET solo reinicia el contador (CU := FALSE, sin salida): no cuenta pulsos ni activa salida.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Generar D10 como INT_COUNTER_PULSES con reset (o componer ambos).",
+      "text": "INT_COUNTER_RESET solo reinicia el contador (CU := FALSE, sin salida): no cuenta pulsos ni activa salida."
+    }
+  ]
+}

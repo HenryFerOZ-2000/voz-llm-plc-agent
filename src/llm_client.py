@@ -55,7 +55,7 @@ class PLCInterpretationLLMClient:
         if not self.config_path.exists():
             return {
                 "provider": "openai",
-                "parser_mode": "hybrid",
+                "parser_mode": "llm",
                 "model_from_env": "PLC_LLM_MODEL",
                 "transcription_model_from_env": "PLC_TRANSCRIPTION_MODEL",
                 "confidence_threshold": 0.85,

@@ -26,7 +26,7 @@ from utils import get_project_root, load_json_file
 
 DEFAULT_LLM_SETTINGS = {
     "provider": "openai",
-    "parser_mode": "hybrid",
+    "parser_mode": "llm",
     "model_from_env": "PLC_LLM_MODEL",
     "transcription_model_from_env": "PLC_TRANSCRIPTION_MODEL",
     "confidence_threshold": 0.85,
@@ -411,7 +411,7 @@ def _invoke_llm(
 
 def parse_with_mode(
     command_text: str,
-    mode: str = "hybrid",
+    mode: str = "llm",
     io_map: dict[str, Any] | None = None,
     intents_catalog: dict[str, Any] | None = None,
     safety_rules: dict[str, Any] | None = None,

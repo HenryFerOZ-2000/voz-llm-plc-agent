@@ -1,0 +1,248 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D05",
+  "case_id": "D05",
+  "title": "D05 - Prioridad del disparo de seguridad sobre el arranque",
+  "description": "Un disparo de seguridad apaga el motor y tiene prioridad sobre cualquier orden de arranque: mientras esta activo el motor nunca marcha.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D05 (INT_EMERGENCY_PRIORITY)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T18:41:48",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D05 - Prioridad de emergencia",
+    "description": "Forzar el apagado inmediato de salidas criticas ante condicion de emergencia.",
+    "reference_intent": "INT_EMERGENCY_PRIORITY",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Start",
+      "Q_Alarm",
+      "Q_Aux_Output",
+      "Q_Motor_Enable"
+    ],
+    "variants": {
+      "V1": "El paro de emergencia debe apagar el motor siempre.",
+      "V2": "Si hay emergencia, apaga el motor de inmediato.",
+      "V3": "La emergencia debe tener prioridad absoluta sobre el arranque del motor."
+    },
+    "researcher_summary": "Paro de emergencia con prioridad sobre cualquier orden de arranque."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_EMERGENCY_PRIORITY"
+    ],
+    "required_functions": [
+      "safety_trip_priority"
+    ],
+    "required_roles": [
+      "START_REQUEST",
+      "SAFETY_TRIP",
+      "MOTOR_MAIN"
+    ]
+  },
+  "roles": {
+    "START_REQUEST": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de arranque del ensayo.",
+      "semantic_paths": [
+        "start_request",
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "SAFETY_TRIP": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Condicion logica de seguridad SIMULADA (no es el E-stop fisico).",
+      "semantic_paths": [
+        "safety_trip",
+        "safety_trip_input",
+        "trip_input",
+        "emergency_input"
+      ]
+    },
+    "MOTOR_MAIN": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Marcha del motor.",
+      "semantic_paths": [
+        "motor_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: paro de emergencia con prioridad sobre cualquier orden de arranque."
+    },
+    {
+      "id": "C-D05-TRIP",
+      "text": "SAFETY_TRIP es una senal LOGICA de seguridad simulada/autorizada para el ensayo (activa = TRUE). No es el E-stop fisico real (externo al PLC en el banco) y el Oracle nunca exige una I_Emergency en el mapa fisico."
+    },
+    {
+      "id": "C-D05-START",
+      "text": "START_REQUEST explicito: hace observable que el disparo APAGA un motor en marcha y que ignora nuevas ordenes de arranque."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_trip",
+      "description": "Disparo activo sin arranque: estado seguro (motor apagado).",
+      "set": {
+        "SAFETY_TRIP": true,
+        "START_REQUEST": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "description": "Disparo retirado.",
+      "set": {
+        "SAFETY_TRIP": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Sin disparo, START_REQUEST: el motor marcha.",
+      "set": {
+        "START_REQUEST": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Disparo con START_REQUEST mantenido: el motor se apaga.",
+      "set": {
+        "SAFETY_TRIP": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Se retira la orden durante el disparo.",
+      "set": {
+        "START_REQUEST": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "step_4",
+      "description": "Nueva orden de arranque durante el disparo: se ignora.",
+      "set": {
+        "START_REQUEST": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "step_5",
+      "description": "Disparo y orden retirados: rearranque no definido por el caso.",
+      "set": {
+        "SAFETY_TRIP": false,
+        "START_REQUEST": false
+      },
+      "wait_ms": 500,
+      "unspecified": [
+        "MOTOR_MAIN"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_TRIP_MOTOR",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "SAFETY_TRIP",
+        "MOTOR_MAIN"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "SAFETY_TRIP => NOT MOTOR_MAIN (100 ms de propagacion)."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "SAFETY_TRIP": false,
+        "START_REQUEST": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D05-R1",
+      "status": "RESOLVED",
+      "text": "Las variantes V1/V2 solo exigen que la emergencia apague el motor; V3 menciona 'prioridad sobre el arranque'. Para comprobar que la emergencia APAGA un motor en marcha, el Oracle exige que START arranque el motor sin emergencia (step_1). Un programa sin funcion de arranque obtendria FAIL. Confirmar esta convencion.",
+      "resolution": "Cerrado con START_REQUEST explicito como convencion del caso (C-D05-START) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D05",
+      "expected_capability": "Ruta de arranque (START_REQUEST) subordinada al disparo de seguridad.",
+      "current_behavior": "INT_EMERGENCY_PRIORITY no tiene logica de arranque: el motor nunca se activa y step_1 falla.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Componer la prioridad de seguridad con una logica de arranque/memoria (p.ej. INT_MOTOR_START_STOP) o anadir START_REQUEST a la plantilla.",
+      "text": "INT_EMERGENCY_PRIORITY no tiene logica de arranque: el motor nunca se activa y step_1 falla."
+    }
+  ]
+}

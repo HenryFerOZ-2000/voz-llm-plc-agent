@@ -1,0 +1,381 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P12",
+  "case_id": "P12",
+  "title": "P12 - Secuencia completa: automatico, setpoint, alarma y recuperacion",
+  "description": "Automatico + setpoint 60 % + PID habilitado; alarma alta > 90 %; parada segura ante sobrellenado; reset solo sin falla y recuperacion segura.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P12 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "P12 - Secuencia completa (composicion)",
+    "description": "Prueba de integracion del mecanismo compositivo: automatico + setpoint + PID habilitado + alarma/fallo + recuperacion segura, combinando functional_requirements ya existentes sin una plantilla monolitica nueva.",
+    "reference_intent": "INT_PID_SUPERVISOR",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Reset",
+      "Q_Pump_Enable",
+      "Q_Alarm"
+    ],
+    "variants": {
+      "V1": "Activa el modo automatico, establece el setpoint en 60 %, habilita el PID, genera alarma si el nivel supera el 90 % y detén todo de forma segura ante sobrellenado, permitiendo reset solo cuando la falla desaparezca.",
+      "V2": "Quiero automatico con setpoint de sesenta por ciento, PID habilitado, alarma de nivel alto y parada segura con reset condicionado ante sobrellenado.",
+      "V3": "Configura Auto_Mode, Level_SP=60%, PID_Enable, High_Level_Alarm en 90%, Safe_Stop por sobrellenado y reset condicionado de alarma."
+    },
+    "researcher_summary": "Secuencia completa: automatico -> setpoint -> alarma -> recuperacion."
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "REAL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "set_auto_mode",
+      "set_level_setpoint",
+      "enable_pid",
+      "high_level_alarm",
+      "safe_overfill_stop",
+      "conditional_alarm_reset"
+    ],
+    "required_functions": [
+      "composition"
+    ],
+    "required_roles": [
+      "LEVEL_PV",
+      "RESET",
+      "AUTO_MODE",
+      "LEVEL_SP",
+      "PID_ENABLE",
+      "HIGH_LEVEL_ALARM",
+      "SAFE_STOP",
+      "PUMP",
+      "ALARM"
+    ]
+  },
+  "roles": {
+    "LEVEL_PV": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Nivel medido (simulado, %).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_PV"
+      ]
+    },
+    "RESET": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Reset de alarma.",
+      "semantic_paths": [
+        "reset_input"
+      ]
+    },
+    "AUTO_MODE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Modo automatico.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Auto_Mode"
+      ]
+    },
+    "LEVEL_SP": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Setpoint de nivel (%).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_SP"
+      ]
+    },
+    "PID_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion del PID.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "PID_Enable"
+      ]
+    },
+    "HIGH_LEVEL_ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Alarma de nivel alto.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "High_Level_Alarm"
+      ]
+    },
+    "SAFE_STOP": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Parada segura.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Safe_Stop"
+      ]
+    },
+    "PUMP": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion de la bomba.",
+      "semantic_paths": [
+        "pump_output"
+      ]
+    },
+    "ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida de alarma.",
+      "semantic_paths": [
+        "alarm_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 2,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Limites tomados de config/pid_supervisor_config.json (setpoint 10-90 %, alarma alta 90 %, baja 10 %, sobrellenado 95 %, rango valido del sensor 0-100 %). Level_PV se inyecta como valor de proceso simulado."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_normal",
+      "description": "Nivel normal.",
+      "set": {
+        "LEVEL_PV": 50.0,
+        "RESET": false
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "pre_reset_on",
+      "description": "Borrar alarmas previas.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "pre_reset_off",
+      "description": "Soltar RESET.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SAFE_STOP": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Automatico, setpoint 60 % y PID habilitado.",
+      "wait_ms": 500,
+      "expect": {
+        "AUTO_MODE": true,
+        "LEVEL_SP": {
+          "approx": 60.0,
+          "tolerance": 0.01
+        },
+        "PID_ENABLE": true,
+        "HIGH_LEVEL_ALARM": false
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Nivel 92 %: alarma alta (sin sobrellenado).",
+      "set": {
+        "LEVEL_PV": 92.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "HIGH_LEVEL_ALARM": true,
+        "ALARM": true,
+        "SAFE_STOP": false,
+        "PID_ENABLE": true
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Nivel 96 %: parada segura, PID y bomba deshabilitados.",
+      "set": {
+        "LEVEL_PV": 96.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SAFE_STOP": true,
+        "PID_ENABLE": false,
+        "PUMP": false,
+        "ALARM": true
+      }
+    },
+    {
+      "id": "step_4",
+      "description": "RESET con la falla presente: no se borra.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "ALARM": true,
+        "SAFE_STOP": true
+      }
+    },
+    {
+      "id": "step_5",
+      "description": "Soltar RESET.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "step_6",
+      "description": "El nivel vuelve a 50 %: alarma alta desaparece.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "HIGH_LEVEL_ALARM": false
+      }
+    },
+    {
+      "id": "step_7",
+      "description": "RESET sin falla: alarma y parada segura se borran.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "ALARM": false,
+        "SAFE_STOP": false
+      }
+    },
+    {
+      "id": "step_8",
+      "description": "Soltar RESET: recuperacion segura (PID habilitado de nuevo).",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": true
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_SP_RANGE",
+      "type": "IN_RANGE",
+      "roles": [
+        "LEVEL_SP"
+      ],
+      "min": 10.0,
+      "max": 90.0,
+      "severity": "CRITICAL",
+      "description": "Setpoint siempre en el rango seguro."
+    },
+    {
+      "id": "INV_SAFESTOP_PUMP",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "SAFE_STOP",
+        "PUMP"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "Con parada segura la bomba nunca esta habilitada."
+    },
+    {
+      "id": "INV_SAFESTOP_PID",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "SAFE_STOP",
+        "PID_ENABLE"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "Con parada segura el PID nunca esta habilitado."
+    },
+    {
+      "id": "INV_PID_ONLY_AUTO",
+      "type": "IMPLIES",
+      "roles": [
+        "PID_ENABLE",
+        "AUTO_MODE"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "PID_Enable implica Auto_Mode."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup",
+      "description": "Valores base.",
+      "set": {
+        "LEVEL_PV": 50.0,
+        "RESET": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

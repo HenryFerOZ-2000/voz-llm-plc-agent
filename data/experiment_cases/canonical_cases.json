@@ -1,0 +1,2337 @@
+{
+  "schema_version": 1,
+  "benchmark_version": 2,
+  "methodology_note": "Los comandos canonicos mantienen la formulacion original cuando esta es suficientemente inequivoca y anaden unicamente la informacion necesaria para definir un comportamiento PLC evaluable.",
+  "cases": [
+    {
+      "case_id": "D01",
+      "title": "Salida temporizada de 5 s",
+      "family": "DISCRETE",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Activar una salida digital durante 5 segundos al presionar un pulsador.",
+      "canonical_command": "Activa una salida digital durante 5 segundos al presionar un pulsador.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "salida"
+          ],
+          "triggers": [
+            "PULSADOR"
+          ],
+          "functions": [
+            "timed_pulse"
+          ],
+          "times": {
+            "pulse_duration_s": 5
+          }
+        },
+        "roles": {
+          "START": "pulsador",
+          "AUX_OUTPUT": "salida digital"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "La salida se activa al presionar el pulsador.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "La salida permanece activa 5 s y despues se desactiva.",
+          "oracle_evidence": [
+            "step_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Pulsador en OFF y salida apagada antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Al presionar el pulsador, activa la salida digital durante 5 segundos.",
+        "V2": "Cuando se presione el pulsador, quiero que la salida se encienda durante cinco segundos.",
+        "V3": "Genera un pulso de salida de 5 segundos cada vez que se presione el pulsador."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "pulsador|boton|pulsante",
+          "salida",
+          "segundo"
+        ],
+        "numbers": [
+          5
+        ]
+      },
+      "reference_intent": "INT_TIMED_PULSE"
+    },
+    {
+      "case_id": "D02",
+      "title": "Lampara mientras la entrada este activa",
+      "family": "DISCRETE",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Encender una lampara cuando una entrada digital este activa.",
+      "canonical_command": "Enciende una lámpara mientras una entrada digital esté activa.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "lampara"
+          ],
+          "triggers": [
+            "ENTRADA"
+          ],
+          "functions": [
+            "follow_input"
+          ]
+        },
+        "roles": {
+          "SENSOR": "entrada digital",
+          "LAMP": "lampara"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con la entrada activa la lampara esta encendida.",
+          "oracle_evidence": [
+            "step_1",
+            "step_3"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Con la entrada inactiva la lampara esta apagada ('mientras').",
+          "oracle_evidence": [
+            "step_0",
+            "step_2",
+            "step_4"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Entrada en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Enciende la lámpara mientras la entrada digital esté activa.",
+        "V2": "Quiero que la lámpara esté encendida solo mientras la entrada esté activa.",
+        "V3": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "lampara|piloto|luz",
+          "entrada",
+          "mientras|se apague cuando|solo"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_DIRECT_OUTPUT"
+    },
+    {
+      "case_id": "D03",
+      "title": "Arranque y paro con memoria de marcha",
+      "family": "DISCRETE",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Arranque y parada de motor con pulsadores independientes.",
+      "canonical_command": "Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "motor"
+          ],
+          "triggers": [
+            "START",
+            "STOP"
+          ],
+          "functions": [
+            "start",
+            "maintained_run",
+            "stop"
+          ]
+        },
+        "roles": {
+          "START": "Start",
+          "STOP": "Stop",
+          "MOTOR_MAIN": "motor"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Start enciende el motor.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "El motor sigue encendido al soltar el pulsador (memoria de marcha).",
+          "oracle_evidence": [
+            "step_2"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Stop apaga el motor.",
+          "oracle_evidence": [
+            "step_3",
+            "step_4"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Antes de la prueba: Start=OFF, Stop=ON y despues Stop=OFF, para garantizar el motor apagado (no es requisito del comando)."
+      ],
+      "variants": {
+        "V1": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop.",
+        "V2": "Quiero encender el motor con Start y que siga encendido aunque suelte el botón; con Stop se apaga.",
+        "V3": "Con memoria de marcha: Start enciende el motor, que permanece encendido al soltar el pulsador, y Stop lo apaga."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b|arranc|arranque|inicio",
+          "\\bstop\\b",
+          "motor",
+          "mantenlo|siga encendido|permanece|memoria|enclav"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_MOTOR_START_STOP"
+    },
+    {
+      "case_id": "D04",
+      "title": "Motor enclavado con Start y Stop",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Arranque enclavado de motor con memoria de marcha.",
+      "canonical_command": "Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "motor"
+          ],
+          "triggers": [
+            "START",
+            "STOP"
+          ],
+          "functions": [
+            "start",
+            "latch",
+            "stop"
+          ]
+        },
+        "roles": {
+          "START": "Start",
+          "STOP": "Stop",
+          "MOTOR_MAIN": "motor"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Start enciende el motor.",
+          "oracle_evidence": [
+            "step_1",
+            "step_5"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "El motor queda enclavado al soltar el pulsador.",
+          "oracle_evidence": [
+            "step_2",
+            "step_6"
+          ],
+          "note": "step_5/6 repiten R1/R2 tras un paro: misma funcion ejercida dos veces (no es un requisito nuevo)."
+        },
+        {
+          "id": "R3",
+          "text": "Stop apaga el motor.",
+          "oracle_evidence": [
+            "step_3",
+            "step_4"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Stop pulsado antes de la prueba para garantizar el motor apagado; al final se deja el motor detenido."
+      ],
+      "variants": {
+        "V1": "Enclava el motor con Start para que siga encendido al soltar el pulsador y apágalo con Stop.",
+        "V2": "Haz un enclavamiento: el motor arranca con Start, se queda encendido aunque se suelte el botón y se apaga con Stop.",
+        "V3": "Con Stop se apaga el motor; con Start se enciende y queda enclavado aunque se suelte el pulsador."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b|arranc|arranque|inicio",
+          "\\bstop\\b",
+          "motor",
+          "enclav|siga encendido|se queda encendido"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_MOTOR_LATCH"
+    },
+    {
+      "case_id": "D05",
+      "title": "Prioridad de la condicion de emergencia sobre el arranque",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Paro de emergencia con prioridad sobre cualquier orden de arranque.",
+      "canonical_command": "Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "motor"
+          ],
+          "triggers": [
+            "START",
+            "EMERGENCIA"
+          ],
+          "functions": [
+            "start",
+            "safety_priority",
+            "start_block"
+          ]
+        },
+        "roles": {
+          "START_REQUEST": "Start",
+          "SAFETY_TRIP": "condicion de emergencia (logica simulada)",
+          "MOTOR_MAIN": "motor"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "La emergencia es una condicion LOGICA simulada para el ensayo; no es el E-stop fisico ni exige I_Emergency en el mapa real."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con la seguridad normal, Start enciende el motor.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "La emergencia apaga el motor.",
+          "oracle_evidence": [
+            "step_2"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Mientras la emergencia esta activa, el arranque esta bloqueado.",
+          "oracle_evidence": [
+            "step_3",
+            "step_4",
+            "INV_TRIP_MOTOR"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Antes de la prueba se activa y retira la emergencia para garantizar el motor apagado."
+      ],
+      "variants": {
+        "V1": "Arranca el motor con Start solo si la condición de seguridad es normal; si se activa la emergencia, apágalo y bloquea el arranque mientras siga activa.",
+        "V2": "Quiero que el motor arranque con Start únicamente con la seguridad normal, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+        "V3": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; con la seguridad normal, Start enciende el motor."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b",
+          "motor",
+          "emergencia",
+          "apag",
+          "bloque|no deje|no puede|impid"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_EMERGENCY_PRIORITY"
+    },
+    {
+      "case_id": "D06",
+      "title": "Alarma por arranque sin condicion de seguridad",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Activar alarma si se intenta arrancar sin condicion de seguridad.",
+      "canonical_command": "Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "alarma"
+          ],
+          "triggers": [
+            "START",
+            "SEGURIDAD"
+          ],
+          "functions": [
+            "unsafe_start_alarm"
+          ]
+        },
+        "roles": {
+          "START_REQUEST": "intento de arranque",
+          "SAFETY_OK": "condicion de seguridad",
+          "ALARM": "alarma"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Un intento de arranque sin la condicion de seguridad activa la alarma.",
+          "oracle_evidence": [
+            "step_4"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Con la condicion cumplida, el arranque no activa la alarma (condicional 'si').",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Condicion de seguridad presente y sin intento de arranque antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Activa una alarma si se intenta arrancar sin que se cumpla la condición de seguridad.",
+        "V2": "Quiero que suene una alarma cuando alguien intente arrancar el sistema sin la condición de seguridad cumplida.",
+        "V3": "Un intento de arranque sin la condición de seguridad debe activar la alarma."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "arranc|arranque",
+          "seguridad",
+          "alarma"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_SAFE_START_ALARM"
+    },
+    {
+      "case_id": "D07",
+      "title": "Arranque retardado 3 s con Start mantenido",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Arranque retardado 3 s.",
+      "canonical_command": "Mientras Start permanezca activo, espera 3 segundos antes de encender el motor.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "motor"
+          ],
+          "triggers": [
+            "START (mantenido)"
+          ],
+          "functions": [
+            "delayed_start"
+          ],
+          "times": {
+            "delay_s": 3
+          }
+        },
+        "roles": {
+          "START": "Start",
+          "MOTOR_MAIN": "motor"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con Start activo, el motor sigue apagado durante los 3 s.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Tras 3 s con Start activo, el motor se enciende.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Start en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Con Start activo, espera 3 segundos y luego enciende el motor.",
+        "V2": "Quiero que el motor arranque tres segundos después de activar Start, siempre que Start siga activo.",
+        "V3": "Retarda 3 segundos el encendido del motor mientras se mantenga activo Start."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b",
+          "motor",
+          "segundo",
+          "activo|mantenga|siga activo"
+        ],
+        "numbers": [
+          3
+        ]
+      },
+      "reference_intent": "INT_DELAYED_START"
+    },
+    {
+      "case_id": "D08",
+      "title": "Paro automatico tras 10 s de funcionamiento continuo",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Apagar motor despues de 10 segundos de operacion continua.",
+      "canonical_command": "Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "motor"
+          ],
+          "triggers": [
+            "START"
+          ],
+          "functions": [
+            "start",
+            "auto_stop"
+          ],
+          "times": {
+            "operation_duration_s": 10
+          }
+        },
+        "roles": {
+          "START": "Start",
+          "MOTOR_MAIN": "motor"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Al activar Start el motor se enciende.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Tras 10 s de funcionamiento continuo el motor se apaga automaticamente.",
+          "oracle_evidence": [
+            "step_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Start en OFF durante 11 s antes de la prueba (cualquier operacion previa expira)."
+      ],
+      "variants": {
+        "V1": "Enciende el motor con Start y apágalo automáticamente después de 10 segundos de funcionamiento.",
+        "V2": "Haz que el motor arranque con Start y se detenga solo tras funcionar durante 10 segundos.",
+        "V3": "Cuando se active Start, mantén el motor funcionando 10 segundos y después apágalo."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b",
+          "motor",
+          "segundo",
+          "apag|deten"
+        ],
+        "numbers": [
+          10
+        ]
+      },
+      "reference_intent": "INT_AUTO_STOP_TIMER"
+    },
+    {
+      "case_id": "D09",
+      "title": "Contador de 5 pulsos",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Contar 5 pulsos y activar una salida.",
+      "canonical_command": "Cuenta 5 pulsos de una entrada digital y, al llegar al quinto, activa una salida.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "salida"
+          ],
+          "triggers": [
+            "ENTRADA (pulsos)"
+          ],
+          "functions": [
+            "count",
+            "threshold_output"
+          ],
+          "counts": {
+            "preset": 5
+          }
+        },
+        "roles": {
+          "PULSE_INPUT": "entrada digital",
+          "COUNT_OUTPUT": "salida"
+        },
+        "harness_roles": [
+          "RESET"
+        ],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Antes del quinto pulso la salida no se activa.",
+          "oracle_evidence": [
+            "p1_off",
+            "p2_off",
+            "p3_off",
+            "p4_off"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Al llegar al quinto pulso se activa la salida.",
+          "oracle_evidence": [
+            "p5_on",
+            "p5_off"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Contador a cero antes de la prueba (con Reset si el programa lo tiene; si no, por el reinicio tras la descarga)."
+      ],
+      "variants": {
+        "V1": "Cuenta 5 pulsos de la entrada digital y activa una salida al llegar al quinto.",
+        "V2": "Quiero que se cuenten los pulsos de la entrada y que, cuando lleguen a cinco, se active la salida.",
+        "V3": "Al recibir el quinto pulso de la entrada digital, activa la salida."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "pulso",
+          "entrada",
+          "salida"
+        ],
+        "numbers": [
+          5
+        ]
+      },
+      "reference_intent": "INT_COUNTER_PULSES"
+    },
+    {
+      "case_id": "D10",
+      "title": "Contador de 5 pulsos con Reset",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Resetear contador mediante pulsador.",
+      "canonical_command": "Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "salida",
+            "contador"
+          ],
+          "triggers": [
+            "PULSOS",
+            "RESET"
+          ],
+          "functions": [
+            "count",
+            "threshold_output",
+            "counter_reset"
+          ],
+          "counts": {
+            "preset": 5,
+            "reset_value": 0
+          }
+        },
+        "roles": {
+          "PULSE_INPUT": "pulsos",
+          "RESET": "Reset",
+          "COUNT_OUTPUT": "salida"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con 5 pulsos se activa la salida.",
+          "oracle_evidence": [
+            "a1_off",
+            "a2_off",
+            "a3_off",
+            "a4_off",
+            "a5_on",
+            "a5_off"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Reset apaga la salida.",
+          "oracle_evidence": [
+            "reset_on",
+            "reset_off"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Reset reinicia el contador a cero (4 pulsos despues no activan la salida).",
+          "oracle_evidence": [
+            "b1_off",
+            "b2_off",
+            "b3_off",
+            "b4_off"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Reset pulsado antes de la prueba y al final (contador a cero)."
+      ],
+      "variants": {
+        "V1": "Cuenta 5 pulsos y activa una salida al llegar a cinco; con Reset, pon el contador a cero y apaga la salida.",
+        "V2": "Quiero contar cinco pulsos para activar la salida, y que al pulsar Reset el contador vuelva a cero y la salida se apague.",
+        "V3": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "pulso",
+          "salida",
+          "\\breset\\b",
+          "apag"
+        ],
+        "numbers": [
+          0,
+          5
+        ]
+      },
+      "reference_intent": "INT_COUNTER_RESET"
+    },
+    {
+      "case_id": "D11",
+      "title": "Contactor con enclavamiento de marcha",
+      "family": "DISCRETE",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Control de contactor con enclavamiento electrico/logico.",
+      "canonical_command": "Controla un contactor con Start y Stop usando enclavamiento de marcha.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "contactor"
+          ],
+          "triggers": [
+            "START",
+            "STOP"
+          ],
+          "functions": [
+            "start",
+            "latch",
+            "stop"
+          ]
+        },
+        "roles": {
+          "START": "Start",
+          "STOP": "Stop",
+          "CONTACTOR": "contactor"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Start activa el contactor.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "El contactor queda enclavado al soltar Start.",
+          "oracle_evidence": [
+            "step_2"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Stop desactiva el contactor.",
+          "oracle_evidence": [
+            "step_3",
+            "step_4"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Stop pulsado antes de la prueba para garantizar el contactor desactivado."
+      ],
+      "variants": {
+        "V1": "Controla el contactor con Start y Stop con enclavamiento de marcha.",
+        "V2": "Quiero que el contactor se active con Start, quede enclavado y se desactive con Stop.",
+        "V3": "Usa un enclavamiento de marcha para que Start conecte el contactor y Stop lo desconecte."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "contactor",
+          "\\bstart\\b",
+          "\\bstop\\b",
+          "enclav"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_MOTOR_START_STOP"
+    },
+    {
+      "case_id": "D12",
+      "title": "Dos contactores con ordenes independientes e interbloqueo",
+      "family": "DISCRETE",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Interlock: evitar activacion simultanea de dos contactores.",
+      "canonical_command": "Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "contactor A",
+            "contactor B"
+          ],
+          "triggers": [
+            "ORDEN A",
+            "ORDEN B"
+          ],
+          "functions": [
+            "follow_request",
+            "mutual_exclusion"
+          ]
+        },
+        "roles": {
+          "REQUEST_A": "orden A",
+          "REQUEST_B": "orden B",
+          "CONTACTOR_A": "contactor A",
+          "CONTACTOR_B": "contactor B"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Cada contactor responde a su propia orden.",
+          "oracle_evidence": [
+            "test_1",
+            "test_2",
+            "test_3"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Nunca estan los dos activos al mismo tiempo.",
+          "oracle_evidence": [
+            "INV_AB_EXCLUSIVE"
+          ],
+          "note": "test_4 (ambas ordenes) solo ejerce la invariante; no define ganador."
+        }
+      ],
+      "test_harness_setup": [
+        "Ambas ordenes en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+        "V2": "Cada uno de los dos contactores tiene su propia orden, pero nunca pueden estar los dos encendidos al mismo tiempo.",
+        "V3": "Con dos órdenes independientes maneja dos contactores, impidiendo que se activen simultáneamente."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "contactor",
+          "orden",
+          "a la vez|al mismo tiempo|simultane"
+        ],
+        "numbers": [
+          2
+        ]
+      },
+      "reference_intent": "INT_MUTUAL_INTERLOCK"
+    },
+    {
+      "case_id": "D13",
+      "title": "Variador habilitado solo sin alarma",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Activar variador solo si no existe alarma.",
+      "canonical_command": "Ante una orden de marcha, habilita el variador solo si no existe una alarma activa.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "variador"
+          ],
+          "triggers": [
+            "ORDEN DE MARCHA",
+            "ALARMA"
+          ],
+          "functions": [
+            "permissive_enable"
+          ]
+        },
+        "roles": {
+          "RUN_REQUEST": "orden de marcha",
+          "ALARM_ACTIVE": "alarma activa",
+          "VFD_ENABLE": "variador"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con orden de marcha y sin alarma, el variador se habilita.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Con alarma activa el variador no se habilita.",
+          "oracle_evidence": [
+            "step_2",
+            "INV_ALARM_VFD"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Sin orden de marcha el variador no se habilita ('ante una orden de marcha').",
+          "oracle_evidence": [
+            "step_0"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Sin orden ni alarma antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Ante una orden de marcha, habilita el variador solo si no hay alarma activa.",
+        "V2": "Quiero que el variador se habilite con la orden de marcha, pero nunca si existe una alarma activa.",
+        "V3": "Si hay una alarma activa, el variador no debe habilitarse aunque llegue la orden de marcha; sin alarma, habilítalo con esa orden."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "variador",
+          "orden de marcha",
+          "alarma"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_VFD_ENABLE_NO_ALARM"
+    },
+    {
+      "case_id": "D14",
+      "title": "Seleccion de velocidad baja/media/alta",
+      "family": "DISCRETE",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Seleccionar velocidad baja/media/alta mediante entradas digitales.",
+      "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "velocidad baja",
+            "velocidad media",
+            "velocidad alta"
+          ],
+          "triggers": [
+            "3 ENTRADAS"
+          ],
+          "functions": [
+            "one_hot_select"
+          ]
+        },
+        "roles": {
+          "SPEED_LOW_CMD": "entrada baja",
+          "SPEED_MEDIUM_CMD": "entrada media",
+          "SPEED_HIGH_CMD": "entrada alta",
+          "SPEED_LOW": "velocidad baja",
+          "SPEED_MEDIUM": "velocidad media",
+          "SPEED_HIGH": "velocidad alta"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Entrada baja: solo velocidad baja.",
+          "oracle_evidence": [
+            "step_low"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Entrada media: solo velocidad media.",
+          "oracle_evidence": [
+            "step_medium"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Entrada alta: solo velocidad alta.",
+          "oracle_evidence": [
+            "step_high"
+          ]
+        },
+        {
+          "id": "R4",
+          "text": "Nunca mas de una velocidad activa ('unicamente').",
+          "oracle_evidence": [
+            "INV_SPEED_ONE_HOT"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Las tres entradas en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Selecciona velocidad baja, media o alta con tres entradas digitales y activa solo la velocidad seleccionada.",
+        "V2": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+        "V3": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "baja",
+          "media",
+          "alta",
+          "entrada",
+          "solo|unicamente"
+        ],
+        "numbers": [
+          3
+        ]
+      },
+      "reference_intent": null
+    },
+    {
+      "case_id": "D15",
+      "title": "Modo Manual/Automatico con orden por modo",
+      "family": "DISCRETE",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Modo manual/automatico para habilitacion del motor.",
+      "canonical_command": "Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "motor"
+          ],
+          "triggers": [
+            "MODO",
+            "ORDEN MANUAL",
+            "ORDEN AUTOMATICA"
+          ],
+          "functions": [
+            "mode_select"
+          ],
+          "modes": [
+            "MANUAL",
+            "AUTOMATICO"
+          ]
+        },
+        "roles": {
+          "MODE_AUTO": "modo",
+          "MANUAL_COMMAND": "orden manual",
+          "AUTO_COMMAND": "orden automatica",
+          "MOTOR_MAIN": "motor"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "En Manual el motor responde a la orden manual.",
+          "oracle_evidence": [
+            "man_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "En Manual la orden automatica no gobierna el motor.",
+          "oracle_evidence": [
+            "man_2"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "En Automatico el motor responde a la orden automatica.",
+          "oracle_evidence": [
+            "aut_1"
+          ]
+        },
+        {
+          "id": "R4",
+          "text": "En Automatico la orden manual no gobierna el motor.",
+          "oracle_evidence": [
+            "aut_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Modo Manual y ordenes en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Implementa modo Manual y Automático para el motor: en Manual obedece la orden manual y en Automático la orden automática.",
+        "V2": "Quiero que en modo Manual el motor responda a la orden manual y en modo Automático a la orden automática.",
+        "V3": "Según el modo seleccionado, Manual o Automático, el motor debe atender la orden manual o la orden automática respectivamente."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "manual",
+          "automatic",
+          "motor",
+          "orden manual",
+          "orden automatica"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_MANUAL_AUTO_MODE"
+    },
+    {
+      "case_id": "D16",
+      "title": "Secuencia: principal, espera 3 s, auxiliar",
+      "family": "DISCRETE",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Secuencia: arranque -> espera -> salida auxiliar.",
+      "canonical_command": "Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "salida principal",
+            "salida auxiliar"
+          ],
+          "triggers": [
+            "START"
+          ],
+          "functions": [
+            "sequence"
+          ],
+          "times": {
+            "wait_s": 3
+          }
+        },
+        "roles": {
+          "START": "Start",
+          "MAIN_OUTPUT": "salida principal",
+          "AUX_OUTPUT": "salida auxiliar"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Al recibir Start se activa la salida principal.",
+          "oracle_evidence": [
+            "step_1",
+            "step_2"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "La salida auxiliar se activa 3 s despues (no antes).",
+          "oracle_evidence": [
+            "step_1",
+            "step_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Start en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Con Start activa la salida principal y, 3 segundos después, la salida auxiliar.",
+        "V2": "Quiero que al dar Start se encienda la salida principal y que tres segundos más tarde se encienda la auxiliar.",
+        "V3": "Tras recibir Start, activa la salida principal, espera 3 segundos y luego activa la salida auxiliar."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b",
+          "principal",
+          "auxiliar",
+          "segundo"
+        ],
+        "numbers": [
+          3
+        ]
+      },
+      "reference_intent": "INT_SEQUENCE_THREE_STEPS"
+    },
+    {
+      "case_id": "D17",
+      "title": "Supervision de sensor 5 s tras Start",
+      "family": "DISCRETE",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Alarma si el sensor no cambia de estado en 5 s.",
+      "canonical_command": "Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "alarma"
+          ],
+          "triggers": [
+            "START",
+            "SENSOR"
+          ],
+          "functions": [
+            "supervision_enable",
+            "timeout_alarm"
+          ],
+          "times": {
+            "timeout_s": 5
+          }
+        },
+        "roles": {
+          "START": "Start",
+          "SENSOR": "sensor",
+          "ALARM": "alarma"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Antes de Start no hay supervision (no hay alarma).",
+          "oracle_evidence": [
+            "t0_idle"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Con cambios del sensor en menos de 5 s no hay alarma.",
+          "oracle_evidence": [
+            "t2_change",
+            "t3_change"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Si el sensor no cambia durante 5 s, se activa la alarma.",
+          "oracle_evidence": [
+            "t4_timeout"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Start y sensor en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Al activar Start, vigila el sensor y activa una alarma si no cambia de estado durante 5 segundos.",
+        "V2": "Quiero que, después de dar Start, se active una alarma si el sensor pasa cinco segundos sin cambiar de estado.",
+        "V3": "Tras activar Start, si el sensor permanece sin cambios 5 segundos, activa la alarma."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b",
+          "sensor",
+          "alarma",
+          "segundo",
+          "cambi"
+        ],
+        "numbers": [
+          5
+        ]
+      },
+      "reference_intent": "INT_SENSOR_TIMEOUT_ALARM"
+    },
+    {
+      "case_id": "D18",
+      "title": "Bloqueo del arranque en mantenimiento",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Bloquear arranque en modo mantenimiento.",
+      "canonical_command": "Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "motor"
+          ],
+          "triggers": [
+            "ARRANQUE",
+            "MANTENIMIENTO"
+          ],
+          "functions": [
+            "start_inhibit"
+          ],
+          "modes": [
+            "MANTENIMIENTO"
+          ]
+        },
+        "roles": {
+          "MAINTENANCE": "modo mantenimiento",
+          "START": "arranque",
+          "MOTOR_MAIN": "motor"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "En mantenimiento el motor no arranca.",
+          "oracle_evidence": [
+            "step_1",
+            "step_2",
+            "step_3"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Fuera de mantenimiento el arranque funciona ('bloquea el arranque' presupone una orden de arranque).",
+          "oracle_evidence": [
+            "step_0",
+            "step_4"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Sin mantenimiento ni orden antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Bloquea el arranque del motor mientras esté activo el modo mantenimiento.",
+        "V2": "Quiero que el motor no pueda arrancar mientras el sistema esté en mantenimiento.",
+        "V3": "En modo mantenimiento, impide que el motor arranque."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "motor",
+          "arranc|arranque",
+          "mantenimiento",
+          "bloque|no pueda|impid"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_MAINTENANCE_BLOCK"
+    },
+    {
+      "case_id": "D19",
+      "title": "Pilotos de estado: detenido, marcha y falla",
+      "family": "DISCRETE",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Pilotos: detenido, marcha, falla.",
+      "canonical_command": "Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "piloto detenido",
+            "piloto marcha",
+            "piloto falla"
+          ],
+          "triggers": [
+            "ESTADO"
+          ],
+          "functions": [
+            "state_indication"
+          ]
+        },
+        "roles": {
+          "RUN_STATE": "estado de marcha",
+          "FAULT_ACTIVE": "estado de falla",
+          "PILOT_STOPPED": "piloto detenido",
+          "PILOT_RUN": "piloto marcha",
+          "PILOT_FAULT": "piloto falla"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El estado (marcha/falla) llega como condicion de entrada del ensayo."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Detenido: solo el piloto de detenido.",
+          "oracle_evidence": [
+            "t1_stopped"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "En marcha: solo el piloto de marcha.",
+          "oracle_evidence": [
+            "t2_run"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "En falla: solo el piloto de falla.",
+          "oracle_evidence": [
+            "t4_fault_stopped"
+          ]
+        },
+        {
+          "id": "R4",
+          "text": "Unicamente un piloto activo.",
+          "oracle_evidence": [
+            "INV_ONE_PILOT"
+          ],
+          "note": "Marcha y falla simultaneas no definen el 'estado actual': t3 solo ejerce la invariante."
+        }
+      ],
+      "test_harness_setup": [
+        "Sin marcha ni falla antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Controla tres pilotos de detenido, marcha y falla, dejando encendido solo el del estado actual.",
+        "V2": "Quiero tres pilotos, detenido, marcha y falla, y que solo esté encendido el que corresponde al estado actual.",
+        "V3": "Indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "piloto",
+          "detenido",
+          "marcha",
+          "falla",
+          "solo|unicamente"
+        ],
+        "numbers": [
+          3
+        ]
+      },
+      "reference_intent": null
+    },
+    {
+      "case_id": "D20",
+      "title": "Ciclo automatico de 3 s con Reset",
+      "family": "DISCRETE",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Ciclo automatico: inicio -> ejecucion -> parada -> reset.",
+      "canonical_command": "Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "ejecucion",
+            "ciclo finalizado"
+          ],
+          "triggers": [
+            "START",
+            "RESET"
+          ],
+          "functions": [
+            "timed_cycle",
+            "complete",
+            "reset"
+          ],
+          "times": {
+            "cycle_s": 3
+          }
+        },
+        "roles": {
+          "START": "Start",
+          "RESET": "Reset",
+          "RUN_OUTPUT": "ejecucion",
+          "COMPLETE_STATE": "ciclo finalizado"
+        },
+        "harness_roles": [],
+        "clarifications": []
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Start inicia la ejecucion.",
+          "oracle_evidence": [
+            "s1_start"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "A los 3 s la ejecucion se detiene y el ciclo queda marcado como finalizado.",
+          "oracle_evidence": [
+            "s2_run",
+            "INV_RUN_COMPLETE"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Reset devuelve al estado inicial.",
+          "oracle_evidence": [
+            "s3_reset",
+            "s4_idle"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Reset pulsado antes de la prueba (estado inicial)."
+      ],
+      "variants": {
+        "V1": "Con Start inicia un ciclo automático de 3 segundos; al terminar, detén la ejecución y marca el ciclo como finalizado. Reset lo devuelve al estado inicial.",
+        "V2": "Quiero que Start arranque un ciclo de tres segundos que al acabar se detenga y quede marcado como finalizado, y que Reset lo deje en el estado inicial.",
+        "V3": "Un ciclo automático de 3 segundos empieza al activar Start; cuando termina se detiene y se marca como finalizado, y Reset lo devuelve al estado inicial."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bstart\\b",
+          "ciclo",
+          "final",
+          "\\breset\\b",
+          "estado inicial",
+          "segundo"
+        ],
+        "numbers": [
+          3
+        ]
+      },
+      "reference_intent": "INT_AUTO_CYCLE"
+    },
+    {
+      "case_id": "P01",
+      "title": "Modo automatico al seleccionar Automatico",
+      "family": "PID",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Habilitar modo automatico.",
+      "canonical_command": "Habilita el modo automático del sistema de nivel cuando se seleccione Automático.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "modo automatico"
+          ],
+          "triggers": [
+            "SELECCION AUTOMATICO"
+          ],
+          "functions": [
+            "set_auto_mode"
+          ]
+        },
+        "roles": {
+          "AUTO_SELECT": "seleccion de Automatico",
+          "AUTO_MODE": "modo automatico"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Al seleccionar Automatico, el modo automatico queda habilitado.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Sin seleccionar Automatico, el modo automatico no se habilita (condicional 'cuando').",
+          "oracle_evidence": [
+            "step_0"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Seleccion de Automatico en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Habilita el modo automático del sistema de nivel al seleccionar Automático.",
+        "V2": "Quiero que el sistema de nivel pase a modo automático cuando se elija Automático.",
+        "V3": "Cuando se seleccione Automático, activa el modo automático del control de nivel."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "automatic",
+          "nivel",
+          "seleccion|elija"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P02",
+      "title": "Setpoint de nivel al 60 %",
+      "family": "PID",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Cambiar setpoint a 60 %.",
+      "canonical_command": "Cambia el setpoint del nivel al 60 %.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "setpoint de nivel"
+          ],
+          "functions": [
+            "set_level_setpoint"
+          ],
+          "values": {
+            "setpoint_pct": 60
+          }
+        },
+        "roles": {
+          "LEVEL_SP": "setpoint de nivel"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "El setpoint de nivel queda en 60 %.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        }
+      ],
+      "test_harness_setup": [],
+      "variants": {
+        "V1": "Cambia el setpoint de nivel a 60 %.",
+        "V2": "Quiero que el setpoint del nivel quede en el sesenta por ciento.",
+        "V3": "Ajusta al 60 % la consigna de nivel."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "setpoint|consigna",
+          "nivel"
+        ],
+        "numbers": [
+          60
+        ]
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P03",
+      "title": "Setpoint validado en el rango 0-100 %",
+      "family": "PID",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Rechazar setpoint fuera de rango seguro.",
+      "canonical_command": "Acepta setpoints de nivel entre 0 % y 100 %. Si se solicita un valor fuera de ese rango, recházalo y conserva el último valor válido.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "setpoint de nivel"
+          ],
+          "triggers": [
+            "SOLICITUD DE SETPOINT"
+          ],
+          "functions": [
+            "validate_setpoint",
+            "keep_last_valid"
+          ],
+          "thresholds": {
+            "min_pct": 0,
+            "max_pct": 100
+          }
+        },
+        "roles": {
+          "LEVEL_SP_COMMAND": "setpoint solicitado",
+          "LEVEL_SP": "setpoint de nivel"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Un setpoint dentro de 0-100 % se acepta.",
+          "oracle_evidence": [
+            "pre_valid"
+          ],
+          "note": "Establece el ultimo valor valido (60 %) y verifica la aceptacion."
+        },
+        {
+          "id": "R2",
+          "text": "Un valor fuera de rango se rechaza y se conserva el ultimo valido.",
+          "oracle_evidence": [
+            "step_1",
+            "INV_SP_RANGE"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Solicitud inicial de 60 % (valor valido de referencia)."
+      ],
+      "variants": {
+        "V1": "Acepta setpoints de nivel de 0 % a 100 % y rechaza cualquier valor fuera de ese rango, conservando el último válido.",
+        "V2": "Quiero que el setpoint de nivel solo admita valores entre cero y cien por ciento; si piden otro valor, se rechaza y se conserva el anterior válido.",
+        "V3": "Si se solicita un setpoint de nivel fuera del rango de 0 % a 100 %, recházalo y conserva el último valor válido."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "setpoint",
+          "nivel",
+          "rechaz",
+          "conserv|mant"
+        ],
+        "numbers": [
+          0,
+          100
+        ]
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P04",
+      "title": "Alarma de nivel alto > 90 %",
+      "family": "PID",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Alarma si nivel > 90 %.",
+      "canonical_command": "Activa una alarma de nivel alto cuando el nivel supere el 90 %.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "alarma de nivel alto"
+          ],
+          "triggers": [
+            "NIVEL"
+          ],
+          "functions": [
+            "high_level_alarm"
+          ],
+          "thresholds": {
+            "high_pct": 90
+          }
+        },
+        "roles": {
+          "LEVEL_PV": "nivel",
+          "HIGH_LEVEL_ALARM": "alarma de nivel alto"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con el nivel por encima de 90 % se activa la alarma de nivel alto.",
+          "oracle_evidence": [
+            "step_1",
+            "step_3"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Por debajo de 90 % no hay alarma de nivel alto (condicional 'cuando').",
+          "oracle_evidence": [
+            "pre_normal",
+            "step_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Nivel simulado en 50 % antes de la prueba y al final."
+      ],
+      "variants": {
+        "V1": "Activa la alarma de nivel alto cuando el nivel pase del 90 %.",
+        "V2": "Quiero una alarma de nivel alto si el nivel supera el noventa por ciento.",
+        "V3": "Con el nivel por encima del 90 %, activa la alarma de nivel alto."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "alarma",
+          "nivel alto",
+          "supere|supera|pase|por encima"
+        ],
+        "numbers": [
+          90
+        ]
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P05",
+      "title": "Alarma de nivel bajo < 10 %",
+      "family": "PID",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Alarma si nivel < 10 %.",
+      "canonical_command": "Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "alarma de nivel bajo"
+          ],
+          "triggers": [
+            "NIVEL"
+          ],
+          "functions": [
+            "low_level_alarm"
+          ],
+          "thresholds": {
+            "low_pct": 10
+          }
+        },
+        "roles": {
+          "LEVEL_PV": "nivel",
+          "LOW_LEVEL_ALARM": "alarma de nivel bajo"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con el nivel por debajo de 10 % se activa la alarma de nivel bajo.",
+          "oracle_evidence": [
+            "step_1",
+            "step_3"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Por encima de 10 % no hay alarma de nivel bajo (condicional 'cuando').",
+          "oracle_evidence": [
+            "pre_normal",
+            "step_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Nivel simulado en 50 % antes de la prueba y al final."
+      ],
+      "variants": {
+        "V1": "Activa la alarma de nivel bajo cuando el nivel baje del 10 %.",
+        "V2": "Quiero una alarma de nivel bajo si el nivel es inferior al diez por ciento.",
+        "V3": "Con el nivel por debajo del 10 %, activa la alarma de nivel bajo."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "alarma",
+          "nivel bajo",
+          "inferior|debajo|baje"
+        ],
+        "numbers": [
+          10
+        ]
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P06",
+      "title": "PID habilitado solo en Automatico",
+      "family": "PID",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "PID habilitado solo en automatico.",
+      "canonical_command": "Habilita el PID únicamente cuando el sistema esté en modo Automático.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "PID"
+          ],
+          "triggers": [
+            "MODO AUTOMATICO"
+          ],
+          "functions": [
+            "enable_pid_in_auto"
+          ]
+        },
+        "roles": {
+          "AUTO_MODE": "modo Automatico",
+          "PID_ENABLE": "PID"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "En modo Automatico el PID esta habilitado.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Fuera de Automatico el PID no esta habilitado ('unicamente').",
+          "oracle_evidence": [
+            "pre_manual",
+            "step_2",
+            "INV_PID_ONLY_AUTO"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Modo Automatico en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "Habilita el PID solo cuando el sistema esté en modo Automático.",
+        "V2": "Quiero que el PID funcione únicamente en modo Automático.",
+        "V3": "El PID debe estar habilitado solamente mientras el sistema esté en Automático."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "\\bpid\\b",
+          "automatic",
+          "solo|unicamente|solamente"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P07",
+      "title": "PID deshabilitado ante emergencia",
+      "family": "PID",
+      "complexity": "LOW",
+      "benchmark_version": 2,
+      "original_requirement": "Deshabilitar PID ante condicion de emergencia/seguridad autorizada.",
+      "canonical_command": "Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "PID"
+          ],
+          "triggers": [
+            "EMERGENCIA"
+          ],
+          "functions": [
+            "emergency_disables_pid"
+          ]
+        },
+        "roles": {
+          "SAFETY_TRIP": "condicion de emergencia (logica simulada)",
+          "PID_ENABLE": "PID"
+        },
+        "harness_roles": [
+          "AUTO_MODE"
+        ],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "La emergencia deshabilita el PID en funcionamiento.",
+          "oracle_evidence": [
+            "step_1",
+            "INV_TRIP_PID"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Automatico activo y sin emergencia para que el PID este funcionando antes de la prueba (estado previo que presupone el comando)."
+      ],
+      "variants": {
+        "V1": "Si se activa una condición de emergencia con el PID funcionando, deshabilítalo de inmediato.",
+        "V2": "Quiero que, si hay una emergencia mientras el PID trabaja, el PID se deshabilite en el acto.",
+        "V3": "Ante una condición de emergencia durante el funcionamiento del PID, deshabilítalo inmediatamente."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "emergencia",
+          "\\bpid\\b",
+          "deshabilit"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P08",
+      "title": "Bomba manual ON/OFF en modo Manual",
+      "family": "PID",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Modo manual con operacion limitada de bomba.",
+      "canonical_command": "En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "bomba"
+          ],
+          "triggers": [
+            "MODO MANUAL",
+            "ORDEN MANUAL"
+          ],
+          "functions": [
+            "manual_pump_enable"
+          ],
+          "modes": [
+            "MANUAL"
+          ]
+        },
+        "roles": {
+          "AUTO_MODE": "modo (Manual = no Automatico)",
+          "MANUAL_PUMP_COMMAND": "orden manual",
+          "PUMP_ENABLE": "bomba"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "En Manual, la orden manual enciende la bomba.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "En Manual, la orden manual apaga la bomba (el control automatico no la mantiene encendida).",
+          "oracle_evidence": [
+            "step_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Modo Manual y orden en OFF antes de la prueba."
+      ],
+      "variants": {
+        "V1": "En modo Manual, enciende y apaga la bomba con una orden manual, sin que el control automático intervenga.",
+        "V2": "Quiero que en Manual la bomba se encienda y se apague solo con la orden manual, no con el control automático.",
+        "V3": "Con el sistema en Manual, la orden manual decide si la bomba está encendida o apagada; el control automático no la gobierna."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "manual",
+          "bomba",
+          "automatic",
+          "encend|encien",
+          "apag"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P09",
+      "title": "Fallo de sensor fuera de 0-100 %",
+      "family": "PID",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Fallo de sensor por valor fuera de rango.",
+      "canonical_command": "Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "fallo de sensor"
+          ],
+          "triggers": [
+            "NIVEL MEDIDO"
+          ],
+          "functions": [
+            "sensor_range_fault"
+          ],
+          "thresholds": {
+            "min_pct": 0,
+            "max_pct": 100
+          }
+        },
+        "roles": {
+          "LEVEL_PV": "nivel medido",
+          "SENSOR_FAULT": "fallo de sensor"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Nivel por encima de 100 %: fallo de sensor.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Nivel por debajo de 0 %: fallo de sensor.",
+          "oracle_evidence": [
+            "step_3"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Nivel dentro del rango: sin fallo (condicional 'si').",
+          "oracle_evidence": [
+            "pre_normal",
+            "step_2"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Nivel simulado en 50 % antes de la prueba y al final."
+      ],
+      "variants": {
+        "V1": "Detecta fallo de sensor cuando el nivel medido esté fuera del rango de 0 % a 100 %.",
+        "V2": "Quiero que se marque un fallo del sensor si el nivel medido sale del rango de cero a cien por ciento.",
+        "V3": "Si el nivel medido no está entre 0 % y 100 %, indica un fallo del sensor."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "fallo",
+          "sensor",
+          "nivel"
+        ],
+        "numbers": [
+          0,
+          100
+        ]
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P10",
+      "title": "Reset de alarma de sensor solo sin falla",
+      "family": "PID",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Reset de alarma solo si desaparecio la falla.",
+      "canonical_command": "Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "alarma"
+          ],
+          "triggers": [
+            "RESET",
+            "FALLO DE SENSOR"
+          ],
+          "functions": [
+            "conditional_alarm_reset"
+          ]
+        },
+        "roles": {
+          "LEVEL_PV": "medicion",
+          "SENSOR_FAULT": "fallo de sensor",
+          "RESET": "Reset",
+          "ALARM": "alarma"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con la falla presente, Reset no borra la alarma.",
+          "oracle_evidence": [
+            "step_1",
+            "step_2"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Con la medicion en rango, Reset borra la alarma.",
+          "oracle_evidence": [
+            "step_3",
+            "step_4",
+            "step_5"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Nivel simulado fuera de rango (150 %) para provocar la falla y la alarma que el comando presupone."
+      ],
+      "variants": {
+        "V1": "Si hay una alarma por fallo del sensor, no permitas su Reset mientras la falla siga; permítelo cuando la medición vuelva al rango válido.",
+        "V2": "Quiero que la alarma por fallo del sensor no se pueda resetear mientras dure la falla, y que sí se pueda cuando la medición vuelva a ser válida.",
+        "V3": "El Reset de la alarma por fallo del sensor solo debe funcionar cuando la medición haya vuelto al rango válido, no mientras continúe la falla."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "alarma",
+          "fallo|falla",
+          "sensor",
+          "\\breset",
+          "rango|valid"
+        ],
+        "numbers": []
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P11",
+      "title": "Bomba apagada por sobrellenado >= 95 %",
+      "family": "PID",
+      "complexity": "MEDIUM",
+      "benchmark_version": 2,
+      "original_requirement": "Parada segura ante sobrellenado.",
+      "canonical_command": "Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "bomba"
+          ],
+          "triggers": [
+            "NIVEL"
+          ],
+          "functions": [
+            "overfill_pump_stop"
+          ],
+          "thresholds": {
+            "overfill_pct": 95
+          }
+        },
+        "roles": {
+          "LEVEL_PV": "nivel",
+          "PUMP_ENABLE": "bomba"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "Con nivel >= 95 % la bomba esta apagada mientras dure la condicion.",
+          "oracle_evidence": [
+            "step_1",
+            "INV_OVERFILL_PUMP"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Nivel simulado normal (50 %) con la bomba habilitada antes de la prueba (estado previo que presupone 'apaga la bomba')."
+      ],
+      "variants": {
+        "V1": "Si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure esa condición.",
+        "V2": "Quiero que la bomba se apague mientras el nivel esté en el noventa y cinco por ciento o más, porque es sobrellenado.",
+        "V3": "Considera sobrellenado un nivel igual o superior al 95 % y mantén la bomba apagada mientras siga así."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "bomba",
+          "sobrellenado",
+          "nivel",
+          "apag"
+        ],
+        "numbers": [
+          95
+        ]
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    },
+    {
+      "case_id": "P12",
+      "title": "Automatico con SP 60 %, alarma > 90 % y recuperacion",
+      "family": "PID",
+      "complexity": "HIGH",
+      "benchmark_version": 2,
+      "original_requirement": "Secuencia completa: automatico -> setpoint -> alarma -> recuperacion.",
+      "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
+      "canonical_semantics": {
+        "signature": {
+          "actors": [
+            "PID",
+            "setpoint",
+            "alarma",
+            "bomba"
+          ],
+          "triggers": [
+            "MODO AUTOMATICO",
+            "NIVEL"
+          ],
+          "functions": [
+            "enable_pid",
+            "set_level_setpoint",
+            "high_level_alarm",
+            "safe_condition",
+            "recovery"
+          ],
+          "values": {
+            "setpoint_pct": 60
+          },
+          "thresholds": {
+            "high_pct": 90
+          }
+        },
+        "roles": {
+          "AUTO_MODE": "modo Automatico",
+          "LEVEL_PV": "nivel",
+          "LEVEL_SP": "setpoint",
+          "PID_ENABLE": "PID",
+          "ALARM": "alarma",
+          "PUMP_ENABLE": "bomba"
+        },
+        "harness_roles": [],
+        "clarifications": [
+          "El PID es un bloque estandar prevalidado: solo se evalua la logica supervisora.",
+          "Aclaracion del benchmark: 'condicion segura' = PID deshabilitado y bomba apagada (misma nocion que P07/P11).",
+          "Aclaracion del benchmark: 'rango permitido' = nivel <= 90 %; la recuperacion es automatica (el comando no pide Reset)."
+        ]
+      },
+      "command_requirements": [
+        {
+          "id": "R1",
+          "text": "En Automatico, PID habilitado con setpoint 60 %.",
+          "oracle_evidence": [
+            "step_1"
+          ]
+        },
+        {
+          "id": "R2",
+          "text": "Nivel > 90 %: alarma y condicion segura (PID deshabilitado y bomba apagada).",
+          "oracle_evidence": [
+            "step_2"
+          ]
+        },
+        {
+          "id": "R3",
+          "text": "Con el nivel de nuevo en rango, se recupera la operacion automatica (PID habilitado).",
+          "oracle_evidence": [
+            "step_3"
+          ]
+        }
+      ],
+      "test_harness_setup": [
+        "Modo Automatico y nivel simulado 50 % antes de la prueba."
+      ],
+      "variants": {
+        "V1": "En modo Automático, habilita el PID con setpoint del 60 %; si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura, y cuando vuelva al rango permitido deja recuperar la operación automática.",
+        "V2": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento, que por encima del noventa por ciento suene la alarma y el proceso pase a condición segura, y que al volver el nivel al rango permitido se pueda recuperar el automático.",
+        "V3": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma y la condición segura, y el regreso del nivel al rango permitido permite recuperar la operación automática."
+      },
+      "variant_check": {
+        "required_concepts": [
+          "automatic",
+          "\\bpid\\b",
+          "setpoint",
+          "alarma",
+          "condicion segura",
+          "recuper"
+        ],
+        "numbers": [
+          60,
+          90
+        ]
+      },
+      "reference_intent": "INT_PID_SUPERVISOR"
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D17",
+  "case_id": "D17",
+  "title": "D17 - Alarma si el sensor no cambia en 5 s",
+  "description": "Si el sensor permanece sin cambiar de estado durante 5 s se activa la alarma; mientras cambie antes de 5 s no hay alarma.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D17 (INT_SENSOR_TIMEOUT_ALARM)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D17 - Sensor sin cambio durante 5 s",
+    "description": "Detectar ausencia de cambio en un sensor durante un tiempo determinado y activar alarma.",
+    "reference_intent": "INT_SENSOR_TIMEOUT_ALARM",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Reset",
+      "I_Sensor1",
+      "I_Start",
+      "Q_Alarm"
+    ],
+    "variants": {
+      "V1": "Activa la alarma si el sensor no cambia de estado durante cinco segundos.",
+      "V2": "Genera un timeout de 5 segundos para el sensor principal.",
+      "V3": "Si el sensor permanece sin cambios por 5 segundos, activa Q_Alarm."
+    },
+    "researcher_summary": "Alarma si el sensor no cambia de estado en 5 s."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {
+      "timeout": {
+        "type": "DURATION",
+        "value_ms": 5000,
+        "tolerance_ms": 0,
+        "if_missing": "NOT_EVALUABLE"
+      }
+    },
+    "accepted_intents": [
+      "INT_SENSOR_TIMEOUT_ALARM"
+    ],
+    "required_functions": [
+      "sensor_timeout_alarm"
+    ],
+    "required_roles": [
+      "SENSOR",
+      "ALARM"
+    ]
+  },
+  "roles": {
+    "SENSOR": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Sensor supervisado.",
+      "semantic_paths": [
+        "sensor_input"
+      ]
+    },
+    "RESET": {
+      "kind": "INPUT",
+      "required": false,
+      "description": "Reset de alarma (opcional).",
+      "semantic_paths": [
+        "reset_input"
+      ]
+    },
+    "ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Alarma de sensor sin cambio.",
+      "semantic_paths": [
+        "alarm_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-TIMING",
+      "text": "Temporizaciones: transicion nominal con tolerancia -300 ms / +700 ms medida en el bridge (reloj monotono); las ventanas de evaluacion dejan libre esa banda."
+    },
+    {
+      "id": "C-D17",
+      "text": "Cambios cada 2 s (< 5 s) mantienen la alarma apagada; no se evalua si la alarma se mantiene al volver a cambiar el sensor (no definido)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_toggle",
+      "description": "Provocar un cambio del sensor.",
+      "set": {
+        "SENSOR": true
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "pre_reset_on",
+      "description": "Si existe RESET: borrar alarma previa.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "requires_roles": [
+        "RESET"
+      ]
+    },
+    {
+      "id": "pre_reset_off",
+      "description": "Soltar RESET.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "RESET"
+      ]
+    },
+    {
+      "id": "pre_idle",
+      "description": "Nuevo cambio del sensor (reinicia la supervision).",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Cambio a ON; en 2 s no hay alarma.",
+      "set": {
+        "SENSOR": true
+      },
+      "wait_ms": 2000,
+      "expect": {
+        "ALARM": false
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 0,
+          "to_ms": 2000,
+          "expect": {
+            "ALARM": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_2",
+      "description": "Cambio a OFF; en 2 s no hay alarma.",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 2000,
+      "expect": {
+        "ALARM": false
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 0,
+          "to_ms": 2000,
+          "expect": {
+            "ALARM": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_3",
+      "description": "Cambio a ON y sin mas cambios: alarma a los 5 s.",
+      "set": {
+        "SENSOR": true
+      },
+      "wait_ms": 7000,
+      "expect": {
+        "ALARM": true
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 0,
+          "to_ms": 4700,
+          "expect": {
+            "ALARM": false
+          }
+        },
+        {
+          "from_ms": 5700,
+          "to_ms": 7000,
+          "expect": {
+            "ALARM": true
+          }
+        }
+      ],
+      "measure_transition": {
+        "role": "ALARM",
+        "to": true,
+        "nominal_ms": 5000,
+        "tolerance_ms": {
+          "early": 300,
+          "late": 700
+        }
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Sensor a OFF.",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "cleanup_reset_on",
+      "description": "Si existe RESET: borrar alarma.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "requires_roles": [
+        "RESET"
+      ]
+    },
+    {
+      "id": "cleanup_reset_off",
+      "description": "RESET a OFF.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "RESET"
+      ]
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

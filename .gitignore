@@ -46,3 +46,9 @@ data/plc_maps/*
 .pytest_tmp/
 
 experiments/
+results/
+
+plcsim_runtime_bridge/bin/
+plcsim_runtime_bridge/runtime_request.json
+plcsim_runtime_bridge/runtime_result.json
+plcsim_runtime_bridge/plcsim_runtime_report.json

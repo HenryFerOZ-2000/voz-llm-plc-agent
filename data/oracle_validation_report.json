@@ -1,0 +1,2768 @@
+{
+  "generated_at": "2026-09-30T14:19:44",
+  "summary": {
+    "total_oracles": 32,
+    "schema_valid": 32,
+    "without_review_items": 32,
+    "with_review_items": 0,
+    "open_review_items": 0,
+    "executable_now": 20,
+    "discrete_executable": "20/20",
+    "pid_executable": "0/12",
+    "requires_runtime_extension": 12,
+    "capability_gaps": 18,
+    "benchmark_version": 2,
+    "benchmark_inconsistencies": 0,
+    "oracles_aligned": 32,
+    "hidden_oracle_requirements": 0,
+    "formal": 32,
+    "ready_for_human_approval": []
+  },
+  "expected_ids": [
+    "D01",
+    "D02",
+    "D03",
+    "D04",
+    "D05",
+    "D06",
+    "D07",
+    "D08",
+    "D09",
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16",
+    "D17",
+    "D18",
+    "D19",
+    "D20",
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10",
+    "P11",
+    "P12"
+  ],
+  "missing_ids": [],
+  "total": 32,
+  "schema_valid": 32,
+  "without_review_items": [
+    "D01",
+    "D02",
+    "D03",
+    "D04",
+    "D05",
+    "D06",
+    "D07",
+    "D08",
+    "D09",
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16",
+    "D17",
+    "D18",
+    "D19",
+    "D20",
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10",
+    "P11",
+    "P12"
+  ],
+  "with_review_items": [],
+  "executable_now": [
+    "D01",
+    "D02",
+    "D03",
+    "D04",
+    "D05",
+    "D06",
+    "D07",
+    "D08",
+    "D09",
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16",
+    "D17",
+    "D18",
+    "D19",
+    "D20"
+  ],
+  "requires_runtime_extension": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10",
+    "P11",
+    "P12"
+  ],
+  "system_capability_gaps": {
+    "D01": [
+      {
+        "id": "GAP-D01",
+        "expected_capability": "Pulso de 5 s al presionar (TP): salida activa DURANTE 5 s.",
+        "current_behavior": "INT_TIMED_PULSE usa TON: la salida se activa DESPUES de 5 s con la entrada mantenida; con un pulsador breve no se activa.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Usar TP (o equivalente) en la plantilla INT_TIMED_PULSE.",
+        "text": "INT_TIMED_PULSE usa TON: la salida se activa DESPUES de 5 s con la entrada mantenida; con un pulsador breve no se activa."
+      }
+    ],
+    "D05": [
+      {
+        "id": "GAP-D05",
+        "expected_capability": "Ruta de arranque (START_REQUEST) subordinada al disparo de seguridad.",
+        "current_behavior": "INT_EMERGENCY_PRIORITY no tiene logica de arranque: el motor nunca se activa y step_1 falla.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Componer la prioridad de seguridad con una logica de arranque/memoria (p.ej. INT_MOTOR_START_STOP) o anadir START_REQUEST a la plantilla.",
+        "text": "INT_EMERGENCY_PRIORITY no tiene logica de arranque: el motor nunca se activa y step_1 falla."
+      }
+    ],
+    "D10": [
+      {
+        "id": "GAP-D10",
+        "expected_capability": "Contador de 5 pulsos con salida y Reset a cero.",
+        "current_behavior": "Con el comando v2 la plantilla INT_COUNTER_PULSES (con reset_input) cumple el caso; si el interprete elige INT_COUNTER_RESET (referencia legacy) no hay conteo ni salida.",
+        "severity": "MEDIUM",
+        "recommended_future_fix": "Asegurar que el interprete elija INT_COUNTER_PULSES para D10 (o componer ambos).",
+        "text": "Con el comando v2 la plantilla INT_COUNTER_PULSES (con reset_input) cumple el caso; si el interprete elige INT_COUNTER_RESET (referencia legacy) no hay conteo ni salida."
+      }
+    ],
+    "D12": [
+      {
+        "id": "GAP-D12",
+        "expected_capability": "Cada contactor sigue su solicitud (REQUEST_A/B) con exclusion mutua.",
+        "current_behavior": "INT_MUTUAL_INTERLOCK usa trigger_input/stop_input como ordenes y enclava los contactores (nunca los desactiva).",
+        "severity": "HIGH",
+        "recommended_future_fix": "Plantilla con solicitudes request_a/request_b y contactores que siguen su solicitud.",
+        "text": "INT_MUTUAL_INTERLOCK usa trigger_input/stop_input como ordenes y enclava los contactores (nunca los desactiva)."
+      }
+    ],
+    "D13": [
+      {
+        "id": "GAP-D13",
+        "expected_capability": "Habilitacion del variador bloqueada por una condicion de alarma de ENTRADA.",
+        "current_behavior": "INT_VFD_ENABLE_NO_ALARM lee alarm_output (una salida que nadie escribe): ALARM_ACTIVE no se resuelve -> REVIEW.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Aceptar alarm_input (condicion de entrada) en la plantilla INT_VFD_ENABLE_NO_ALARM.",
+        "text": "INT_VFD_ENABLE_NO_ALARM lee alarm_output (una salida que nadie escribe): ALARM_ACTIVE no se resuelve -> REVIEW."
+      }
+    ],
+    "D14": [
+      {
+        "id": "GAP-D14",
+        "expected_capability": "Seleccion de 3 velocidades discretas con salidas one-hot.",
+        "current_behavior": "No existe intent para D14 en el parser/IR (profiles.json: 'trabajo futuro').",
+        "severity": "HIGH",
+        "recommended_future_fix": "Anadir un intent de seleccion de velocidad (tres selectores -> tres salidas excluyentes).",
+        "text": "No existe intent para D14 en el parser/IR (profiles.json: 'trabajo futuro')."
+      }
+    ],
+    "D15": [
+      {
+        "id": "GAP-D15",
+        "expected_capability": "Ordenes de marcha separadas por modo (MANUAL_COMMAND / AUTO_COMMAND) seleccionadas por MODE_AUTO.",
+        "current_behavior": "INT_MANUAL_AUTO_MODE usa selectores de modo manual/auto y START/STOP comunes: MANUAL_COMMAND/AUTO_COMMAND no se resolveran -> REVIEW.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Plantilla con una orden por modo y un selector MODE_AUTO.",
+        "text": "INT_MANUAL_AUTO_MODE usa selectores de modo manual/auto y START/STOP comunes: MANUAL_COMMAND/AUTO_COMMAND no se resolveran -> REVIEW."
+      }
+    ],
+    "D16": [
+      {
+        "id": "GAP-D16",
+        "expected_capability": "Salida principal al inicio y salida auxiliar tras una espera temporizada.",
+        "current_behavior": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Plantilla de secuencia con temporizador de espera y salida por paso.",
+        "text": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC."
+      }
+    ],
+    "D17": [
+      {
+        "id": "GAP-D17",
+        "expected_capability": "Supervision del sensor habilitada por Start.",
+        "current_behavior": "INT_SENSOR_TIMEOUT_ALARM supervisa desde el arranque del PLC sin Start: t0_idle generaria alarma.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Condicionar el temporizador de supervision a Start en la plantilla.",
+        "text": "INT_SENSOR_TIMEOUT_ALARM supervisa desde el arranque del PLC sin Start: t0_idle generaria alarma."
+      }
+    ],
+    "D19": [
+      {
+        "id": "GAP-D19",
+        "expected_capability": "Tres pilotos excluyentes (detenido, marcha, falla) que indican el estado actual.",
+        "current_behavior": "No hay intent de referencia para D19; INT_STATUS_PILOTS no genera el piloto de detenido y deriva la falla de la emergencia.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Plantilla de pilotos de estado con prioridad y tres salidas excluyentes.",
+        "text": "No hay intent de referencia para D19; INT_STATUS_PILOTS no genera el piloto de detenido y deriva la falla de la emergencia."
+      }
+    ],
+    "D20": [
+      {
+        "id": "GAP-D20",
+        "expected_capability": "Ciclo con ejecucion temporizada (3 s), estado completo y reset.",
+        "current_behavior": "INT_AUTO_CYCLE avanza un estado por ciclo de PLC mientras AUTO y START estan activos y no tiene estado COMPLETE.",
+        "severity": "HIGH",
+        "recommended_future_fix": "Plantilla de ciclo por estados con temporizador de ejecucion y salida de ciclo completo.",
+        "text": "INT_AUTO_CYCLE avanza un estado por ciclo de PLC mientras AUTO y START estan activos y no tiene estado COMPLETE."
+      }
+    ],
+    "P01": [
+      {
+        "id": "GAP-P01",
+        "expected_capability": "Modo automatico condicionado a una seleccion de Automatico.",
+        "current_behavior": "set_auto_mode activa Auto_Mode incondicionalmente (sin entrada de seleccion): step_0 fallaria.",
+        "severity": "MEDIUM",
+        "recommended_future_fix": "Condicionar set_auto_mode a una entrada de seleccion cuando el comando la menciona.",
+        "text": "set_auto_mode activa Auto_Mode incondicionalmente (sin entrada de seleccion): step_0 fallaria."
+      }
+    ],
+    "P03": [
+      {
+        "id": "GAP-P03",
+        "expected_capability": "Variable de comando de setpoint validada contra el rango 0-100 % en el PLC, conservando el ultimo valor valido.",
+        "current_behavior": "INT_PID_SUPERVISOR escribe Level_SP con la constante del comando: no hay variable de comando ni validacion en PLC.",
+        "severity": "MEDIUM",
+        "recommended_future_fix": "Anadir Level_SP_Command al contrato PID y validar el rango en la logica supervisora.",
+        "text": "INT_PID_SUPERVISOR escribe Level_SP con la constante del comando: no hay variable de comando ni validacion en PLC."
+      }
+    ],
+    "P07": [
+      {
+        "id": "GAP-P07",
+        "expected_capability": "Programa P07 con el PID habilitado en automatico antes del disparo.",
+        "current_behavior": "Una orden solo de 'deshabilitar ante emergencia' puede no generar enable_pid: la precondicion fallaria (REVIEW).",
+        "severity": "MEDIUM",
+        "recommended_future_fix": "Componer enable_pid (P06) cuando el caso requiere observar la deshabilitacion.",
+        "text": "Una orden solo de 'deshabilitar ante emergencia' puede no generar enable_pid: la precondicion fallaria (REVIEW)."
+      }
+    ],
+    "P08": [
+      {
+        "id": "GAP-P08",
+        "expected_capability": "Orden manual de bomba que habilita/deshabilita Q_Pump_Enable en modo manual.",
+        "current_behavior": "set_manual_mode solo escribe Manual_Mode/Auto_Mode: no hay orden manual de bomba (MANUAL_PUMP_COMMAND no se resuelve).",
+        "severity": "HIGH",
+        "recommended_future_fix": "Anadir una entrada de orden manual de bomba al contrato y a la plantilla PID.",
+        "text": "set_manual_mode solo escribe Manual_Mode/Auto_Mode: no hay orden manual de bomba (MANUAL_PUMP_COMMAND no se resuelve)."
+      }
+    ],
+    "P10": [
+      {
+        "id": "GAP-P10",
+        "expected_capability": "Alarma activada por la falla de sensor y reset condicionado a que desaparezca.",
+        "current_behavior": "En INT_PID_SUPERVISOR Q_Alarm la activan las alarmas de nivel/sobrellenado, no Sensor_Fault: la precondicion fallaria.",
+        "severity": "MEDIUM",
+        "recommended_future_fix": "Activar la alarma tambien por Sensor_Fault cuando el caso lo pida.",
+        "text": "En INT_PID_SUPERVISOR Q_Alarm la activan las alarmas de nivel/sobrellenado, no Sensor_Fault: la precondicion fallaria."
+      }
+    ],
+    "P11": [
+      {
+        "id": "GAP-P11",
+        "expected_capability": "Bomba habilitada en condicion normal y deshabilitada ante sobrellenado.",
+        "current_behavior": "INT_PID_SUPERVISOR solo fuerza Q_Pump_Enable a FALSE: no la habilita en condicion normal (la precondicion fallaria).",
+        "severity": "MEDIUM",
+        "recommended_future_fix": "Definir en el contrato PID quien habilita la bomba en operacion normal.",
+        "text": "INT_PID_SUPERVISOR solo fuerza Q_Pump_Enable a FALSE: no la habilita en condicion normal (la precondicion fallaria)."
+      }
+    ],
+    "P12": [
+      {
+        "id": "GAP-P12",
+        "expected_capability": "Condicion segura a > 90 % y recuperacion automatica al volver al rango.",
+        "current_behavior": "INT_PID_SUPERVISOR solo lleva a condicion segura en sobrellenado (>= 95 %) y la recuperacion exige Reset (conditional_alarm_reset).",
+        "severity": "HIGH",
+        "recommended_future_fix": "Permitir condicion segura con umbral configurable y recuperacion sin Reset cuando el comando lo indica.",
+        "text": "INT_PID_SUPERVISOR solo lleva a condicion segura en sobrellenado (>= 95 %) y la recuperacion exige Reset (conditional_alarm_reset)."
+      }
+    ]
+  },
+  "oracles": [
+    {
+      "case_id": "D01",
+      "title": "D01 - Salida temporizada de 5 s",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "a16544902b49a67d5158c2cdae0f176f6692548eedd69252b75739b89f2969be",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D01",
+          "expected_capability": "Pulso de 5 s al presionar (TP): salida activa DURANTE 5 s.",
+          "current_behavior": "INT_TIMED_PULSE usa TON: la salida se activa DESPUES de 5 s con la entrada mantenida; con un pulsador breve no se activa.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Usar TP (o equivalente) en la plantilla INT_TIMED_PULSE.",
+          "text": "INT_TIMED_PULSE usa TON: la salida se activa DESPUES de 5 s con la entrada mantenida; con un pulsador breve no se activa."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PULSE",
+        "C-TIMING",
+        "C-D01-START",
+        "C-D01-SCOPE"
+      ],
+      "archived_versions": [
+        "D01_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Activa una salida digital durante 5 segundos al presionar un pulsador.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "La salida se activa al presionar el pulsador.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "La salida permanece activa 5 s y despues se desactiva.",
+            "evidence": [
+              "step_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D02",
+      "title": "D02 - Piloto que sigue al sensor",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "bc3e29558b2b507d8ca5590b7597c8d19c1207f3a42365d79c54bb6abef073af",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D02"
+      ],
+      "archived_versions": [
+        "D02_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Barrido de programas triviales: solo 'piloto = sensor' pasa, que es el programa correcto.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Enciende una lámpara mientras una entrada digital esté activa.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con la entrada activa la lampara esta encendida.",
+            "evidence": [
+              "step_1",
+              "step_3"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Con la entrada inactiva la lampara esta apagada ('mientras').",
+            "evidence": [
+              "step_0",
+              "step_2",
+              "step_4"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D03",
+      "title": "D03 - Arranque/parada de motor con memoria de marcha",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [],
+      "archived_versions": [
+        "D03_v1.json"
+      ],
+      "ai_review": null,
+      "canonical_command": "Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Start enciende el motor.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "El motor sigue encendido al soltar el pulsador (memoria de marcha).",
+            "evidence": [
+              "step_2"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Stop apaga el motor.",
+            "evidence": [
+              "step_3",
+              "step_4"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D04",
+      "title": "D04 - Motor enclavado con memoria de marcha",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "ecd6568dd2a0c493962b679802f3431ec945470f3aa067585c057c0237e27e51",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PULSE",
+        "C-D04"
+      ],
+      "archived_versions": [
+        "D04_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Start enciende el motor.",
+            "evidence": [
+              "step_1",
+              "step_5"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "El motor queda enclavado al soltar el pulsador.",
+            "evidence": [
+              "step_2",
+              "step_6"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Stop apaga el motor.",
+            "evidence": [
+              "step_3",
+              "step_4"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D05",
+      "title": "D05 - Prioridad del disparo de seguridad sobre el arranque",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "e5cc1a4d71c2e1bd7b5027df44c268ab6bd41dd9e189b8fc8029abd3cf1a9e08",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D05-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D05",
+          "expected_capability": "Ruta de arranque (START_REQUEST) subordinada al disparo de seguridad.",
+          "current_behavior": "INT_EMERGENCY_PRIORITY no tiene logica de arranque: el motor nunca se activa y step_1 falla.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Componer la prioridad de seguridad con una logica de arranque/memoria (p.ej. INT_MOTOR_START_STOP) o anadir START_REQUEST a la plantilla.",
+          "text": "INT_EMERGENCY_PRIORITY no tiene logica de arranque: el motor nunca se activa y step_1 falla."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D05-TRIP",
+        "C-D05-START"
+      ],
+      "archived_versions": [
+        "D05_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con la seguridad normal, Start enciende el motor.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "La emergencia apaga el motor.",
+            "evidence": [
+              "step_2"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Mientras la emergencia esta activa, el arranque esta bloqueado.",
+            "evidence": [
+              "step_3",
+              "step_4",
+              "INV_TRIP_MOTOR"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D06",
+      "title": "D06 - Alarma por intento de arranque sin condicion de seguridad",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "ee564bbaf58f5f436c90d4f148346a00b133b687959f17e165037f9606def17f",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D06-R1"
+      ],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D06-SCOPE",
+        "C-D06-ORDER"
+      ],
+      "archived_versions": [
+        "D06_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Un intento de arranque sin la condicion de seguridad activa la alarma.",
+            "evidence": [
+              "step_4"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Con la condicion cumplida, el arranque no activa la alarma (condicional 'si').",
+            "evidence": [
+              "step_1"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D07",
+      "title": "D07 - Arranque retardado de 3 segundos",
+      "complexity": "MEDIUM",
+      "version": 2,
+      "status": "FROZEN",
+      "hash": "e1aeae2999ce34d4764360181cb746f9aeea2a0b5528bf8f47602a4cd3047e7b",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D07-R1",
+        "D07-R2"
+      ],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D07-HELD",
+        "C-TIMING"
+      ],
+      "archived_versions": [
+        "D07_v1.json",
+        "D07_v2.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Mientras Start permanezca activo, espera 3 segundos antes de encender el motor.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con Start activo, el motor sigue apagado durante los 3 s.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Tras 3 s con Start activo, el motor se enciende.",
+            "evidence": [
+              "step_1"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D08",
+      "title": "D08 - Apagar el motor tras 10 s de operacion continua",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "5fbb25e9b5f9f8ec4b54d82f53f0b7a0817aa774004152b770d6e336159ef364",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D08-R1"
+      ],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D08-PULSE",
+        "C-D08-TOLERANCE",
+        "C-PULSE"
+      ],
+      "archived_versions": [
+        "D08_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (START como pulso ('al activar Start') con referencia temporal; sin gap: INT_AUTO_STOP_TIMER cumple con un pulso.)."
+        ]
+      },
+      "canonical_command": "Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Al activar Start el motor se enciende.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Tras 10 s de funcionamiento continuo el motor se apaga automaticamente.",
+            "evidence": [
+              "step_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D09",
+      "title": "D09 - Contar 5 pulsos y activar una salida",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "f84e7a9449f0baf21aad87a533dd644a45adbd4ae56cf941e383377aae5d26d8",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D09-PULSE",
+        "C-D09-HOLD",
+        "C-D09-INIT"
+      ],
+      "archived_versions": [
+        "D09_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Cuenta 5 pulsos de una entrada digital y, al llegar al quinto, activa una salida.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Antes del quinto pulso la salida no se activa.",
+            "evidence": [
+              "p1_off",
+              "p2_off",
+              "p3_off",
+              "p4_off"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Al llegar al quinto pulso se activa la salida.",
+            "evidence": [
+              "p5_on",
+              "p5_off"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D10",
+      "title": "D10 - Reinicio del contador mediante pulsador",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "816f458b0ee7a450e9de8661893e1215ca4b1a1d8454cefd43d3335068027ad8",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D10-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D10",
+          "expected_capability": "Contador de 5 pulsos con salida y Reset a cero.",
+          "current_behavior": "Con el comando v2 la plantilla INT_COUNTER_PULSES (con reset_input) cumple el caso; si el interprete elige INT_COUNTER_RESET (referencia legacy) no hay conteo ni salida.",
+          "severity": "MEDIUM",
+          "recommended_future_fix": "Asegurar que el interprete elija INT_COUNTER_PULSES para D10 (o componer ambos).",
+          "text": "Con el comando v2 la plantilla INT_COUNTER_PULSES (con reset_input) cumple el caso; si el interprete elige INT_COUNTER_RESET (referencia legacy) no hay conteo ni salida."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D10-D09",
+        "C-D10-COUNTED",
+        "C-D10-INITIAL",
+        "C-D09-PULSE"
+      ],
+      "archived_versions": [
+        "D10_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con 5 pulsos se activa la salida.",
+            "evidence": [
+              "a1_off",
+              "a2_off",
+              "a3_off",
+              "a4_off",
+              "a5_on",
+              "a5_off"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Reset apaga la salida.",
+            "evidence": [
+              "reset_on",
+              "reset_off"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Reset reinicia el contador a cero (4 pulsos despues no activan la salida).",
+            "evidence": [
+              "b1_off",
+              "b2_off",
+              "b3_off",
+              "b4_off"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D11",
+      "title": "D11 - Contactor con enclavamiento logico y proteccion de emergencia",
+      "complexity": "HIGH",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "29fcc4038f503bb73bcfec55df8478e28a09340cb9bdf10432c0fd2090367292",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PULSE"
+      ],
+      "archived_versions": [
+        "D11_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Benchmark v2: alineado con el comando canonico (Eliminada la emergencia opcional (solo la pedia la antigua V3; el comando canonico no la menciona).)."
+        ]
+      },
+      "canonical_command": "Controla un contactor con Start y Stop usando enclavamiento de marcha.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Start activa el contactor.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "El contactor queda enclavado al soltar Start.",
+            "evidence": [
+              "step_2"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Stop desactiva el contactor.",
+            "evidence": [
+              "step_3",
+              "step_4"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D12",
+      "title": "D12 - Evitar la activacion simultanea de dos contactores",
+      "complexity": "HIGH",
+      "version": 2,
+      "status": "FROZEN",
+      "hash": "ae4562d0acfb1d32a4648ad25189bbaba2281e725a6c9a93f22f2819700a61c8",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D12-R1",
+        "D12-R2",
+        "D12-R3"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D12",
+          "expected_capability": "Cada contactor sigue su solicitud (REQUEST_A/B) con exclusion mutua.",
+          "current_behavior": "INT_MUTUAL_INTERLOCK usa trigger_input/stop_input como ordenes y enclava los contactores (nunca los desactiva).",
+          "severity": "HIGH",
+          "recommended_future_fix": "Plantilla con solicitudes request_a/request_b y contactores que siguen su solicitud.",
+          "text": "INT_MUTUAL_INTERLOCK usa trigger_input/stop_input como ordenes y enclava los contactores (nunca los desactiva)."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D12-REQ"
+      ],
+      "archived_versions": [
+        "D12_v1.json",
+        "D12_v2.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Cada contactor responde a su propia orden.",
+            "evidence": [
+              "test_1",
+              "test_2",
+              "test_3"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Nunca estan los dos activos al mismo tiempo.",
+            "evidence": [
+              "INV_AB_EXCLUSIVE"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D13",
+      "title": "D13 - Variador habilitado solo sin alarma",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "49452454c0721dc5f87aeb14ea0ce13cb6269c8d389fab1b821d40ab7bdbdf66",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D13-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D13",
+          "expected_capability": "Habilitacion del variador bloqueada por una condicion de alarma de ENTRADA.",
+          "current_behavior": "INT_VFD_ENABLE_NO_ALARM lee alarm_output (una salida que nadie escribe): ALARM_ACTIVE no se resuelve -> REVIEW.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Aceptar alarm_input (condicion de entrada) en la plantilla INT_VFD_ENABLE_NO_ALARM.",
+          "text": "INT_VFD_ENABLE_NO_ALARM lee alarm_output (una salida que nadie escribe): ALARM_ACTIVE no se resuelve -> REVIEW."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D13-ALARM",
+        "C-D13-REQUEST"
+      ],
+      "archived_versions": [
+        "D13_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Ante una orden de marcha, habilita el variador solo si no existe una alarma activa.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con orden de marcha y sin alarma, el variador se habilita.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Con alarma activa el variador no se habilita.",
+            "evidence": [
+              "step_2",
+              "INV_ALARM_VFD"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Sin orden de marcha el variador no se habilita ('ante una orden de marcha').",
+            "evidence": [
+              "step_0"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D14",
+      "title": "D14 - Seleccion de velocidad baja/media/alta",
+      "complexity": "HIGH",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "40c19b18cdc074a2af9eb58bcdecad11b0ea067b529574c9edbd45bb0e3a05d9",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D14-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D14",
+          "expected_capability": "Seleccion de 3 velocidades discretas con salidas one-hot.",
+          "current_behavior": "No existe intent para D14 en el parser/IR (profiles.json: 'trabajo futuro').",
+          "severity": "HIGH",
+          "recommended_future_fix": "Anadir un intent de seleccion de velocidad (tres selectores -> tres salidas excluyentes).",
+          "text": "No existe intent para D14 en el parser/IR (profiles.json: 'trabajo futuro')."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D14-ONEHOT"
+      ],
+      "archived_versions": [
+        "D14_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Entrada baja: solo velocidad baja.",
+            "evidence": [
+              "step_low"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Entrada media: solo velocidad media.",
+            "evidence": [
+              "step_medium"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Entrada alta: solo velocidad alta.",
+            "evidence": [
+              "step_high"
+            ]
+          },
+          {
+            "requirement": "R4",
+            "text": "Nunca mas de una velocidad activa ('unicamente').",
+            "evidence": [
+              "INV_SPEED_ONE_HOT"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D15",
+      "title": "D15 - Modo manual/automatico para la habilitacion del motor",
+      "complexity": "HIGH",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "4c4d43dcb25f9eba649a462164b2f5e3aedc57bc544765e5b02e0ae84f806953",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D15-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D15",
+          "expected_capability": "Ordenes de marcha separadas por modo (MANUAL_COMMAND / AUTO_COMMAND) seleccionadas por MODE_AUTO.",
+          "current_behavior": "INT_MANUAL_AUTO_MODE usa selectores de modo manual/auto y START/STOP comunes: MANUAL_COMMAND/AUTO_COMMAND no se resolveran -> REVIEW.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Plantilla con una orden por modo y un selector MODE_AUTO.",
+          "text": "INT_MANUAL_AUTO_MODE usa selectores de modo manual/auto y START/STOP comunes: MANUAL_COMMAND/AUTO_COMMAND no se resolveran -> REVIEW."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D15-MODES"
+      ],
+      "archived_versions": [
+        "D15_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Barrido de programas triviales tras el cierre: ninguno pasa (la debilidad de 3B queda eliminada).",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "En Manual el motor responde a la orden manual.",
+            "evidence": [
+              "man_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "En Manual la orden automatica no gobierna el motor.",
+            "evidence": [
+              "man_2"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "En Automatico el motor responde a la orden automatica.",
+            "evidence": [
+              "aut_1"
+            ]
+          },
+          {
+            "requirement": "R4",
+            "text": "En Automatico la orden manual no gobierna el motor.",
+            "evidence": [
+              "aut_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D16",
+      "title": "D16 - Secuencia: arranque, espera de 3 s y salida auxiliar",
+      "complexity": "HIGH",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "d5c2e360ca5a31f57dbb6f780ac3bf82fe7e0f59c8c494d687af632e1e6578fc",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D16-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D16",
+          "expected_capability": "Salida principal al inicio y salida auxiliar tras una espera temporizada.",
+          "current_behavior": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Plantilla de secuencia con temporizador de espera y salida por paso.",
+          "text": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D16-WAIT",
+        "C-D16-PULSE",
+        "C-TIMING",
+        "C-PULSE"
+      ],
+      "archived_versions": [
+        "D16_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (START como pulso ('al recibir Start') con referencia temporal.)."
+        ]
+      },
+      "canonical_command": "Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Al recibir Start se activa la salida principal.",
+            "evidence": [
+              "step_1",
+              "step_2"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "La salida auxiliar se activa 3 s despues (no antes).",
+            "evidence": [
+              "step_1",
+              "step_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D17",
+      "title": "D17 - Supervision de sensor 5 s tras Start",
+      "complexity": "HIGH",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "3c701f0d4bbc45c284993a465cfc08073bc5b4cf2a2b0f4ec0421ff25116532a",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D17",
+          "expected_capability": "Supervision del sensor habilitada por Start.",
+          "current_behavior": "INT_SENSOR_TIMEOUT_ALARM supervisa desde el arranque del PLC sin Start: t0_idle generaria alarma.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Condicionar el temporizador de supervision a Start en la plantilla.",
+          "text": "INT_SENSOR_TIMEOUT_ALARM supervisa desde el arranque del PLC sin Start: t0_idle generaria alarma."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D17-START",
+        "C-D17-CHANGES",
+        "C-TIMING"
+      ],
+      "archived_versions": [
+        "D17_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Benchmark v2: alineado con el comando canonico (Anadido START (el comando canonico habilita la supervision con Start); eliminado RESET; nuevo gap.)."
+        ]
+      },
+      "canonical_command": "Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Antes de Start no hay supervision (no hay alarma).",
+            "evidence": [
+              "t0_idle"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Con cambios del sensor en menos de 5 s no hay alarma.",
+            "evidence": [
+              "t2_change",
+              "t3_change"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Si el sensor no cambia durante 5 s, se activa la alarma.",
+            "evidence": [
+              "t4_timeout"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D18",
+      "title": "D18 - Bloqueo del arranque en mantenimiento",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "b319465d3d223a68ae704effab93b25723402d05671233886423a89763fc8cbf",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D18"
+      ],
+      "archived_versions": [
+        "D18_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "En mantenimiento el motor no arranca.",
+            "evidence": [
+              "step_1",
+              "step_2",
+              "step_3"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Fuera de mantenimiento el arranque funciona ('bloquea el arranque' presupone una orden de arranque).",
+            "evidence": [
+              "step_0",
+              "step_4"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D19",
+      "title": "D19 - Pilotos de estado: detenido, marcha y falla",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "ef23fb253cf4dd2142280209d5864f6f07444765bcac1ced6fc718fa4784859c",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D19-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D19",
+          "expected_capability": "Tres pilotos excluyentes (detenido, marcha, falla) que indican el estado actual.",
+          "current_behavior": "No hay intent de referencia para D19; INT_STATUS_PILOTS no genera el piloto de detenido y deriva la falla de la emergencia.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Plantilla de pilotos de estado con prioridad y tres salidas excluyentes.",
+          "text": "No hay intent de referencia para D19; INT_STATUS_PILOTS no genera el piloto de detenido y deriva la falla de la emergencia."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D19-INPUTS"
+      ],
+      "archived_versions": [
+        "D19_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (Eliminada la prioridad FALLA > MARCHA (no esta en el comando): t3 solo ejerce la invariante 'un unico piloto'.)."
+        ]
+      },
+      "canonical_command": "Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Detenido: solo el piloto de detenido.",
+            "evidence": [
+              "t1_stopped"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "En marcha: solo el piloto de marcha.",
+            "evidence": [
+              "t2_run"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "En falla: solo el piloto de falla.",
+            "evidence": [
+              "t4_fault_stopped"
+            ]
+          },
+          {
+            "requirement": "R4",
+            "text": "Unicamente un piloto activo.",
+            "evidence": [
+              "INV_ONE_PILOT"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "D20",
+      "title": "D20 - Ciclo automatico minimo: inicio, ejecucion, fin y reset",
+      "complexity": "HIGH",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "94bc6d4b64cc91672426a315f473bb7736cb08c0eeff0a8d71ee46f4b2a3151d",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "EXECUTABLE_NOW",
+      "runtime_executable": true,
+      "runtime_requirements": [
+        "BOOL"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "D20-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-D20",
+          "expected_capability": "Ciclo con ejecucion temporizada (3 s), estado completo y reset.",
+          "current_behavior": "INT_AUTO_CYCLE avanza un estado por ciclo de PLC mientras AUTO y START estan activos y no tiene estado COMPLETE.",
+          "severity": "HIGH",
+          "recommended_future_fix": "Plantilla de ciclo por estados con temporizador de ejecucion y salida de ciclo completo.",
+          "text": "INT_AUTO_CYCLE avanza un estado por ciclo de PLC mientras AUTO y START estan activos y no tiene estado COMPLETE."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-D20-CYCLE",
+        "C-D20-DURATION",
+        "C-PULSE",
+        "C-TIMING"
+      ],
+      "archived_versions": [
+        "D20_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+          "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Start inicia la ejecucion.",
+            "evidence": [
+              "s1_start"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "A los 3 s la ejecucion se detiene y el ciclo queda marcado como finalizado.",
+            "evidence": [
+              "s2_run",
+              "INV_RUN_COMPLETE"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Reset devuelve al estado inicial.",
+            "evidence": [
+              "s3_reset",
+              "s4_idle"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P01",
+      "title": "P01 - Modo automatico al seleccionar Automatico",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "b461e15510b45a67a9fc054733dc885b3178c27e24e09a886435a1044a6bb710",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "INTERNAL_TAG_READ"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-P01",
+          "expected_capability": "Modo automatico condicionado a una seleccion de Automatico.",
+          "current_behavior": "set_auto_mode activa Auto_Mode incondicionalmente (sin entrada de seleccion): step_0 fallaria.",
+          "severity": "MEDIUM",
+          "recommended_future_fix": "Condicionar set_auto_mode a una entrada de seleccion cuando el comando la menciona.",
+          "text": "set_auto_mode activa Auto_Mode incondicionalmente (sin entrada de seleccion): step_0 fallaria."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME"
+      ],
+      "archived_versions": [
+        "P01_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Benchmark v2: alineado con el comando canonico (Anadido el selector AUTO_SELECT ('cuando se seleccione Automatico'); eliminada la emergencia opcional.)."
+        ]
+      },
+      "canonical_command": "Habilita el modo automático del sistema de nivel cuando se seleccione Automático.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Al seleccionar Automatico, el modo automatico queda habilitado.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Sin seleccionar Automatico, el modo automatico no se habilita (condicional 'cuando').",
+            "evidence": [
+              "step_0"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P02",
+      "title": "P02 - Cambiar el setpoint de nivel a 60 %",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "31c9eaa5c27e83024d62df06857ec515680140fbeeffe895edaaa2e1f617def3",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "REAL",
+        "INTERNAL_TAG_READ"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME"
+      ],
+      "archived_versions": [
+        "P02_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Benchmark v2: alineado con el comando canonico (Eliminada la invariante de rango 10-90 % (el comando solo pide fijar 60 %).)."
+        ]
+      },
+      "canonical_command": "Cambia el setpoint del nivel al 60 %.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "El setpoint de nivel queda en 60 %.",
+            "evidence": [
+              "step_1"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [
+        "Sin precondiciones: el estado inicial depende del reinicio tras la descarga."
+      ],
+      "errors": []
+    },
+    {
+      "case_id": "P03",
+      "title": "P03 - Rechazo de un setpoint fuera del rango seguro",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "a68ddd4e92dc4c94c32441f18d710b7fb1e1c72cadd02cea2ea15e4d29eb12b0",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "P03-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-P03",
+          "expected_capability": "Variable de comando de setpoint validada contra el rango 0-100 % en el PLC, conservando el ultimo valor valido.",
+          "current_behavior": "INT_PID_SUPERVISOR escribe Level_SP con la constante del comando: no hay variable de comando ni validacion en PLC.",
+          "severity": "MEDIUM",
+          "recommended_future_fix": "Anadir Level_SP_Command al contrato PID y validar el rango en la logica supervisora.",
+          "text": "INT_PID_SUPERVISOR escribe Level_SP con la constante del comando: no hay variable de comando ni validacion en PLC."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P03"
+      ],
+      "archived_versions": [
+        "P03_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (Rango aceptado 0-100 % (antes 10-90 % de la configuracion).)."
+        ]
+      },
+      "canonical_command": "Acepta setpoints de nivel entre 0 % y 100 %. Si se solicita un valor fuera de ese rango, recházalo y conserva el último valor válido.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Un setpoint dentro de 0-100 % se acepta.",
+            "evidence": [
+              "pre_valid"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Un valor fuera de rango se rechaza y se conserva el ultimo valido.",
+            "evidence": [
+              "step_1",
+              "INV_SP_RANGE"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P04",
+      "title": "P04 - Alarma de nivel alto (> 90 %)",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "4cb7eea2706be639ee5b6a26434b3fc4325d82259e82977253d66e1b0430e906",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P04"
+      ],
+      "archived_versions": [
+        "P04_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Benchmark v2: alineado con el comando canonico (Solo se evalua la alarma de nivel del comando (eliminada la salida fisica de alarma adicional).)."
+        ]
+      },
+      "canonical_command": "Activa una alarma de nivel alto cuando el nivel supere el 90 %.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con el nivel por encima de 90 % se activa la alarma de nivel alto.",
+            "evidence": [
+              "step_1",
+              "step_3"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Por debajo de 90 % no hay alarma de nivel alto (condicional 'cuando').",
+            "evidence": [
+              "pre_normal",
+              "step_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P05",
+      "title": "P05 - Alarma de nivel bajo (< 10 %)",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "1e7ef1c0624a3d9aa1f8f1a09ed34464fdbc33fe19b916cfdd282762164dcf32",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P05"
+      ],
+      "archived_versions": [
+        "P05_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Benchmark v2: alineado con el comando canonico (Solo se evalua la alarma de nivel del comando (eliminada la salida fisica de alarma adicional).)."
+        ]
+      },
+      "canonical_command": "Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con el nivel por debajo de 10 % se activa la alarma de nivel bajo.",
+            "evidence": [
+              "step_1",
+              "step_3"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Por encima de 10 % no hay alarma de nivel bajo (condicional 'cuando').",
+            "evidence": [
+              "pre_normal",
+              "step_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P06",
+      "title": "P06 - PID habilitado solo en automatico",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "240ffee73cb763079db2b6b670ab06e896dd767eff7e5c10f2dff937279809b6",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P06"
+      ],
+      "archived_versions": [
+        "P06_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Benchmark v2: alineado con el comando canonico (Eliminada la emergencia opcional (no esta en el comando).)."
+        ]
+      },
+      "canonical_command": "Habilita el PID únicamente cuando el sistema esté en modo Automático.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "En modo Automatico el PID esta habilitado.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Fuera de Automatico el PID no esta habilitado ('unicamente').",
+            "evidence": [
+              "pre_manual",
+              "step_2",
+              "INV_PID_ONLY_AUTO"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P07",
+      "title": "P07 - PID deshabilitado por disparo de seguridad",
+      "complexity": "LOW",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "fe7c515b70d34002233f8ea2dc4704dbd74a223cd9e8b90936c6b0cb89ffe41b",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "P07-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-P07",
+          "expected_capability": "Programa P07 con el PID habilitado en automatico antes del disparo.",
+          "current_behavior": "Una orden solo de 'deshabilitar ante emergencia' puede no generar enable_pid: la precondicion fallaria (REVIEW).",
+          "severity": "MEDIUM",
+          "recommended_future_fix": "Componer enable_pid (P06) cuando el caso requiere observar la deshabilitacion.",
+          "text": "Una orden solo de 'deshabilitar ante emergencia' puede no generar enable_pid: la precondicion fallaria (REVIEW)."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P07-TRIP",
+        "C-P07-PRE"
+      ],
+      "archived_versions": [
+        "P07_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (AUTO_MODE marcado como rol del test harness (solo pone el PID en funcionamiento; no es requisito del comando).)."
+        ]
+      },
+      "canonical_command": "Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "La emergencia deshabilita el PID en funcionamiento.",
+            "evidence": [
+              "step_1",
+              "INV_TRIP_PID"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P08",
+      "title": "P08 - Modo manual: habilitacion ON/OFF de la bomba",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "b760f3a0f7ebb6115ef7e46a65d0cd8787a193293064b5076cffaf165e5ffb36",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "P08-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-P08",
+          "expected_capability": "Orden manual de bomba que habilita/deshabilita Q_Pump_Enable en modo manual.",
+          "current_behavior": "set_manual_mode solo escribe Manual_Mode/Auto_Mode: no hay orden manual de bomba (MANUAL_PUMP_COMMAND no se resuelve).",
+          "severity": "HIGH",
+          "recommended_future_fix": "Anadir una entrada de orden manual de bomba al contrato y a la plantilla PID.",
+          "text": "set_manual_mode solo escribe Manual_Mode/Auto_Mode: no hay orden manual de bomba (MANUAL_PUMP_COMMAND no se resuelve)."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P08"
+      ],
+      "archived_versions": [
+        "P08_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (Eliminado set_manual_mode como requisito semantico (el modo Manual es una condicion del comando, no una orden).)."
+        ]
+      },
+      "canonical_command": "En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "En Manual, la orden manual enciende la bomba.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "En Manual, la orden manual apaga la bomba (el control automatico no la mantiene encendida).",
+            "evidence": [
+              "step_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P09",
+      "title": "P09 - Fallo de sensor por valor fuera de rango",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "6a4583cb069d78dbc6500a64324dc98a0c87af94e1f8ffb47270c13e54eb3bc2",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME"
+      ],
+      "archived_versions": [
+        "P09_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Benchmark v2: alineado con el comando canonico (Eliminada la exigencia de deshabilitar el PID (no esta en el comando).)."
+        ]
+      },
+      "canonical_command": "Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Nivel por encima de 100 %: fallo de sensor.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Nivel por debajo de 0 %: fallo de sensor.",
+            "evidence": [
+              "step_3"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Nivel dentro del rango: sin fallo (condicional 'si').",
+            "evidence": [
+              "pre_normal",
+              "step_2"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P10",
+      "title": "P10 - Reset de alarma solo cuando desaparece la falla",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "932a229e3d4e6a0eb15988a7996b62591e6325625347d8d7b15e33a0e71847c2",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "P10-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-P10",
+          "expected_capability": "Alarma activada por la falla de sensor y reset condicionado a que desaparezca.",
+          "current_behavior": "En INT_PID_SUPERVISOR Q_Alarm la activan las alarmas de nivel/sobrellenado, no Sensor_Fault: la precondicion fallaria.",
+          "severity": "MEDIUM",
+          "recommended_future_fix": "Activar la alarma tambien por Sensor_Fault cuando el caso lo pida.",
+          "text": "En INT_PID_SUPERVISOR Q_Alarm la activan las alarmas de nivel/sobrellenado, no Sensor_Fault: la precondicion fallaria."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P10",
+        "C-PULSE"
+      ],
+      "archived_versions": [
+        "P10_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+        ]
+      },
+      "canonical_command": "Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con la falla presente, Reset no borra la alarma.",
+            "evidence": [
+              "step_1",
+              "step_2"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Con la medicion en rango, Reset borra la alarma.",
+            "evidence": [
+              "step_3",
+              "step_4",
+              "step_5"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P11",
+      "title": "P11 - Parada segura por sobrellenado",
+      "complexity": "MEDIUM",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "b846d98d2a99d23054ef1e1a4167e6393398eaa3ef46a98235b65fece14791cc",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [
+        "P11-R1"
+      ],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-P11",
+          "expected_capability": "Bomba habilitada en condicion normal y deshabilitada ante sobrellenado.",
+          "current_behavior": "INT_PID_SUPERVISOR solo fuerza Q_Pump_Enable a FALSE: no la habilita en condicion normal (la precondicion fallaria).",
+          "severity": "MEDIUM",
+          "recommended_future_fix": "Definir en el contrato PID quien habilita la bomba en operacion normal.",
+          "text": "INT_PID_SUPERVISOR solo fuerza Q_Pump_Enable a FALSE: no la habilita en condicion normal (la precondicion fallaria)."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P11"
+      ],
+      "archived_versions": [
+        "P11_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+          "Benchmark v2: alineado con el comando canonico (Eliminado el indicador de disparo (no pedido); solo se exige la bomba apagada mientras nivel >= 95 %.)."
+        ]
+      },
+      "canonical_command": "Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "Con nivel >= 95 % la bomba esta apagada mientras dure la condicion.",
+            "evidence": [
+              "step_1",
+              "INV_OVERFILL_PUMP"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "case_id": "P12",
+      "title": "P12 - Automatico con SP 60 %, alarma > 90 % y recuperacion",
+      "complexity": "HIGH",
+      "version": 1,
+      "status": "FROZEN",
+      "hash": "08877566a2105e89beea0c1d86981534bc8ddff64bcf41e2b5ad06657f9e92f4",
+      "schema_valid": true,
+      "hash_valid": true,
+      "roles_valid": true,
+      "sequence_valid": true,
+      "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+      "runtime_executable": false,
+      "runtime_requirements": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "review_items": [],
+      "resolved_review_items": [],
+      "system_capability_gaps": [
+        {
+          "id": "GAP-P12",
+          "expected_capability": "Condicion segura a > 90 % y recuperacion automatica al volver al rango.",
+          "current_behavior": "INT_PID_SUPERVISOR solo lleva a condicion segura en sobrellenado (>= 95 %) y la recuperacion exige Reset (conditional_alarm_reset).",
+          "severity": "HIGH",
+          "recommended_future_fix": "Permitir condicion segura con umbral configurable y recuperacion sin Reset cuando el comando lo indica.",
+          "text": "INT_PID_SUPERVISOR solo lleva a condicion segura en sobrellenado (>= 95 %) y la recuperacion exige Reset (conditional_alarm_reset)."
+        }
+      ],
+      "experimental_conventions": [
+        "REQ-ORIGINAL",
+        "CMD-CANONICAL",
+        "C-PID",
+        "C-PID-RUNTIME",
+        "C-P12-SAFE",
+        "C-P12-RECOVERY"
+      ],
+      "archived_versions": [
+        "P12_v1.json"
+      ],
+      "ai_review": {
+        "generated": true,
+        "schema_validated": true,
+        "semantic_reviewed": true,
+        "second_pass_reviewed": true,
+        "reviewed_at": "2026-09-29T22:42:01",
+        "notes": [
+          "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+          "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+          "Benchmark v2: alineado con el comando canonico (Reescrito segun el comando canonico: alarma > 90 % con condicion segura y recuperacion automatica sin Reset.)."
+        ]
+      },
+      "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
+      "canonical_alignment": {
+        "command_requirements_covered": [
+          {
+            "requirement": "R1",
+            "text": "En Automatico, PID habilitado con setpoint 60 %.",
+            "evidence": [
+              "step_1"
+            ]
+          },
+          {
+            "requirement": "R2",
+            "text": "Nivel > 90 %: alarma y condicion segura (PID deshabilitado y bomba apagada).",
+            "evidence": [
+              "step_2"
+            ]
+          },
+          {
+            "requirement": "R3",
+            "text": "Con el nivel de nuevo en rango, se recupera la operacion automatica (PID habilitado).",
+            "evidence": [
+              "step_3"
+            ]
+          }
+        ],
+        "extra_oracle_requirements": [],
+        "missing_oracle_requirements": []
+      },
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

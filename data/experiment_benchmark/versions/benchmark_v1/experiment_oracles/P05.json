@@ -1,0 +1,190 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P05",
+  "case_id": "P05",
+  "title": "P05 - Alarma de nivel bajo (< 10 %)",
+  "description": "Cuando el nivel cae por debajo del 10 % se activa la alarma de nivel bajo (y la salida de alarma).",
+  "complexity": "LOW",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P05 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "P05 - Alarma de nivel bajo",
+    "description": "Activar alarma cuando el nivel caiga por debajo del limite bajo configurado.",
+    "reference_intent": "INT_PID_SUPERVISOR",
+    "authorized_signals": [
+      "I_Emergency",
+      "Q_Alarm"
+    ],
+    "variants": {
+      "V1": "Activa una alarma si el nivel baja del 10 %.",
+      "V2": "Quiero que suene la alarma cuando el nivel este por debajo del diez por ciento.",
+      "V3": "Genera alarma de nivel bajo cuando Level_PV caiga bajo 10 %."
+    },
+    "researcher_summary": "Alarma si nivel < 10 %."
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "REAL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "low_level_alarm"
+    ],
+    "required_functions": [
+      "low_level_alarm"
+    ],
+    "required_roles": [
+      "LEVEL_PV",
+      "LOW_LEVEL_ALARM",
+      "ALARM"
+    ]
+  },
+  "roles": {
+    "LEVEL_PV": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Nivel medido (valor de proceso simulado, %).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_PV"
+      ]
+    },
+    "LOW_LEVEL_ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Alarma de nivel bajo.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Low_Level_Alarm"
+      ]
+    },
+    "ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida fisica de alarma.",
+      "semantic_paths": [
+        "alarm_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 0,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Limites tomados de config/pid_supervisor_config.json (setpoint 10-90 %, alarma alta 90 %, baja 10 %, sobrellenado 95 %, rango valido del sensor 0-100 %). Level_PV se inyecta como valor de proceso simulado."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "C-P05",
+      "text": "'Por debajo del 10 %' es estricto; se prueban 5/9/11 %."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_normal",
+      "description": "Nivel normal: sin alarma baja.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "LOW_LEVEL_ALARM": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Nivel 5 %: alarma baja y salida de alarma.",
+      "set": {
+        "LEVEL_PV": 5.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "LOW_LEVEL_ALARM": true,
+        "ALARM": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Nivel 11 %: la alarma baja se desactiva.",
+      "set": {
+        "LEVEL_PV": 11.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "LOW_LEVEL_ALARM": false
+      },
+      "unspecified": [
+        "ALARM"
+      ]
+    },
+    {
+      "id": "step_3",
+      "description": "Nivel 9 %: alarma baja de nuevo.",
+      "set": {
+        "LEVEL_PV": 9.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "LOW_LEVEL_ALARM": true
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_level",
+      "description": "Nivel a valor base seguro.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

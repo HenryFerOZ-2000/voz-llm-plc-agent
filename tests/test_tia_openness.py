@@ -114,3 +114,93 @@ def test_prepare_download_request_never_recompiles_or_reimports(tmp_path: Path) 
     assert "source_path" not in request
     assert "tags" not in request
 
+
+def test_prepare_tia_request_includes_locked_tags_even_when_program_does_not_use_them(tmp_path: Path) -> None:
+    """
+    Section 5/18: LOCKED map entries (I_Start/I_Stop-style, part of the bench's fixed physical
+    configuration) must stay in the desired tag set sent to TIA even when THIS SPECIFIC program's
+    own variables.json never references them - otherwise the bridge's orphan-cleanup (section 7)
+    would delete them from PLC_Agent_IO on any program that happens not to need them directly.
+    A FREE channel with no functional purpose must never appear (section 19).
+    """
+    from plc_maps.registry import save_active_map_id
+    from plc_maps.store import create_plc_map
+
+    project_root = tmp_path / "project"
+    map_path = create_plc_map(
+        project_root,
+        name="mapa_test",
+        variables=[
+            {"name": "I_Start", "class": "input", "type": "BOOL", "location": "%IX16.0", "state": "LOCKED"},
+            {"name": "I_Stop", "class": "input", "type": "BOOL", "location": "%IX16.1", "state": "LOCKED"},
+            {"name": "Q_Free1", "class": "output", "type": "BOOL", "location": "%QX8.5", "state": "FREE"}
+        ]
+    )
+    save_active_map_id(project_root, map_path.stem)
+
+    package_dir = project_root / "generated_code" / "SIEMENS" / "active" / "PKG_LOCKED"
+    package_dir.mkdir(parents=True)
+    (package_dir / "siemens_source.scl").write_text('FUNCTION_BLOCK "PLC_PRG"\nEND_FUNCTION_BLOCK\n', encoding="utf-8")
+    (package_dir / "variables.json").write_text(
+        json.dumps([{"name": "Q_Motor_1", "class": "output", "siemens_type": "Bool", "siemens_address": "%QX8.0"}]),
+        encoding="utf-8"
+    )
+    save_tia_config({"project_path": "C:/TIA/Demo.ap18", "plc_name": "PLC_1"}, project_root)
+
+    _, _, request = prepare_tia_request(package_dir, project_root)
+
+    tag_names = {tag["name"] for tag in request["tags"]}
+    assert tag_names == {"Q_Motor_1", "I_Start", "I_Stop"}
+    tags_by_name = {tag["name"]: tag for tag in request["tags"]}
+    assert tags_by_name["I_Start"]["address"] == "%I16.0"
+    assert tags_by_name["I_Stop"]["address"] == "%I16.1"
+    assert "Q_Free1" not in tag_names
+
+def test_prepare_tia_request_never_leaks_a_previous_programs_tags_into_the_next(tmp_path: Path) -> None:
+    """
+    Section 29: each prepare_tia_request() call builds `tags` fresh from that specific package's
+    own variables.json plus the active map's LOCKED entries - it must never accumulate or carry
+    over tags from an earlier program's request. Program A uses Q_Motor/Q_Pilot_Run; program B
+    (same active map, LOCKED I_Start/I_Stop) uses Q_Valve - B's request must contain ONLY
+    I_Start, I_Stop, Q_Valve, never Q_Motor or Q_Pilot_Run.
+    """
+    from plc_maps.registry import save_active_map_id
+    from plc_maps.store import create_plc_map
+
+    project_root = tmp_path / "project"
+    map_path = create_plc_map(
+        project_root,
+        name="mapa_test",
+        variables=[
+            {"name": "I_Start", "class": "input", "type": "BOOL", "location": "%IX16.0", "state": "LOCKED"},
+            {"name": "I_Stop", "class": "input", "type": "BOOL", "location": "%IX16.1", "state": "LOCKED"}
+        ]
+    )
+    save_active_map_id(project_root, map_path.stem)
+    save_tia_config({"project_path": "C:/TIA/Demo.ap18", "plc_name": "PLC_1"}, project_root)
+
+    package_a = project_root / "generated_code" / "SIEMENS" / "active" / "PKG_A"
+    package_a.mkdir(parents=True)
+    (package_a / "siemens_source.scl").write_text('FUNCTION_BLOCK "PLC_PRG"\nEND_FUNCTION_BLOCK\n', encoding="utf-8")
+    (package_a / "variables.json").write_text(
+        json.dumps([
+            {"name": "Q_Motor", "class": "output", "siemens_type": "Bool", "siemens_address": "%QX8.0"},
+            {"name": "Q_Pilot_Run", "class": "output", "siemens_type": "Bool", "siemens_address": "%QX8.1"}
+        ]),
+        encoding="utf-8"
+    )
+    _, _, request_a = prepare_tia_request(package_a, project_root)
+    assert {tag["name"] for tag in request_a["tags"]} == {"I_Start", "I_Stop", "Q_Motor", "Q_Pilot_Run"}
+
+    package_b = project_root / "generated_code" / "SIEMENS" / "active" / "PKG_B"
+    package_b.mkdir(parents=True)
+    (package_b / "siemens_source.scl").write_text('FUNCTION_BLOCK "PLC_PRG"\nEND_FUNCTION_BLOCK\n', encoding="utf-8")
+    (package_b / "variables.json").write_text(
+        json.dumps([{"name": "Q_Valve", "class": "output", "siemens_type": "Bool", "siemens_address": "%QX8.0"}]),
+        encoding="utf-8"
+    )
+    _, _, request_b = prepare_tia_request(package_b, project_root)
+    tag_names_b = {tag["name"] for tag in request_b["tags"]}
+    assert tag_names_b == {"I_Start", "I_Stop", "Q_Valve"}
+    assert "Q_Motor" not in tag_names_b
+    assert "Q_Pilot_Run" not in tag_names_b

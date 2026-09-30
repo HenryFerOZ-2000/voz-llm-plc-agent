@@ -1,0 +1,235 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P06",
+  "case_id": "P06",
+  "title": "P06 - PID habilitado solo en automatico",
+  "description": "PID_Enable solo esta activo con el modo automatico activo y sin condicion de seguridad (emergencia).",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P06 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T17:56:37",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "P06 - PID condicionado a automatico",
+    "description": "Habilitar el PID unicamente cuando el sistema este en modo automatico y sin condiciones de seguridad activas.",
+    "reference_intent": "INT_PID_SUPERVISOR",
+    "authorized_signals": [
+      "I_Emergency"
+    ],
+    "variants": {
+      "V1": "Habilita el PID solamente cuando el sistema este en automatico.",
+      "V2": "Quiero que el control PID solo funcione en modo automatico.",
+      "V3": "Condiciona PID_Enable a que Auto_Mode este activo."
+    },
+    "researcher_summary": "PID habilitado solo en automatico."
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "enable_pid"
+    ],
+    "required_functions": [
+      "enable_pid_in_auto"
+    ],
+    "required_roles": [
+      "AUTO_MODE",
+      "PID_ENABLE"
+    ]
+  },
+  "roles": {
+    "AUTO_MODE": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Modo automatico (forzado por el Oracle como una orden de HMI).",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Auto_Mode"
+      ]
+    },
+    "EMERGENCY": {
+      "kind": "INPUT",
+      "required": false,
+      "description": "Emergencia (activa = TRUE).",
+      "semantic_paths": [
+        "emergency_input"
+      ]
+    },
+    "PID_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion del PID.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "PID_Enable"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 0,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Limites tomados de config/pid_supervisor_config.json (setpoint 10-90 %, alarma alta 90 %, baja 10 %, sobrellenado 95 %, rango valido del sensor 0-100 %). Level_PV se inyecta como valor de proceso simulado."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "C-P06",
+      "text": "Auto_Mode lo fuerza el Oracle (orden de operador simulada); la emergencia se evalua si se liga."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_manual",
+      "description": "Fuera de automatico: PID deshabilitado.",
+      "set": {
+        "AUTO_MODE": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": false
+      }
+    },
+    {
+      "id": "pre_emergency_off",
+      "description": "Sin emergencia.",
+      "set": {
+        "EMERGENCY": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Automatico activo: PID habilitado.",
+      "set": {
+        "AUTO_MODE": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Sale de automatico: PID deshabilitado.",
+      "set": {
+        "AUTO_MODE": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": false
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Automatico + emergencia: PID deshabilitado.",
+      "set": {
+        "AUTO_MODE": true,
+        "EMERGENCY": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": false
+      },
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    },
+    {
+      "id": "step_4",
+      "description": "Emergencia retirada en automatico: PID habilitado.",
+      "set": {
+        "EMERGENCY": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": true
+      },
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_PID_ONLY_AUTO",
+      "type": "IMPLIES",
+      "roles": [
+        "PID_ENABLE",
+        "AUTO_MODE"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "PID_Enable implica Auto_Mode."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_auto",
+      "description": "Salir de automatico.",
+      "set": {
+        "AUTO_MODE": false
+      },
+      "wait_ms": 200
+    },
+    {
+      "id": "cleanup_emergency",
+      "description": "Emergencia a OFF.",
+      "set": {
+        "EMERGENCY": false
+      },
+      "wait_ms": 200,
+      "requires_roles": [
+        "EMERGENCY"
+      ]
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

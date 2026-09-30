@@ -1,0 +1,204 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P11",
+  "case_id": "P11",
+  "title": "P11 - Parada segura por sobrellenado",
+  "description": "Con nivel normal la bomba esta habilitada; al entrar en sobrellenado (>= 95 %) la bomba se deshabilita y se indica el disparo.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P11 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T18:41:48",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "P11 - Parada segura por sobrellenado",
+    "description": "Detener la bomba de forma segura y generar alarma si el tanque alcanza el nivel de sobrellenado.",
+    "reference_intent": "INT_PID_SUPERVISOR",
+    "authorized_signals": [
+      "I_Emergency",
+      "Q_Pump_Enable",
+      "Q_Alarm"
+    ],
+    "variants": {
+      "V1": "Detén de forma segura la bomba y genera una alarma si el tanque alcanza un nivel de sobrellenado.",
+      "V2": "Quiero una parada segura de la bomba con alarma si el nivel llega a sobrellenado.",
+      "V3": "Activa Safe_Stop, desactiva Q_Pump_Enable y genera Q_Alarm ante sobrellenado."
+    },
+    "researcher_summary": "Parada segura ante sobrellenado."
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "REAL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "safe_overfill_stop"
+    ],
+    "required_functions": [
+      "safe_overfill_stop"
+    ],
+    "required_roles": [
+      "LEVEL_PV",
+      "PUMP_ENABLE",
+      "HIGH_LEVEL_TRIP"
+    ]
+  },
+  "roles": {
+    "LEVEL_PV": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Nivel medido (valor de proceso simulado, %).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_PV"
+      ]
+    },
+    "PUMP_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion de la bomba.",
+      "semantic_paths": [
+        "pump_output"
+      ]
+    },
+    "HIGH_LEVEL_TRIP": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Disparo por sobrellenado.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Safe_Stop",
+        "High_Level_Trip",
+        "Overfill_Trip"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 0,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Limites tomados de config/pid_supervisor_config.json (setpoint 10-90 %, alarma alta 90 %, baja 10 %, sobrellenado 95 %, rango valido del sensor 0-100 %). Level_PV se inyecta como valor de proceso simulado."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: parada segura ante sobrellenado."
+    },
+    {
+      "id": "C-P11",
+      "text": "Sobrellenado = Level_PV >= 95 % (config). Precondicion: con nivel normal el sistema tiene la bomba habilitada, para que la parada sea observable. No se redefine la dinamica PID."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_normal",
+      "description": "Nivel normal: bomba habilitada.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PUMP_ENABLE": true
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Sobrellenado (96 %): bomba deshabilitada y disparo activo.",
+      "set": {
+        "LEVEL_PV": 96.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PUMP_ENABLE": false,
+        "HIGH_LEVEL_TRIP": true
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_OVERFILL_PUMP",
+      "type": "FORBIDDEN_WHEN",
+      "roles": [
+        "PUMP_ENABLE"
+      ],
+      "when": {
+        "role": "LEVEL_PV",
+        "min": 95.0
+      },
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "OVERFILL (Level_PV >= 95 %) => NOT PUMP_ENABLE."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_level",
+      "description": "Nivel a valor base seguro.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "P11-R1",
+      "status": "RESOLVED",
+      "text": "Para observar que la bomba se DETIENE deberia estar en marcha antes del sobrellenado; P11 no define como se habilita la bomba. Sin esa logica 'bomba detenida' se cumple trivialmente; la invariante SAFE_STOP -> bomba detenida si es verificable.",
+      "resolution": "Precondicion de nivel normal con bomba habilitada (C-P11) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-P11",
+      "expected_capability": "Bomba habilitada en condicion normal y deshabilitada ante sobrellenado.",
+      "current_behavior": "INT_PID_SUPERVISOR solo fuerza Q_Pump_Enable a FALSE: no la habilita en condicion normal (la precondicion fallaria).",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Definir en el contrato PID quien habilita la bomba en operacion normal.",
+      "text": "INT_PID_SUPERVISOR solo fuerza Q_Pump_Enable a FALSE: no la habilita en condicion normal (la precondicion fallaria)."
+    }
+  ]
+}

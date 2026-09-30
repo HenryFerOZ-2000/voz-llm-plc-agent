@@ -1,0 +1,216 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D16",
+  "case_id": "D16",
+  "title": "D16 - Secuencia: arranque, espera de 3 s y salida auxiliar",
+  "description": "START activa la salida principal; tras una espera la salida auxiliar se activa.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
+    "version": 1,
+    "hash": null,
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json D16 (INT_SEQUENCE_THREE_STEPS)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T18:41:48",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions."
+      ]
+    }
+  },
+  "source_definition": {
+    "profile_name": "D16 - Secuencia de tres pasos",
+    "description": "Ejecutar una secuencia automatica de tres pasos controlada por memoria de paso.",
+    "reference_intent": "INT_SEQUENCE_THREE_STEPS",
+    "authorized_signals": [
+      "I_Emergency",
+      "I_Reset",
+      "I_Start",
+      "I_Stop",
+      "Q_Aux_Output",
+      "Q_Motor_Enable"
+    ],
+    "variants": {
+      "V1": "Ejecuta una secuencia automatica de tres pasos para el motor.",
+      "V2": "Genera una secuencia de 3 pasos controlada por Start.",
+      "V3": "Programa el paso a paso automatico del motor en tres etapas."
+    },
+    "researcher_summary": "Secuencia: arranque -> espera -> salida auxiliar."
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_SEQUENCE_THREE_STEPS"
+    ],
+    "required_functions": [
+      "start_wait_aux_sequence"
+    ],
+    "required_roles": [
+      "START",
+      "MAIN_OUTPUT",
+      "AUX_OUTPUT"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de inicio de la secuencia.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "MAIN_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida principal (paso de arranque).",
+      "semantic_paths": [
+        "main_output",
+        "motor_output"
+      ]
+    },
+    "AUX_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida auxiliar (tras la espera).",
+      "semantic_paths": [
+        "aux_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 2,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: secuencia de tres pasos: arranque -> espera -> salida auxiliar."
+    },
+    {
+      "id": "C-D16-WAIT",
+      "text": "Espera nominal de 3 s: CONVENCION experimental (la definicion no fija el tiempo)."
+    },
+    {
+      "id": "C-D16-HELD",
+      "text": "START se mantiene durante la prueba (valido para inicio por flanco o por nivel). No se exigen fases adicionales ni el comportamiento al retirar START."
+    },
+    {
+      "id": "C-TIMING",
+      "text": "Temporizaciones: transicion nominal con tolerancia -300 ms / +700 ms medida en el bridge (reloj monotono); las ventanas de evaluacion dejan libre esa banda."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin orden de inicio.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "START mantenido: principal activa de inmediato, auxiliar tras ~3 s.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 4500,
+      "expect": {
+        "MAIN_OUTPUT": true,
+        "AUX_OUTPUT": true
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 300,
+          "to_ms": 4500,
+          "expect": {
+            "MAIN_OUTPUT": true
+          },
+          "note": "Paso de arranque."
+        },
+        {
+          "from_ms": 0,
+          "to_ms": 2700,
+          "expect": {
+            "AUX_OUTPUT": false
+          },
+          "note": "Durante la espera."
+        },
+        {
+          "from_ms": 3700,
+          "to_ms": 4500,
+          "expect": {
+            "AUX_OUTPUT": true
+          },
+          "note": "Tras la espera."
+        }
+      ],
+      "measure_transition": {
+        "role": "AUX_OUTPUT",
+        "to": true,
+        "nominal_ms": 3000,
+        "tolerance_ms": {
+          "early": 300,
+          "late": 700
+        }
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "START a OFF.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D16-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define el contenido de cada paso ni la duracion de la 'espera' (el resumen del investigador habla de arranque -> espera -> salida auxiliar). El Oracle solo exige que la salida auxiliar NO este activa antes del inicio y SI al terminar (<= 10 s). No verifica la espera ni el motor. Definir pasos y tiempos para un Oracle mas estricto.",
+      "resolution": "Pasos arranque/espera/auxiliar con espera de 3 s por convencion (C-D16-WAIT) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D16",
+      "expected_capability": "Salida principal al inicio y salida auxiliar tras una espera temporizada.",
+      "current_behavior": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla de secuencia con temporizador de espera y salida por paso.",
+      "text": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC."
+    }
+  ]
+}
