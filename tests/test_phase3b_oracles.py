@@ -75,7 +75,10 @@ def test_every_oracle_is_schema_valid_without_physical_addresses(case_id):
     text = json.dumps(oracle_schema.normalized_content(oracle))
     assert not re.search(r"%[IQM][XBWD]?\d", text, re.IGNORECASE)
     if oracle_schema.is_formal(oracle):
+        # Aprobado por el investigador: hash integro, aprobador humano y copia inmutable archivada.
         assert oracle["approval"]["hash"] == oracle_schema.compute_oracle_hash(oracle)
+        assert oracle["approval"]["approved_by"] and "claude" not in oracle["approval"]["approved_by"].lower()
+        assert (_ORACLES_DIR / "versions" / f"{case_id}_v{oracle['approval']['version']}.json").exists()
     else:
         assert oracle["approval"]["approved_by"] is None and oracle["approval"]["hash"] is None
         assert oracle["approval"]["status"] == oracle_schema.STATUS_DRAFT_REVIEWED
@@ -138,10 +141,28 @@ def test_d12_v2_redefinition():
     assert all(item["status"] == "RESOLVED" for item in d12["review_items"])
 
 
+def _demote_to_draft(root: Path, keep: tuple[str, ...] = ("D03",)) -> None:
+    """En una COPIA temporal, devuelve a DRAFT_REVIEWED los Oracles ya aprobados por el investigador
+    (salvo `keep`), para probar la aprobacion con independencia del estado del repositorio."""
+    directory = root / "data" / "experiment_oracles"
+    for path in directory.glob("*.json"):
+        oracle = json.loads(path.read_text(encoding="utf-8"))
+        if oracle["oracle_id"] in keep or oracle["approval"]["status"] not in oracle_schema.FORMAL_STATUSES:
+            continue
+        oracle["approval"].update({"status": oracle_schema.STATUS_DRAFT_REVIEWED, "approved_by": None, "approved_at": None, "hash": None})
+        oracle["approval"].setdefault("ai_review", {"generated": True, "schema_validated": True, "semantic_reviewed": True,
+                                                    "reviewed_at": "2026-09-29T00:00:00"})
+        path.write_text(json.dumps(oracle, indent=2, ensure_ascii=False), encoding="utf-8")
+        archived = directory / "versions" / f"{oracle['oracle_id']}_v{oracle['approval']['version']}.json"
+        if archived.exists():
+            archived.unlink()
+
+
 def test_frozen_oracle_is_immutable(tmp_path):
     root = tmp_path / "project"
     shutil.copytree(_ORACLES_DIR, root / "data" / "experiment_oracles")
     shutil.copytree(_ROOT / "data" / "experiment_cases", root / "data" / "experiment_cases")  # catalogo canonico (alineacion)
+    _demote_to_draft(root)  # prueba el MECANISMO de aprobacion, independiente de lo ya aprobado en el repositorio
     d03 = oracle_schema.load_oracle(root, "D03")
     edited = json.loads(json.dumps(d03))
     edited["test_sequence"][0]["wait_ms"] = 900
@@ -883,6 +904,7 @@ def test_mass_approval_skips_oracles_with_open_review_items(tmp_path):
     root = tmp_path / "project"
     shutil.copytree(_ORACLES_DIR, root / "data" / "experiment_oracles")
     shutil.copytree(_ROOT / "data" / "experiment_cases", root / "data" / "experiment_cases")  # catalogo canonico (alineacion)
+    _demote_to_draft(root)  # prueba el MECANISMO de aprobacion, independiente de lo ya aprobado en el repositorio
     with pytest.raises(ValueError):
         oracle_review.approve_all_without_review_items(root, "INV01", confirmation="ok")
     outcome = oracle_review.approve_all_without_review_items(root, "INV01", confirmation=oracle_review.MASS_APPROVAL_CONFIRMATION)
@@ -941,6 +963,7 @@ def test_gui_oracle_review_window_lists_32_and_mass_approval_is_guarded(app, tmp
     root = tmp_path / "project"
     shutil.copytree(_ORACLES_DIR, root / "data" / "experiment_oracles")
     shutil.copytree(_ROOT / "data" / "experiment_cases", root / "data" / "experiment_cases")  # catalogo canonico (alineacion)
+    _demote_to_draft(root)  # prueba el MECANISMO de aprobacion, independiente de lo ya aprobado en el repositorio
     monkeypatch.setattr(app, "project_root", root)
     monkeypatch.setattr(gui.messagebox, "askyesno", lambda *a, **k: True)
     monkeypatch.setattr(gui.messagebox, "showinfo", lambda *a, **k: None)

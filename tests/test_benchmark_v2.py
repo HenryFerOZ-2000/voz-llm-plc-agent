@@ -160,10 +160,13 @@ def test_frozen_oracles_untouched():
     for case_id in ("D03", "D07", "D12"):
         v1 = json.loads((_ROOT / "data/experiment_oracles/versions" / f"{case_id}_v1.json").read_text(encoding="utf-8"))
         assert v1["approval"]["status"] == "FROZEN" and v1["approval"]["hash"] == S.compute_oracle_hash(v1)
-    for case_id in ("D07", "D12"):  # v2 (borrador) coincide con el comando canonico
+    for case_id in ("D07", "D12"):  # v2 coincide con el comando canonico (borrador o ya aprobada por el investigador)
         oracle = S.load_oracle(_ROOT, case_id)
-        assert oracle["approval"]["version"] == 2 and not S.is_formal(oracle)
+        assert oracle["approval"]["version"] == 2
         assert oracle["source_definition"]["canonical_case_hash"] == BC.case_hash(CASES[case_id])
+        if S.is_formal(oracle):
+            assert oracle["approval"]["hash"] == S.compute_oracle_hash(oracle)
+            assert (_ROOT / "data/experiment_oracles/versions" / f"{case_id}_v2.json").exists()
 
 
 def test_benchmark_v1_archived_with_hashes():
@@ -171,7 +174,7 @@ def test_benchmark_v1_archived_with_hashes():
     manifest = json.loads((base / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["benchmark_version"] == 1 and "DEVELOPMENT_TRIAL" in manifest["note"]
     for relative, digest in manifest["files"].items():
-        assert _hash(base / relative) == digest, relative
+        assert BC.normalized_file_hash(base / relative) == digest, relative
     legacy = json.loads((base / "experiment_variants.json").read_text(encoding="utf-8"))["variants"]["D08"]
     assert any("paro" in BC.normalize(v["command"]) for v in legacy)  # el texto legacy queda como evidencia
 

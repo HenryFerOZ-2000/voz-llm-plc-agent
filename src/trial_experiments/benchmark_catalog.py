@@ -70,6 +70,12 @@ def case_hash(case: dict[str, Any]) -> str:
         "command_requirements", "test_harness_setup")})
 
 
+def normalized_file_hash(path: Path) -> str:
+    """SHA-256 del contenido con saltos de linea normalizados a LF: identico en Windows (autocrlf) y en
+    cualquier otro checkout. Se usa para verificar el archivo historico del benchmark."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def variant_hash(text: str) -> str:
     return _sha256(str(text).strip())
 

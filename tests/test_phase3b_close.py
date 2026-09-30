@@ -69,13 +69,21 @@ def test_hashes_valid_d03_untouched_and_no_ai_approval():
     assert d03["approval"]["status"] == "FROZEN" and d03["approval"]["approved_by"] == "Henry"
     assert d03["approval"]["hash"] == oracle_schema.compute_oracle_hash(d03) == \
         "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
+    pending = set()
     for case_id in oracle_review.EXPECTED_ORACLE_IDS:
         oracle = _oracle(case_id)
-        if case_id != "D03":
-            assert oracle["approval"]["status"] == "DRAFT_REVIEWED" and oracle["approval"]["approved_by"] is None
-            assert oracle["approval"]["ai_review"]["semantic_reviewed"] is True
-    assert set(oracle_review.build_validation_report(_ROOT)["summary"]["ready_for_human_approval"]) == \
-        set(oracle_review.EXPECTED_ORACLE_IDS) - {"D03"}
+        approval = oracle["approval"]
+        if case_id == "D03":
+            continue
+        assert approval["ai_review"]["semantic_reviewed"] is True  # la revision asistida queda registrada
+        if oracle_schema.is_formal(oracle):
+            # Aprobacion formal: siempre humana (nunca una IA) y con hash integro.
+            assert approval["approved_by"] and not any(n in approval["approved_by"].lower() for n in ("claude", "chatgpt", "ia"))
+            assert approval["hash"] == oracle_schema.compute_oracle_hash(oracle)
+        else:
+            assert approval["status"] == "DRAFT_REVIEWED" and approval["approved_by"] is None
+            pending.add(case_id)
+    assert set(oracle_review.build_validation_report(_ROOT)["summary"]["ready_for_human_approval"]) == pending
 
 
 def test_every_closed_case_separates_original_requirement_from_conventions():
