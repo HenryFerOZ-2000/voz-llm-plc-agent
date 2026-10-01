@@ -206,7 +206,10 @@ def test_experiment_compile_success_auto_downloads_and_prepares_trial(pipeline):
     assert len(pipeline["download_calls"]) == 1
     assert pipeline["download_calls"][0]["purpose"] == tia_openness.DOWNLOAD_PURPOSE_EXPERIMENT
     record = trial_model.load_trial(trial_directory)
-    assert record["trial_id"] == "D12_V2_TEXT_001"
+    # Diseno v2: sin fase FORMAL (software no congelado) el ensayo es de desarrollo -> _DEV_.
+    assert record["trial_id"] == "D12_V2_TEXT_DEV_001"
+    assert record["trial_kind"] == trial_model.TRIAL_KIND_DEVELOPMENT
+    assert "development_validation_v2" in trial_directory.parts
     assert record["final_status"] == trial_model.FINAL_STATUS_PREPARED
     assert record["stages"]["compile_success"] is True
     assert record["stages"]["download_success"] is True

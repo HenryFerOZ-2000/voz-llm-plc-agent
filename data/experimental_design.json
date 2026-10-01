@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "design_version": 2,
+  "benchmark_version": 2,
+  "description": "Diseno experimental formal de la tesis: una arquitectura fija (comando -> LLM -> programa PLC -> TIA Portal -> PLCSIM Advanced -> Oracle) evaluada sobre el benchmark v2. Fuente de verdad para la GUI, el batch runner y los reportes.",
+  "architecture": {
+    "pipeline": ["INPUT (texto o voz)", "ASR (solo voz)", "interpretacion semantica LLM", "IOAllocator", "IR", "generacion SCL", "verificador", "TIA Portal V18 (compilacion)", "descarga", "S7-PLCSIM Advanced V5", "Oracle"],
+    "parser_mode": "llm",
+    "parser_mode_role": "Metadata tecnica de trazabilidad. NO es un factor experimental ni forma parte del trial_id.",
+    "engineering_tool": "Siemens TIA Portal V18",
+    "plc_family": "S7-1500 (CPU 1516-3 PN/DP)",
+    "simulator": "S7-PLCSIM Advanced V5",
+    "target_type": "PLCSIM_ADVANCED",
+    "physical_download": "forbidden"
+  },
+  "formal_input_modes": [
+    {"id": "TEXT", "label": "Texto", "requires_voice": false, "noise": "none",
+     "description": "El comando V1/V2/V3 se introduce como texto: mide interpretacion, generacion, compilacion, ejecucion y seguridad sin contaminacion por ASR."},
+    {"id": "VOICE_CLEAN", "label": "Voz limpia", "requires_voice": true, "noise": "none",
+     "description": "El mismo comando se pronuncia en condiciones acusticas limpias: audio -> ASR -> mismo pipeline."},
+    {"id": "VOICE_NOISE", "label": "Voz con ruido", "requires_voice": true, "noise": "required",
+     "description": "El mismo comando de voz con ruido industrial controlado: solo cambia la condicion acustica (case_id, variante y contenido funcional se conservan)."}
+  ],
+  "formal_variants": ["V1", "V2", "V3"],
+  "domains": [
+    {"id": "DISCRETE", "cases": "D01-D20", "case_count": 20},
+    {"id": "PID_SUPERVISOR", "cases": "P01-P12", "case_count": 12}
+  ],
+  "complexity_levels": ["LOW", "MEDIUM", "HIGH"],
+  "factors": ["DOMAIN", "COMPLEXITY", "VARIANT", "INPUT_MODE", "CASE"],
+  "non_factors": {
+    "parser_mode": "Rules/LLM/Hybrid no son factores: la arquitectura evaluada es una sola.",
+    "manual_programming": "MANUAL_BASELINE es un analisis secundario de tiempo, fuera del factorial."
+  },
+  "formal_trial_count": 288,
+  "repetitions_per_cell": 1,
+  "trial_kinds": ["DEVELOPMENT_TRIAL", "FORMAL_TRIAL"],
+  "experiment_phases": ["BASELINE", "DEVELOPMENT_VALIDATION", "FORMAL"],
+  "default_gui_phase": "DEVELOPMENT_VALIDATION",
+  "phase_results_dirs": {
+    "BASELINE": "results/development_baseline_v2",
+    "DEVELOPMENT_VALIDATION": "results/development_validation_v2",
+    "FORMAL": "results/experiments"
+  },
+  "baseline": {
+    "id": "DISCRETE_TEXT_BASELINE_V2",
+    "domain": "DISCRETE",
+    "cases": "D01-D20",
+    "variants": ["V1", "V2", "V3"],
+    "input_modes": ["TEXT"],
+    "trial_count": 60,
+    "trial_kind": "DEVELOPMENT_TRIAL",
+    "experiment_phase": "BASELINE",
+    "purpose": "Fotografia objetiva del estado actual del sistema y confirmacion real de los SYSTEM_CAPABILITY_GAP antes de modificar el generador. No es un resultado formal de la tesis."
+  },
+  "manual_baseline": {
+    "enabled": true,
+    "included_in_factorial": false,
+    "status": "NOT_EXECUTED",
+    "purpose": "Analisis secundario: tiempo de programacion manual frente al tiempo de la arquitectura en un subconjunto representativo de tareas (a definir)."
+  },
+  "primary_metrics": ["semantic_success", "compile_success", "functional_success", "safety_violation", "end_to_end_latency_ms"],
+  "secondary_metrics": ["asr_wer", "clarification_rate", "failure_category", "variant_robustness", "by_complexity", "by_domain", "by_input_mode"],
+  "latency_fields": ["semantic_ms", "generation_ms", "compile_ms", "download_ms", "runtime_ms", "oracle_ms", "total_ms"],
+  "asr_fields": ["audio_reference", "asr_transcript", "wer", "noise_profile", "snr_db"],
+  "failure_taxonomy": {
+    "SUCCESS": "PASS del Oracle.",
+    "SEMANTIC_FAILURE": "La interpretacion no produjo una salida semantica valida (incluye aclaraciones sin respuesta).",
+    "IO_ALLOCATION_FAILURE": "El IOAllocator no pudo resolver las E/S del ensayo.",
+    "IR_FAILURE": "Fallo al construir la representacion intermedia.",
+    "CODEGEN_FAILURE": "Fallo o excepcion al generar el codigo.",
+    "VERIFICATION_FAILURE": "El verificador rechazo el programa generado.",
+    "COMPILE_FAILURE": "TIA Portal no compilo el programa (fallo del sistema, no de infraestructura).",
+    "DOWNLOAD_FAILURE": "La descarga a PLCSIM fallo (infraestructura).",
+    "RUNTIME_FAILURE": "La CPU no quedo en RUN tras la descarga (infraestructura).",
+    "FUNCTIONAL_FAILURE": "El Oracle observo un comportamiento distinto del exigido.",
+    "SAFETY_FAILURE": "El Oracle observo la violacion de una invariante CRITICAL.",
+    "INFRASTRUCTURE_ERROR": "TIA/PLCSIM/Runtime/servicios externos fallaron: nunca se cuenta como FAIL funcional.",
+    "REVIEW": "El evaluador no pudo decidir inequivocamente (rol ambiguo, precondicion no establecida, extension de Runtime requerida...)."
+  },
+  "formal_freeze": {
+    "manifest": "data/software_freeze_manifest.json",
+    "required_for_formal_trials": true,
+    "status": "NOT_FROZEN",
+    "freeze_after": ["baseline D completo", "correccion de gaps", "validacion D", "extension Runtime PID", "correccion/validacion PID", "suite de regresion completa"]
+  },
+  "legacy_conditions": {
+    "status": "DEPRECATED",
+    "note": "Condiciones del diseno anterior. No se usan en el diseno formal v2 ni como factor estadistico.",
+    "conditions": {
+      "C0": "Programacion manual",
+      "C1": "LLM directo desde texto",
+      "C2": "Texto estructurado + LLM + verificacion",
+      "C3": "Voz + ASR + interpretacion + LLM + verificacion",
+      "C4": "Voz con ruido industrial simulado"
+    }
+  }
+}

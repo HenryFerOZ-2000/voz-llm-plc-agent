@@ -560,7 +560,8 @@ def run_oracle(
     started = time.perf_counter()
     result: dict[str, Any] = {
         "oracle_reference": oracle_schema.oracle_reference(oracle),
-        "trial_kind": TRIAL_KIND_FORMAL if oracle_schema.is_formal(oracle) else TRIAL_KIND_DEVELOPMENT,
+        # El estado del Oracle ya no decide el tipo de ensayo (lo decide la fase de la sesion).
+        "oracle_formal": oracle_schema.is_formal(oracle),
         "roles": {"status": None, "roles": {}, "issues": []},
         "semantic": _empty(),
         "resources": {},
@@ -680,7 +681,8 @@ def build_evaluation_report(trial_record: dict[str, Any], oracle_result: dict[st
         "case_id": trial_record.get("case_id"),
         "variant_id": trial_record.get("variant_id"),
         "input_mode": trial_record.get("input_mode"),
-        "trial_kind": oracle_result.get("trial_kind"),
+        "trial_kind": trial_record.get("trial_kind"),
+        "experiment_phase": trial_record.get("experiment_phase"),
         "benchmark": {key: trial_record.get(key) for key in ("benchmark_version", "canonical_case_hash", "variant_hash")},
         "oracle": oracle_result.get("oracle_reference"),
         "semantic": {
@@ -731,7 +733,6 @@ def trial_patch(oracle_result: dict[str, Any], artifacts: dict[str, str] | None 
     functional = {k: oracle_result["functional"].get(k) for k in ("evaluated", "success", "passed_checks", "total_checks", "pass_rate")}
     safety = {k: oracle_result["safety"].get(k) for k in ("evaluated", "success", "invariants_defined", "critical_violations", "samples_checked")}
     return {
-        "trial_kind": oracle_result.get("trial_kind"),
         "oracle_reference": oracle_result.get("oracle_reference"),
         "oracle": {
             "verdict": oracle_result.get("verdict"),
@@ -746,5 +747,5 @@ def trial_patch(oracle_result: dict[str, Any], artifacts: dict[str, str] | None 
         "functional": functional,
         "safety": safety,
         "stages": {"functional_success": functional["success"], "safety_success": safety["success"]},
-        "timing": {"functional_test_ms": oracle_result.get("duration_ms")},
+        "timing": {"functional_test_ms": oracle_result.get("duration_ms"), "oracle_ms": oracle_result.get("duration_ms")},
     }

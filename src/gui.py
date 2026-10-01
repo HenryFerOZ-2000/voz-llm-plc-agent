@@ -100,10 +100,10 @@ import plcsim_runtime
 import plcsim_runtime_io
 from plcsim_runtime import get_plcsim_runtime_status
 from trial_experiments import benchmark_catalog, oracle_review, oracle_runner, oracle_schema, trial_io_map, trial_model
+from trial_experiments import experimental_design, resource_policy
 from trial_experiments.oracle_runner import run_oracle
 from trial_experiments.oracle_schema import find_case_oracle
 from trial_experiments import (
-    CONDITIONS,
     ENVIRONMENT_LABELS,
     ENVIRONMENTS,
     ERROR_CODES,
@@ -133,6 +133,24 @@ ctk.set_default_color_theme("green")
 
 
 GUI_INSTANCE_PORT = 49573
+
+# Diseno experimental v2 (data/experimental_design.json): la modalidad de entrada es el factor;
+# Rules/LLM/Hybrid y las condiciones C1-C4 quedan fuera del flujo formal (legacy DEPRECATED).
+INPUT_MODE_LABELS = {
+    trial_model.INPUT_MODE_TEXT: "TEXT - Texto",
+    trial_model.INPUT_MODE_VOICE_CLEAN: "VOICE_CLEAN - Voz limpia",
+    trial_model.INPUT_MODE_VOICE_NOISE: "VOICE_NOISE - Voz con ruido",
+}
+EXPERIMENT_PHASE_LABELS = {
+    trial_model.PHASE_BASELINE: "BASELINE (desarrollo)",
+    trial_model.PHASE_DEVELOPMENT: "DEVELOPMENT_VALIDATION (desarrollo)",
+    trial_model.PHASE_FORMAL: "FORMAL (requiere software congelado)",
+}
+# Palabras que delatan un fallo del servicio externo (API LLM / red), no del sistema evaluado.
+_EXTERNAL_SERVICE_ERROR_MARKERS = (
+    "timeout", "timed out", "connection", "connect", "network", "rate limit", "ratelimit", "429", "502", "503",
+    "504", "service unavailable", "apiconnectionerror", "apitimeouterror", "authentication", "401", "ssl",
+)
 _GUI_INSTANCE_SOCKET: socket.socket | None = None
 
 
@@ -1095,7 +1113,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self._experiment_profiles_by_case: dict[str, dict[str, Any]] = {}
         self.experiment_group_var = tk.StringVar(value="Discreto D01-D20")
         self.experiment_case_var = tk.StringVar(value="")
-        self.experiment_condition_var = tk.StringVar(value=CONDITIONS["C1"]["label"])
+        self.experiment_input_mode_var = tk.StringVar(value=INPUT_MODE_LABELS[trial_model.INPUT_MODE_TEXT])
+        self.experiment_phase_var = tk.StringVar(value=EXPERIMENT_PHASE_LABELS[trial_model.PHASE_DEVELOPMENT])
         self.experiment_variant_var = tk.StringVar(value="V1")
         self.experiment_speaker_var = tk.StringVar(value="P01")
         self.experiment_noise_var = tk.StringVar(value=NOISE_LEVEL_LABELS["none"])
@@ -1106,7 +1125,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_next_label_var = tk.StringVar(value="")
         self.experiment_variant_command_var = tk.StringVar(value="")
         self._active_variant_command_text: str = ""
-        self._last_experiment_condition_code: str | None = None
+        self._last_experiment_input_mode: str | None = None
         self.manual_result_var = tk.StringVar(value=PHYSICAL_RESULT_OPTIONS[0])
         self.manual_safety_var = tk.StringVar(value="No")
         self.manual_error_var = tk.StringVar(value=NO_ERROR_LABEL)
@@ -2036,17 +2055,29 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.use_variant_command_button.grid(row=9, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
-        condition_label = ctk.CTkLabel(frame, text="Condicion experimental", font=self.body_font)
-        condition_label.grid(row=10, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
-        self.experiment_condition_selector = ctk.CTkOptionMenu(
+        # Diseno v2: Modalidad (factor) + Fase (DEVELOPMENT/FORMAL). Sin selector Rules/LLM/Hybrid ni C1-C4.
+        input_mode_label = ctk.CTkLabel(frame, text="Modalidad de entrada", font=self.body_font)
+        input_mode_label.grid(row=10, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
+        phase_label = ctk.CTkLabel(frame, text="Fase experimental", font=self.body_font)
+        phase_label.grid(row=10, column=1, padx=(4, 12), pady=(0, 2), sticky="w")
+        self.experiment_input_mode_selector = ctk.CTkOptionMenu(
             frame,
-            variable=self.experiment_condition_var,
-            values=[data["label"] for data in CONDITIONS.values()],
-            command=self._on_experiment_condition_changed,
+            variable=self.experiment_input_mode_var,
+            values=list(INPUT_MODE_LABELS.values()),
+            command=self._on_experiment_input_mode_changed,
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_condition_selector.grid(row=11, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        self.experiment_input_mode_selector.grid(row=11, column=0, padx=(12, 4), pady=(0, 6), sticky="ew")
+        self.experiment_phase_selector = ctk.CTkOptionMenu(
+            frame,
+            variable=self.experiment_phase_var,
+            values=list(EXPERIMENT_PHASE_LABELS.values()),
+            command=lambda _choice=None: self._refresh_experiment_status(),
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_phase_selector.grid(row=11, column=1, padx=(4, 12), pady=(0, 6), sticky="ew")
 
         speaker_label = ctk.CTkLabel(frame, text="Participante (speaker_id)", font=self.body_font)
         speaker_label.grid(row=12, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
@@ -3170,7 +3201,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self._update_new_trial({
             "runtime": plcsim_runtime.trial_runtime_section(runtime_report),
             "download": {"cpu_run_confirmed": confirmed},
-            "stages": {"runtime_connection_success": connected}
+            "stages": {"runtime_connection_success": connected},
+            "timing": {"runtime_ms": runtime_report.get("duration_ms")}
         })
         new_dir = self._new_trial_dir()
         if new_dir is not None:
@@ -3386,7 +3418,7 @@ class VozLLMPLCGUI(ctk.CTk):
         result = result or {}
         functional = result.get("functional") or {}
         safety = result.get("safety") or {}
-        kind = result.get("trial_kind") or "-"
+        kind = (self.active_trial or {}).get("trial_kind") or "-"
         summary = (
             f"Ensayo {final_status} · funcional {functional.get('passed_checks', '-')}/{functional.get('total_checks', '-')} · "
             f"seguridad {'OK' if safety.get('success') else ('VIOLACION' if safety.get('success') is False else '-')} · {kind}"
@@ -4482,6 +4514,16 @@ class VozLLMPLCGUI(ctk.CTk):
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo persistir la variable funcional nueva en el mapa activo: {error}")
 
+    def _benchmark_version(self) -> Any:
+        """Version del benchmark vigente (la del ensayo activo si existe; si no, la del catalogo)."""
+        version = (self.active_trial or {}).get("benchmark_version")
+        if version is not None:
+            return version
+        try:
+            return benchmark_catalog.load_catalog(self.project_root).get("benchmark_version")
+        except (OSError, ValueError):
+            return None
+
     def _load_runtime_configuration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         trial_info = self._trial_io()
         if trial_info is not None:
@@ -4491,8 +4533,11 @@ class VozLLMPLCGUI(ctk.CTk):
             io_map = trial_io_map.load_working_map(Path(trial_info["io_map"]["working_map_path"]))
         else:
             io_map = load_json_file(self.io_map_path)
-            active_profile = get_profile(self.project_root, self.active_profile_id) if self.active_profile_id else None
-            io_map = apply_profile_filter(io_map, active_profile)
+            # Benchmark v2: allowed_variables es metadata historica, nunca una whitelist. El filtro
+            # por perfil solo sobrevive, aislado, para el benchmark legacy v1.
+            if resource_policy.legacy_profile_whitelist_applies(self._benchmark_version()):
+                active_profile = get_profile(self.project_root, self.active_profile_id) if self.active_profile_id else None
+                io_map = apply_profile_filter(io_map, active_profile)
         intents_catalog = load_json_file(self.intents_catalog_path)
         safety_rules = load_json_file(self.safety_rules_path)
         return io_map, intents_catalog, safety_rules
@@ -5108,7 +5153,7 @@ class VozLLMPLCGUI(ctk.CTk):
             self.profile_selector_label.configure(text="Perfil de prueba (automatico - Modo Experimentacion)")
             self.experiment_controls_frame.grid()
             self._refresh_experiment_case_selector()
-            self._on_experiment_condition_changed()
+            self._on_experiment_input_mode_changed()
         else:
             self.experiment_controls_frame.grid_remove()
             self.manual_result_frame.grid_remove()
@@ -5208,19 +5253,17 @@ class VozLLMPLCGUI(ctk.CTk):
         self.command_textbox.delete("1.0", "end")
         self.command_textbox.insert("1.0", self._active_variant_command_text)
 
-    def _on_experiment_condition_changed(self, _choice: str | None = None) -> None:
-        condition = self._selected_condition()
-        if condition["noise_locked_to"] is not None:
-            self.experiment_noise_var.set(NOISE_LEVEL_LABELS[condition["noise_locked_to"]])
-            self.experiment_noise_selector.configure(state="disabled")
-        else:
+    def _on_experiment_input_mode_changed(self, _choice: str | None = None) -> None:
+        """TEXT y VOICE_CLEAN fijan 'sin ruido'; VOICE_NOISE exige un nivel de ruido (protocolo pendiente)."""
+        input_mode = self._selected_input_mode()
+        if input_mode == trial_model.INPUT_MODE_VOICE_NOISE:
             self.experiment_noise_selector.configure(state="normal")
-            if condition["code"] == "C3" and self._last_experiment_condition_code != "C3":
-                # C3 arranca "sin ruido" por defecto, pero queda editable de inmediato.
-                self.experiment_noise_var.set(NOISE_LEVEL_LABELS["none"])
-            if condition.get("noise_required") and self._selected_noise_level() == "none":
+            if self._selected_noise_level() == "none":
                 self.experiment_noise_var.set(NOISE_LEVEL_LABELS["medium"])
-        self._last_experiment_condition_code = condition["code"]
+        else:
+            self.experiment_noise_var.set(NOISE_LEVEL_LABELS["none"])
+            self.experiment_noise_selector.configure(state="disabled")
+        self._last_experiment_input_mode = input_mode
         self._refresh_experiment_status()
 
     def _on_experiment_environment_changed(self, _choice: str | None = None) -> None:
@@ -5230,12 +5273,36 @@ class VozLLMPLCGUI(ctk.CTk):
         self._update_variant_command_preview()
         self._refresh_experiment_status()
 
+    def _selected_input_mode(self) -> str:
+        label = self.experiment_input_mode_var.get()
+        for mode, mode_label in INPUT_MODE_LABELS.items():
+            if mode_label == label or mode == label:
+                return mode
+        return trial_model.INPUT_MODE_TEXT
+
+    def _selected_phase(self) -> str:
+        label = self.experiment_phase_var.get()
+        for phase, phase_label in EXPERIMENT_PHASE_LABELS.items():
+            if phase_label == label or phase == label:
+                return phase
+        return trial_model.PHASE_DEVELOPMENT
+
     def _selected_condition(self) -> dict[str, Any]:
-        label = self.experiment_condition_var.get()
-        for code, data in CONDITIONS.items():
-            if data["label"] == label:
-                return {**data, "code": code}
-        return {**CONDITIONS["C1"], "code": "C1"}
+        """
+        Compatibilidad con el registro legacy: la 'condicion' es ahora la modalidad de entrada. El
+        modo de parser es el de la arquitectura evaluada (metadata tecnica, nunca un factor).
+        """
+        input_mode = self._selected_input_mode()
+        try:
+            parser_mode = experimental_design.architecture_parser_mode(self.project_root)
+        except (OSError, ValueError, KeyError):
+            parser_mode = "llm"
+        return {
+            "code": input_mode,
+            "input_mode": input_mode,
+            "parser_mode": parser_mode,
+            "requires_voice": input_mode != trial_model.INPUT_MODE_TEXT,
+        }
 
     def _selected_noise_level(self) -> str:
         label = self.experiment_noise_var.get()
@@ -5262,11 +5329,13 @@ class VozLLMPLCGUI(ctk.CTk):
         readiness = profile_readiness_summary(self.project_root, profile)
         environment = self._selected_environment()
         allowed_variables = profile.get("allowed_variables", [])
+        legacy_whitelist = resource_policy.legacy_profile_whitelist_applies(self._benchmark_version())
         lines = [
             f"Perfil asociado: {profile['profile_id']}",
-            f"Variables habilitadas: {len(allowed_variables)}   (mapa: {len(self.io_variables)})",
+            (f"Variables habilitadas: {len(allowed_variables)}   (mapa: {len(self.io_variables)})" if legacy_whitelist
+             else f"Recursos: working_io_map completo ({len(self.io_variables)} variables); allowed_variables = metadata historica"),
         ]
-        if self.pending_semantic_output is not None:
+        if self.pending_semantic_output is not None and legacy_whitelist:
             compatibility = check_case_compatibility(self.pending_semantic_output, profile)
             if compatibility["compatible"]:
                 lines.append("Compatibilidad: ✓ Compatible")
@@ -5286,12 +5355,22 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_status_var.set("\n".join(lines))
         self.start_trial_button.configure(state="normal")
 
-        condition_code = self._selected_condition()["code"]
         case_id = profile.get("case_id", "")
         variant = self.experiment_variant_var.get()
-        next_repetition = compute_next_repetition(self.project_root, condition_code, case_id, variant)
-        next_label = build_experiment_label(condition_code, case_id, variant, next_repetition)
-        self.experiment_next_label_var.set(f"Proximo ensayo: {next_label}")
+        input_mode = self._selected_input_mode()
+        phase = self._selected_phase()
+        try:
+            number = trial_model.next_trial_number(self.project_root, case_id, variant, input_mode, phase)
+            next_id = trial_model.build_trial_id(
+                case_id, variant, input_mode, number,
+                development=trial_model.trial_kind_for_phase(phase) == trial_model.TRIAL_KIND_DEVELOPMENT
+            )
+        except ValueError:
+            next_id = "-"
+        benchmark_version = benchmark_catalog.load_catalog(self.project_root).get("benchmark_version")
+        self.experiment_next_label_var.set(
+            f"Proximo ensayo: {next_id}\nBenchmark v{benchmark_version} · {trial_model.trial_kind_for_phase(phase)} · {phase}"
+        )
         self._refresh_oracle_status()
 
     EXPERIMENT_STAGES = (
@@ -5341,12 +5420,13 @@ class VozLLMPLCGUI(ctk.CTk):
         try:
             started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
             if started_perf is not None:
-                trial_model.update_trial(
-                    directory, {"timing": {"end_to_end_ms": int(round((time.perf_counter() - started_perf) * 1000))}}
-                )
+                elapsed_ms = int(round((time.perf_counter() - started_perf) * 1000))
+                trial_model.update_trial(directory, {"timing": {"end_to_end_ms": elapsed_ms, "total_ms": elapsed_ms}})
             self._discard_trial_working_map(final_status)
-            trial_model.finalize_trial(directory, final_status, errors)
-            self._log(f"[EXPERIMENT] Status -> {final_status}")
+            record = trial_model.finalize_trial(directory, final_status, errors)
+            classification = experimental_design.classify_trial(record)
+            trial_model.update_trial(directory, {**classification, "final_verdict": final_status})
+            self._log(f"[EXPERIMENT] Status -> {final_status} ({classification['failure_category']})")
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo cerrar trial.json: {error}")
 
@@ -5463,10 +5543,12 @@ class VozLLMPLCGUI(ctk.CTk):
     def _create_new_trial_record(self, profile: dict[str, Any], case_id: str, variant: str, condition: dict[str, Any]) -> None:
         """Nuevo modelo de ensayo (Fase 1) en paralelo al registro legacy TRIAL_000NNN."""
         try:
-            input_mode = trial_model.input_mode_from_selection(
+            input_mode = condition.get("input_mode") or trial_model.input_mode_from_selection(
                 bool(condition.get("requires_voice")), self._selected_noise_level()
             )
-            number = trial_model.next_trial_number(self.project_root, case_id, variant, input_mode)
+            phase = self.active_trial.get("experiment_phase") or trial_model.PHASE_DEVELOPMENT
+            number = trial_model.next_trial_number(self.project_root, case_id, variant, input_mode, phase)
+            llm = getattr(self, "llm_client", None)
             record = trial_model.new_trial_record(
                 case_id,
                 variant,
@@ -5476,8 +5558,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 extra={
                     "legacy_trial_id": self.active_trial.get("trial_id"),
                     "legacy_experiment_label": self.active_trial.get("experiment_label"),
-                    "legacy_condition": condition.get("code"),
                     "parser_mode": condition.get("parser_mode"),
+                    "model": {"provider": getattr(llm, "provider", None), "model": getattr(llm, "model_name", None)},
                     "speaker_id": self.active_trial.get("speaker_id"),
                     "noise_level": self.active_trial.get("noise_level"),
                     "map_name": self.active_trial.get("map_name"),
@@ -5486,9 +5568,10 @@ class VozLLMPLCGUI(ctk.CTk):
                     "git_commit": self.active_trial.get("git_commit"),
                     **{key: value for key, value in benchmark_catalog.trial_benchmark_reference(self.project_root, case_id, variant).items()
                        if key in ("benchmark_version", "canonical_case_hash", "variant_hash")}
-                }
+                },
+                phase=phase
             )
-            directory = trial_model.trial_directory(self.project_root, case_id, variant, record["trial_id"])
+            directory = trial_model.trial_directory(self.project_root, case_id, variant, record["trial_id"], phase)
             trial_model.save_trial(directory, record)
             self.active_trial["new_trial"] = {
                 "trial_id": record["trial_id"],
@@ -5512,6 +5595,14 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         condition = self._selected_condition()
+        phase = self._selected_phase()
+        if phase == trial_model.PHASE_FORMAL:
+            # Guard de congelacion: sin software_freeze_manifest valido no existe FORMAL_TRIAL.
+            allowed, reasons = experimental_design.check_formal_trial_allowed(self.project_root)
+            if not allowed:
+                self._log("[EXPERIMENT] " + " | ".join(reasons))
+                messagebox.showwarning("Ejecutar ensayo", "Fase FORMAL bloqueada:\n\n" + "\n".join(reasons[:5]))
+                return False
         environment = self._selected_environment()
         readiness = profile_readiness_summary(self.project_root, profile)
         if environment == "hardware" and not readiness["hardware_ready"]:
@@ -5526,6 +5617,7 @@ class VozLLMPLCGUI(ctk.CTk):
         trial_id = next_trial_id(self.project_root)
         case_id = profile.get("case_id", "")
         variant = self.experiment_variant_var.get()
+        # Registro legacy (experiments/): la "condicion" de la etiqueta es ahora la modalidad.
         repetition = compute_next_repetition(self.project_root, condition["code"], case_id, variant)
         experiment_label = build_experiment_label(condition["code"], case_id, variant, repetition)
         active_map_summary = self._map_summaries_by_name.get(self.active_map_var.get(), {})
@@ -5537,6 +5629,9 @@ class VozLLMPLCGUI(ctk.CTk):
             "case_id": case_id,
             "experiment_family": "PID" if case_id.startswith("P") else "DISCRETE",
             "condition": condition["code"],
+            "input_mode": condition["input_mode"],
+            "experiment_phase": phase,
+            "trial_kind": trial_model.trial_kind_for_phase(phase),
             "variant": variant,
             "reference_command_text": self._active_variant_command_text,
             "speaker_id": speaker_id,
@@ -5553,7 +5648,7 @@ class VozLLMPLCGUI(ctk.CTk):
         }
 
         parser_ui_map = {"llm": "LLM", "rule_based": "Reglas", "hybrid": "Hibrido"}
-        self.parser_mode_var.set(parser_ui_map.get(condition["parser_mode"], "Hibrido"))
+        self.parser_mode_var.set(parser_ui_map.get(condition["parser_mode"], "LLM"))
 
         directory = trial_dir(self.project_root, case_id, trial_id)
         save_metadata(directory, self.active_trial)
@@ -5641,9 +5736,11 @@ class VozLLMPLCGUI(ctk.CTk):
 
             semantic_validation = semantic_output.get("semantic_validation", {}) or {}
             semantic_ok = bool(semantic_validation.get("is_valid"))
+            started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
             self._update_new_trial({
                 "command_text": command_text,
                 "transcript": transcript or None,
+                "timing": {"semantic_ms": int(round((time.perf_counter() - started_perf) * 1000)) if started_perf is not None else None},
                 "semantic": {
                     "intent_id": semantic_output.get("intent_id"),
                     "parameters": semantic_output.get("parameters", {}),
@@ -5665,13 +5762,22 @@ class VozLLMPLCGUI(ctk.CTk):
             self._log(f"No se pudo registrar la interpretacion del ensayo: {error}")
 
     def _capture_trial_parse_failure(
-        self, command_text: str, semantic_output: dict[str, Any], error_code: str = "E2"
+        self, command_text: str, semantic_output: dict[str, Any], error_code: str = "E2", failure_stage: str = "parse"
     ) -> None:
         if not self.active_trial:
             return
         trial_id = self.active_trial.get("trial_id", "")
         try:
-            self._update_new_trial({"command_text": command_text, "stages": {"semantic_success": False}})
+            started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
+            self._update_new_trial({
+                "command_text": command_text,
+                "stages": {"semantic_success": False},
+                "failure_stage": failure_stage,
+                "timing": {"semantic_ms": int(round((time.perf_counter() - started_perf) * 1000)) if started_perf is not None else None},
+            })
+            new_dir = self._new_trial_dir()
+            if new_dir is not None:
+                trial_model.write_json_artifact(new_dir, "semantic_output.json", semantic_output)
             self._set_experiment_stage("Semantica", "fail")
             self._finalize_new_trial(trial_model.FINAL_STATUS_FAIL, [f"Interpretacion no valida ({error_code})."])
             directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
@@ -5689,9 +5795,24 @@ class VozLLMPLCGUI(ctk.CTk):
         finally:
             self.active_trial = None
 
-    def _capture_trial_generation_result(self, combined_results: dict[str, dict[str, Any]]) -> None:
+    def _verify_trial_program_resources(self, package_dir: Any) -> dict[str, Any] | None:
+        """
+        Benchmark v2: cada recurso externo del programa debe tener binding real en el working map
+        congelado (sin ghost resources, tipos compatibles, LOCKED intactos). None si no aplica.
+        """
+        info = (self.active_trial or {}).get("new_trial") or {}
+        snapshot_path = (info.get("io_map") or {}).get("snapshot_path")
+        variables_path = Path(package_dir) / "variables.json" if package_dir else None
+        if not snapshot_path or variables_path is None or not variables_path.exists() or not Path(snapshot_path).exists():
+            return None
+        return resource_policy.verify_program_resources(
+            load_json_file(variables_path), json.loads(Path(snapshot_path).read_text(encoding="utf-8"))
+        )
+
+    def _capture_trial_generation_result(self, combined_results: dict[str, dict[str, Any]]) -> bool | None:
+        """False si el ensayo quedo cerrado aqui (verificacion o bindings): no se compila."""
         if not self.active_trial:
-            return
+            return None
         try:
             target_platform = "SIEMENS_SCL_V18" if "SIEMENS_SCL_V18" in combined_results else next(iter(combined_results), None)
             result_entry = combined_results.get(target_platform, {}) if target_platform else {}
@@ -5733,6 +5854,14 @@ class VozLLMPLCGUI(ctk.CTk):
                 "stages": {"verification_success": is_valid},
                 "timing": {"generation_ms": generation_ms}
             })
+            resource_check = self._verify_trial_program_resources(saved_paths.get("package_dir")) if is_valid else None
+            if resource_check is not None:
+                self._update_new_trial({"resource_check": resource_check})
+                if not resource_check["success"]:
+                    is_valid = False
+                    errors = [f"{item['code']}: {item['detail']}" for item in resource_check["errors"]]
+                    self._update_new_trial({"failure_stage": resource_policy.STAGE_RESOURCE_BINDING})
+                    self._log("[EXPERIMENT IO] Programa con recursos sin binding real: " + "; ".join(errors))
             self._set_experiment_stage("Generacion", "ok")
             self._set_experiment_stage("Verificacion", "ok" if is_valid else "fail")
             if is_valid:
@@ -5753,15 +5882,29 @@ class VozLLMPLCGUI(ctk.CTk):
                 "Complete el resultado abajo y presione 'Guardar resultado'."
             )
             self._log(f"Ensayo {self.active_trial['trial_id']}: generacion capturada ({compile_result}).")
+            return is_valid
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo registrar el resultado de generacion del ensayo: {error}")
+            return None
 
     def _capture_trial_exception(self, error_text: str, stage: str) -> None:
         if not self.active_trial:
             return
         trial_id = self.active_trial.get("trial_id", "")
         try:
-            self._finalize_new_trial(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [f"{stage}: {error_text}"])
+            # Taxonomia v2: una excepcion de generacion es CODEGEN_FAILURE (fallo del sistema); una de
+            # interpretacion solo es INFRASTRUCTURE_ERROR si delata al servicio externo (API/red).
+            external = any(marker in str(error_text).lower() for marker in _EXTERNAL_SERVICE_ERROR_MARKERS)
+            final_status = (
+                trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR
+                if stage == "parse" and external
+                else trial_model.FINAL_STATUS_FAIL
+            )
+            patch: dict[str, Any] = {"failure_stage": stage}
+            if stage == "parse" and not external:
+                patch["stages"] = {"semantic_success": False}
+            self._update_new_trial(patch)
+            self._finalize_new_trial(final_status, [f"{stage}: {error_text}"])
             directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
             save_metadata(directory, {
                 "state": "ERROR",
@@ -6019,9 +6162,14 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         question = str(clarification_question)
+        if self.active_trial:
+            # Metrica secundaria (tasa de aclaracion): se registra siempre, se responda o no.
+            self._update_new_trial({"clarification_requested": True, "clarification_question": question})
         dialog = ClarificationDialog(self, question)
         self.wait_window(dialog)
         answer = dialog.result
+        if self.active_trial:
+            self._update_new_trial({"clarification_answered": bool(answer)})
 
         if not answer:
             self._log("Aclaracion cancelada por el usuario; el comando no se reprocesa.")
@@ -6307,7 +6455,23 @@ class VozLLMPLCGUI(ctk.CTk):
                     and clarification_question
                     and str(clarification_question).strip()
                 )
-                if unauthorized_tags and self.work_mode_var.get() == "Experimentacion":
+                legacy_whitelist = resource_policy.legacy_profile_whitelist_applies(self._benchmark_version())
+                if unauthorized_tags and self.work_mode_var.get() == "Experimentacion" and not legacy_whitelist:
+                    # Benchmark v2: un recurso sin binding en el working_io_map es un fallo de
+                    # asignacion de E/S, nunca "no autorizado por el caso" (allowed_variables no aplica).
+                    self._log("Recursos fisicos sin binding en el working_io_map: " + ", ".join(unauthorized_tags))
+                    if self.active_trial:
+                        issues = resource_policy.unresolved_resources(semantic_output)
+                        self._update_new_trial({
+                            "io_map": {"error": resource_policy.ERROR_UNRESOLVED_RESOURCE},
+                            "resource_check": {"policy": resource_policy.POLICY_WORKING_MAP_BINDING, "success": False, "errors": issues},
+                        })
+                        self._capture_trial_parse_failure(
+                            command_text, semantic_output, error_code="E3", failure_stage=resource_policy.STAGE_IO_ALLOCATION
+                        )
+                    self._show_validation_errors(semantic_output)
+                elif unauthorized_tags and self.work_mode_var.get() == "Experimentacion":
+                    # Legacy benchmark v1 (aislado): whitelist por perfil.
                     profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
                     self._log("El comando solicita recursos fisicos no autorizados por el caso experimental.")
                     if self.active_trial:
@@ -6473,7 +6637,8 @@ class VozLLMPLCGUI(ctk.CTk):
             else:
                 self._log("Verificacion fallida.")
             if self.active_trial:
-                self._capture_trial_generation_result(combined_results)
+                if self._capture_trial_generation_result(combined_results) is False:
+                    all_valid = False
             self._set_status("Listo")
             return all_valid
         except Exception as error:  # pragma: no cover - GUI feedback path
