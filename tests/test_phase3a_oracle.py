@@ -280,7 +280,8 @@ def test_oracle_hash_is_stable_and_excludes_approval():
 def test_draft_oracle_only_runs_as_development_trial(tmp_path):
     result, _ = _run_case(tmp_path, "D03", _d03_ok)
     assert _oracle("D03")["approval"]["status"] == "DRAFT"
-    assert result["trial_kind"] == oracle_runner.TRIAL_KIND_DEVELOPMENT
+    # Diseno v2: el Oracle solo informa si es formal; el tipo de ensayo lo decide la fase de la sesion.
+    assert result["oracle_formal"] is False and "trial_kind" not in result
     assert result["oracle_reference"]["oracle_status"] == "DRAFT"
 
 
@@ -333,7 +334,7 @@ def test_frozen_oracle_is_immutable_and_versioned(oracle_copy_root):
 def test_formal_trial_requires_approved_oracle(oracle_copy_root, tmp_path):
     frozen = oracle_schema.approve_oracle(oracle_copy_root, "D03", "INV01")
     result, _ = _run_case(tmp_path, "D03", _d03_ok, oracle=frozen)
-    assert result["trial_kind"] == oracle_runner.TRIAL_KIND_FORMAL
+    assert result["oracle_formal"] is True and "trial_kind" not in result
     assert result["oracle_reference"]["oracle_hash"] == frozen["approval"]["hash"]
     assert result["verdict"] == "PASS"
 
@@ -535,7 +536,8 @@ def test_trial_records_oracle_hash_and_separate_functional_safety(pipeline, tmp_
     assert record["oracle_reference"]["oracle_id"] == "D12"
     assert record["oracle_reference"]["oracle_hash"] == oracle_schema.compute_oracle_hash(oracle)
     assert record["oracle_reference"]["oracle_version"] == 1
-    assert record["trial_kind"] == oracle_runner.TRIAL_KIND_DEVELOPMENT
+    assert record["trial_kind"] == trial_model.TRIAL_KIND_DEVELOPMENT  # fase de desarrollo (Oracle FROZEN no lo cambia)
+    assert record["experiment_phase"] == trial_model.PHASE_DEVELOPMENT
     assert record["functional"]["success"] is True and record["safety"]["success"] is False
     assert record["stages"]["functional_success"] is True and record["stages"]["safety_success"] is False
     assert record["final_status"] == "FAIL"

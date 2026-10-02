@@ -80,3 +80,29 @@ def app():
     instance.update_idletasks()
     yield instance
     instance.destroy()
+
+
+@pytest.fixture(autouse=True)
+def _tia_archive_path_limit_for_tmp_paths(monkeypatch):
+    """
+    TIA V18 limita a 143 caracteres la ruta de Project.Archive. Las rutas de pytest (tmp_path) son
+    mas largas y en las pruebas el bridge es simulado: el limite se relaja aqui y se prueba aparte
+    (test_phase4a_master_snapshot.py::test_archive_path_limit_is_enforced_before_calling_tia).
+    """
+    from trial_experiments import deferred_evaluator
+
+    monkeypatch.setattr(deferred_evaluator, "TIA_ARCHIVE_MAX_PATH", 10_000)
+
+
+@pytest.fixture(autouse=True)
+def _sufficient_memory_for_tia(monkeypatch):
+    """
+    El precheck de memoria (INSUFFICIENT_MEMORY_FOR_TIA) mide la maquina real; las pruebas usan un
+    bridge simulado, asi que por defecto se simula memoria suficiente. El precheck se prueba aparte
+    (test_phase4a_tia_stability.py) con mediciones controladas.
+    """
+    from trial_experiments import system_resources
+
+    monkeypatch.setattr(system_resources, "measure_memory", lambda: {
+        "available": True, "total_physical_mb": 16384, "available_physical_mb": 12000,
+        "commit_limit_mb": 32768, "committed_mb": 8000, "commit_headroom_mb": 24768})

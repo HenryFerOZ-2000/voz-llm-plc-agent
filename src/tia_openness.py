@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import tia_projects
 from plc_maps.registry import resolve_active_map_path
 from platforms.siemens_scl_adapter import SIEMENS_TYPE_MAP
 from utils import get_project_root, load_json_file
@@ -24,6 +25,11 @@ DEFAULT_WEB_EXTENSIONS = Path(
     r"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Web.Extensions.dll"
 )
 DEFAULT_PORTAL_ROOT = Path(r"C:\Program Files\Siemens\Automation\Portal V18")
+
+
+def normal_project_path(project_root: Path | None = None) -> str:
+    """Ruta del proyecto TIA del Modo Normal (tia.normal_project; fallback: project_path historico)."""
+    return tia_projects.normal_project_path(project_root or get_project_root())
 
 
 def get_tia_config_path(project_root: Path | None = None) -> Path:
@@ -80,7 +86,8 @@ def diagnose_tia_openness(project_root: Path | None = None) -> dict[str, Any]:
     config = load_tia_config(root)
     api_dll = Path(config.get("api_dll_path") or DEFAULT_API_DLL)
     bridge = _bridge_paths(root)
-    project_path_text = str(config.get("project_path", "")).strip()
+    # Modo Normal: SIEMPRE tia.normal_project (nunca el TIA MASTER de Experimentacion).
+    project_path_text = normal_project_path(root)
     project_path = Path(project_path_text) if project_path_text else None
     compiler = DEFAULT_COMPILER
 
@@ -100,6 +107,12 @@ def diagnose_tia_openness(project_root: Path | None = None) -> dict[str, Any]:
             "El usuario actual no pertenece al grupo Siemens TIA Openness en esta sesion. "
             "Agreguelo como administrador y cierre sesion antes de ejecutar la integracion."
         )
+    try:
+        tia_projects.assert_normal_not_master(root, project_path_text)
+        checks["normal_project_is_not_master"] = True
+    except tia_projects.TiaProjectGuardError as error:
+        checks["normal_project_is_not_master"] = False
+        warnings.append(str(error))
     if not checks["project_configured"]:
         warnings.append("Seleccione un proyecto .ap18 con una CPU desde la configuracion TIA.")
     elif not checks["project_exists"]:
@@ -117,7 +130,8 @@ def diagnose_tia_openness(project_root: Path | None = None) -> dict[str, Any]:
                 "bridge_built",
                 "openness_group_in_current_session",
                 "project_configured",
-                "project_exists"
+                "project_exists",
+                "normal_project_is_not_master"
             )
         ),
         "tia_version": "V18",
@@ -349,11 +363,13 @@ def prepare_tia_request(
 
     request_path = package_dir / "tia_openness_request.json"
     result_path = package_dir / "tia_compile_report.json"
+    project_path = normal_project_path(root)
+    tia_projects.assert_normal_not_master(root, project_path)
     request = {
         "action": "import_compile",
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "tia_version": "V18",
-        "project_path": str(config.get("project_path", "")),
+        "project_path": project_path,
         "plc_name": str(config.get("plc_name", "")),
         "source_path": str(source_path.resolve()),
         "source_name": source_path.name,
@@ -475,11 +491,13 @@ def prepare_download_request(
 
     request_path = package_dir / "tia_download_request.json"
     result_path = package_dir / "tia_download_report.json"
+    project_path = normal_project_path(root)
+    tia_projects.assert_normal_not_master(root, project_path)
     request = {
         "action": "download",
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "tia_version": "V18",
-        "project_path": str(config.get("project_path", "")),
+        "project_path": project_path,
         "plc_name": str(config.get("plc_name", "")),
         "result_path": str(result_path.resolve()),
         "attach_to_running": bool(config.get("attach_to_running", True)),

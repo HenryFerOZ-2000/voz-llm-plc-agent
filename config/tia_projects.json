@@ -1,0 +1,106 @@
+{
+  "tia": {
+    "normal_project": {
+      "path": "D:/Documentos/Automatizacion para la Industria 4.0/TESIS/Software/voz_llm_plc_agent/tia_projects/S71500_Prueba/S71500_Prueba.ap18",
+      "validation": null,
+      "selected_at": "2026-10-02T09:42:31"
+    },
+    "experiment_master": {
+      "path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\tia_projects\\S71500_MASTER\\S71500_MASTER.ap18",
+      "selected_at": "2026-10-01T14:52:24",
+      "hash": "cae2ff2974945eaaaac29a0e4603481eaee3f269ccedc15c038f0f64975b6a72",
+      "status": "DEVELOPMENT_READY",
+      "validation": {
+        "validated_at": "2026-10-01T14:54:38",
+        "master_status": "DEVELOPMENT_READY",
+        "formal_ready_criteria_met": true,
+        "errors": [],
+        "warnings": [],
+        "app_managed_blocks": [],
+        "unmanaged_blocks": [],
+        "ip_addresses": [
+          "192.168.0.1",
+          "192.168.1.1"
+        ],
+        "x1_interface_present": true,
+        "x1_ip_address": "192.168.0.1",
+        "plc_agent_io": "CREATABLE",
+        "block_count": 0,
+        "status": "VALID",
+        "tia_version": "V18",
+        "master_project_version": "",
+        "project_name": "S71500_MASTER",
+        "cpu_type_identifier": "OrderNumber:6ES7 516-3AN01-0AB0/V2.6",
+        "cpu_device_item": "PLC_1",
+        "cpu_type_name": "CPU 1516-3 PN/DP",
+        "cpu_order_number": "6ES7 516-3AN01-0AB0",
+        "cpu_firmware": "V2.6",
+        "plc_name": "PLC_1",
+        "interfaces": [
+          {
+            "device_item": "DP interface_1",
+            "interface_type": "Profibus",
+            "nodes": [
+              {
+                "name": "X3",
+                "type": "Profibus",
+                "address": "2"
+              }
+            ]
+          },
+          {
+            "device_item": "PROFINET interface_1",
+            "interface_type": "Ethernet",
+            "nodes": [
+              {
+                "name": "X1",
+                "type": "Ethernet",
+                "address": "192.168.0.1"
+              }
+            ]
+          },
+          {
+            "device_item": "PROFINET interface_2",
+            "interface_type": "Ethernet",
+            "nodes": [
+              {
+                "name": "X2",
+                "type": "Ethernet",
+                "address": "192.168.1.1"
+              }
+            ]
+          }
+        ],
+        "blocks": [],
+        "master_folder_fingerprint": "4df6fb82da0fc90375583018ae2ba0bbd7efe264e176d96c1954c9a71727bdb3",
+        "master_folder_fingerprint_after": "4df6fb82da0fc90375583018ae2ba0bbd7efe264e176d96c1954c9a71727bdb3",
+        "master_folder_changes": {
+          "added": [],
+          "removed": [],
+          "modified": []
+        },
+        "bridge_status": "TIA_MASTER_VALIDATION_PASSED",
+        "archive": {
+          "archive_source_project": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\tia_projects\\S71500_MASTER\\S71500_MASTER.ap18",
+          "archive_target_directory": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\tia_master\\snapshots",
+          "archive_target_name": "M261001145341.zap18",
+          "archive_expected_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\tia_master\\snapshots\\M261001145341.zap18",
+          "archive_mode": "Compressed",
+          "archive_actual_files_created": [
+            "M261001145341.zap18"
+          ],
+          "archive_size_bytes": 441498,
+          "archive_error": null,
+          "archive_error_type": null,
+          "archive_error_hint": null
+        }
+      },
+      "snapshot": {
+        "archive_path": "D:\\Documentos\\Automatizacion para la Industria 4.0\\TESIS\\Software\\voz_llm_plc_agent\\tia_master\\snapshots\\M261001145341.zap18",
+        "archive_sha256": "cae2ff2974945eaaaac29a0e4603481eaee3f269ccedc15c038f0f64975b6a72",
+        "created_at": "2026-10-01T14:54:38",
+        "size_bytes": 441498
+      }
+    }
+  }
+}

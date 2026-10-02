@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from tia_openness import (
+    normal_project_path,
     DEFAULT_PORTAL_ROOT,
     _bridge_paths,
     build_openness_bridge,
@@ -75,7 +76,7 @@ def _run_bridge_action(
         "action": action,
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "tia_version": "V18",
-        "project_path": str(config.get("project_path", "")),
+        "project_path": normal_project_path(root),  # Modo Normal: nunca el TIA MASTER
         "plc_name": str(config.get("plc_name", "")),
         "result_path": str(result_path.resolve()),
         "attach_to_running": bool(config.get("attach_to_running", True)),

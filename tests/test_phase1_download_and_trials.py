@@ -93,6 +93,9 @@ def _successful_download(package_dir: Path, **overrides: Any) -> dict[str, Any]:
 def pipeline(app, temp_map, tmp_path, monkeypatch, _tia_ready):
     """Pipeline completo con parse/generacion/compilacion/descarga simulados y todo lo escrito en tmp."""
     monkeypatch.setattr(gui.threading, "Thread", _SyncTiaThread)
+    # Estas pruebas cubren el pipeline INMEDIATO legacy de Experimentacion (compila en el proyecto
+    # Normal): por defecto esta bloqueado (Fase 4A-DEFERRED, guard 6D) y aqui se habilita explicitamente.
+    monkeypatch.setattr(gui.VozLLMPLCGUI, "_legacy_immediate_experiment_allowed", lambda self: True)
     monkeypatch.setattr(gui, "append_test_record_to_docs", lambda **kwargs: None)
     monkeypatch.setattr(gui, "trial_dir", lambda root, case_id, trial_id: tmp_path / "legacy" / case_id / trial_id)
     monkeypatch.setattr(trial_model, "get_results_experiments_dir", lambda root: tmp_path / "results" / "experiments")
@@ -115,6 +118,8 @@ def pipeline(app, temp_map, tmp_path, monkeypatch, _tia_ready):
     def _fake_compile(package_dir_arg, project_root_arg):
         report = {
             "status": state["compile_status"],
+            # Un fallo de compilacion real siempre trae errores del compilador (TIA operativo).
+            "error_count": 0 if state["compile_status"] == "TIA_COMPILATION_PASSED" else 1,
             "result_path": str(package_dir_arg / "tia_compile_report.json"),
             "bridge_return_code": 0, "bridge_stdout": "", "bridge_stderr": ""
         }
@@ -206,7 +211,10 @@ def test_experiment_compile_success_auto_downloads_and_prepares_trial(pipeline):
     assert len(pipeline["download_calls"]) == 1
     assert pipeline["download_calls"][0]["purpose"] == tia_openness.DOWNLOAD_PURPOSE_EXPERIMENT
     record = trial_model.load_trial(trial_directory)
-    assert record["trial_id"] == "D12_V2_TEXT_001"
+    # Diseno v2: sin fase FORMAL (software no congelado) el ensayo es de desarrollo -> _DEV_.
+    assert record["trial_id"] == "D12_V2_TEXT_DEV_001"
+    assert record["trial_kind"] == trial_model.TRIAL_KIND_DEVELOPMENT
+    assert "development_validation_v2" in trial_directory.parts
     assert record["final_status"] == trial_model.FINAL_STATUS_PREPARED
     assert record["stages"]["compile_success"] is True
     assert record["stages"]["download_success"] is True

@@ -54,6 +54,20 @@ RESULTS_DIRNAME = "results"
 EXPERIMENTS_DIRNAME = "experiments"
 TRIAL_FILENAME = "trial.json"
 
+# Diseno experimental v2 (data/experimental_design.json): el tipo de ensayo lo decide la FASE de
+# la sesion, nunca el estado del Oracle. FORMAL_TRIAL exige ademas el software congelado.
+TRIAL_KIND_DEVELOPMENT = "DEVELOPMENT_TRIAL"
+TRIAL_KIND_FORMAL = "FORMAL_TRIAL"
+PHASE_BASELINE = "BASELINE"
+PHASE_DEVELOPMENT = "DEVELOPMENT_VALIDATION"
+PHASE_FORMAL = "FORMAL"
+EXPERIMENT_PHASES = (PHASE_BASELINE, PHASE_DEVELOPMENT, PHASE_FORMAL)
+PHASE_DIRNAMES = {
+    PHASE_BASELINE: "development_baseline_v2",
+    PHASE_DEVELOPMENT: "development_validation_v2",
+    PHASE_FORMAL: EXPERIMENTS_DIRNAME,
+}
+
 _CASE_PATTERN = re.compile(r"^[DP]\d{2}$")
 _VARIANT_PATTERN = re.compile(r"^V\d+$")
 
@@ -71,7 +85,13 @@ def input_mode_from_selection(requires_voice: bool, noise_level: str) -> str:
     return INPUT_MODE_VOICE_CLEAN if str(noise_level or "none") == "none" else INPUT_MODE_VOICE_NOISE
 
 
-def build_trial_id(case_id: str, variant_id: str, input_mode: str, trial_number: int) -> str:
+def trial_kind_for_phase(phase: str) -> str:
+    if phase not in EXPERIMENT_PHASES:
+        raise ValueError(f"experiment_phase invalida: {phase!r} (esperado uno de {EXPERIMENT_PHASES}).")
+    return TRIAL_KIND_FORMAL if phase == PHASE_FORMAL else TRIAL_KIND_DEVELOPMENT
+
+
+def build_trial_id(case_id: str, variant_id: str, input_mode: str, trial_number: int, development: bool = False) -> str:
     if not _CASE_PATTERN.match(case_id or ""):
         raise ValueError(f"case_id invalido: {case_id!r} (esperado D01-D20 o P01-P12).")
     if not _VARIANT_PATTERN.match(variant_id or ""):
@@ -80,21 +100,29 @@ def build_trial_id(case_id: str, variant_id: str, input_mode: str, trial_number:
         raise ValueError(f"input_mode invalido: {input_mode!r} (esperado uno de {INPUT_MODES}).")
     if trial_number < 1:
         raise ValueError("trial_number debe ser >= 1.")
-    return f"{case_id}_{variant_id}_{input_mode}_{trial_number:03d}"
+    # Nunca incluye el modo de parser (RULES/LLM/HYBRID). DEV marca los ensayos de desarrollo.
+    return f"{case_id}_{variant_id}_{input_mode}_{'DEV_' if development else ''}{trial_number:03d}"
 
 
 def get_results_experiments_dir(project_root: Path) -> Path:
     return project_root / RESULTS_DIRNAME / EXPERIMENTS_DIRNAME
 
 
-def trial_directory(project_root: Path, case_id: str, variant_id: str, trial_id: str) -> Path:
-    return get_results_experiments_dir(project_root) / case_id / variant_id / trial_id
+def get_phase_results_dir(project_root: Path, phase: str = PHASE_FORMAL) -> Path:
+    """results/experiments (FORMAL) o results/development_*_v2 (desarrollo): nunca se mezclan."""
+    trial_kind_for_phase(phase)
+    return get_results_experiments_dir(project_root).parent / PHASE_DIRNAMES[phase]
 
 
-def next_trial_number(project_root: Path, case_id: str, variant_id: str, input_mode: str) -> int:
+def trial_directory(project_root: Path, case_id: str, variant_id: str, trial_id: str, phase: str = PHASE_FORMAL) -> Path:
+    return get_phase_results_dir(project_root, phase) / case_id / variant_id / trial_id
+
+
+def next_trial_number(project_root: Path, case_id: str, variant_id: str, input_mode: str, phase: str = PHASE_FORMAL) -> int:
     """Siguiente numero a partir de los directorios ya existentes (nunca un contador aparte)."""
-    variant_dir = get_results_experiments_dir(project_root) / case_id / variant_id
-    prefix = f"{case_id}_{variant_id}_{input_mode}_"
+    variant_dir = get_phase_results_dir(project_root, phase) / case_id / variant_id
+    development = trial_kind_for_phase(phase) == TRIAL_KIND_DEVELOPMENT
+    prefix = f"{case_id}_{variant_id}_{input_mode}_{'DEV_' if development else ''}"
     numbers = [0]
     if variant_dir.exists():
         for child in variant_dir.iterdir():
@@ -112,9 +140,11 @@ def new_trial_record(
     trial_number: int,
     command_text: str = "",
     complexity: str | None = None,
-    extra: dict[str, Any] | None = None
+    extra: dict[str, Any] | None = None,
+    phase: str = PHASE_FORMAL
 ) -> dict[str, Any]:
-    trial_id = build_trial_id(case_id, variant_id, input_mode, trial_number)
+    trial_kind = trial_kind_for_phase(phase)
+    trial_id = build_trial_id(case_id, variant_id, input_mode, trial_number, development=trial_kind == TRIAL_KIND_DEVELOPMENT)
     record: dict[str, Any] = {
         "schema_version": TRIAL_SCHEMA_VERSION,
         "trial_id": trial_id,
@@ -123,6 +153,7 @@ def new_trial_record(
         "input_mode": input_mode,
         "trial_number": trial_number,
         "experiment_family": "PID" if case_id.startswith("P") else "DISCRETE",
+        "domain": "PID_SUPERVISOR" if case_id.startswith("P") else "DISCRETE",
         "complexity": normalize_complexity(complexity),
         "command_text": command_text,
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -150,9 +181,25 @@ def new_trial_record(
         # Fase interna (CREATED -> PREPARING -> IO_RESOLVED -> COMPILED -> DOWNLOADED ->
         # RUNTIME_READY ...). Coexiste con final_status; decide si el mapa del ensayo es mutable.
         "lifecycle_state": "CREATED",
-        # Fase 3A: FORMAL_TRIAL solo con Oracle APPROVED/FROZEN; con Oracle DRAFT es
-        # DEVELOPMENT_TRIAL (nunca cuenta como resultado formal). None = sin Oracle.
-        "trial_kind": None,
+        # Diseno v2: lo decide la fase de la sesion (BASELINE / DEVELOPMENT_VALIDATION -> DEVELOPMENT_TRIAL;
+        # FORMAL -> FORMAL_TRIAL, solo con software_freeze_manifest valido). Nunca el Oracle.
+        "trial_kind": trial_kind,
+        "experiment_phase": phase,
+        "attempt": 1,
+        "retry_reason": None,
+        "reference_command_text": None,
+        "generated_code_id": None,
+        # Metadata tecnica (no es factor experimental ni forma parte del trial_id).
+        "parser_mode": None,
+        "model": {"provider": None, "model": None},
+        # Voz (VOICE_CLEAN / VOICE_NOISE); en TEXT quedan null. Protocolo de ruido pendiente.
+        "asr": {"audio_reference": None, "asr_transcript": None, "wer": None, "noise_profile": None, "snr_db": None},
+        "clarification_requested": False,
+        "failure_category": None,
+        "failure_stage": None,
+        "infrastructure_error": None,
+        "final_verdict": None,
+        "git_commit": None,
         # Benchmark v2: que comando exacto se uso (los ensayos sin benchmark_version son del
         # benchmark legacy v1 y cuentan como DEVELOPMENT_TRIAL).
         "benchmark_version": None,
@@ -171,7 +218,11 @@ def new_trial_record(
             "compile_ms": None,
             "download_ms": None,
             "functional_test_ms": None,
-            "end_to_end_ms": None
+            "end_to_end_ms": None,
+            "semantic_ms": None,
+            "runtime_ms": None,
+            "oracle_ms": None,
+            "total_ms": None
         },
         "errors": [],
         "final_status": None,

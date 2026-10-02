@@ -6,11 +6,27 @@ from typing import Any
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, get_required_variables_for_intent
 from plc_ir import PLCProjectIR
 from functional_requirements import (
+    AUTO_MODE_MEMORY,
+    COMPOSABLE_TYPES,
+    MANUAL_BEHAVIORS,
+    MANUAL_MODE_MEMORY,
+    TIME_LITERAL_PATTERN,
+    alarm_outputs,
     detect_multi_actor_motor_targets,
     get_functional_requirement_process_variables,
     is_catalog_functional_requirement,
-    strip_external_prefix
+    manual_commands,
+    manual_latch_memory,
+    mode_inputs,
+    reset_input,
+    sensor_watchdogs,
+    strip_external_prefix,
+    detect_timed_sequences,
+    timed_sequence_internal_names,
+    timed_sequence_steps,
+    watchdog_internal_names
 )
+from functional_resources import condition_identifiers
 from utils import build_io_map_index, get_project_root, load_json_file
 
 
@@ -1032,9 +1048,241 @@ def _build_implementation(intent_id: str, parameters: dict[str, Any]) -> tuple[s
     return generator(parameters), [], True
 
 
+class CompositionNotSupportedError(TemplateNotImplementedError):
+    """Programa compuesto con un comportamiento que el compositor no sabe generar (nunca se omite en silencio)."""
+
+
+COMPOSITION_NOT_SUPPORTED = "COMPOSITION_NOT_SUPPORTED"
+
+
+def _composition_condition(expression: str, context: str) -> str:
+    """Condicion booleana simple de tags (ver functional_resources.condition_identifiers); otra cosa se rechaza."""
+    if condition_identifiers(expression) is None:
+        raise CompositionNotSupportedError(
+            f"{COMPOSITION_NOT_SUPPORTED}: la condicion de {context} no es una expresion booleana de tags: {expression!r}")
+    return " ".join(expression.split())
+
+
+def _ordered_outputs(outputs: list[str], dependencies: dict[str, set[str]]) -> list[str]:
+    """Asigna primero las salidas de las que dependen permisivos de otras (orden estable)."""
+    ordered: list[str] = []
+    pending = list(outputs)
+    while pending:
+        ready = [o for o in pending if not (dependencies.get(o, set()) & set(pending) - {o})]
+        chosen = ready[0] if ready else pending[0]
+        ordered.append(chosen)
+        pending.remove(chosen)
+    return ordered
+
+
+def _generate_composed_program(
+    functional_requirements: list[dict[str, Any]],
+    parameters: dict[str, Any]
+) -> str:
+    """
+    Compositor GENERICO de programas descritos por primitivas (nunca especifico de una maquina):
+
+      * timed_sequence: etapas excluyentes; Start inicia la etapa 1 si la secuencia esta parada, cada
+        etapa con duracion avanza al vencer su TON, la ultima se mantiene; Stop/emergencia -> reposo.
+        `mode_condition` (opcional) habilita el arranque y, si deja de cumplirse, detiene la secuencia.
+      * automatic_mode / manual_mode: memorias de modo excluyentes a partir de sus entradas.
+      * manual_mode.commands[]: ordenes manuales independientes por salida - "maintained" (activa
+        solo mientras la orden esta presente) o "latched" (enclavada hasta Stop/salida de Manual) -,
+        con `enable_condition` opcional como permisivo de esa orden.
+      * sensor_timeout_alarm: tras el arranque (start_condition, o el encendido de las salidas
+        afectadas) el sensor debe cambiar de estado dentro de `timeout`; si no, falla enclavada:
+        detiene las salidas afectadas (en cualquier modo) y activa la alarma. La falla desaparece
+        cuando el sensor vuelve a cambiar; se borra con reset_behavior (Reset) una vez desaparecida.
+      * alarm_output: alarma = OR de las fallas de la composicion (o la emergencia si no hay fallas).
+      * never_together: guarda final que fuerza a FALSE las salidas en conflicto.
+
+    Cada salida = OR de sus contribuciones (etapas de secuencia y orden manual) AND NOT emergencia
+    AND NOT las fallas que la afectan. Un tipo de la composicion que no esta en COMPOSABLE_TYPES ->
+    CompositionNotSupportedError (con su ruta), nunca un programa que lo ignore.
+    """
+    unsupported = [f"functional_requirements[{i}].type={r.get('type')!r}" for i, r in enumerate(functional_requirements)
+                   if isinstance(r, dict) and is_catalog_functional_requirement(r) and str(r.get("type")) not in COMPOSABLE_TYPES]
+    if unsupported:
+        raise CompositionNotSupportedError(
+            f"{COMPOSITION_NOT_SUPPORTED}: comportamiento no soportado dentro de un programa compuesto: " + ", ".join(unsupported))
+
+    emergency = _param(parameters, "emergency_input", default="FALSE")
+    lines: list[str] = []
+    modes = mode_inputs(functional_requirements)
+    commands = manual_commands(functional_requirements)
+    watchdogs = sensor_watchdogs(functional_requirements)
+    reset = reset_input(functional_requirements)
+    if watchdogs and not reset:
+        raise CompositionNotSupportedError(
+            f"{COMPOSITION_NOT_SUPPORTED}: la supervision del sensor enclava una falla pero no hay reinicio (reset_behavior)")
+
+    # --- Modos de operacion ---------------------------------------------------------------------
+    if modes:
+        lines.append("(* Seleccion de modo de operacion (excluyentes) *)")
+        if "auto" in modes:
+            other = f" AND NOT {modes['manual']}" if "manual" in modes else ""
+            lines.append(f"{AUTO_MODE_MEMORY} := {modes['auto']}{other};")
+        if "manual" in modes:
+            other = f" AND NOT {modes['auto']}" if "auto" in modes else ""
+            lines.append(f"{MANUAL_MODE_MEMORY} := {modes['manual']}{other};")
+    if commands and "manual" not in modes:
+        raise CompositionNotSupportedError(f"{COMPOSITION_NOT_SUPPORTED}: ordenes manuales sin modo Manual definido")
+
+    # Fallas por salida afectada (supervisiones de sensor).
+    fault_names = [watchdog_internal_names(index)["Fault"] for index in range(1, len(watchdogs) + 1)]
+    faults_by_output: dict[str, list[str]] = {}
+    for watchdog, fault in zip(watchdogs, fault_names):
+        if not watchdog["sensor_input"] or not TIME_LITERAL_PATTERN.match(watchdog["timeout"]) or not watchdog["affected_outputs"]:
+            raise CompositionNotSupportedError(
+                f"{COMPOSITION_NOT_SUPPORTED}: supervision de sensor incompleta (sensor_input, timeout IEC y affected_outputs)")
+        for output in watchdog["affected_outputs"]:
+            faults_by_output.setdefault(output, []).append(fault)
+
+    # --- Secuencias temporizadas ----------------------------------------------------------------
+    stop_inputs: list[str] = []
+    output_steps: dict[str, list[str]] = {}
+    for index, requirement in enumerate(detect_timed_sequences(functional_requirements), start=1):
+        steps = timed_sequence_steps(requirement)
+        names = timed_sequence_internal_names(index, requirement)
+        start_input = str(requirement.get("start_input") or "FALSE")
+        stop_input = str(requirement.get("stop_input") or "FALSE")
+        if stop_input != "FALSE":
+            stop_inputs.append(stop_input)
+        mode_condition = str(requirement.get("mode_condition") or "").strip()
+        sequence_outputs = {output for step in steps for output in step["outputs"]}
+        sequence_faults = list(dict.fromkeys(f for o in sequence_outputs for f in faults_by_output.get(o, [])))
+        stop_terms = [emergency, stop_input] + sequence_faults
+        start_terms = [start_input]
+        if mode_condition:
+            condition = _composition_condition(mode_condition, f"modo de la secuencia {index}")
+            stop_terms.append(f"NOT ({condition})")
+            start_terms.append(f"({condition})")
+        start_terms += [f"NOT {fault}" for fault in sequence_faults]
+        all_steps = [entry["step"] for entry in names]
+        idle = " OR ".join(all_steps)
+        lines.append(f"(* Secuencia temporizada {index}: {len(steps)} etapa(s) *)")
+        lines.append(f"IF {' OR '.join(stop_terms)} THEN")
+        lines.extend(f"    {step} := FALSE;" for step in all_steps)
+        lines.append(f"ELSIF {' AND '.join(start_terms)} AND NOT ({idle}) THEN")
+        lines.append(f"    {all_steps[0]} := TRUE;")
+        lines.append("END_IF;")
+        for position, (step, entry) in enumerate(zip(steps, names), start=1):
+            if entry["timer"]:
+                lines.append(f"{entry['timer']}(IN := {entry['step']}, PT := {step['duration']});")
+                lines.append(f"IF {entry['timer']}.Q THEN")
+                lines.append(f"    {entry['step']} := FALSE;")
+                lines.append(f"    {names[position]['step']} := TRUE;")
+                lines.append("END_IF;")
+            for output in step["outputs"]:
+                output_steps.setdefault(output, []).append(entry["step"])
+
+    # --- Ordenes manuales -----------------------------------------------------------------------
+    stop_any = " OR ".join(dict.fromkeys(stop_inputs))
+    manual_terms: dict[str, list[str]] = {}
+    dependencies: dict[str, set[str]] = {}
+    for command in commands:
+        if not command["input"] or not command["output"] or command["behavior"] not in MANUAL_BEHAVIORS:
+            raise CompositionNotSupportedError(
+                f"{COMPOSITION_NOT_SUPPORTED}: orden manual incompleta o con comportamiento desconocido: {command}")
+        if command["behavior"] == "latched":
+            latch = manual_latch_memory(command["output"])
+            release = " OR ".join(term for term in (emergency, stop_any, f"NOT {MANUAL_MODE_MEMORY}") if term)
+            lines.append(f"(* Orden manual enclavada de {command['output']} *)")
+            lines.append(f"IF {release} THEN")
+            lines.append(f"    {latch} := FALSE;")
+            lines.append(f"ELSIF {MANUAL_MODE_MEMORY} AND {command['input']} THEN")
+            lines.append(f"    {latch} := TRUE;")
+            lines.append("END_IF;")
+            term = latch
+        else:
+            term = f"{MANUAL_MODE_MEMORY} AND {command['input']}"
+        if command["enable_condition"]:
+            condition = _composition_condition(command["enable_condition"], f"habilitacion de {command['output']}")
+            term += f" AND ({condition})"
+            dependencies.setdefault(command["output"], set()).update(condition_identifiers(condition) or [])
+        manual_terms.setdefault(command["output"], []).append(term)
+
+    # --- Salidas ----------------------------------------------------------------------------------
+    composed_outputs = list(dict.fromkeys(list(output_steps) + list(manual_terms)))
+    if manual_terms or faults_by_output:
+        lines.append("(* Salidas: contribucion automatica (secuencia) y manual, con sus bloqueos *)")
+    for output in _ordered_outputs(composed_outputs, dependencies):
+        terms = []
+        if output in output_steps:
+            terms.append(f"({' OR '.join(dict.fromkeys(output_steps[output]))})")
+        terms.extend(f"({term})" for term in manual_terms.get(output, []))
+        inhibits = [f"NOT {emergency}"]
+        if output in manual_terms and stop_any:
+            inhibits.append(f"NOT ({stop_any})")  # Stop tiene prioridad tambien sobre las ordenes manuales
+        inhibits.extend(f"NOT {fault}" for fault in faults_by_output.get(output, []))
+        expression = " OR ".join(terms)
+        if len(terms) > 1:
+            expression = f"({expression})"
+        lines.append(f"{output} := {expression} AND {' AND '.join(inhibits)};")
+
+    # --- Supervision de sensores --------------------------------------------------------------
+    for index, watchdog in enumerate(watchdogs, start=1):
+        names = watchdog_internal_names(index)
+        sensor = watchdog["sensor_input"]
+        running = " OR ".join(watchdog["affected_outputs"])
+        arm = (_composition_condition(watchdog["start_condition"], f"arranque de la supervision {index}")
+               if watchdog["start_condition"] else running)
+        lines.append(f"(* Supervision {index}: {sensor} debe cambiar de estado dentro de {watchdog['timeout']} tras el arranque *)")
+        lines.append(f"IF ({arm}) AND NOT {names['Prev']} AND NOT {names['Fault']} THEN")
+        lines.append(f"    {names['Armed']} := TRUE;")
+        lines.append(f"    {names['Last']} := {sensor};")
+        lines.append("END_IF;")
+        lines.append(f"{names['Prev']} := ({arm});")
+        lines.append(f"IF {names['Armed']} AND (({sensor} <> {names['Last']}) OR NOT ({running})) THEN")
+        lines.append(f"    {names['Armed']} := FALSE;")
+        lines.append("END_IF;")
+        lines.append(f"{names['Timer']}(IN := {names['Armed']}, PT := {watchdog['timeout']});")
+        lines.append(f"IF {names['Timer']}.Q THEN")
+        lines.append(f"    {names['Fault']} := TRUE;")
+        lines.append(f"    {names['Armed']} := FALSE;")
+        lines.append(f"    {names['Recovered']} := FALSE;")
+        lines.append(f"    {names['Last']} := {sensor};")
+        lines.append("END_IF;")
+        lines.append(f"IF {names['Fault']} AND ({sensor} <> {names['Last']}) THEN")
+        lines.append(f"    {names['Recovered']} := TRUE;")
+        lines.append("END_IF;")
+        lines.append(f"IF {names['Fault']} AND {names['Recovered']} AND {reset} THEN")
+        lines.append(f"    {names['Fault']} := FALSE;")
+        lines.append(f"    {names['Recovered']} := FALSE;")
+        lines.append("END_IF;")
+        lines.append(f"IF {names['Fault']} THEN")
+        lines.extend(f"    {output} := FALSE;" for output in watchdog["affected_outputs"])
+        lines.append("END_IF;")
+
+    # --- Alarmas ----------------------------------------------------------------------------------
+    for alarm in alarm_outputs(functional_requirements):
+        source = " OR ".join(fault_names) if fault_names else emergency
+        lines.append(f"(* Alarma {alarm}: activa mientras haya una falla enclavada *)")
+        lines.append(f"{alarm} := {source};")
+
+    # --- Invariantes never_together ---------------------------------------------------------------
+    for requirement in functional_requirements:
+        if str(requirement.get("type", "")) != "never_together":
+            continue
+        outputs = [str(o) for o in requirement.get("outputs") or [] if isinstance(o, str) and o]
+        if len(outputs) < 2:
+            continue
+        lines.append(f"(* Invariante de seguridad: {', '.join(outputs)} nunca activas a la vez *)")
+        pairs = [f"({a} AND {b})" for i, a in enumerate(outputs) for b in outputs[i + 1:]]
+        lines.append(f"IF {' OR '.join(pairs)} THEN")
+        lines.extend(f"    {output} := FALSE;" for output in outputs)
+        lines.append("END_IF;")
+    return "\n".join(lines) + "\n"
+
+
 def generate_implementation_from_ir(project_ir: PLCProjectIR) -> str:
     parameters = _resolve_parameters_from_ir(project_ir)
     functional_requirements = project_ir.metadata.get("functional_requirements", [])
+
+    if detect_timed_sequences(functional_requirements):
+        # Programa compuesto (Modo Normal): el compositor genera el programa completo a partir de
+        # primitivas genericas; no depende de ninguna plantilla de intent_id.
+        return _generate_composed_program(functional_requirements, parameters)
 
     if project_ir.intent_id == "INT_PID_SUPERVISOR":
         # La logica PID es interdependiente (PID_Enable depende de varios requisitos a la vez),

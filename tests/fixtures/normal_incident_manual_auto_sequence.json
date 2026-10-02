@@ -1,0 +1,115 @@
+{
+  "description": "Incidencia real Modo Normal 2026-10-02 (docs/development_validation_log.md DVL-001): respuesta EXACTA del LLM tras la aclaracion; antes fallaba en Generacion con \"Se solicito una variable funcional sin nombre.\"",
+  "command_text": "Implementa un control Manual/Automático para una banda transportadora y una bomba. En Automático, al pulsar Start arranca la banda y, después de 3 segundos, enciende la bomba. Si el sensor de presencia no cambia de estado durante los 5 segundos siguientes al arranque, detén la banda y la bomba y activa una alarma. Stop debe detener inmediatamente ambos actuadores. La alarma debe mantenerse activa hasta que desaparezca la falla y se presione Reset. En Manual, la banda y la bomba deben responder a órdenes manuales independientes, pero la bomba nunca puede funcionar si la banda está apagada.",
+  "clarification_history": [
+    {
+      "question": "En modo Manual, ¿las órdenes de la banda y de la bomba deben ser mandos mantenidos —el actuador funciona solo mientras la orden está activa— o pulsadores de arranque que dejan cada actuador enclavado hasta Stop?",
+      "answer": "Mandos mantenidos: la banda y la bomba deben funcionar solo mientras su respectiva orden manual esté activa. La bomba solo puede funcionar si la banda está encendida."
+    }
+  ],
+  "llm_response": {
+    "intent_id": "INT_MANUAL_AUTO_MODE",
+    "case_id": null,
+    "command_text": "Implementa un control Manual/Automático para una banda transportadora y una bomba. En Automático, al pulsar Start arranca la banda y, después de 3 segundos, enciende la bomba. Si el sensor de presencia no cambia de estado durante los 5 segundos siguientes al arranque, detén la banda y la bomba y activa una alarma. Stop debe detener inmediatamente ambos actuadores. La alarma debe mantenerse activa hasta que desaparezca la falla y se presione Reset. En Manual, la banda y la bomba deben responder a órdenes manuales independientes, pero la bomba nunca puede funcionar si la banda está apagada.",
+    "normalized_command": "implementa un control manual/automatico para una banda transportadora y una bomba. en automatico, al pulsar start arranca la banda y, despues de 3 segundos, enciende la bomba. si el sensor de presencia no cambia de estado durante los 5 segundos siguientes al arranque, detén la banda y la bomba y activa una alarma. stop debe detener inmediatamente ambos actuadores. la alarma debe mantenerse activa hasta que desaparezca la falla y se presione reset. en manual, la banda y la bomba deben responder a ordenes manuales independientes, pero la bomba nunca puede funcionar si la banda esta apagada.",
+    "parameters": {
+      "manual_input": "I_Mode_Manual",
+      "auto_input": "I_Mode_Auto",
+      "trigger_input": "I_Start",
+      "motor_output": "Q_Conveyor_Enable",
+      "manual_mode_memory": "M_ManualMode",
+      "auto_mode_memory": "M_AutoMode",
+      "emergency_input": "FALSE"
+    },
+    "confidence": 0.94,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "El periodo de supervisión de T#5s del sensor de presencia comienza al recibir Start en modo Automático.",
+      "Stop tiene prioridad sobre Start y desactiva inmediatamente Q_Conveyor_Enable y Q_Pump_Enable.",
+      "Las órdenes manuales son mandos mantenidos: cada actuador funciona únicamente mientras su orden manual correspondiente permanezca activa.",
+      "La bomba queda inhibida en Manual y Automático siempre que Q_Conveyor_Enable esté desactivada.",
+      "No se declara una entrada ni prioridad de emergencia porque el mapa I/O autorizado no contiene una señal de emergencia física."
+    ],
+    "recognized_tags": [
+      "I_Mode_Manual",
+      "I_Mode_Auto",
+      "I_Start",
+      "I_Stop",
+      "I_Reset",
+      "I_Piece_Sensor",
+      "I_Manual_Conveyor_Command",
+      "I_Manual_Pump_Command",
+      "Q_Conveyor_Enable",
+      "Q_Pump_Enable",
+      "Q_Alarm"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "automatic_mode",
+        "mode_input": "I_Mode_Auto"
+      },
+      {
+        "type": "manual_mode",
+        "mode_input": "I_Mode_Manual",
+        "commands": [
+          {
+            "input": "I_Manual_Conveyor_Command",
+            "output": "Q_Conveyor_Enable",
+            "behavior": "maintained"
+          },
+          {
+            "input": "I_Manual_Pump_Command",
+            "output": "Q_Pump_Enable",
+            "behavior": "maintained",
+            "enable_condition": "Q_Conveyor_Enable"
+          }
+        ]
+      },
+      {
+        "type": "timed_sequence",
+        "start_input": "I_Start",
+        "stop_input": "I_Stop",
+        "mode_condition": "M_AutoMode",
+        "steps": [
+          {
+            "outputs": [
+              "Q_Conveyor_Enable"
+            ],
+            "duration": "T#3s"
+          },
+          {
+            "outputs": [
+              "Q_Conveyor_Enable",
+              "Q_Pump_Enable"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "sensor_timeout_alarm",
+        "sensor_input": "I_Piece_Sensor",
+        "timeout": "T#5s",
+        "start_condition": "I_Start AND M_AutoMode",
+        "affected_outputs": [
+          "Q_Conveyor_Enable",
+          "Q_Pump_Enable"
+        ],
+        "alarm_output": "Q_Alarm"
+      },
+      {
+        "type": "alarm_output",
+        "target": "Q_Alarm"
+      },
+      {
+        "type": "reset_behavior",
+        "target": "Q_Alarm",
+        "reset_input": "I_Reset",
+        "reset_condition": "La alarma solo se reinicia cuando el sensor vuelve a cambiar de estado y se presiona Reset."
+      }
+    ]
+  },
+  "clarification_note": "Pregunta exacta del historial de la GUI; la respuesta se reconstruye del texto normalizado del parser por reglas (comando + respuestas), que es lo que quedo registrado."
+}

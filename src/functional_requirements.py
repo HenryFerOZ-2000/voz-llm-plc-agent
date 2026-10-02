@@ -45,7 +45,14 @@ FUNCTIONAL_REQUIREMENT_TAGS: dict[str, list[str]] = {
     "sensor_range_fault": [],
     "conditional_alarm_reset": ["I_Reset"],
     "safe_overfill_stop": ["Q_Pump_Enable", "Q_Alarm"],
-    "manual_pump_limit": ["Q_Pump_Enable"]
+    "manual_pump_limit": ["Q_Pump_Enable"],
+    # --- Primitivas COMPONIBLES genericas (Modo Normal): sus tags son dinamicos (vienen de la
+    # propia instancia) - ver get_functional_requirement_tags. Lista vacia = "tipo de catalogo".
+    "timed_sequence": [],
+    "never_together": [],
+    # Supervision generica de un sensor: si no cambia de estado dentro de `timeout` tras el
+    # arranque, detiene las salidas afectadas y enclava una alarma (tags dinamicos por instancia).
+    "sensor_timeout_alarm": []
     # "interlock" is intentionally absent here: its tags are dynamic (output_a/output_b come
     # from the requirement instance itself, not a fixed pair) - see get_functional_requirement_tags.
 }
@@ -123,9 +130,76 @@ def strip_external_prefix(tag: str) -> str:
     return tag
 
 
+TIME_LITERAL_PATTERN = re.compile(r"^T#\d+(ms|s|m|h)(\d+(ms|s|m))?$", re.IGNORECASE)
+
+
+def timed_sequence_steps(requirement: dict[str, Any]) -> list[dict[str, Any]]:
+    """Etapas validas de un timed_sequence: [{"outputs": [Q_...], "duration": "T#..."|None}, ...]."""
+    steps = []
+    for step in requirement.get("steps") or []:
+        if not isinstance(step, dict):
+            continue
+        outputs = [str(o).strip() for o in (step.get("outputs") or []) if isinstance(o, str) and str(o).strip()]
+        duration = step.get("duration")
+        steps.append({"outputs": outputs, "duration": str(duration).strip() if duration else None})
+    return steps
+
+
+def timed_sequence_internal_names(index: int, requirement: dict[str, Any]) -> list[dict[str, str]]:
+    """Nombres internos deterministas por etapa: memoria M_Seq<k>_S<i> y temporizador T_Seq<k>_S<i>."""
+    names = []
+    steps = timed_sequence_steps(requirement)
+    for position, step in enumerate(steps, start=1):
+        names.append({"step": f"M_Seq{index}_S{position}",
+                      "timer": f"T_Seq{index}_S{position}" if step["duration"] and position < len(steps) else ""})
+    return names
+
+
+def detect_timed_sequences(functional_requirements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [r for r in functional_requirements or [] if isinstance(r, dict) and str(r.get("type", "")) == "timed_sequence"]
+
+
+def has_composable_program(functional_requirements: list[dict[str, Any]]) -> bool:
+    """
+    Programa completo descrito SOLO por primitivas componibles (multi-actor o secuencia temporizada):
+    un intent_id sin plantilla (INT_UNKNOWN) no es un error en ese caso.
+    """
+    return len(detect_multi_actor_motor_targets(functional_requirements or [])) >= 2 or bool(detect_timed_sequences(functional_requirements))
+
+
+def timed_sequence_missing_data(functional_requirements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Datos FUNCIONALES indispensables que faltan (generico, nunca por frase): toda etapa que no es la
+    ultima necesita una duracion IEC TIME para saber cuando pasar a la siguiente. Se devuelve en orden
+    para preguntar UNA cosa a la vez.
+    """
+    missing = []
+    for requirement in detect_timed_sequences(functional_requirements):
+        steps = timed_sequence_steps(requirement)
+        if not str(requirement.get("start_input", "")).strip():
+            missing.append({"kind": "start_input", "step": None, "outputs": []})
+        for position, step in enumerate(steps, start=1):
+            if not step["outputs"]:
+                missing.append({"kind": "outputs", "step": position, "outputs": []})
+            if position < len(steps) and not (step["duration"] and TIME_LITERAL_PATTERN.match(step["duration"])):
+                missing.append({"kind": "duration", "step": position, "outputs": step["outputs"],
+                                "next_outputs": steps[position]["outputs"]})
+    return missing
+
+
 def get_functional_requirement_tags(requirement: dict[str, Any]) -> list[str]:
     """Resolve the concrete PLC tags one functional_requirement entry implies."""
     req_type = str(requirement.get("type", "")).strip()
+    if req_type == "timed_sequence":
+        tags = [str(requirement.get(key, "")).strip() for key in ("start_input", "stop_input")]
+        for step in timed_sequence_steps(requirement):
+            tags.extend(step["outputs"])
+        index = int(requirement.get("_sequence_index", 1) or 1)
+        for names in timed_sequence_internal_names(index, requirement):
+            tags.extend([names["step"], names["timer"]])
+        return [tag for tag in dict.fromkeys(tags) if tag and tag != "FALSE"]
+    if req_type == "never_together":
+        return [str(o).strip() for o in (requirement.get("outputs") or []) if isinstance(o, str) and str(o).strip()]
     if req_type == "interlock":
         tags = [str(requirement.get("output_a", "")).strip(), str(requirement.get("output_b", "")).strip()]
         return [tag for tag in tags if tag]
@@ -193,6 +267,146 @@ def is_catalog_functional_requirement(requirement: dict[str, Any]) -> bool:
     return req_type in FUNCTIONAL_REQUIREMENT_TAGS or req_type == "interlock"
 
 
+IEC_DATA_TYPES = {"BOOL", "BYTE", "WORD", "DWORD", "LWORD", "SINT", "INT", "DINT", "LINT", "USINT", "UINT", "UDINT",
+                  "ULINT", "REAL", "LREAL", "TIME", "STRING", "WSTRING"}
+CLASS_CATALOG = "catalog"
+CLASS_VARIABLE = "variable"
+CLASS_UNSUPPORTED = "unsupported"
+
+
+def classify_functional_requirement(requirement: dict[str, Any]) -> str:
+    """
+    Tres clases (antes eran dos y "todo lo que no es catalogo" se trataba como variable ad-hoc):
+      catalog     primitiva/comportamiento del catalogo ({"type": "timed_sequence", ...});
+      variable    variable funcional con nombre propio ({"name": "Level_SP", "type": "REAL"});
+      unsupported comportamiento desconocido: no es una variable y no se puede generar.
+    """
+    if is_catalog_functional_requirement(requirement):
+        return CLASS_CATALOG
+    if str(requirement.get("name") or "").strip() or str(requirement.get("type") or "").strip().upper() in IEC_DATA_TYPES:
+        return CLASS_VARIABLE
+    return CLASS_UNSUPPORTED
+
+
+# ---------------------------------------------------------------------------------------------
+# Composicion funcional (programa descrito por primitivas; ver code_generator._generate_composed_program)
+# ---------------------------------------------------------------------------------------------
+
+# Tipos que el compositor sabe renderizar dentro de un programa compuesto. Cualquier otro tipo de
+# catalogo presente en la composicion se rechaza explicitamente (nunca se descarta en silencio).
+COMPOSABLE_TYPES = {"timed_sequence", "never_together", "automatic_mode", "manual_mode", "sensor_timeout_alarm",
+                    "alarm_output", "reset_behavior", "emergency_priority"}
+MANUAL_BEHAVIORS = {"maintained", "latched"}
+AUTO_MODE_MEMORY = "M_AutoMode"
+MANUAL_MODE_MEMORY = "M_ManualMode"
+
+
+def _requirements_of(functional_requirements: list[dict[str, Any]], req_type: str) -> list[dict[str, Any]]:
+    return [r for r in functional_requirements or [] if isinstance(r, dict) and str(r.get("type", "")) == req_type]
+
+
+def _text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def mode_inputs(functional_requirements: list[dict[str, Any]]) -> dict[str, str]:
+    """{"auto": I_..., "manual": I_...} de automatic_mode/manual_mode presentes (mode_input o el tag del catalogo)."""
+    inputs = {}
+    for requirement in _requirements_of(functional_requirements, "automatic_mode")[:1]:
+        inputs["auto"] = _text(requirement.get("mode_input")) or FUNCTIONAL_REQUIREMENT_TAGS["automatic_mode"][0]
+    for requirement in _requirements_of(functional_requirements, "manual_mode")[:1]:
+        inputs["manual"] = _text(requirement.get("mode_input")) or FUNCTIONAL_REQUIREMENT_TAGS["manual_mode"][0]
+    return inputs
+
+
+def manual_commands(functional_requirements: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Ordenes manuales independientes {input, output, behavior, enable_condition} de manual_mode.commands[]."""
+    commands = []
+    for requirement in _requirements_of(functional_requirements, "manual_mode"):
+        for command in requirement.get("commands") or []:
+            if isinstance(command, dict):
+                commands.append({"input": _text(command.get("input")), "output": _text(command.get("output")),
+                                 "behavior": _text(command.get("behavior")).lower() or "maintained",
+                                 "enable_condition": _text(command.get("enable_condition"))})
+    return commands
+
+
+def manual_latch_memory(output: str) -> str:
+    return f"M_{strip_external_prefix(output)}_ManualLatch"
+
+
+def sensor_watchdogs(functional_requirements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    watchdogs = []
+    for requirement in _requirements_of(functional_requirements, "sensor_timeout_alarm"):
+        affected = requirement.get("affected_outputs") or []
+        watchdogs.append({"sensor_input": _text(requirement.get("sensor_input")),
+                          "timeout": _text(requirement.get("timeout")),
+                          "start_condition": _text(requirement.get("start_condition")),
+                          "affected_outputs": [_text(o) for o in affected if isinstance(o, str) and _text(o)],
+                          "alarm_output": _text(requirement.get("alarm_output"))})
+    return watchdogs
+
+
+def watchdog_internal_names(index: int) -> dict[str, str]:
+    """Memorias/temporizador deterministas por supervision: M_Wd<k>_* y T_Wd<k>."""
+    return {key: f"M_Wd{index}_{key}" for key in ("Armed", "Prev", "Last", "Fault", "Recovered")} | {"Timer": f"T_Wd{index}"}
+
+
+def reset_input(functional_requirements: list[dict[str, Any]]) -> str:
+    for requirement in _requirements_of(functional_requirements, "reset_behavior"):
+        return _text(requirement.get("reset_input")) or FUNCTIONAL_REQUIREMENT_TAGS["reset_behavior"][0]
+    return ""
+
+
+def alarm_outputs(functional_requirements: list[dict[str, Any]]) -> list[str]:
+    alarms = [w["alarm_output"] for w in sensor_watchdogs(functional_requirements) if w["alarm_output"]]
+    for requirement in _requirements_of(functional_requirements, "alarm_output"):
+        alarms.append(_text(requirement.get("target")) or FUNCTIONAL_REQUIREMENT_TAGS["alarm_output"][0])
+    return list(dict.fromkeys(alarms))
+
+
+def _condition_tags(expression: str) -> list[str]:
+    from functional_resources import condition_identifiers  # import diferido: evita ciclo de modulos
+    return condition_identifiers(expression) or []
+
+
+def composition_tags(functional_requirements: list[dict[str, Any]]) -> list[str]:
+    """
+    TODOS los tags (externos e internos) de un programa compuesto: secuencias, modos, ordenes
+    manuales, permisivos, supervisiones de sensor, alarmas y reset. La IR los declara; el verificador
+    rechaza cualquier identificador usado y no declarado.
+    """
+    tags: list[str] = []
+    sequence_index = 0
+    for requirement in functional_requirements or []:
+        if not isinstance(requirement, dict):
+            continue
+        req_type = str(requirement.get("type", ""))
+        if req_type == "timed_sequence":
+            sequence_index += 1
+            tags.extend(get_functional_requirement_tags({**requirement, "_sequence_index": sequence_index}))
+            tags.extend(_condition_tags(_text(requirement.get("mode_condition"))))
+        elif req_type == "never_together":
+            tags.extend(get_functional_requirement_tags(requirement))
+    modes = mode_inputs(functional_requirements)
+    if "auto" in modes:
+        tags.extend([modes["auto"], AUTO_MODE_MEMORY])
+    if "manual" in modes:
+        tags.extend([modes["manual"], MANUAL_MODE_MEMORY])
+    for command in manual_commands(functional_requirements):
+        tags.extend([command["input"], command["output"]])
+        tags.extend(_condition_tags(command["enable_condition"]))
+        if command["behavior"] == "latched":
+            tags.append(manual_latch_memory(command["output"]))
+    for index, watchdog in enumerate(sensor_watchdogs(functional_requirements), start=1):
+        tags.extend([watchdog["sensor_input"], watchdog["alarm_output"], *watchdog["affected_outputs"]])
+        tags.extend(_condition_tags(watchdog["start_condition"]))
+        tags.extend(watchdog_internal_names(index).values())
+    tags.append(reset_input(functional_requirements))
+    tags.extend(alarm_outputs(functional_requirements))
+    return [tag for tag in dict.fromkeys(tags) if tag and tag not in ("FALSE", "TRUE")]
+
+
 def compute_intent_covered_types(intent_definition: dict[str, Any]) -> set[str]:
     """
     Which functional_requirement types an intent ALREADY implements by itself, derived purely
@@ -236,6 +450,8 @@ def compute_semantic_coverage(
         and any(keyword in normalized for keyword in keywords)
     }
     explicit_types = {str(requirement.get("type", "")) for requirement in functional_requirements}
+    if "never_together" in explicit_types:
+        explicit_types.add("interlock")  # la invariante generica cubre "nunca al mismo tiempo"
     intent_definition = intents_catalog.get(intent_id, {}) if isinstance(intents_catalog, dict) else {}
     covered_by_intent = compute_intent_covered_types(intent_definition) if isinstance(intent_definition, dict) else set()
 

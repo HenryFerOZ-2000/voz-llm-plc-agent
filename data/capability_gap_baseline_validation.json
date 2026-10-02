@@ -1,0 +1,254 @@
+{
+  "generated_at": "2026-10-01T09:49:12",
+  "note": "Validacion REAL de los SYSTEM_CAPABILITY_GAP del generador con el baseline D (TEXT). Los gaps NO se corrigen en esta fase.",
+  "summary": {
+    "confirmed": 1,
+    "inconclusive": 19
+  },
+  "cases": [
+    {
+      "case_id": "D01",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D01",
+      "real_trials": 1,
+      "valid_trials": 1,
+      "status": "confirmed",
+      "failure_stage": "COMPILE_FAILURE",
+      "failure_stages": {
+        "COMPILE_FAILURE": 1
+      },
+      "evidence_trial_ids": [
+        "D01_V1_TEXT_DEV_001"
+      ],
+      "notes": "Compilacion TIA: TIA_OPENNESS_ERROR"
+    },
+    {
+      "case_id": "D02",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D03",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D04",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D05",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D05",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D06",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D07",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D08",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D09",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D10",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D10",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D11",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D12",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D12",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D13",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D13",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D14",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D14",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D15",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D15",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D16",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D16",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D17",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D17",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D18",
+      "static_gap_predicted": false,
+      "gap_id": null,
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D19",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D19",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    },
+    {
+      "case_id": "D20",
+      "static_gap_predicted": true,
+      "gap_id": "GAP-D20",
+      "real_trials": 0,
+      "valid_trials": 0,
+      "status": "inconclusive",
+      "failure_stage": null,
+      "failure_stages": {},
+      "evidence_trial_ids": [],
+      "notes": null
+    }
+  ]
+}

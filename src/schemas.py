@@ -61,6 +61,8 @@ class SemanticValidationResult(BaseModel):
     missing_parameters: list[str] = Field(default_factory=list)
     unauthorized_tags: list[str] = Field(default_factory=list)
     requires_clarification: bool = False
+    # Pregunta FUNCIONAL derivada por el validador (p.ej. duracion faltante de una etapa de secuencia).
+    clarification_question: str | None = None
     functional_requirement_conflicts: list[dict[str, Any]] = Field(default_factory=list)
     io_assignment_proposals: list[dict[str, Any]] = Field(default_factory=list)
 

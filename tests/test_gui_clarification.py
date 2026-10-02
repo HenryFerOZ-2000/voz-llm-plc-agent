@@ -174,10 +174,11 @@ PHYSICAL_MISSING_OUTPUT = {
 
 def test_accepting_clarification_reprocesses_and_resolves_int_unknown(app, monkeypatch) -> None:
     """Aceptar no debe dejar INT_UNKNOWN sin hacer nada: debe reprocesar y continuar."""
-    calls = {"count": 0}
+    calls = {"count": 0, "received": []}
 
     def fake_parse_command(command_text, **kwargs):
         calls["count"] += 1
+        calls["received"].append({"command_text": command_text, **kwargs})
         return dict(AMBIGUOUS_OUTPUT) if calls["count"] == 1 else dict(RESOLVED_OUTPUT)
 
     monkeypatch.setattr(gui, "parse_command", fake_parse_command)
@@ -190,8 +191,12 @@ def test_accepting_clarification_reprocesses_and_resolves_int_unknown(app, monke
     assert result is True
     assert app.pending_semantic_output["intent_id"] == "INT_DELAYED_STOP"
     assert app.pending_semantic_output["semantic_validation"]["is_valid"] is True
-    # la respuesta del usuario quedo registrada en el comando reprocesado
-    assert "Respuesta del usuario: Si, autorizo el paro retardado." in app.command_textbox.get("1.0", "end")
+    # Modo Normal: la respuesta se incorpora de forma ESTRUCTURADA (comando original + {pregunta, respuesta}),
+    # nunca concatenada como texto libre en el comando.
+    reprocessed = calls["received"][1]
+    assert reprocessed["command_text"] == "Enciende un motor con un pulsante de inicio..."
+    assert reprocessed["clarification_history"][0]["answer"] == "Si, autorizo el paro retardado."
+    assert "Respuesta del usuario" not in app.command_textbox.get("1.0", "end")
 
 
 def test_cancelling_clarification_stops_the_pipeline(app, monkeypatch) -> None:

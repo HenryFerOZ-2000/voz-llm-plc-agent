@@ -96,14 +96,19 @@ from tia_openness import (
     save_tia_config,
     validate_package_with_tia
 )
+import normal_interaction
+from functional_requirements import has_composable_program
+import normal_voice
 import plcsim_runtime
 import plcsim_runtime_io
+import tia_projects
 from plcsim_runtime import get_plcsim_runtime_status
 from trial_experiments import benchmark_catalog, oracle_review, oracle_runner, oracle_schema, trial_io_map, trial_model
+from trial_experiments import deferred_evaluator, experimental_design, resource_policy, tia_classification
+from trial_experiments import voice_protocol
 from trial_experiments.oracle_runner import run_oracle
 from trial_experiments.oracle_schema import find_case_oracle
 from trial_experiments import (
-    CONDITIONS,
     ENVIRONMENT_LABELS,
     ENVIRONMENTS,
     ERROR_CODES,
@@ -133,6 +138,25 @@ ctk.set_default_color_theme("green")
 
 
 GUI_INSTANCE_PORT = 49573
+
+# Diseno experimental v2 (data/experimental_design.json): la modalidad de entrada es el factor;
+# Rules/LLM/Hybrid y las condiciones C1-C4 quedan fuera del flujo formal (legacy DEPRECATED).
+INPUT_MODE_LABELS = {
+    trial_model.INPUT_MODE_TEXT: "TEXT - Texto",
+    trial_model.INPUT_MODE_VOICE_CLEAN: "VOICE_CLEAN - Voz limpia",
+    trial_model.INPUT_MODE_VOICE_NOISE: "VOICE_NOISE - Voz con ruido",
+}
+NORMAL_VOICE_BUTTON_TEXT = "🎙 CAPTURAR Y EJECUTAR POR VOZ\nCaptura, compila y carga si está marcado"
+EXPERIMENT_PHASE_LABELS = {
+    trial_model.PHASE_BASELINE: "BASELINE (desarrollo)",
+    trial_model.PHASE_DEVELOPMENT: "DEVELOPMENT_VALIDATION (desarrollo)",
+    trial_model.PHASE_FORMAL: "FORMAL (requiere software congelado)",
+}
+# Palabras que delatan un fallo del servicio externo (API LLM / red), no del sistema evaluado.
+_EXTERNAL_SERVICE_ERROR_MARKERS = (
+    "timeout", "timed out", "connection", "connect", "network", "rate limit", "ratelimit", "429", "502", "503",
+    "504", "service unavailable", "apiconnectionerror", "apitimeouterror", "authentication", "401", "ssl",
+)
 _GUI_INSTANCE_SOCKET: socket.socket | None = None
 
 
@@ -583,6 +607,330 @@ class LLMConfigDialog(ctk.CTkToplevel):
 
     def _cancel(self) -> None:
         self.result = None
+        self.destroy()
+
+
+
+def master_info_lines(config: dict[str, Any]) -> list[str]:
+    """Texto del panel TIA MASTER (Configurar TIA)."""
+    validation = config.get("validation") or {}
+    snapshot = config.get("snapshot") or {}
+    if not config.get("path"):
+        return ["Sin TIA MASTER seleccionado."]
+    lines = [
+        f"Ruta: {config.get('path')}",
+        f"Nombre: {validation.get('project_name') or '-'}",
+        f"TIA version: {validation.get('tia_version') or '-'}",
+        f"CPU detectada: {validation.get('cpu_device_item') or '-'} (software PLC: {validation.get('plc_name') or '-'})",
+        f"Modelo CPU: {validation.get('cpu_type_name') or '(TypeName no disponible via Openness)'}",
+        f"Referencia / firmware: {validation.get('cpu_order_number') or validation.get('cpu_type_identifier') or '-'}"
+        f" / {validation.get('cpu_firmware') or '-'}",
+        f"Interfaz X1: {'SI' if validation.get('x1_interface_present') else ('-' if not validation else 'NO')}",
+        f"IP (X1): {validation.get('x1_ip_address') or '-'}   (todas: {', '.join(validation.get('ip_addresses') or []) or '-'})",
+        f"PLC_Agent_IO: {validation.get('plc_agent_io') or '-'}",
+        f"Estado de validacion: {validation.get('status') or 'SIN VALIDAR'}",
+        f"Status: {validation.get('master_status') or 'INVALID'}"
+        f"{'   (criterios FORMAL cumplidos; FORMAL_READY requiere aprobacion explicita)' if validation.get('formal_ready_criteria_met') else ''}",
+        f"Bloques en el MASTER: {validation.get('block_count', '-')}",
+        f"Hash SHA-256 (snapshot): {snapshot.get('archive_sha256') or '-'}",
+        f"Fecha de validacion: {validation.get('validated_at') or '-'}",
+        f"Snapshot: {(config.get('snapshot') or {}).get('archive_path') or (validation.get('archive') or {}).get('archive_expected_path') or '-'}",
+    ]
+    actual = (validation.get("archive") or {}).get("archive_actual_files_created")
+    if actual is not None and not config.get("snapshot"):
+        lines.append(f"Archivos creados realmente por Archive: {', '.join(actual) or '(ninguno)'}")
+    for message in (validation.get("errors") or []) + (validation.get("warnings") or []):
+        lines.append(f"! {message}")
+    return lines
+
+
+def normal_project_lines(normal: dict[str, Any]) -> list[str]:
+    validation = normal.get("validation") or {}
+    lines = [f"Ruta: {normal.get('path') or '(no configurado)'}",
+             f"Estado: {validation.get('status') or 'SIN VALIDAR'}",
+             f"Openness listo: {validation.get('openness_ready') if validation else '-'}",
+             f"Fecha de validacion: {validation.get('validated_at') or '-'}"]
+    if normal.get("source"):
+        lines.append(f"(origen: {normal['source']})")
+    return lines + [f"! {error}" for error in validation.get("errors") or []]
+
+
+class TiaConfigDialog(ctk.CTkToplevel):
+    """
+    Configurar TIA V18 con DOS proyectos independientes:
+      PROYECTO TIA - MODO NORMAL     (tia.normal_project: se importa/compila/descarga; puede modificarse)
+      TIA MASTER - EXPERIMENTACION   (tia.experiment_master: plantilla inmutable; se copia por ensayo)
+    Seleccionar o validar uno nunca cambia el otro.
+    """
+
+    def __init__(self, app: "VozLLMPLCGUI") -> None:
+        super().__init__(app)
+        self.app = app
+        self.title("Configurar TIA V18")
+        self.geometry("780x720")
+        self.grid_columnconfigure(0, weight=1)
+        self._worker: threading.Thread | None = None
+        self._queue: queue.Queue[tuple[str, Any]] = queue.Queue()
+
+        # --- A) PROYECTO TIA - MODO NORMAL
+        ctk.CTkLabel(self, text="PROYECTO TIA — MODO NORMAL", font=app.section_label_font).grid(
+            row=0, column=0, padx=16, pady=(14, 2), sticky="w")
+        normal_row = ctk.CTkFrame(self, fg_color="transparent")
+        normal_row.grid(row=1, column=0, padx=16, sticky="ew")
+        normal_row.grid_columnconfigure(0, weight=1)
+        self.normal_path_var = tk.StringVar(value=tia_projects.normal_project_path(app.project_root))
+        ctk.CTkEntry(normal_row, textvariable=self.normal_path_var, state="readonly", font=app.body_font).grid(row=0, column=0, sticky="ew")
+        ctk.CTkButton(normal_row, text="Seleccionar", width=110, command=self.select_normal, font=app.button_font).grid(row=0, column=1, padx=(6, 0))
+        ctk.CTkButton(normal_row, text="Validar", width=90, command=self.validate_normal, font=app.button_font).grid(row=0, column=2, padx=(6, 0))
+        self.normal_box = ctk.CTkTextbox(self, height=110, font=app.body_font)
+        self.normal_box.grid(row=2, column=0, padx=16, pady=(6, 14), sticky="ew")
+
+        # --- B) TIA MASTER - EXPERIMENTACION
+        ctk.CTkLabel(self, text="TIA MASTER — EXPERIMENTACIÓN", font=app.section_label_font).grid(
+            row=3, column=0, padx=16, pady=(4, 2), sticky="w")
+        path_row = ctk.CTkFrame(self, fg_color="transparent")
+        path_row.grid(row=4, column=0, padx=16, sticky="ew")
+        path_row.grid_columnconfigure(0, weight=1)
+        self.master_path_var = tk.StringVar(value=deferred_evaluator.load_master_config(app.project_root).get("path", ""))
+        ctk.CTkEntry(path_row, textvariable=self.master_path_var, state="readonly", font=app.body_font).grid(row=0, column=0, sticky="ew")
+        ctk.CTkButton(path_row, text="Seleccionar Master", width=150, command=self.select_master, font=app.button_font).grid(
+            row=0, column=1, padx=(6, 0))
+        self.validate_button = ctk.CTkButton(path_row, text="Validar Master", width=130, command=self.validate_master, font=app.button_font)
+        self.validate_button.grid(row=0, column=2, padx=(6, 0))
+        self.info_box = ctk.CTkTextbox(self, height=300, font=app.body_font)
+        self.info_box.grid(row=5, column=0, padx=16, pady=(6, 14), sticky="nsew")
+        self.grid_rowconfigure(5, weight=1)
+        self.refresh_info()
+
+    def select_normal(self) -> None:
+        self.app.configure_tia_openness()
+        self.refresh_info()
+
+    def validate_normal(self) -> None:
+        normal = tia_projects.validate_normal_project(self.app.project_root)
+        self.app._log(f"[TIA NORMAL] {(normal.get('validation') or {}).get('status')}: {normal.get('path')}")
+        self.refresh_info()
+
+    def refresh_info(self) -> None:
+        self.normal_path_var.set(tia_projects.normal_project_path(self.app.project_root))
+        self.master_path_var.set(deferred_evaluator.load_master_config(self.app.project_root).get("path", ""))
+        for box, lines in ((self.normal_box, normal_project_lines(tia_projects.get_normal_project(self.app.project_root))),
+                           (self.info_box, master_info_lines(deferred_evaluator.load_master_config(self.app.project_root)))):
+            box.configure(state="normal")
+            box.delete("1.0", "end")
+            box.insert("1.0", "\n".join(lines))
+            box.configure(state="disabled")
+
+    def select_master(self, path: str | None = None) -> None:
+        current = self.master_path_var.get().strip()
+        chosen = path or filedialog.askopenfilename(
+            title="Seleccione el proyecto TIA MASTER (V18)",
+            initialdir=str(Path(current).parent) if current else str(self.app.project_root),
+            filetypes=[("Proyecto TIA Portal V18", "*.ap18")], parent=self,
+        )
+        if not chosen:
+            return
+        try:
+            deferred_evaluator.select_master(self.app.project_root, chosen)
+        except ValueError as error:
+            messagebox.showwarning("TIA MASTER", str(error), parent=self)
+            return
+        self.app._log(f"[TIA MASTER] Seleccionado: {chosen} (pendiente de VALIDAR MASTER)")
+        self.refresh_info()
+
+    def validate_master(self) -> None:
+        if self._worker is not None or self.app._tia_busy():
+            messagebox.showwarning("TIA MASTER", "Hay otra operacion TIA en curso.", parent=self)
+            return
+        self.validate_button.configure(state="disabled")
+        self.app._log("[TIA MASTER] Validando MASTER (TIA Openness)...")
+
+        def _worker() -> None:
+            try:
+                self._queue.put(("ok", deferred_evaluator.validate_master(self.app.project_root)))
+            except Exception as error:  # pragma: no cover - feedback de GUI
+                self._queue.put(("error", str(error)))
+
+        self._worker = threading.Thread(target=_worker, name="tia-master", daemon=True)
+        self._worker.start()
+        self.after(500, self._poll)
+
+    def _poll(self) -> None:
+        try:
+            outcome, payload = self._queue.get_nowait()
+        except queue.Empty:
+            self.after(500, self._poll)
+            return
+        self._worker = None
+        self.validate_button.configure(state="normal")
+        self.refresh_info()
+        if outcome == "error":
+            self.app._log(f"[TIA MASTER] Error: {payload}")
+            messagebox.showerror("TIA MASTER", str(payload), parent=self)
+            return
+        validation = payload.get("validation") or {}
+        self.app._log(f"[TIA MASTER] {validation.get('status')} / {validation.get('master_status')}")
+
+
+class DeferredEvaluationDialog(ctk.CTkToplevel):
+    """EVALUAR ENSAYO GUARDADO: resumen previo, INICIAR EVALUACION y tabla de veredicto."""
+
+    def __init__(self, app: "VozLLMPLCGUI", trial_dir: Path, retry: bool = False, autostart: bool = False) -> None:
+        super().__init__(app)
+        self.app = app
+        self.trial_dir = Path(trial_dir)
+        self.retry = retry
+        self.title(("Ejecutar ensayo completo" if autostart else "Evaluar ensayo guardado") + (" (reintento tecnico)" if retry else ""))
+        self.geometry("720x620")
+        self.grid_columnconfigure(0, weight=1)
+        self.summary_box = ctk.CTkTextbox(self, height=230, font=app.body_font)
+        self.summary_box.grid(row=0, column=0, padx=16, pady=(14, 8), sticky="ew")
+        row = 1
+        self.retry_reason_var = tk.StringVar(value="")
+        if retry:
+            ctk.CTkLabel(self, text="Motivo del reintento (obligatorio, solo INFRASTRUCTURE_ERROR):", font=app.body_font).grid(
+                row=row, column=0, padx=16, sticky="w")
+            ctk.CTkEntry(self, textvariable=self.retry_reason_var, font=app.body_font).grid(row=row + 1, column=0, padx=16, sticky="ew")
+            row += 2
+        self.start_button = ctk.CTkButton(self, text="INICIAR EVALUACION", height=40, fg_color="#0F766E", hover_color="#115E59",
+                                          command=self.start, font=ctk.CTkFont(size=14, weight="bold"))
+        self.start_button.grid(row=row, column=0, padx=16, pady=8, sticky="ew")
+        self.result_box = ctk.CTkTextbox(self, height=230, font=ctk.CTkFont(family="Consolas", size=13))
+        self.result_box.grid(row=row + 1, column=0, padx=16, pady=(0, 8), sticky="nsew")
+        self.grid_rowconfigure(row + 1, weight=1)
+        ctk.CTkButton(self, text="VER DETALLE", command=lambda: app.show_trial_detail(self.trial_dir), font=app.button_font).grid(
+            row=row + 2, column=0, padx=16, pady=(0, 14), sticky="w")
+        self._fill(self.summary_box, deferred_evaluator.evaluation_summary_lines(app.project_root, self.trial_dir))
+        check = deferred_evaluator.precheck(app.project_root, self.trial_dir, "reintento" if retry else None)
+        if not check["ok"]:
+            self._fill(self.result_box, ["PRECHECK: ABORT"] + check["errors"])
+            self.start_button.configure(state="disabled")
+        else:
+            self._fill(self.result_box, ["PRECHECK: OK"] + [f"! {w}" for w in check["warnings"]])
+            if autostart:
+                # EJECUTAR ENSAYO COMPLETO: la evaluacion sigue sola tras la generacion (un clic = un ensayo).
+                self.after(100, self.start)
+
+    @staticmethod
+    def _fill(box: ctk.CTkTextbox, lines: list[str]) -> None:
+        box.configure(state="normal")
+        box.delete("1.0", "end")
+        box.insert("1.0", "\n".join(lines))
+        box.configure(state="disabled")
+
+    def start(self) -> None:
+        reason = self.retry_reason_var.get().strip() if self.retry else None
+        if self.retry and not reason:
+            messagebox.showwarning("Reintentar evaluacion", "Indique el motivo del reintento tecnico.", parent=self)
+            return
+        self.start_button.configure(state="disabled")
+        self._fill(self.result_box, ["Evaluando... (TIA Portal -> .zap18 -> PLCSIM -> Oracle)"])
+        self.app._start_deferred_evaluation(self.trial_dir, reason, self)
+
+    def show_result(self, outcome: str, payload: Any) -> None:
+        if outcome == "error" or (isinstance(payload, dict) and payload.get("aborted")):
+            errors = payload.get("errors") if isinstance(payload, dict) else [str(payload)]
+            self._fill(self.result_box, ["EVALUACION NO REALIZADA"] + list(errors or []))
+            return
+        record = trial_model.load_trial(self.trial_dir)
+        header = f"{record.get('case_id')} · {record.get('variant_id')} · {record.get('input_mode')}"
+        self._fill(self.result_box, [header, ""] + [f"{label:<20}{value}" for label, value in deferred_evaluator.verdict_table(record)]
+                   + [""] + [f"! {error}" for error in (payload.get("errors") or [])]
+                   + ["", "El siguiente ensayo NO se inicia automaticamente."])
+
+
+class VoiceCaptureDialog(ctk.CTkToplevel):
+    """
+    Captura de voz de un ensayo: muestra caso, variante y la FRASE DE REFERENCIA. GRABAR / DETENER /
+    CANCELAR ANTES DEL ENSAYO. Devuelve el WAV RAW (sin procesar) para el protocolo; cancelar antes de
+    grabar no crea ningun resultado experimental.
+    """
+
+    def __init__(self, app: "VozLLMPLCGUI", case_id: str, variant_id: str, reference_text: str) -> None:
+        super().__init__(app)
+        self.app = app
+        self.result: dict[str, Any] | None = None
+        self._device: dict[str, Any] = app.speech_recognizer.get_input_device_info()
+        self.title("Captura de voz del ensayo")
+        self.geometry("680x360")
+        self.grid_columnconfigure((0, 1, 2), weight=1)
+        ctk.CTkLabel(self, text=f"{case_id} · {variant_id}", font=app.section_label_font).grid(
+            row=0, column=0, columnspan=3, padx=16, pady=(14, 4), sticky="w")
+        ctk.CTkLabel(self, text="Lea en voz alta exactamente esta frase:", font=app.body_font).grid(
+            row=1, column=0, columnspan=3, padx=16, sticky="w")
+        ctk.CTkLabel(self, text=f'"{reference_text}"', wraplength=620, justify="left",
+                     font=ctk.CTkFont(size=16, weight="bold")).grid(row=2, column=0, columnspan=3, padx=16, pady=10, sticky="w")
+        self.status_var = tk.StringVar(value=f"Microfono: {self._device.get('name') or self._device.get('error') or '-'}")
+        ctk.CTkLabel(self, textvariable=self.status_var, font=app.body_font).grid(row=3, column=0, columnspan=3, padx=16, sticky="w")
+        self.record_button = ctk.CTkButton(self, text="GRABAR", command=self.record, font=app.button_font)
+        self.record_button.grid(row=4, column=0, padx=(16, 4), pady=16, sticky="ew")
+        self.stop_button = ctk.CTkButton(self, text="DETENER", command=self.stop, state="disabled", font=app.button_font)
+        self.stop_button.grid(row=4, column=1, padx=4, pady=16, sticky="ew")
+        self.cancel_button = ctk.CTkButton(self, text="CANCELAR ANTES DEL ENSAYO", command=self.cancel, font=app.button_font)
+        self.cancel_button.grid(row=4, column=2, padx=(4, 16), pady=16, sticky="ew")
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+
+    def record(self) -> None:
+        try:
+            self.app.speech_recognizer.start_recording()
+        except RuntimeError as error:
+            # Fallo del hardware de captura: sin audio no hay ensayo (se informa, no se clasifica como ASR).
+            self.status_var.set(f"No se pudo grabar: {error}")
+            return
+        self._recorded_at = datetime.now().isoformat(timespec="seconds")
+        self.record_button.configure(state="disabled")
+        self.stop_button.configure(state="normal")
+        self.cancel_button.configure(state="disabled")
+        self._tick()
+
+    def _tick(self) -> None:
+        if not self.app.speech_recognizer.is_recording():
+            return
+        level = self.app.speech_recognizer.get_current_level()
+        self.status_var.set(f"Grabando... {self.app.speech_recognizer.recording_elapsed_seconds()} s · nivel {level.get('peak')}")
+        self.after(200, self._tick)
+
+    def stop(self) -> None:
+        try:
+            path = self.app.speech_recognizer.stop_recording()
+        except RuntimeError as error:
+            path = None
+            self.status_var.set(f"Grabacion sin audio: {error}")
+        settings = self.app.speech_recognizer
+        self.result = {"path": str(path) if path else None, "device": self._device, "sample_rate": settings.sample_rate,
+                       "channels": settings.channels, "recorded_at": getattr(self, "_recorded_at", None)}
+        self.destroy()
+
+    def cancel(self) -> None:
+        if self.app.speech_recognizer.is_recording():
+            return  # una vez iniciada la grabacion solo se puede DETENER (el intento queda registrado)
+        self.result = None
+        self.destroy()
+
+class PhysicalDownloadConfirmDialog(ctk.CTkToplevel):
+    """Confirmacion obligatoria antes de una descarga automatica a un PLC FISICO."""
+
+    def __init__(self, app: "VozLLMPLCGUI", info: dict[str, str]) -> None:
+        super().__init__(app)
+        self.result = False
+        self.title("Programa listo para descargar al PLC físico")
+        self.geometry("560x300")
+        self.grid_columnconfigure((0, 1), weight=1)
+        ctk.CTkLabel(self, text="Programa listo para descargar al PLC físico", font=app.section_label_font).grid(
+            row=0, column=0, columnspan=2, padx=16, pady=(16, 8), sticky="w")
+        details = "\n".join([f"Destino: {info.get('destino')}", f"CPU: {info.get('cpu')}", f"IP: {info.get('ip')}",
+                             f"Proyecto TIA Normal: {info.get('proyecto')}", "",
+                             "La CPU puede detenerse durante la descarga."])
+        ctk.CTkLabel(self, text=details, justify="left", anchor="w", font=app.body_font).grid(
+            row=1, column=0, columnspan=2, padx=16, sticky="ew")
+        ctk.CTkButton(self, text="CONFIRMAR DESCARGA", fg_color="#B91C1C", hover_color="#991B1B",
+                      command=self._confirm, font=app.button_font).grid(row=2, column=0, padx=(16, 6), pady=16, sticky="ew")
+        ctk.CTkButton(self, text="CANCELAR", command=self.destroy, font=app.button_font).grid(
+            row=2, column=1, padx=(6, 16), pady=16, sticky="ew")
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+
+    def _confirm(self) -> None:
+        self.result = True
         self.destroy()
 
 
@@ -1095,9 +1443,10 @@ class VozLLMPLCGUI(ctk.CTk):
         self._experiment_profiles_by_case: dict[str, dict[str, Any]] = {}
         self.experiment_group_var = tk.StringVar(value="Discreto D01-D20")
         self.experiment_case_var = tk.StringVar(value="")
-        self.experiment_condition_var = tk.StringVar(value=CONDITIONS["C1"]["label"])
+        self.experiment_input_mode_var = tk.StringVar(value=INPUT_MODE_LABELS[trial_model.INPUT_MODE_TEXT])
+        self.experiment_phase_var = tk.StringVar(value=EXPERIMENT_PHASE_LABELS[trial_model.PHASE_DEVELOPMENT])
         self.experiment_variant_var = tk.StringVar(value="V1")
-        self.experiment_speaker_var = tk.StringVar(value="P01")
+        self.experiment_speaker_var = tk.StringVar(value="S01")
         self.experiment_noise_var = tk.StringVar(value=NOISE_LEVEL_LABELS["none"])
         self.experiment_environment_var = tk.StringVar(value=ENVIRONMENT_LABELS["simulation"])
         self.experiment_status_var = tk.StringVar(value="")
@@ -1106,7 +1455,10 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_next_label_var = tk.StringVar(value="")
         self.experiment_variant_command_var = tk.StringVar(value="")
         self._active_variant_command_text: str = ""
-        self._last_experiment_condition_code: str | None = None
+        self._last_experiment_input_mode: str | None = None
+        self._deferred_worker_active = False
+        self._deferred_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
+        self._deferred_dialog: Any = None
         self.manual_result_var = tk.StringVar(value=PHYSICAL_RESULT_OPTIONS[0])
         self.manual_safety_var = tk.StringVar(value="No")
         self.manual_error_var = tk.StringVar(value=NO_ERROR_LABEL)
@@ -1167,6 +1519,12 @@ class VozLLMPLCGUI(ctk.CTk):
         self.voice_audio_path: Path | None = None
         self.voice_transcription: dict[str, Any] | None = None
         self._voice_worker_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
+        # MODO NORMAL: ejecucion automatica por voz en curso (None si no hay).
+        self._normal_voice_flow: dict[str, Any] | None = None
+        # MODO NORMAL: aclaraciones ESTRUCTURADAS del comando en curso (original + preguntas/respuestas).
+        self._normal_clarification_state: dict[str, Any] | None = None
+        self._reprocessing_clarification = False
+        self._pipeline_stage: str | None = None
         self._voice_worker_active = False
         self._voice_device_index_by_label: dict[str, int | None] = {}
         self._voice_level_poll_job: str | None = None
@@ -1262,9 +1620,9 @@ class VozLLMPLCGUI(ctk.CTk):
         self.status_font = ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
 
     def _configure_grid(self) -> None:
-        self.grid_columnconfigure(0, weight=6, minsize=500)
-        self.grid_columnconfigure(1, weight=6, minsize=460)
-        self.grid_columnconfigure(2, weight=8, minsize=540)
+        self.grid_columnconfigure(0, weight=6, minsize=500, uniform="main_panels")
+        self.grid_columnconfigure(1, weight=6, minsize=460, uniform="main_panels")
+        self.grid_columnconfigure(2, weight=8, minsize=540, uniform="main_panels")
         self.grid_rowconfigure(0, weight=8)
         self.grid_rowconfigure(1, weight=2, minsize=180)
 
@@ -1306,7 +1664,7 @@ class VozLLMPLCGUI(ctk.CTk):
                 "io_table_minsize": 215,
                 "command_box_minsize": 165,
                 "results_box_minsize": 255,
-                "visible_result_tabs": 5
+                "visible_result_tabs": 4
             }
         elif width >= 1600:
             metrics = {
@@ -1326,7 +1684,7 @@ class VozLLMPLCGUI(ctk.CTk):
                 "io_table_minsize": 205,
                 "command_box_minsize": 155,
                 "results_box_minsize": 240,
-                "visible_result_tabs": 4
+                "visible_result_tabs": 3
             }
         else:
             metrics = {
@@ -1346,12 +1704,12 @@ class VozLLMPLCGUI(ctk.CTk):
                 "io_table_minsize": 190,
                 "command_box_minsize": 145,
                 "results_box_minsize": 220,
-                "visible_result_tabs": 4
+                "visible_result_tabs": 3
             }
 
-        self.grid_columnconfigure(0, weight=metrics["main_weights"][0], minsize=metrics["main_minsizes"][0])
-        self.grid_columnconfigure(1, weight=metrics["main_weights"][1], minsize=metrics["main_minsizes"][1])
-        self.grid_columnconfigure(2, weight=metrics["main_weights"][2], minsize=metrics["main_minsizes"][2])
+        self.grid_columnconfigure(0, weight=metrics["main_weights"][0], minsize=metrics["main_minsizes"][0], uniform="main_panels")
+        self.grid_columnconfigure(1, weight=metrics["main_weights"][1], minsize=metrics["main_minsizes"][1], uniform="main_panels")
+        self.grid_columnconfigure(2, weight=metrics["main_weights"][2], minsize=metrics["main_minsizes"][2], uniform="main_panels")
         self.left_panel.grid_rowconfigure(9, weight=1, minsize=metrics["io_table_minsize"])
         self.center_panel.grid_rowconfigure(2, weight=1, minsize=metrics["command_box_minsize"])
         self.right_panel.grid_rowconfigure(3, weight=1, minsize=metrics["results_box_minsize"])
@@ -1388,6 +1746,8 @@ class VozLLMPLCGUI(ctk.CTk):
             self.view_history_button
         ]:
             button.configure(height=metrics["button_height"], font=self.button_font)
+        for button in self.tall_command_buttons:
+            button.configure(height=metrics["button_height"] + 18)
 
         self.command_textbox.configure(font=self.text_font)
         self.console_textbox.configure(font=self.console_font, height=metrics["console_height"])
@@ -1538,7 +1898,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.configure_tia_button = ctk.CTkButton(
             tia_actions_frame,
             text="Configurar TIA V18",
-            command=self.configure_tia_openness,
+            command=self.open_tia_config_dialog,
             font=self.button_font
         )
         self.configure_tia_button.grid(row=0, column=0, sticky="ew")
@@ -1751,14 +2111,15 @@ class VozLLMPLCGUI(ctk.CTk):
             values=["Microfono predeterminado del sistema"],
             command=self._on_voice_device_selected,
             font=self.body_font,
-            dropdown_font=self.body_font
+            dropdown_font=self.body_font,
+            dynamic_resizing=False
         )
         self.voice_device_selector.grid(row=0, column=0, padx=(0, 8), sticky="ew")
 
         self.refresh_devices_button = ctk.CTkButton(
             voice_device_frame,
-            text="Actualizar microfonos",
-            width=170,
+            text="↻ Actualizar",
+            width=110,
             command=self._refresh_input_devices,
             font=self.button_font
         )
@@ -1782,10 +2143,13 @@ class VozLLMPLCGUI(ctk.CTk):
 
         primary_controls_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
         primary_controls_frame.grid(row=6, column=0, padx=18, pady=(0, 8), sticky="ew")
+        # Columnas iguales (uniform): los textos largos van en filas completas para no recortarse.
         for column_index in range(2):
-            primary_controls_frame.grid_columnconfigure(column_index, weight=1)
+            primary_controls_frame.grid_columnconfigure(column_index, weight=1, uniform="primary_controls")
 
         self.command_buttons: list[ctk.CTkButton] = []
+        # Botones con texto en dos lineas: el layout responsivo les da mas altura.
+        self.tall_command_buttons: list[ctk.CTkButton] = []
 
         self.listen_button = ctk.CTkButton(
             primary_controls_frame, text="\U0001F399 Grabar comando", height=40,
@@ -1808,7 +2172,7 @@ class VozLLMPLCGUI(ctk.CTk):
 
         self.execute_command_button = ctk.CTkButton(
             primary_controls_frame,
-            text="EJECUTAR COMANDO",
+            text="EJECUTAR COMANDO\nGenerar y compilar",
             height=46,
             fg_color="#0F766E",
             hover_color="#115E59",
@@ -1817,6 +2181,15 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.execute_command_button.grid(row=1, column=0, columnspan=2, padx=6, pady=(2, 6), sticky="ew")
         self.command_buttons.append(self.execute_command_button)
+        self.tall_command_buttons.append(self.execute_command_button)
+        # Mismo pipeline que EJECUTAR COMANDO; solo agrega la descarga encadenada si todo pasa.
+        self.execute_and_load_button = ctk.CTkButton(
+            primary_controls_frame, text="EJECUTAR Y CARGAR AL PLC\nGenerar, compilar y cargar", height=46,
+            fg_color="#B45309", hover_color="#92400E", command=self.execute_and_load_to_plc,
+            font=ctk.CTkFont(size=14, weight="bold"))
+        self.execute_and_load_button.grid(row=2, column=0, columnspan=2, padx=6, pady=(0, 6), sticky="ew")
+        self.command_buttons.append(self.execute_and_load_button)
+        self.tall_command_buttons.append(self.execute_and_load_button)
 
         self.download_plc_button = ctk.CTkButton(
             primary_controls_frame,
@@ -1828,8 +2201,35 @@ class VozLLMPLCGUI(ctk.CTk):
             command=self.load_program_to_plc,
             font=ctk.CTkFont(size=14, weight="bold")
         )
-        self.download_plc_button.grid(row=2, column=0, columnspan=2, padx=6, pady=(0, 6), sticky="ew")
+        self.download_plc_button.grid(row=3, column=0, columnspan=2, padx=6, pady=(0, 6), sticky="ew")
         self.command_buttons.append(self.download_plc_button)
+
+        # MODO NORMAL: flujo automatico por voz (captura -> ASR -> pipeline Normal -> compilar -> cargar).
+        self.normal_voice_button = ctk.CTkButton(
+            primary_controls_frame, text=NORMAL_VOICE_BUTTON_TEXT, height=50,
+            fg_color="#1D4ED8", hover_color="#1E40AF", command=self.capture_and_execute_by_voice,
+            font=ctk.CTkFont(size=14, weight="bold"))
+        self.normal_voice_button.grid(row=4, column=0, columnspan=2, padx=6, pady=(4, 4), sticky="ew")
+        self.normal_voice_cancel_button = ctk.CTkButton(
+            primary_controls_frame, text="Cancelar captura", height=30, state="disabled",
+            fg_color="#64748B", hover_color="#475569",
+            command=self.cancel_normal_voice_capture, font=self.button_font)
+        self.normal_voice_cancel_button.grid(row=5, column=0, columnspan=2, padx=6, pady=(0, 6), sticky="ew")
+        voice_config = normal_voice.load_config(self.project_root)
+        self.normal_voice_auto_download_var = tk.BooleanVar(value=voice_config["auto_download"])
+        self.normal_voice_auto_download_check = ctk.CTkCheckBox(
+            primary_controls_frame, text="Cargar al PLC automáticamente tras la voz",
+            variable=self.normal_voice_auto_download_var, command=self._on_normal_voice_auto_download_changed,
+            font=self.body_font)
+        self.normal_voice_auto_download_check.grid(row=6, column=0, columnspan=2, padx=6, pady=(0, 2), sticky="w")
+        self.normal_voice_target_var = tk.StringVar(value="")
+        ctk.CTkLabel(primary_controls_frame, textvariable=self.normal_voice_target_var, anchor="w", justify="left",
+                     wraplength=340, font=self.body_font).grid(
+            row=7, column=0, columnspan=2, padx=6, sticky="ew")
+        self.normal_voice_stage_var = tk.StringVar(value="")
+        ctk.CTkLabel(primary_controls_frame, textvariable=self.normal_voice_stage_var, anchor="w", justify="left",
+                     font=self.body_font).grid(row=8, column=0, columnspan=2, padx=6, pady=(0, 6), sticky="ew")
+        self._refresh_normal_voice_target()
 
         advanced_toggle_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
         advanced_toggle_frame.grid(row=7, column=0, padx=18, pady=(0, 4), sticky="ew")
@@ -2036,17 +2436,33 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.use_variant_command_button.grid(row=9, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
 
-        condition_label = ctk.CTkLabel(frame, text="Condicion experimental", font=self.body_font)
-        condition_label.grid(row=10, column=0, columnspan=2, padx=12, pady=(0, 2), sticky="w")
-        self.experiment_condition_selector = ctk.CTkOptionMenu(
-            frame,
-            variable=self.experiment_condition_var,
-            values=[data["label"] for data in CONDITIONS.values()],
-            command=self._on_experiment_condition_changed,
+        # Diseno v2: Modalidad (factor) + Fase (DEVELOPMENT/FORMAL). Sin selector Rules/LLM/Hybrid ni C1-C4.
+        # Filas completas: las etiquetas de fase son largas y se recortaban en media columna.
+        design_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        design_frame.grid(row=10, column=0, columnspan=2, padx=12, pady=0, sticky="ew")
+        design_frame.grid_columnconfigure(0, weight=1)
+        input_mode_label = ctk.CTkLabel(design_frame, text="Modalidad de entrada", font=self.body_font)
+        input_mode_label.grid(row=0, column=0, pady=(0, 2), sticky="w")
+        phase_label = ctk.CTkLabel(design_frame, text="Fase experimental", font=self.body_font)
+        phase_label.grid(row=2, column=0, pady=(0, 2), sticky="w")
+        self.experiment_input_mode_selector = ctk.CTkOptionMenu(
+            design_frame,
+            variable=self.experiment_input_mode_var,
+            values=list(INPUT_MODE_LABELS.values()),
+            command=self._on_experiment_input_mode_changed,
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.experiment_condition_selector.grid(row=11, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        self.experiment_input_mode_selector.grid(row=1, column=0, pady=(0, 6), sticky="ew")
+        self.experiment_phase_selector = ctk.CTkOptionMenu(
+            design_frame,
+            variable=self.experiment_phase_var,
+            values=list(EXPERIMENT_PHASE_LABELS.values()),
+            command=lambda _choice=None: self._refresh_experiment_status(),
+            font=self.body_font,
+            dropdown_font=self.body_font
+        )
+        self.experiment_phase_selector.grid(row=3, column=0, pady=(0, 6), sticky="ew")
 
         speaker_label = ctk.CTkLabel(frame, text="Participante (speaker_id)", font=self.body_font)
         speaker_label.grid(row=12, column=0, padx=(12, 4), pady=(0, 2), sticky="w")
@@ -2081,6 +2497,8 @@ class VozLLMPLCGUI(ctk.CTk):
             frame,
             textvariable=self.experiment_next_label_var,
             anchor="w",
+            justify="left",
+            wraplength=340,
             font=ctk.CTkFont(size=13, weight="bold")
         )
         self.experiment_next_label_label.grid(row=16, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
@@ -2090,6 +2508,7 @@ class VozLLMPLCGUI(ctk.CTk):
             textvariable=self.experiment_status_var,
             anchor="w",
             justify="left",
+            wraplength=340,
             font=self.body_font
         )
         self.experiment_status_label.grid(row=17, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
@@ -2099,18 +2518,21 @@ class VozLLMPLCGUI(ctk.CTk):
             textvariable=self.experiment_stage_var,
             anchor="w",
             justify="left",
+            wraplength=340,
             font=self.body_font
         )
         self.experiment_stage_label.grid(row=18, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
         self._reset_experiment_stages()
 
+        # Fase 4A-DEFERRED: el flujo principal GENERA el ensayo y se detiene (sin TIA/PLCSIM/Oracle);
+        # la evaluacion se lanza despues, ensayo por ensayo, desde "Ensayos generados".
         self.start_trial_button = ctk.CTkButton(
-            frame, text="EJECUTAR ENSAYO", height=42,
+            frame, text="GENERAR ENSAYO", height=42,
             fg_color="#0F766E", hover_color="#115E59",
-            command=self.run_experiment_trial, font=ctk.CTkFont(size=14, weight="bold")
+            command=self.generate_experiment_trial, font=ctk.CTkFont(size=14, weight="bold")
         )
         self.oracle_status_label = ctk.CTkLabel(
-            frame, textvariable=self.oracle_status_var, anchor="w", justify="left", font=self.body_font
+            frame, textvariable=self.oracle_status_var, anchor="w", justify="left", wraplength=340, font=self.body_font
         )
         self.oracle_status_label.grid(row=19, column=0, columnspan=2, padx=12, pady=(0, 4), sticky="ew")
         self.view_oracle_button = ctk.CTkButton(frame, text="VER ORACLE", command=self.view_case_oracle, font=self.button_font)
@@ -2121,7 +2543,54 @@ class VozLLMPLCGUI(ctk.CTk):
             frame, text="REVISION DE ORACLES", command=self.open_oracle_review, font=self.button_font
         )
         self.review_oracles_button.grid(row=21, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
-        self.start_trial_button.grid(row=22, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        # Panel de voz (depende de la modalidad): TEXT sin controles de audio.
+        self.voice_panel = ctk.CTkFrame(frame, corner_radius=8)
+        self.voice_panel.grid(row=22, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+        self.voice_panel.grid_columnconfigure((0, 1), weight=1)
+        self.voice_panel_var = tk.StringVar(value="")
+        ctk.CTkLabel(self.voice_panel, textvariable=self.voice_panel_var, anchor="w", justify="left", font=self.body_font).grid(
+            row=0, column=0, columnspan=2, padx=8, pady=(6, 4), sticky="ew")
+        self.capture_voice_button = ctk.CTkButton(self.voice_panel, text="CAPTURAR VOZ", command=self.run_complete_trial, font=self.button_font)
+        self.noise_profile_button = ctk.CTkButton(self.voice_panel, text="Perfil de ruido (DEV)...", command=self.select_dev_noise_profile, font=self.button_font)
+        self.snr_button = ctk.CTkButton(self.voice_panel, text="SNR (DEV)...", command=self.select_dev_snr, font=self.button_font)
+
+        self.start_trial_button.configure(text="EJECUTAR ENSAYO COMPLETO", command=self.run_complete_trial)
+        self.start_trial_button.grid(row=23, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        self.generate_only_button = ctk.CTkButton(frame, text="GENERAR SOLO (DEVELOPMENT/DEBUG)", command=self.generate_experiment_trial,
+                                                  font=self.button_font)
+        self.generate_only_button.grid(row=24, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+
+        ctk.CTkLabel(frame, text="Ensayos generados", font=self.section_label_font).grid(
+            row=25, column=0, columnspan=2, padx=12, pady=(4, 2), sticky="w")
+        trials_container = ctk.CTkFrame(frame, fg_color="transparent")
+        trials_container.grid(row=26, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+        trials_container.grid_columnconfigure(0, weight=1)
+        self.generated_trials_tree = ttk.Treeview(
+            trials_container, columns=("trial_id", "case", "variant", "generation", "evaluation", "verdict"),
+            show="headings", height=6, selectmode="browse")
+        for column, heading, width in (("trial_id", "ID", 170), ("case", "Caso", 50), ("variant", "Var", 40),
+                                       ("generation", "Generacion", 95), ("evaluation", "Evaluacion", 150), ("verdict", "Veredicto", 120)):
+            self.generated_trials_tree.heading(column, text=heading)
+            self.generated_trials_tree.column(column, width=width, minwidth=width, anchor="w", stretch=False)
+        self.generated_trials_tree.grid(row=0, column=0, sticky="ew")
+        # Columnas mas anchas que el panel: desplazamiento horizontal en lugar de recortar Evaluacion/Veredicto.
+        trials_xscroll = ttk.Scrollbar(trials_container, orient="horizontal", command=self.generated_trials_tree.xview)
+        self.generated_trials_tree.configure(xscrollcommand=trials_xscroll.set)
+        trials_xscroll.grid(row=1, column=0, sticky="ew")
+        self._generated_trial_dirs: dict[str, str] = {}
+        trial_actions = ctk.CTkFrame(frame, fg_color="transparent")
+        trial_actions.grid(row=27, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        trial_actions.grid_columnconfigure((0, 1), weight=1, uniform="trial_actions")
+        self.view_trial_button = ctk.CTkButton(trial_actions, text="VER", command=self.view_generated_trial, font=self.button_font)
+        self.view_trial_button.grid(row=0, column=0, padx=(0, 4), pady=(0, 6), sticky="ew")
+        self.refresh_trials_button = ctk.CTkButton(trial_actions, text="ACTUALIZAR LISTA", command=self._refresh_generated_trials, font=self.button_font)
+        self.refresh_trials_button.grid(row=0, column=1, padx=(4, 0), pady=(0, 6), sticky="ew")
+        self.evaluate_saved_button = ctk.CTkButton(trial_actions, text="EVALUAR ENSAYO GUARDADO", command=self.evaluate_saved_trial, font=self.button_font)
+        self.evaluate_saved_button.grid(row=1, column=0, columnspan=2, pady=(0, 6), sticky="ew")
+        self.evaluate_next_button = ctk.CTkButton(trial_actions, text="EVALUAR SIGUIENTE PENDIENTE", command=self.evaluate_next_pending, font=self.button_font)
+        self.evaluate_next_button.grid(row=2, column=0, columnspan=2, pady=(0, 6), sticky="ew")
+        self.retry_evaluation_button = ctk.CTkButton(trial_actions, text="REINTENTAR EVALUACION", command=self.retry_trial_evaluation, font=self.button_font)
+        self.retry_evaluation_button.grid(row=3, column=0, columnspan=2, sticky="ew")
 
         frame.grid(row=row, column=0, padx=18, pady=(0, 8), sticky="ew")
         frame.grid_remove()
@@ -2451,12 +2920,16 @@ class VozLLMPLCGUI(ctk.CTk):
         visible_tabs = self.result_tab_names[
             self.result_tab_window_start:self.result_tab_window_start + self.result_tab_window_size
         ]
+        # Limpia columnas de una ventana anterior mas ancha; las visibles comparten el ancho por igual.
+        for column_index in range(len(self.result_tab_names)):
+            self.results_tab_strip.grid_columnconfigure(column_index, weight=0, uniform="")
         for column_index, tab_name in enumerate(visible_tabs):
-            self.results_tab_strip.grid_columnconfigure(column_index, weight=1)
+            self.results_tab_strip.grid_columnconfigure(column_index, weight=1, uniform="result_tabs")
             is_active = tab_name == self.active_result_tab
             tab_button = ctk.CTkButton(
                 self.results_tab_strip,
                 text=self.result_tab_labels.get(tab_name, tab_name),
+                width=60,
                 height=self.result_tab_button_height,
                 font=self.tab_font,
                 corner_radius=14,
@@ -2559,7 +3032,10 @@ class VozLLMPLCGUI(ctk.CTk):
         self._voice_device_index_by_label = {default_label: None}
         labels = [default_label]
         for device in devices:
-            label = f"{device['name']} (#{device['index']})"
+            name = str(device["name"])
+            if len(name) > 30:  # nombres largos de Windows: se acortan para que quepan en el selector
+                name = name[:29].rstrip() + "…"
+            label = f"{name} (#{device['index']})"
             self._voice_device_index_by_label[label] = device["index"]
             labels.append(label)
 
@@ -2682,10 +3158,10 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def configure_tia_openness(self) -> None:
         current_config = load_tia_config(self.project_root)
-        current_project = str(current_config.get("project_path", "")).strip()
+        current_project = tia_projects.normal_project_path(self.project_root)
         initial_dir = str(Path(current_project).parent) if current_project else str(self.project_root)
         project_path = filedialog.askopenfilename(
-            title="Seleccione un proyecto TIA Portal V18",
+            title="Seleccione el proyecto TIA Portal V18 del MODO NORMAL",
             initialdir=initial_dir,
             filetypes=[("Proyecto TIA Portal V18", "*.ap18"), ("Todos los archivos", "*.*")]
         )
@@ -2703,19 +3179,20 @@ class VozLLMPLCGUI(ctk.CTk):
         if plc_name is None:
             return
 
-        current_config.update(
-            {
+        try:
+            # tia.normal_project (independiente del TIA MASTER experimental; nunca puede ser el MASTER).
+            tia_projects.set_normal_project(self.project_root, project_path, plc_name.strip(), extra_tia_config={
                 "tia_version": "V18",
-                "project_path": project_path,
-                "plc_name": plc_name.strip(),
                 "attach_to_running": True,
                 "with_user_interface": True,
                 "create_plc_tags": True,
                 "save_project_on_success": True,
                 "compile_after_import": True
-            }
-        )
-        save_tia_config(current_config, self.project_root)
+            })
+        except tia_projects.TiaProjectGuardError as error:
+            self._log(str(error))
+            messagebox.showwarning("TIA Portal V18", str(error))
+            return
         diagnostic = diagnose_tia_openness(self.project_root)
         self._set_textbox_content(self.tia_openness_textbox, format_json(diagnostic))
         self._select_results_tab("TIA Openness")
@@ -2749,7 +3226,24 @@ class VozLLMPLCGUI(ctk.CTk):
                 + "\n".join(diagnostic.get("warnings", []))
             )
 
+    def _legacy_immediate_experiment_allowed(self) -> bool:
+        """El pipeline inmediato de Experimentacion (compila en el proyecto Normal) solo con permiso explicito."""
+        return bool(load_tia_config(self.project_root).get("legacy_immediate_experiment_pipeline", False))
+
+    def _experiment_touches_normal_project(self) -> bool:
+        return self.work_mode_var.get() == "Experimentacion" and not self._legacy_immediate_experiment_allowed()
+
     def validate_latest_package_in_tia(self) -> None:
+        if self._experiment_touches_normal_project():
+            # Guard 6D: Experimentacion NUNCA modifica el proyecto Normal. Los ensayos se evaluan sobre
+            # una copia del TIA MASTER (EVALUAR ENSAYO GUARDADO).
+            message = ("EXPERIMENT_MODE_NEVER_MODIFIES_NORMAL_PROJECT: en Experimentacion use GENERAR ENSAYO y "
+                       "EVALUAR ENSAYO GUARDADO (copia del TIA MASTER).")
+            self._log(message)
+            if self.active_trial:
+                self._cancel_active_trial(message)
+            messagebox.showwarning("TIA Openness", message)
+            return
         if self._tia_worker_active:
             messagebox.showwarning("TIA Openness", "Ya existe una operacion TIA en curso.")
             return
@@ -2843,6 +3337,7 @@ class VozLLMPLCGUI(ctk.CTk):
                 self._update_new_trial({"compile": {"status": "ERROR", "error": str(payload)}, "stages": {"compile_success": False}})
                 self._set_experiment_stage("Compilacion", "fail")
                 self._finalize_new_trial(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [f"TIA Openness: {payload}"])
+            self._fail_normal_voice("Compilacion", str(payload))
             messagebox.showerror("TIA Openness", f"No se pudo completar la operacion.\n\n{payload}")
             return
 
@@ -2876,15 +3371,20 @@ class VozLLMPLCGUI(ctk.CTk):
                 int(round((time.perf_counter() - self._compile_started_perf) * 1000))
                 if self._compile_started_perf is not None else None
             )
+            # COMPILE_FAILURE solo si TIA siguio operativo y el compilador rechazo el programa; una
+            # caida de TIA/Openness (p.ej. NonRecoverableException) es INFRASTRUCTURE_ERROR.
+            compile_class = tia_classification.classify_tia_compile(report)
+            compile_infrastructure = compile_class["category"] == tia_classification.INFRASTRUCTURE_ERROR
             self._update_new_trial({
                 "compile": {
                     "status": report.get("status"),
                     "error_count": report.get("error_count"),
                     "warning_count": report.get("warning_count"),
                     "result_path": result_path,
-                    "tag_reconciliation": report.get("tag_reconciliation")
+                    "tag_reconciliation": report.get("tag_reconciliation"),
+                    "classification": compile_class
                 },
-                "stages": {"compile_success": passed},
+                "stages": {"compile_success": None if compile_infrastructure else passed},
                 "timing": {"compile_ms": compile_ms}
             })
             self._set_experiment_stage("Compilacion", "ok" if passed else "fail")
@@ -2900,7 +3400,10 @@ class VozLLMPLCGUI(ctk.CTk):
                 new_dir = self._new_trial_dir()
                 if new_dir is not None and result_path:
                     trial_model.copy_package_artifacts(new_dir, Path(result_path).parent)
-                self._finalize_new_trial(trial_model.FINAL_STATUS_FAIL, [f"Compilacion TIA: {report.get('status')}"])
+                self._finalize_new_trial(
+                    trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR if compile_infrastructure else trial_model.FINAL_STATUS_FAIL,
+                    [f"Compilacion TIA: {report.get('status')} ({compile_class['reason']})"]
+                )
         report_package_dir = str(Path(result_path).parent) if result_path else ""
         history_updated = False
         for history_record in self.history_records:
@@ -2936,6 +3439,9 @@ class VozLLMPLCGUI(ctk.CTk):
         if chain_experiment_download:
             self._start_download(Path(report_package_dir), DOWNLOAD_PURPOSE_EXPERIMENT)
             return
+        if self._normal_voice_flow is not None and self.work_mode_var.get() == "Normal":
+            if self._continue_normal_voice_after_compile(passed, report_package_dir, report):
+                return
         if passed:
             messagebox.showinfo("TIA Openness", "Los bloques fueron importados y compilados correctamente.")
         else:
@@ -3072,6 +3578,7 @@ class VozLLMPLCGUI(ctk.CTk):
                     {"status": "DOWNLOAD_EXCEPTION", "download_success": False, "start_module_success": False, "errors": [str(payload)]}
                 )
                 return
+            self._fail_normal_voice("Descarga", str(payload))
             messagebox.showerror("Cargar programa al PLC", f"No se pudo cargar el programa al PLC.\n\n{payload}")
             return
 
@@ -3086,6 +3593,12 @@ class VozLLMPLCGUI(ctk.CTk):
             self._complete_experiment_download(report)
             return
 
+        if self._normal_voice_flow is not None:
+            self._set_normal_voice_stage("Descarga", "ok" if success else "fail")
+            if success:
+                self._finish_normal_voice(normal_voice.FINAL_LOADED)
+            else:
+                self._fail_normal_voice("Descarga", status)
         if success:
             self._remember_io_program(None)
             self._start_runtime_refresh("post-descarga", package_dir=self._download_package_dir)
@@ -3170,7 +3683,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self._update_new_trial({
             "runtime": plcsim_runtime.trial_runtime_section(runtime_report),
             "download": {"cpu_run_confirmed": confirmed},
-            "stages": {"runtime_connection_success": connected}
+            "stages": {"runtime_connection_success": connected},
+            "timing": {"runtime_ms": runtime_report.get("duration_ms")}
         })
         new_dir = self._new_trial_dir()
         if new_dir is not None:
@@ -3386,7 +3900,7 @@ class VozLLMPLCGUI(ctk.CTk):
         result = result or {}
         functional = result.get("functional") or {}
         safety = result.get("safety") or {}
-        kind = result.get("trial_kind") or "-"
+        kind = (self.active_trial or {}).get("trial_kind") or "-"
         summary = (
             f"Ensayo {final_status} · funcional {functional.get('passed_checks', '-')}/{functional.get('total_checks', '-')} · "
             f"seguridad {'OK' if safety.get('success') else ('VIOLACION' if safety.get('success') is False else '-')} · {kind}"
@@ -4482,6 +4996,16 @@ class VozLLMPLCGUI(ctk.CTk):
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo persistir la variable funcional nueva en el mapa activo: {error}")
 
+    def _benchmark_version(self) -> Any:
+        """Version del benchmark vigente (la del ensayo activo si existe; si no, la del catalogo)."""
+        version = (self.active_trial or {}).get("benchmark_version")
+        if version is not None:
+            return version
+        try:
+            return benchmark_catalog.load_catalog(self.project_root).get("benchmark_version")
+        except (OSError, ValueError):
+            return None
+
     def _load_runtime_configuration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         trial_info = self._trial_io()
         if trial_info is not None:
@@ -4491,8 +5015,11 @@ class VozLLMPLCGUI(ctk.CTk):
             io_map = trial_io_map.load_working_map(Path(trial_info["io_map"]["working_map_path"]))
         else:
             io_map = load_json_file(self.io_map_path)
-            active_profile = get_profile(self.project_root, self.active_profile_id) if self.active_profile_id else None
-            io_map = apply_profile_filter(io_map, active_profile)
+            # Benchmark v2: allowed_variables es metadata historica, nunca una whitelist. El filtro
+            # por perfil solo sobrevive, aislado, para el benchmark legacy v1.
+            if resource_policy.legacy_profile_whitelist_applies(self._benchmark_version()):
+                active_profile = get_profile(self.project_root, self.active_profile_id) if self.active_profile_id else None
+                io_map = apply_profile_filter(io_map, active_profile)
         intents_catalog = load_json_file(self.intents_catalog_path)
         safety_rules = load_json_file(self.safety_rules_path)
         return io_map, intents_catalog, safety_rules
@@ -4889,6 +5416,193 @@ class VozLLMPLCGUI(ctk.CTk):
                 "Revise la tabla y use 'Guardar mapa I/O' para persistir los cambios."
             )
 
+    # ------------------------------------------------------------------------------------------
+    # MODO NORMAL: CAPTURAR Y EJECUTAR POR VOZ (producto; no es Experimentacion)
+    # ------------------------------------------------------------------------------------------
+
+    def _refresh_normal_voice_target(self) -> None:
+        try:
+            target = resolve_download_target(load_tia_config(self.project_root), DOWNLOAD_PURPOSE_NORMAL)
+            physical = target["target_type"] != TARGET_TYPE_PLCSIM
+            self.normal_voice_target_var.set(
+                f"Destino Normal: {target.get('target_name', '')} ({target['target_type']})"
+                + ("  ⚠ PLC FISICO" if physical else "")
+                + f" · Proyecto: {Path(tia_projects.normal_project_path(self.project_root) or '-').name}")
+        except Exception as error:  # pragma: no cover - feedback de GUI
+            self.normal_voice_target_var.set(f"Destino Normal: no disponible ({error})")
+
+    def _on_normal_voice_auto_download_changed(self) -> None:
+        normal_voice.save_config(self.project_root, auto_download=bool(self.normal_voice_auto_download_var.get()))
+
+    def _set_normal_voice_stage(self, stage: str, state: str) -> None:
+        if self._normal_voice_flow is None:
+            return
+        self._normal_voice_flow["stages"][stage] = state
+        self.normal_voice_stage_var.set(normal_voice.stage_text(self._normal_voice_flow))
+
+    def _fail_normal_voice(self, stage: str, detail: str) -> None:
+        if self._normal_voice_flow is None:
+            return
+        self._set_normal_voice_stage(stage, "fail")
+        self._normal_voice_flow["failed_stage"] = stage
+        self._finish_normal_voice(f"FALLO en {stage}: {detail} — no se descargo nada.")
+
+    def _finish_normal_voice(self, final: str) -> None:
+        if self._normal_voice_flow is None:
+            return
+        self._normal_voice_flow["final"] = final
+        self._normal_voice_flow["active"] = False
+        self.normal_voice_stage_var.set(normal_voice.stage_text(self._normal_voice_flow))
+        self._log(f"[NORMAL] {final}")
+        self.last_normal_voice_result = dict(self._normal_voice_flow)
+        self._normal_voice_flow = None
+        self.normal_voice_button.configure(text=NORMAL_VOICE_BUTTON_TEXT)
+        self.normal_voice_cancel_button.configure(state="disabled")
+
+    def capture_and_execute_by_voice(self) -> None:
+        """1er clic: empieza a grabar. 2o clic (DETENER Y EJECUTAR): transcribe y ejecuta todo sin mas clics."""
+        if self.work_mode_var.get() != "Normal":
+            messagebox.showwarning("Voz", "CAPTURAR Y EJECUTAR POR VOZ pertenece al Modo Normal.")
+            return
+        if self.speech_recognizer.is_recording() and self._normal_voice_flow is not None:
+            self._set_normal_voice_stage("Captura", "ok")
+            self._set_normal_voice_stage("Transcripcion", "running")
+            self.normal_voice_cancel_button.configure(state="disabled")
+            self.stop_listening()
+            return
+        if self._tia_worker_active or self._download_worker_active or self._voice_worker_active:
+            messagebox.showwarning("Voz", "Espere a que termine la operacion en curso.")
+            return
+        self._normal_voice_flow = normal_voice.new_flow(self.project_root)
+        self._refresh_normal_voice_target()
+        self._set_normal_voice_stage("Captura", "running")
+        self.listen_command()
+        if not self.speech_recognizer.is_recording():
+            self._fail_normal_voice("Captura", "no se pudo iniciar la grabacion")
+            return
+        self.normal_voice_button.configure(text="■ DETENER Y EJECUTAR")
+        self.normal_voice_cancel_button.configure(state="normal")
+
+    def cancel_normal_voice_capture(self) -> None:
+        """Cancelar ANTES de enviar: se descarta la grabacion y no se ejecuta nada."""
+        if self._normal_voice_flow is None:
+            return
+        if self.speech_recognizer.is_recording():
+            self.speech_recognizer.cancel_recording()
+            self._reset_voice_level_indicator()
+        self._set_normal_voice_stage("Captura", "skipped")
+        self._finish_normal_voice("Captura cancelada por el usuario: no se ejecuto nada.")
+        self._set_status("Listo")
+        self._refresh_voice_button_states()
+
+    def _run_normal_voice_pipeline(self) -> None:
+        """Transcripcion lista: ejecuta el pipeline Normal EXISTENTE (EJECUTAR COMANDO) sin otro clic."""
+        flow = self._normal_voice_flow
+        if flow is None:
+            return
+        if not flow["auto_execute"]:
+            self._finish_normal_voice("Transcripcion lista (ejecucion automatica desactivada).")
+            return
+        for stage in ("Semantica", "I/O"):
+            self._set_normal_voice_stage(stage, "running")
+        started = self.execute_full_pipeline()
+        flow = self._normal_voice_flow
+        if flow is None:
+            return
+        if not started:
+            reached = self._pipeline_stage
+            if reached in ("precheck", "semantic"):
+                failed = "I/O" if self._last_semantic_failure_is_io() else "Semantica"
+                if flow.get("clarification_pending"):
+                    detail = "aclaracion sin responder"
+                else:
+                    detail = "interpretacion/validacion no superada"
+                if reached == "precheck":
+                    failed, detail = "Semantica", "verificacion previa (proyecto TIA Normal/Openness) no superada"
+                self._fail_normal_voice(failed, detail)
+            else:
+                self._set_normal_voice_stage("Semantica", "ok")
+                self._set_normal_voice_stage("I/O", "ok")
+                failed = "Verificacion" if reached == "verification" else "Generacion"
+                if failed == "Verificacion":
+                    self._set_normal_voice_stage("Generacion", "ok")
+                self._fail_normal_voice(failed, "el programa no supero la etapa")
+            return
+        for stage in ("Semantica", "I/O", "Generacion", "Verificacion"):
+            self._set_normal_voice_stage(stage, "ok")
+        self._set_normal_voice_stage("Compilacion", "running")
+
+    def _last_semantic_failure_is_io(self) -> bool:
+        validation = ((self.pending_semantic_output or {}).get("semantic_validation") or {})
+        return bool(validation.get("unauthorized_tags"))
+
+    def _continue_normal_voice_after_compile(self, passed: bool, package_dir: str, report: dict[str, Any]) -> bool:
+        """Compilacion terminada en una ejecucion por voz: descarga automatica solo si todo paso."""
+        flow = self._normal_voice_flow
+        for stage in ("Semantica", "I/O", "Generacion", "Verificacion"):
+            if flow["stages"][stage] != "fail":
+                self._set_normal_voice_stage(stage, "ok")
+        self._set_normal_voice_stage("Compilacion", "ok" if passed else "fail")
+        if not passed:
+            self._fail_normal_voice("Compilacion", str(report.get("status")))
+            return False
+        allowed, reason = normal_voice.download_allowed(flow, passed)
+        if not allowed or not package_dir:
+            self._set_normal_voice_stage("Descarga", "skipped")
+            self._finish_normal_voice(f"PROGRAMA COMPILADO — sin descarga automatica: {reason}.")
+            return False
+        try:
+            tia_projects.assert_normal_not_master(self.project_root)  # nunca el MASTER experimental
+        except tia_projects.TiaProjectGuardError as error:
+            self._fail_normal_voice("Descarga", str(error))
+            return False
+        target = resolve_download_target(load_tia_config(self.project_root), DOWNLOAD_PURPOSE_NORMAL)
+        if target["target_type"] != TARGET_TYPE_PLCSIM:
+            # PLC FISICO: nunca sin confirmacion explicita. Cancelar conserva la compilacion vigente.
+            if not self._confirm_physical_download(self._physical_download_info(target)):
+                self._set_normal_voice_stage("Descarga", "skipped")
+                self._finish_normal_voice("Descarga al PLC fisico cancelada: la compilacion sigue vigente "
+                                          "(CARGAR PROGRAMA AL PLC).")
+                return False
+        self._set_normal_voice_stage("Descarga", "running")
+        self._log(f"[NORMAL] Compilacion aprobada: descarga automatica al destino Normal ({target['target_type']}).")
+        self._start_download(Path(package_dir), DOWNLOAD_PURPOSE_NORMAL)
+        return True
+
+    def _physical_download_info(self, target: dict[str, Any]) -> dict[str, str]:
+        """Destino/CPU/IP del proyecto NORMAL si estan disponibles (nunca del MASTER experimental)."""
+        config = load_tia_config(self.project_root)
+        return {
+            "destino": f"{target.get('target_name') or '-'} ({target['target_type']})",
+            "cpu": str(config.get("plc_name") or "") or "(unica en el proyecto)",
+            "ip": str(target.get("target_ip") or target.get("ip_address") or config.get("plc_ip") or "") or "no disponible",
+            "proyecto": Path(tia_projects.normal_project_path(self.project_root) or "-").name,
+        }
+
+    def _confirm_physical_download(self, info: dict[str, str]) -> bool:
+        dialog = PhysicalDownloadConfirmDialog(self, info)
+        dialog.transient(self)
+        self.wait_window(dialog)
+        return bool(dialog.result)
+
+    def execute_and_load_to_plc(self) -> None:
+        """
+        EJECUTAR Y CARGAR AL PLC: EXACTAMENTE el pipeline de EJECUTAR COMANDO (execute_full_pipeline);
+        si todo pasa (semantica, aclaraciones resueltas, I/O, IR, verificador, compilacion, destino
+        Normal valido) encadena la misma descarga que CARGAR PROGRAMA AL PLC.
+        """
+        if self.work_mode_var.get() != "Normal":
+            messagebox.showwarning("Ejecutar y cargar", "EJECUTAR Y CARGAR AL PLC pertenece al Modo Normal.")
+            return
+        if self._tia_worker_active or self._download_worker_active or self._voice_worker_active or self._normal_voice_flow:
+            messagebox.showwarning("Ejecutar y cargar", "Espere a que termine la operacion en curso.")
+            return
+        self._normal_voice_flow = normal_voice.new_flow(self.project_root, source=normal_voice.SOURCE_TEXT)
+        self._refresh_normal_voice_target()
+        self.normal_voice_stage_var.set(normal_voice.stage_text(self._normal_voice_flow))
+        self._run_normal_voice_pipeline()
+
+
     def listen_command(self) -> None:
         self._refresh_voice_settings()
         if self._voice_worker_active:
@@ -4985,6 +5699,7 @@ class VozLLMPLCGUI(ctk.CTk):
         if outcome == "error":
             self._set_status("Error")
             self._log(f"Error de transcripcion: {payload}")
+            self._fail_normal_voice("Transcripcion", str(payload))
             messagebox.showerror("Transcribir", f"No se pudo transcribir el audio.\n\n{payload}")
         else:
             self.voice_transcription = payload
@@ -4995,9 +5710,14 @@ class VozLLMPLCGUI(ctk.CTk):
                 self.command_textbox.insert("1.0", transcript)
                 self._set_status("Voz lista")
                 self._log(f"Comando de voz transcrito para revision: {transcript}")
+                if self._normal_voice_flow is not None:
+                    self._normal_voice_flow["transcript"] = transcript
+                    self._set_normal_voice_stage("Transcripcion", "ok")
+                    self.after(10, self._run_normal_voice_pipeline)
             else:
                 self._set_status("Error")
                 self._log(f"No se obtuvo texto de la grabacion: {error_message or 'voz no inteligible'}")
+                self._fail_normal_voice("Transcripcion", error_message or "voz no inteligible")
                 messagebox.showwarning(
                     "Transcripcion",
                     error_message or "No se detecto voz inteligible. Intente nuevamente hablando mas cerca del microfono."
@@ -5108,7 +5828,8 @@ class VozLLMPLCGUI(ctk.CTk):
             self.profile_selector_label.configure(text="Perfil de prueba (automatico - Modo Experimentacion)")
             self.experiment_controls_frame.grid()
             self._refresh_experiment_case_selector()
-            self._on_experiment_condition_changed()
+            self._on_experiment_input_mode_changed()
+            self._refresh_generated_trials()
         else:
             self.experiment_controls_frame.grid_remove()
             self.manual_result_frame.grid_remove()
@@ -5208,20 +5929,19 @@ class VozLLMPLCGUI(ctk.CTk):
         self.command_textbox.delete("1.0", "end")
         self.command_textbox.insert("1.0", self._active_variant_command_text)
 
-    def _on_experiment_condition_changed(self, _choice: str | None = None) -> None:
-        condition = self._selected_condition()
-        if condition["noise_locked_to"] is not None:
-            self.experiment_noise_var.set(NOISE_LEVEL_LABELS[condition["noise_locked_to"]])
-            self.experiment_noise_selector.configure(state="disabled")
-        else:
+    def _on_experiment_input_mode_changed(self, _choice: str | None = None) -> None:
+        """TEXT y VOICE_CLEAN fijan 'sin ruido'; VOICE_NOISE exige un nivel de ruido (protocolo pendiente)."""
+        input_mode = self._selected_input_mode()
+        if input_mode == trial_model.INPUT_MODE_VOICE_NOISE:
             self.experiment_noise_selector.configure(state="normal")
-            if condition["code"] == "C3" and self._last_experiment_condition_code != "C3":
-                # C3 arranca "sin ruido" por defecto, pero queda editable de inmediato.
-                self.experiment_noise_var.set(NOISE_LEVEL_LABELS["none"])
-            if condition.get("noise_required") and self._selected_noise_level() == "none":
+            if self._selected_noise_level() == "none":
                 self.experiment_noise_var.set(NOISE_LEVEL_LABELS["medium"])
-        self._last_experiment_condition_code = condition["code"]
+        else:
+            self.experiment_noise_var.set(NOISE_LEVEL_LABELS["none"])
+            self.experiment_noise_selector.configure(state="disabled")
+        self._last_experiment_input_mode = input_mode
         self._refresh_experiment_status()
+        self._refresh_voice_panel()
 
     def _on_experiment_environment_changed(self, _choice: str | None = None) -> None:
         self._refresh_experiment_status()
@@ -5230,12 +5950,36 @@ class VozLLMPLCGUI(ctk.CTk):
         self._update_variant_command_preview()
         self._refresh_experiment_status()
 
+    def _selected_input_mode(self) -> str:
+        label = self.experiment_input_mode_var.get()
+        for mode, mode_label in INPUT_MODE_LABELS.items():
+            if mode_label == label or mode == label:
+                return mode
+        return trial_model.INPUT_MODE_TEXT
+
+    def _selected_phase(self) -> str:
+        label = self.experiment_phase_var.get()
+        for phase, phase_label in EXPERIMENT_PHASE_LABELS.items():
+            if phase_label == label or phase == label:
+                return phase
+        return trial_model.PHASE_DEVELOPMENT
+
     def _selected_condition(self) -> dict[str, Any]:
-        label = self.experiment_condition_var.get()
-        for code, data in CONDITIONS.items():
-            if data["label"] == label:
-                return {**data, "code": code}
-        return {**CONDITIONS["C1"], "code": "C1"}
+        """
+        Compatibilidad con el registro legacy: la 'condicion' es ahora la modalidad de entrada. El
+        modo de parser es el de la arquitectura evaluada (metadata tecnica, nunca un factor).
+        """
+        input_mode = self._selected_input_mode()
+        try:
+            parser_mode = experimental_design.architecture_parser_mode(self.project_root)
+        except (OSError, ValueError, KeyError):
+            parser_mode = "llm"
+        return {
+            "code": input_mode,
+            "input_mode": input_mode,
+            "parser_mode": parser_mode,
+            "requires_voice": input_mode != trial_model.INPUT_MODE_TEXT,
+        }
 
     def _selected_noise_level(self) -> str:
         label = self.experiment_noise_var.get()
@@ -5262,11 +6006,13 @@ class VozLLMPLCGUI(ctk.CTk):
         readiness = profile_readiness_summary(self.project_root, profile)
         environment = self._selected_environment()
         allowed_variables = profile.get("allowed_variables", [])
+        legacy_whitelist = resource_policy.legacy_profile_whitelist_applies(self._benchmark_version())
         lines = [
             f"Perfil asociado: {profile['profile_id']}",
-            f"Variables habilitadas: {len(allowed_variables)}   (mapa: {len(self.io_variables)})",
+            (f"Variables habilitadas: {len(allowed_variables)}   (mapa: {len(self.io_variables)})" if legacy_whitelist
+             else f"Recursos: working_io_map completo ({len(self.io_variables)} variables); allowed_variables = metadata historica"),
         ]
-        if self.pending_semantic_output is not None:
+        if self.pending_semantic_output is not None and legacy_whitelist:
             compatibility = check_case_compatibility(self.pending_semantic_output, profile)
             if compatibility["compatible"]:
                 lines.append("Compatibilidad: ✓ Compatible")
@@ -5286,13 +6032,24 @@ class VozLLMPLCGUI(ctk.CTk):
         self.experiment_status_var.set("\n".join(lines))
         self.start_trial_button.configure(state="normal")
 
-        condition_code = self._selected_condition()["code"]
         case_id = profile.get("case_id", "")
         variant = self.experiment_variant_var.get()
-        next_repetition = compute_next_repetition(self.project_root, condition_code, case_id, variant)
-        next_label = build_experiment_label(condition_code, case_id, variant, next_repetition)
-        self.experiment_next_label_var.set(f"Proximo ensayo: {next_label}")
+        input_mode = self._selected_input_mode()
+        phase = self._selected_phase()
+        try:
+            number = trial_model.next_trial_number(self.project_root, case_id, variant, input_mode, phase)
+            next_id = trial_model.build_trial_id(
+                case_id, variant, input_mode, number,
+                development=trial_model.trial_kind_for_phase(phase) == trial_model.TRIAL_KIND_DEVELOPMENT
+            )
+        except ValueError:
+            next_id = "-"
+        benchmark_version = benchmark_catalog.load_catalog(self.project_root).get("benchmark_version")
+        self.experiment_next_label_var.set(
+            f"Proximo ensayo: {next_id}\nBenchmark v{benchmark_version} · {trial_model.trial_kind_for_phase(phase)} · {phase}"
+        )
         self._refresh_oracle_status()
+        self._refresh_voice_panel()
 
     EXPERIMENT_STAGES = (
         "Semantica", "I/O", "Generacion", "Verificacion", "Compilacion", "Descarga", "CPU Start", "Runtime",
@@ -5341,12 +6098,13 @@ class VozLLMPLCGUI(ctk.CTk):
         try:
             started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
             if started_perf is not None:
-                trial_model.update_trial(
-                    directory, {"timing": {"end_to_end_ms": int(round((time.perf_counter() - started_perf) * 1000))}}
-                )
+                elapsed_ms = int(round((time.perf_counter() - started_perf) * 1000))
+                trial_model.update_trial(directory, {"timing": {"end_to_end_ms": elapsed_ms, "total_ms": elapsed_ms}})
             self._discard_trial_working_map(final_status)
-            trial_model.finalize_trial(directory, final_status, errors)
-            self._log(f"[EXPERIMENT] Status -> {final_status}")
+            record = trial_model.finalize_trial(directory, final_status, errors)
+            classification = experimental_design.classify_trial(record)
+            trial_model.update_trial(directory, {**classification, "final_verdict": final_status})
+            self._log(f"[EXPERIMENT] Status -> {final_status} ({classification['failure_category']})")
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo cerrar trial.json: {error}")
 
@@ -5463,10 +6221,12 @@ class VozLLMPLCGUI(ctk.CTk):
     def _create_new_trial_record(self, profile: dict[str, Any], case_id: str, variant: str, condition: dict[str, Any]) -> None:
         """Nuevo modelo de ensayo (Fase 1) en paralelo al registro legacy TRIAL_000NNN."""
         try:
-            input_mode = trial_model.input_mode_from_selection(
+            input_mode = condition.get("input_mode") or trial_model.input_mode_from_selection(
                 bool(condition.get("requires_voice")), self._selected_noise_level()
             )
-            number = trial_model.next_trial_number(self.project_root, case_id, variant, input_mode)
+            phase = self.active_trial.get("experiment_phase") or trial_model.PHASE_DEVELOPMENT
+            number = trial_model.next_trial_number(self.project_root, case_id, variant, input_mode, phase)
+            llm = getattr(self, "llm_client", None)
             record = trial_model.new_trial_record(
                 case_id,
                 variant,
@@ -5476,8 +6236,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 extra={
                     "legacy_trial_id": self.active_trial.get("trial_id"),
                     "legacy_experiment_label": self.active_trial.get("experiment_label"),
-                    "legacy_condition": condition.get("code"),
                     "parser_mode": condition.get("parser_mode"),
+                    "model": {"provider": getattr(llm, "provider", None), "model": getattr(llm, "model_name", None)},
                     "speaker_id": self.active_trial.get("speaker_id"),
                     "noise_level": self.active_trial.get("noise_level"),
                     "map_name": self.active_trial.get("map_name"),
@@ -5486,9 +6246,10 @@ class VozLLMPLCGUI(ctk.CTk):
                     "git_commit": self.active_trial.get("git_commit"),
                     **{key: value for key, value in benchmark_catalog.trial_benchmark_reference(self.project_root, case_id, variant).items()
                        if key in ("benchmark_version", "canonical_case_hash", "variant_hash")}
-                }
+                },
+                phase=phase
             )
-            directory = trial_model.trial_directory(self.project_root, case_id, variant, record["trial_id"])
+            directory = trial_model.trial_directory(self.project_root, case_id, variant, record["trial_id"], phase)
             trial_model.save_trial(directory, record)
             self.active_trial["new_trial"] = {
                 "trial_id": record["trial_id"],
@@ -5512,6 +6273,14 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         condition = self._selected_condition()
+        phase = self._selected_phase()
+        if phase == trial_model.PHASE_FORMAL:
+            # Guard de congelacion: sin software_freeze_manifest valido no existe FORMAL_TRIAL.
+            allowed, reasons = experimental_design.check_formal_trial_allowed(self.project_root)
+            if not allowed:
+                self._log("[EXPERIMENT] " + " | ".join(reasons))
+                messagebox.showwarning("Ejecutar ensayo", "Fase FORMAL bloqueada:\n\n" + "\n".join(reasons[:5]))
+                return False
         environment = self._selected_environment()
         readiness = profile_readiness_summary(self.project_root, profile)
         if environment == "hardware" and not readiness["hardware_ready"]:
@@ -5526,6 +6295,7 @@ class VozLLMPLCGUI(ctk.CTk):
         trial_id = next_trial_id(self.project_root)
         case_id = profile.get("case_id", "")
         variant = self.experiment_variant_var.get()
+        # Registro legacy (experiments/): la "condicion" de la etiqueta es ahora la modalidad.
         repetition = compute_next_repetition(self.project_root, condition["code"], case_id, variant)
         experiment_label = build_experiment_label(condition["code"], case_id, variant, repetition)
         active_map_summary = self._map_summaries_by_name.get(self.active_map_var.get(), {})
@@ -5537,6 +6307,9 @@ class VozLLMPLCGUI(ctk.CTk):
             "case_id": case_id,
             "experiment_family": "PID" if case_id.startswith("P") else "DISCRETE",
             "condition": condition["code"],
+            "input_mode": condition["input_mode"],
+            "experiment_phase": phase,
+            "trial_kind": trial_model.trial_kind_for_phase(phase),
             "variant": variant,
             "reference_command_text": self._active_variant_command_text,
             "speaker_id": speaker_id,
@@ -5553,7 +6326,7 @@ class VozLLMPLCGUI(ctk.CTk):
         }
 
         parser_ui_map = {"llm": "LLM", "rule_based": "Reglas", "hybrid": "Hibrido"}
-        self.parser_mode_var.set(parser_ui_map.get(condition["parser_mode"], "Hibrido"))
+        self.parser_mode_var.set(parser_ui_map.get(condition["parser_mode"], "LLM"))
 
         directory = trial_dir(self.project_root, case_id, trial_id)
         save_metadata(directory, self.active_trial)
@@ -5568,8 +6341,407 @@ class VozLLMPLCGUI(ctk.CTk):
         self._log(f"Ensayo {trial_id} iniciado: {experiment_label} / {speaker_id}.")
         return True
 
+    # ------------------------------------------------------------------------------------------
+    # Fase 4A-DEFERRED: GENERAR ENSAYO / EVALUAR ENSAYO GUARDADO
+    # ------------------------------------------------------------------------------------------
+
+    def _tia_busy(self) -> bool:
+        return bool(self._tia_worker_active or self._download_worker_active or self._runtime_worker_active
+                    or self._oracle_worker_active or self._deferred_worker_active)
+
+    def open_tia_config_dialog(self) -> TiaConfigDialog:
+        dialog = TiaConfigDialog(self)
+        dialog.transient(self)
+        return dialog
+
+    def generate_experiment_trial(self) -> Path | None:
+        """
+        GENERAR ENSAYO: comando -> LLM -> semantica -> IOAllocator -> working map -> snapshot -> IR ->
+        SCL -> verificaciones sin TIA -> artefactos + integrity_manifest.json. NO abre TIA, no
+        descarga, no ejecuta PLCSIM ni Oracle. Devuelve la carpeta del ensayo.
+        """
+        if self._tia_busy() or self._voice_worker_active:
+            messagebox.showwarning("Generar ensayo", "Espere a que termine la operacion en curso.")
+            return None
+        if self._selected_phase() == trial_model.PHASE_FORMAL:
+            messagebox.showwarning("Generar solo", "GENERAR SOLO es DEVELOPMENT/DEBUG: un FORMAL_TRIAL se ejecuta con EJECUTAR ENSAYO COMPLETO.")
+            return None
+        if self._selected_input_mode() == trial_model.INPUT_MODE_TEXT:
+            self._use_variant_command()  # TEXT: siempre el texto exacto de la variante del benchmark
+        command_text = self.command_textbox.get("1.0", "end").strip()
+        if not command_text:
+            messagebox.showwarning("Generar ensayo", "No hay comando para el ensayo.")
+            return None
+        if not self.start_trial():
+            return None
+        info = (self.active_trial or {}).get("new_trial") or {}
+        new_dir = Path(info["dir"]) if info.get("dir") else None
+        legacy = dict(self.active_trial or {})
+        self.start_trial_button.configure(state="disabled")
+        try:
+            ok = self.process_command() and self.generate_package()
+            package_dir = (self.active_trial or {}).get("package_dir")
+            if self.active_trial:
+                self._discard_trial_working_map(None)  # el snapshot congelado queda como evidencia
+            if new_dir is None:
+                return None
+            record = deferred_evaluator.finalize_generation(self.project_root, new_dir, Path(package_dir) if ok and package_dir else None)
+            generation = (record.get("generation") or {}).get("status")
+            if legacy.get("trial_id") and self.active_trial:
+                # Registro legacy paralelo (experiments/): el ensayo queda GENERADO, sin resultado manual.
+                save_metadata(trial_dir(self.project_root, legacy["case_id"], legacy["trial_id"]),
+                              {"state": "GENERATED", "new_trial_id": record.get("trial_id")})
+            self.experiment_status_var.set(
+                f"Ensayo {record.get('trial_id')}: generacion {generation} · evaluacion {(record.get('evaluation') or {}).get('status')}")
+            self._log(f"[EXPERIMENT] {record.get('trial_id')} GENERADO ({generation}); evaluacion pendiente. TIA no se abrio.")
+            return new_dir
+        finally:
+            self.active_trial = None
+            self.manual_result_frame.grid_remove()
+            self.start_trial_button.configure(state="normal")
+            self._refresh_generated_trials()
+
+    def _refresh_generated_trials(self) -> None:
+        tree = getattr(self, "generated_trials_tree", None)
+        if tree is None:
+            return
+        tree.delete(*tree.get_children())
+        self._generated_trial_dirs = {}
+        try:
+            rows = deferred_evaluator.list_trials(self.project_root)
+        except (OSError, ValueError) as error:  # pragma: no cover - feedback de GUI
+            self._log(f"No se pudo listar los ensayos: {error}")
+            return
+        for row in sorted(rows, key=lambda r: r.get("created_at") or "", reverse=True):
+            item = tree.insert("", "end", values=(row["trial_id"], row["case_id"], row["variant_id"], row["generation"],
+                                                  row["evaluation"] or "-", row["verdict"] or "-"))
+            self._generated_trial_dirs[item] = row["trial_dir"]
+
+    def _selected_generated_trial_dir(self) -> Path | None:
+        selection = self.generated_trials_tree.selection()
+        if not selection:
+            return None
+        return Path(self._generated_trial_dirs[selection[0]])
+
+    def view_generated_trial(self) -> None:
+        trial_dir = self._selected_generated_trial_dir()
+        if trial_dir is None:
+            messagebox.showinfo("Ver ensayo", "Seleccione un ensayo de la lista.")
+            return
+        record = trial_model.load_trial(trial_dir)
+        lines = deferred_evaluator.evaluation_summary_lines(self.project_root, trial_dir) + [""] + [
+            f"{label}: {value}" for label, value in deferred_evaluator.verdict_table(record)] + ["", f"Carpeta: {trial_dir}"]
+        messagebox.showinfo("Ver ensayo", "\n".join(lines))
+
+    def evaluate_saved_trial(self, trial_dir: Path | None = None) -> Any:
+        """EVALUAR ENSAYO GUARDADO: abre el resumen; la evaluacion empieza solo con INICIAR EVALUACION."""
+        trial_dir = trial_dir or self._selected_generated_trial_dir()
+        if trial_dir is None:
+            chosen = filedialog.askdirectory(title="Seleccione la carpeta del ensayo generado", initialdir=str(self.project_root / "results"))
+            if not chosen:
+                return None
+            trial_dir = Path(chosen)
+        if not (Path(trial_dir) / trial_model.TRIAL_FILENAME).exists():
+            messagebox.showwarning("Evaluar ensayo", "La carpeta no contiene trial.json.")
+            return None
+        return self._open_deferred_dialog(Path(trial_dir), retry=False)
+
+    def evaluate_next_pending(self) -> Any:
+        """Localiza el siguiente GENERADO pendiente y abre su resumen. Nunca inicia la evaluacion solo."""
+        pending = deferred_evaluator.next_pending(self.project_root)
+        if pending is None:
+            messagebox.showinfo("Evaluar siguiente pendiente", "No hay ensayos generados pendientes de evaluacion.")
+            return None
+        return self._open_deferred_dialog(Path(pending["trial_dir"]), retry=False)
+
+    def retry_trial_evaluation(self) -> Any:
+        trial_dir = self._selected_generated_trial_dir()
+        if trial_dir is None:
+            messagebox.showinfo("Reintentar evaluacion", "Seleccione un ensayo con INFRASTRUCTURE_ERROR.")
+            return None
+        evaluation = trial_model.load_trial(trial_dir).get("evaluation") or {}
+        if evaluation.get("status") != deferred_evaluator.EVALUATION_INFRASTRUCTURE:
+            messagebox.showwarning("Reintentar evaluacion", "Solo se reintentan evaluaciones con INFRASTRUCTURE_ERROR.")
+            return None
+        return self._open_deferred_dialog(trial_dir, retry=True)
+
+    def _open_deferred_dialog(self, trial_dir: Path, retry: bool, autostart: bool = False) -> Any:
+        if self._tia_busy():
+            messagebox.showwarning("Evaluar ensayo", "Ya hay una operacion TIA/PLCSIM en curso.")
+            return None
+        dialog = DeferredEvaluationDialog(self, trial_dir, retry=retry, autostart=autostart)
+        dialog.transient(self)
+        self._deferred_dialog = dialog
+        return dialog
+
+    def _start_deferred_evaluation(self, trial_dir: Path, retry_reason: str | None, dialog: Any = None) -> bool:
+        if self._tia_busy():
+            messagebox.showwarning("Evaluar ensayo", "Ya hay una operacion TIA/PLCSIM en curso.")
+            return False
+        self._deferred_worker_active = True
+        self._deferred_dialog = dialog
+        self._log(f"[DEFERRED] Evaluando {Path(trial_dir).name}...")
+
+        def _worker() -> None:
+            try:
+                result = deferred_evaluator.evaluate_trial(self.project_root, Path(trial_dir), retry_reason, log=lambda m: None)
+                self._deferred_queue.put(("ok", result))
+            except Exception as error:  # pragma: no cover - feedback de GUI
+                self._deferred_queue.put(("error", str(error)))
+
+        threading.Thread(target=_worker, name="deferred-eval", daemon=True).start()
+        self.after(500, self._poll_deferred_evaluation)
+        return True
+
+    def _poll_deferred_evaluation(self) -> None:
+        try:
+            outcome, payload = self._deferred_queue.get_nowait()
+        except queue.Empty:
+            self.after(500, self._poll_deferred_evaluation)
+            return
+        self._deferred_worker_active = False
+        if outcome == "ok" and not payload.get("aborted"):
+            self._log(f"[DEFERRED] {payload.get('final_status')} ({payload.get('failure_category')})")
+        else:
+            self._log(f"[DEFERRED] Evaluacion no realizada: {payload if outcome == 'error' else payload.get('errors')}")
+        if self._deferred_dialog is not None:
+            try:
+                self._deferred_dialog.show_result(outcome, payload)
+            except tk.TclError:  # pragma: no cover - dialogo cerrado
+                pass
+        self._refresh_generated_trials()
+        # Intencional: NUNCA se encadena la evaluacion del siguiente pendiente (control de recursos).
+
+
+    # ------------------------------------------------------------------------------------------
+    # Fase 4A-FINAL: EJECUTAR ENSAYO COMPLETO (un clic = un ensayo) + protocolo de voz
+    # ------------------------------------------------------------------------------------------
+
+    def _experiment_asr(self, audio_path: Path) -> dict[str, Any]:
+        """ASR del producto sobre el audio de la modalidad; la validez tecnica ya la decidio el protocolo."""
+        return self.speech_recognizer.transcribe_audio(Path(audio_path), enforce_quality_checks=False)
+
+    def _capture_voice(self, case_id: str, variant_id: str, reference_text: str) -> dict[str, Any] | None:
+        dialog = VoiceCaptureDialog(self, case_id, variant_id, reference_text)
+        dialog.transient(self)
+        self.wait_window(dialog)
+        return dialog.result
+
+    def _repeat_info(self, case_id: str, variant_id: str, input_mode: str, phase: str) -> dict[str, Any] | None:
+        """Repetir una celda nunca borra el resultado anterior: exige motivo y enlaza el ensayo previo."""
+        previous = [row for row in deferred_evaluator.list_trials(self.project_root, (phase,))
+                    if row["case_id"] == case_id and row["variant_id"] == variant_id and row["input_mode"] == input_mode]
+        if not previous:
+            return {}
+        last = sorted(previous, key=lambda r: (r.get("created_at") or "", r["trial_id"]))[-1]
+        reason = simpledialog.askstring(
+            "Repetir ensayo",
+            f"Ya existe {len(previous)} ensayo(s) para {case_id} {variant_id} {input_mode} ({last['trial_id']}).\n"
+            "El anterior se conserva. Motivo de la repeticion:", parent=self)
+        if not reason or not reason.strip():
+            return None
+        return {"repeat_of_trial_id": last["trial_id"], "repeat_reason": reason.strip()}
+
+    def run_complete_trial(self) -> Path | None:
+        """
+        EJECUTAR ENSAYO COMPLETO: entrada (TEXT / VOICE_CLEAN / VOICE_NOISE) -> MISMO pipeline ->
+        generacion -> copia del MASTER -> TIA -> Archive .zap18 verificado -> PLCSIM -> Oracle.
+        Un clic = un ensayo; nunca inicia el siguiente.
+        """
+        if self._tia_busy() or self._voice_worker_active:
+            messagebox.showwarning("Ejecutar ensayo completo", "Espere a que termine la operacion en curso.")
+            return None
+        profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
+        if profile is None:
+            messagebox.showwarning("Ejecutar ensayo completo", "Seleccione un caso valido.")
+            return None
+        phase, input_mode = self._selected_phase(), self._selected_input_mode()
+        case_id, variant_id = profile.get("case_id", ""), self.experiment_variant_var.get()
+        environment = deferred_evaluator.environment_precheck(self.project_root, phase)
+        if not environment["ok"]:
+            messagebox.showwarning("Ejecutar ensayo completo", "No se inicia el ensayo:\n\n" + "\n".join(environment["errors"][:8]))
+            return None
+        reference_text = benchmark_catalog.get_case(self.project_root, case_id)["variants"][variant_id]
+        speaker_id = self.experiment_speaker_var.get().strip()
+        capture = paired = noise = None
+        if input_mode != trial_model.INPUT_MODE_TEXT:
+            speaker_error = voice_protocol.validate_speaker_id(speaker_id)
+            if speaker_error:
+                messagebox.showwarning("Ejecutar ensayo completo", speaker_error)
+                return None
+        if input_mode == trial_model.INPUT_MODE_VOICE_NOISE:
+            noise = voice_protocol.resolve_noise_config(self.project_root, phase)
+            if not noise["ok"]:
+                messagebox.showwarning("Ejecutar ensayo completo", "\n".join(noise["errors"]))
+                return None
+            paired = voice_protocol.find_paired_clean(self.project_root, case_id, variant_id, phase)
+            if paired is None:
+                if phase == trial_model.PHASE_FORMAL:
+                    messagebox.showwarning("Ejecutar ensayo completo",
+                                           f"{voice_protocol.ERROR_CLEAN_AUDIO_REQUIRED}: ejecute antes VOICE_CLEAN FORMAL de {case_id} {variant_id}.")
+                    return None
+                if not messagebox.askyesno("VOICE_NOISE (DEVELOPMENT)", "No hay audio VOICE_CLEAN valido para este caso/variante.\n"
+                                           "¿Capturar ahora el audio base (solo DEVELOPMENT)?"):
+                    return None
+                capture = self._capture_voice(case_id, variant_id, reference_text)
+                if capture is None:
+                    return None
+        elif input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
+            capture = self._capture_voice(case_id, variant_id, reference_text)
+            if capture is None:
+                return None  # cancelado antes de grabar: no hay resultado experimental
+        repeat = self._repeat_info(case_id, variant_id, input_mode, phase)
+        if repeat is None:
+            self._discard_capture(capture)
+            return None
+
+        self.command_textbox.delete("1.0", "end")
+        self.command_textbox.insert("1.0", reference_text)
+        if not self.start_trial():
+            self._discard_capture(capture)
+            return None
+        info = (self.active_trial or {}).get("new_trial") or {}
+        new_dir = Path(info["dir"]) if info.get("dir") else None
+        started_perf = info.get("started_perf")
+        self.start_trial_button.configure(state="disabled")
+        try:
+            patch: dict[str, Any] = {"trial_flow": "COMPLETE", "reference_text": reference_text,
+                                     "reference_text_hash": voice_protocol.sha256_text(reference_text),
+                                     "speaker_id": speaker_id if input_mode != trial_model.INPUT_MODE_TEXT else None, **repeat}
+            if input_mode == trial_model.INPUT_MODE_TEXT:
+                effective = reference_text
+            else:
+                self._log(f"[VOICE] {input_mode}: audio congelado -> ASR (sin correccion humana)")
+                result = voice_protocol.prepare_voice_input(self.project_root, new_dir, input_mode, reference_text,
+                                                            self._experiment_asr, capture=capture, paired=paired, noise=noise)
+                voice = result["voice"]
+                patch.update({"voice": voice, "asr": {"audio_reference": voice.get("asr_audio") or voice_protocol.CLEAN_AUDIO_FILENAME,
+                                                      "asr_transcript": voice.get("asr_transcript_raw"), "wer": voice.get("wer"),
+                                                      "noise_profile": voice.get("noise_profile_id"), "snr_db": voice.get("snr_db")},
+                              "paired_clean_trial_id": voice.get("paired_clean_trial_id"),
+                              "paired_clean_audio_hash": voice.get("paired_clean_audio_hash")})
+                if not result["ok"]:
+                    failure = result["failure"]
+                    patch["failure_stage"] = failure["stage"]
+                    self._update_new_trial(patch)
+                    self._finalize_new_trial(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR if failure["infrastructure"]
+                                             else trial_model.FINAL_STATUS_FAIL, [failure["error"]])
+                    deferred_evaluator.finalize_generation(self.project_root, new_dir, None)
+                    self._log(f"[VOICE] {failure['error']}")
+                    self.show_trial_detail(new_dir)
+                    return new_dir
+                effective = result["effective_input_text"]
+                self._log(f"[VOICE] Transcripcion congelada: {effective!r} · WER {voice.get('wer')}")
+            patch.update({"input_text": effective, "effective_input_text": effective,
+                          "effective_input_text_hash": voice_protocol.sha256_text(effective)})
+            self._update_new_trial(patch)
+            self.command_textbox.delete("1.0", "end")
+            self.command_textbox.insert("1.0", effective)  # el MISMO pipeline para las tres modalidades
+
+            ok = self.process_command() and self.generate_package()
+            package_dir = (self.active_trial or {}).get("package_dir")
+            if self.active_trial:
+                self._discard_trial_working_map(None)
+            if started_perf is not None:
+                self._update_new_trial({"timing": {"generation_total_ms": int(round((time.perf_counter() - started_perf) * 1000))}})
+            record = deferred_evaluator.finalize_generation(self.project_root, new_dir, Path(package_dir) if ok and package_dir else None)
+            generation = (record.get("generation") or {}).get("status")
+            self._log(f"[EXPERIMENT] {record.get('trial_id')}: generacion {generation}")
+            if generation == deferred_evaluator.GENERATION_SUCCESS:
+                self.active_trial = None
+                self._open_deferred_dialog(new_dir, retry=False, autostart=True)
+            else:
+                self.show_trial_detail(new_dir)
+            return new_dir
+        finally:
+            self._discard_capture(capture)
+            self.active_trial = None
+            self.manual_result_frame.grid_remove()
+            self.start_trial_button.configure(state="normal")
+            self._refresh_generated_trials()
+            self._refresh_voice_panel()
+
+    def _discard_capture(self, capture: dict[str, Any] | None) -> None:
+        """La grabacion temporal se descarta SOLO despues de copiarse a la evidencia del ensayo."""
+        if capture and capture.get("path"):
+            self.speech_recognizer.discard_audio(Path(capture["path"]))
+
+    def show_trial_detail(self, trial_dir: Path) -> None:
+        record = trial_model.load_trial(Path(trial_dir))
+        lines = [f"{record.get('case_id')} · {record.get('variant_id')} · {record.get('input_mode')}", ""]
+        lines += [f"{label}: {value}" for label, value in deferred_evaluator.verdict_table(record)]
+        voice = record.get("voice") or {}
+        if voice:
+            lines += ["", f"Referencia: {voice.get('reference_text')}",
+                      f"Transcripcion ASR (congelada, solo lectura): {voice.get('asr_transcript_raw')}",
+                      f"S/D/I: {voice.get('substitutions')}/{voice.get('deletions')}/{voice.get('insertions')} · "
+                      f"latencia ASR {voice.get('asr_latency_ms')} ms"]
+        lines += ["", f"Errores: {' | '.join(record.get('errors') or []) or '-'}", f"Carpeta: {trial_dir}"]
+        messagebox.showinfo("Detalle del ensayo", "\n".join(lines))
+
+    def _refresh_voice_panel(self) -> None:
+        panel = getattr(self, "voice_panel", None)
+        if panel is None:
+            return
+        input_mode, phase = self._selected_input_mode(), self._selected_phase()
+        for widget in (self.capture_voice_button, self.noise_profile_button, self.snr_button):
+            widget.grid_remove()
+        if input_mode == trial_model.INPUT_MODE_TEXT:
+            panel.grid_remove()  # TEXT: sin controles de audio
+            return
+        panel.grid()
+        device = self.speech_recognizer.get_input_device_info()
+        lines = [f"Microfono: {device.get('name') or device.get('error') or '-'}",
+                 f"Speaker (pseudonimo): {self.experiment_speaker_var.get().strip() or '-'}"]
+        if input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
+            lines.append("Al ejecutar se abre la captura: el hablante lee la frase de referencia.")
+            self.capture_voice_button.grid(row=1, column=0, columnspan=2, padx=8, pady=(0, 8), sticky="ew")
+        else:
+            profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get()) or {}
+            paired = voice_protocol.find_paired_clean(self.project_root, profile.get("case_id", ""), self.experiment_variant_var.get(), phase) \
+                if profile else None
+            noise = voice_protocol.resolve_noise_config(self.project_root, phase)
+            lines.append(f"Audio base: {paired['trial_id'] if paired else 'no disponible (' + voice_protocol.ERROR_CLEAN_AUDIO_REQUIRED + ')'}")
+            if noise["ok"]:
+                lines.append(f"Noise profile: {noise['noise_profile_id']} ({noise['noise_profile_hash'][:12]}) · SNR: {noise['snr_db']} dB "
+                             f"[{noise['source']}]")
+            else:
+                lines.append("Ruido: " + "; ".join(noise["errors"]))
+            if phase == trial_model.PHASE_FORMAL:
+                lines.append("FORMAL: perfil y SNR de experimental_design.json (solo lectura).")
+            else:
+                self.noise_profile_button.grid(row=1, column=0, padx=(8, 4), pady=(0, 8), sticky="ew")
+                self.snr_button.grid(row=1, column=1, padx=(4, 8), pady=(0, 8), sticky="ew")
+        self.voice_panel_var.set("\n".join(lines))
+
+    def select_dev_noise_profile(self) -> None:
+        if self._selected_phase() == trial_model.PHASE_FORMAL:
+            return
+        chosen = filedialog.askopenfilename(title="Perfil de ruido (WAV PCM16 mono, mismo sample rate)", filetypes=[("WAV", "*.wav")])
+        if chosen:
+            current = voice_protocol.load_dev_config(self.project_root)
+            voice_protocol.save_dev_config(self.project_root, chosen, current.get("snr_db"))
+            self._refresh_voice_panel()
+
+    def select_dev_snr(self) -> None:
+        if self._selected_phase() == trial_model.PHASE_FORMAL:
+            return
+        current = voice_protocol.load_dev_config(self.project_root)
+        value = simpledialog.askfloat("SNR (DEVELOPMENT)", "SNR en dB para VOICE_NOISE de desarrollo:", parent=self,
+                                      initialvalue=current.get("snr_db"))
+        if value is not None:
+            voice_protocol.save_dev_config(self.project_root, current.get("noise_profile_path"), value)
+            self._refresh_voice_panel()
+
+
     def run_experiment_trial(self) -> None:
-        """Boton EJECUTAR ENSAYO: arma el ensayo y corre el mismo pipeline automatico que EJECUTAR COMANDO."""
+        """
+        Pipeline inmediato legacy (compila/descarga desde el proyecto Normal). Solo con
+        legacy_immediate_experiment_pipeline=true: por defecto Experimentacion usa GENERAR/EVALUAR.
+        """
+        if self._experiment_touches_normal_project():
+            messagebox.showwarning("Ejecutar ensayo", "EXPERIMENT_MODE_NEVER_MODIFIES_NORMAL_PROJECT: use GENERAR ENSAYO.")
+            return
         if not self.start_trial():
             return
         self.execute_full_pipeline()
@@ -5641,9 +6813,11 @@ class VozLLMPLCGUI(ctk.CTk):
 
             semantic_validation = semantic_output.get("semantic_validation", {}) or {}
             semantic_ok = bool(semantic_validation.get("is_valid"))
+            started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
             self._update_new_trial({
                 "command_text": command_text,
                 "transcript": transcript or None,
+                "timing": {"semantic_ms": int(round((time.perf_counter() - started_perf) * 1000)) if started_perf is not None else None},
                 "semantic": {
                     "intent_id": semantic_output.get("intent_id"),
                     "parameters": semantic_output.get("parameters", {}),
@@ -5665,13 +6839,22 @@ class VozLLMPLCGUI(ctk.CTk):
             self._log(f"No se pudo registrar la interpretacion del ensayo: {error}")
 
     def _capture_trial_parse_failure(
-        self, command_text: str, semantic_output: dict[str, Any], error_code: str = "E2"
+        self, command_text: str, semantic_output: dict[str, Any], error_code: str = "E2", failure_stage: str = "parse"
     ) -> None:
         if not self.active_trial:
             return
         trial_id = self.active_trial.get("trial_id", "")
         try:
-            self._update_new_trial({"command_text": command_text, "stages": {"semantic_success": False}})
+            started_perf = self.active_trial.get("new_trial", {}).get("started_perf")
+            self._update_new_trial({
+                "command_text": command_text,
+                "stages": {"semantic_success": False},
+                "failure_stage": failure_stage,
+                "timing": {"semantic_ms": int(round((time.perf_counter() - started_perf) * 1000)) if started_perf is not None else None},
+            })
+            new_dir = self._new_trial_dir()
+            if new_dir is not None:
+                trial_model.write_json_artifact(new_dir, "semantic_output.json", semantic_output)
             self._set_experiment_stage("Semantica", "fail")
             self._finalize_new_trial(trial_model.FINAL_STATUS_FAIL, [f"Interpretacion no valida ({error_code})."])
             directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
@@ -5689,9 +6872,24 @@ class VozLLMPLCGUI(ctk.CTk):
         finally:
             self.active_trial = None
 
-    def _capture_trial_generation_result(self, combined_results: dict[str, dict[str, Any]]) -> None:
+    def _verify_trial_program_resources(self, package_dir: Any) -> dict[str, Any] | None:
+        """
+        Benchmark v2: cada recurso externo del programa debe tener binding real en el working map
+        congelado (sin ghost resources, tipos compatibles, LOCKED intactos). None si no aplica.
+        """
+        info = (self.active_trial or {}).get("new_trial") or {}
+        snapshot_path = (info.get("io_map") or {}).get("snapshot_path")
+        variables_path = Path(package_dir) / "variables.json" if package_dir else None
+        if not snapshot_path or variables_path is None or not variables_path.exists() or not Path(snapshot_path).exists():
+            return None
+        return resource_policy.verify_program_resources(
+            load_json_file(variables_path), json.loads(Path(snapshot_path).read_text(encoding="utf-8"))
+        )
+
+    def _capture_trial_generation_result(self, combined_results: dict[str, dict[str, Any]]) -> bool | None:
+        """False si el ensayo quedo cerrado aqui (verificacion o bindings): no se compila."""
         if not self.active_trial:
-            return
+            return None
         try:
             target_platform = "SIEMENS_SCL_V18" if "SIEMENS_SCL_V18" in combined_results else next(iter(combined_results), None)
             result_entry = combined_results.get(target_platform, {}) if target_platform else {}
@@ -5707,7 +6905,8 @@ class VozLLMPLCGUI(ctk.CTk):
             self.active_trial.update({
                 "platform": target_platform,
                 "compile_result": compile_result,
-                "state": "AWAITING_MANUAL_RESULT"
+                "state": "AWAITING_MANUAL_RESULT",
+                "package_dir": saved_paths.get("package_dir")
             })
             directory = trial_dir(self.project_root, self.active_trial["case_id"], self.active_trial["trial_id"])
             save_metadata(directory, {
@@ -5733,6 +6932,14 @@ class VozLLMPLCGUI(ctk.CTk):
                 "stages": {"verification_success": is_valid},
                 "timing": {"generation_ms": generation_ms}
             })
+            resource_check = self._verify_trial_program_resources(saved_paths.get("package_dir")) if is_valid else None
+            if resource_check is not None:
+                self._update_new_trial({"resource_check": resource_check})
+                if not resource_check["success"]:
+                    is_valid = False
+                    errors = [f"{item['code']}: {item['detail']}" for item in resource_check["errors"]]
+                    self._update_new_trial({"failure_stage": resource_policy.STAGE_RESOURCE_BINDING})
+                    self._log("[EXPERIMENT IO] Programa con recursos sin binding real: " + "; ".join(errors))
             self._set_experiment_stage("Generacion", "ok")
             self._set_experiment_stage("Verificacion", "ok" if is_valid else "fail")
             if is_valid:
@@ -5753,15 +6960,29 @@ class VozLLMPLCGUI(ctk.CTk):
                 "Complete el resultado abajo y presione 'Guardar resultado'."
             )
             self._log(f"Ensayo {self.active_trial['trial_id']}: generacion capturada ({compile_result}).")
+            return is_valid
         except Exception as error:  # pragma: no cover - GUI feedback path
             self._log(f"No se pudo registrar el resultado de generacion del ensayo: {error}")
+            return None
 
     def _capture_trial_exception(self, error_text: str, stage: str) -> None:
         if not self.active_trial:
             return
         trial_id = self.active_trial.get("trial_id", "")
         try:
-            self._finalize_new_trial(trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR, [f"{stage}: {error_text}"])
+            # Taxonomia v2: una excepcion de generacion es CODEGEN_FAILURE (fallo del sistema); una de
+            # interpretacion solo es INFRASTRUCTURE_ERROR si delata al servicio externo (API/red).
+            external = any(marker in str(error_text).lower() for marker in _EXTERNAL_SERVICE_ERROR_MARKERS)
+            final_status = (
+                trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR
+                if stage == "parse" and external
+                else trial_model.FINAL_STATUS_FAIL
+            )
+            patch: dict[str, Any] = {"failure_stage": stage}
+            if stage == "parse" and not external:
+                patch["stages"] = {"semantic_success": False}
+            self._update_new_trial(patch)
+            self._finalize_new_trial(final_status, [f"{stage}: {error_text}"])
             directory = trial_dir(self.project_root, self.active_trial["case_id"], trial_id)
             save_metadata(directory, {
                 "state": "ERROR",
@@ -5907,6 +7128,7 @@ class VozLLMPLCGUI(ctk.CTk):
         tia_started = False
         try:
             command_text = self.command_textbox.get("1.0", "end").strip()
+            self._pipeline_stage = "precheck"
             precheck_ok, precheck_message = self._run_pipeline_precheck(command_text)
             if not precheck_ok:
                 self._set_status("Error")
@@ -5916,10 +7138,13 @@ class VozLLMPLCGUI(ctk.CTk):
                 messagebox.showwarning("Ejecutar comando", precheck_message)
                 return False
 
+            self._pipeline_stage = "semantic"
             if not self.process_command():
                 return False
+            self._pipeline_stage = "generation"
             if not self.generate_package():
                 return False
+            self._pipeline_stage = "compile"
             self.validate_latest_package_in_tia()
             tia_started = self._tia_worker_active
             return True
@@ -5971,6 +7196,15 @@ class VozLLMPLCGUI(ctk.CTk):
         semantic_validation en vez de abrir ClarificationDialog con una pregunta vacia/generica.
         """
         errors = list(semantic_output.get("semantic_validation", {}).get("errors", []))
+        if self.work_mode_var.get() == "Normal":
+            shown, internal = normal_interaction.user_facing_errors(errors)
+            for message in internal:
+                self._log(f"[NORMAL] {normal_interaction.SYSTEM_CAPABILITY_GAP}: {message}")
+            if not shown:
+                messagebox.showinfo("Comando", normal_interaction.PRODUCT_CAPABILITY_GAP_MESSAGE)
+                return
+            messagebox.showerror("Comando", "No se pudo generar el programa:\n\n" + "\n".join(f"- {e}" for e in shown))
+            return
         detail = "\n".join(f"- {error}" for error in errors) if errors else (
             "No se especifico un motivo de validacion (revise Parametros/Verificacion en el panel derecho)."
         )
@@ -6019,9 +7253,36 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         question = str(clarification_question)
+        normal_mode = self.work_mode_var.get() == "Normal" and self.active_trial is None
+        if normal_mode:
+            state = self._normal_clarification_state or normal_interaction.new_state(command_text)
+            self._normal_clarification_state = state
+            decision = normal_interaction.classify_clarification(question, state["history"])
+            if decision["action"] != "ask":
+                # Nunca se muestra al usuario una pregunta interna (catalogo/intencion/schema) ni se
+                # repite una ya respondida: log de diagnostico + mensaje de producto.
+                self._log(f"[NORMAL] {decision['reason']}")
+                if self._normal_voice_flow is not None:
+                    self._normal_voice_flow["clarification_requested"] = True
+                    self._normal_voice_flow["clarification_pending"] = True  # no resuelta
+                messagebox.showinfo("Comando", normal_interaction.PRODUCT_CAPABILITY_GAP_MESSAGE)
+                return False
+        if self._normal_voice_flow is not None:
+            # Ejecucion Normal con descarga encadenada: el flujo se PAUSA antes de TIA/Descarga mientras
+            # la aclaracion esta pendiente; una aclaracion respondida no impide la descarga posterior.
+            self._normal_voice_flow["clarification_requested"] = True
+            self._normal_voice_flow["clarification_pending"] = True
+            self._set_normal_voice_stage("Semantica", "running")
+        if self.active_trial:
+            # Metrica secundaria (tasa de aclaracion): se registra siempre, se responda o no.
+            self._update_new_trial({"clarification_requested": True, "clarification_question": question})
         dialog = ClarificationDialog(self, question)
         self.wait_window(dialog)
         answer = dialog.result
+        if self.active_trial:
+            self._update_new_trial({"clarification_answered": bool(answer)})
+        if answer and self._normal_voice_flow is not None:
+            self._normal_voice_flow["clarification_pending"] = False
 
         if not answer:
             self._log("Aclaracion cancelada por el usuario; el comando no se reprocesa.")
@@ -6030,6 +7291,18 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         self._log(f"Aclaracion registrada por el usuario: {answer!r}. Reprocesando el comando.")
+        if normal_mode:
+            # Aclaracion ESTRUCTURADA: se conserva el comando original y se agrega {pregunta, respuesta};
+            # el comando NO se concatena con texto libre.
+            state = self._normal_clarification_state
+            state["history"].append({"question": question, "answer": str(answer).strip()})
+            self.command_textbox.delete("1.0", "end")
+            self.command_textbox.insert("1.0", state["original_command"])
+            self._reprocessing_clarification = True
+            try:
+                return self.process_command()
+            finally:
+                self._reprocessing_clarification = False
         augmented_command = (
             f"{command_text}\n\n"
             f"Aclaracion solicitada: {question}\n"
@@ -6235,13 +7508,23 @@ class VozLLMPLCGUI(ctk.CTk):
 
             io_map, intents_catalog, safety_rules = self._load_runtime_configuration()
             self.pending_runtime_config = (io_map, intents_catalog, safety_rules)
+            normal_kwargs: dict[str, Any] = {}
+            if self.work_mode_var.get() == "Normal":
+                # Modo Normal: composicion funcional + aclaraciones estructuradas (Experimentacion no cambia).
+                if not self._reprocessing_clarification:
+                    self._normal_clarification_state = normal_interaction.new_state(command_text)
+                normal_kwargs["interaction_profile"] = normal_interaction.PROFILE_NORMAL
+                history = (self._normal_clarification_state or {}).get("history") or []
+                if history:
+                    normal_kwargs["clarification_history"] = list(history)
             semantic_output = parse_command(
                 command_text,
                 io_map=io_map,
                 intents_catalog=intents_catalog,
                 safety_rules=safety_rules,
                 mode=requested_mode,
-                llm_client=self.llm_client
+                llm_client=self.llm_client,
+                **normal_kwargs
             )
             self._log("Intencion detectada.")
             self._log("Parametros extraidos.")
@@ -6278,7 +7561,9 @@ class VozLLMPLCGUI(ctk.CTk):
             # INT_UNKNOWN" deshacia esa decision y detenia el pipeline otra vez. Fuera del flujo
             # MAP_CONFIG, intent_id == INT_UNKNOWN sigue significando exactamente lo mismo que
             # siempre (no se entendio el comando, se pide aclaracion) - sin cambios ahi.
-            intent_missing = semantic_output.get("intent_id") == "INT_UNKNOWN" and not map_config_continued
+            composable = self.work_mode_var.get() == "Normal" and has_composable_program(
+                semantic_output.get("functional_requirements") or [])
+            intent_missing = semantic_output.get("intent_id") == "INT_UNKNOWN" and not map_config_continued and not composable
             is_valid_now = semantic_output.get("semantic_validation", {}).get("is_valid", False)
             if intent_missing or not is_valid_now:
                 unknown_payload = {
@@ -6302,12 +7587,34 @@ class VozLLMPLCGUI(ctk.CTk):
                 # (clarification_question siempre fue None; el dialogo solo rellenaba un texto
                 # generico de relleno). Se muestran los errores reales en su lugar.
                 clarification_question = semantic_output.get("clarification_question")
+                requires_question = bool(semantic_output.get("requires_clarification"))
+                if self.work_mode_var.get() == "Normal" and not clarification_question:
+                    # Pregunta funcional derivada por el validador (p.ej. duracion de una etapa).
+                    validation_now = semantic_output.get("semantic_validation", {}) or {}
+                    clarification_question = validation_now.get("clarification_question")
+                    requires_question = requires_question or bool(validation_now.get("requires_clarification"))
                 has_real_question = bool(
-                    semantic_output.get("requires_clarification")
+                    requires_question
                     and clarification_question
                     and str(clarification_question).strip()
                 )
-                if unauthorized_tags and self.work_mode_var.get() == "Experimentacion":
+                legacy_whitelist = resource_policy.legacy_profile_whitelist_applies(self._benchmark_version())
+                if unauthorized_tags and self.work_mode_var.get() == "Experimentacion" and not legacy_whitelist:
+                    # Benchmark v2: un recurso sin binding en el working_io_map es un fallo de
+                    # asignacion de E/S, nunca "no autorizado por el caso" (allowed_variables no aplica).
+                    self._log("Recursos fisicos sin binding en el working_io_map: " + ", ".join(unauthorized_tags))
+                    if self.active_trial:
+                        issues = resource_policy.unresolved_resources(semantic_output)
+                        self._update_new_trial({
+                            "io_map": {"error": resource_policy.ERROR_UNRESOLVED_RESOURCE},
+                            "resource_check": {"policy": resource_policy.POLICY_WORKING_MAP_BINDING, "success": False, "errors": issues},
+                        })
+                        self._capture_trial_parse_failure(
+                            command_text, semantic_output, error_code="E3", failure_stage=resource_policy.STAGE_IO_ALLOCATION
+                        )
+                    self._show_validation_errors(semantic_output)
+                elif unauthorized_tags and self.work_mode_var.get() == "Experimentacion":
+                    # Legacy benchmark v1 (aislado): whitelist por perfil.
                     profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get())
                     self._log("El comando solicita recursos fisicos no autorizados por el caso experimental.")
                     if self.active_trial:
@@ -6321,6 +7628,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 elif has_real_question:
                     self._log("La interpretacion requiere aclaracion antes de generar (SEMANTIC_AMBIGUITY).")
                     self._set_status("Listo")
+                    if clarification_question and not semantic_output.get("clarification_question"):
+                        semantic_output = {**semantic_output, "clarification_question": clarification_question}
                     return self._resolve_semantic_ambiguity(command_text, semantic_output)
                 else:
                     self._log("La interpretacion no es valida para generar codigo (error de validacion, no una ambiguedad).")
@@ -6468,12 +7777,15 @@ class VozLLMPLCGUI(ctk.CTk):
             # Seccion 12: un mensaje generico ("Verificacion completada.") suena a exito incluso
             # cuando fallo - ya se emitio "[PIPELINE] Verification passed/FAILED" por plataforma
             # mas arriba; este es el resumen final, inequivoco, de TODAS las plataformas juntas.
+            if self._pipeline_stage == "generation":
+                self._pipeline_stage = "verification"  # el paquete se genero; lo que sigue es la verificacion
             if all_valid:
                 self._log("Verificacion completada correctamente.")
             else:
                 self._log("Verificacion fallida.")
             if self.active_trial:
-                self._capture_trial_generation_result(combined_results)
+                if self._capture_trial_generation_result(combined_results) is False:
+                    all_valid = False
             self._set_status("Listo")
             return all_valid
         except Exception as error:  # pragma: no cover - GUI feedback path

@@ -36,5 +36,10 @@
     "io_settle_ms": 500,
     "io_timeout_seconds": 60
   },
-  "api_dll_path": "C:/Program Files/Siemens/Automation/Portal V18/PublicAPI/V18/Siemens.Engineering.dll"
+  "api_dll_path": "C:/Program Files/Siemens/Automation/Portal V18/PublicAPI/V18/Siemens.Engineering.dll",
+  "tia_memory_preflight": {
+    "enabled": true,
+    "min_available_physical_gb": 4,
+    "min_commit_headroom_gb": 8
+  }
 }

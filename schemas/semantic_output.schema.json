@@ -134,7 +134,10 @@
               "sensor_range_fault",
               "conditional_alarm_reset",
               "safe_overfill_stop",
-              "manual_pump_limit"
+              "manual_pump_limit",
+              "timed_sequence",
+              "never_together",
+              "sensor_timeout_alarm"
             ]
           }
         }

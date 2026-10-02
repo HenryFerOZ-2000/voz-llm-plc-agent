@@ -350,7 +350,11 @@ class SpeechRecognizer:
         time.sleep(max(1, duration))
         return self.stop_recording()
 
-    def transcribe_audio(self, audio_path: Path) -> dict[str, Any]:
+    def transcribe_audio(self, audio_path: Path, enforce_quality_checks: bool = True) -> dict[str, Any]:
+        """
+        enforce_quality_checks=False: el protocolo experimental ya valido tecnicamente la captura con
+        sus propios umbrales documentados (voice_protocol.validate_capture); aqui no se vuelve a filtrar.
+        """
         if not audio_path.exists():
             raise FileNotFoundError(f"El archivo de audio no existe: {audio_path}")
         if audio_path.stat().st_size == 0:
@@ -369,9 +373,9 @@ class SpeechRecognizer:
                 "processing_seconds": None,
                 "error": "La transcripcion requiere API y modelo configurados."
             }
-        if audio_metadata["duration_seconds"] < 0.35:
+        if enforce_quality_checks and audio_metadata["duration_seconds"] < 0.35:
             raise RuntimeError("La grabacion es demasiado corta. Hable durante al menos un segundo.")
-        if audio_metadata["rms"] < self.silence_rms_threshold:
+        if enforce_quality_checks and audio_metadata["rms"] < self.silence_rms_threshold:
             raise RuntimeError(
                 "La grabacion no tiene suficiente nivel de audio (posible silencio, microfono "
                 "muteado o desconectado). Verifique el microfono e intente de nuevo."

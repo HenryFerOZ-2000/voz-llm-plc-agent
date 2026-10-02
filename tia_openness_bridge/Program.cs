@@ -15,6 +15,7 @@ using Siemens.Engineering.Download.Configurations;
 using Siemens.Engineering.HW;
 using Siemens.Engineering.HW.Features;
 using Siemens.Engineering.SW;
+using Siemens.Engineering.SW.Blocks;
 using Siemens.Engineering.SW.ExternalSources;
 using Siemens.Engineering.SW.Tags;
 
@@ -59,6 +60,18 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 else if (action == "download")
                 {
                     report = ExecuteDownload(request);
+                }
+                else if (action == "validate_master")
+                {
+                    report = ExecuteValidateMaster(request);
+                }
+                else if (action == "evaluate_trial")
+                {
+                    report = ExecuteEvaluateTrial(request);
+                }
+                else if (action == "retrieve_probe")
+                {
+                    report = ExecuteRetrieveProbe(request);
                 }
                 else if (action == "self_test")
                 {
@@ -962,7 +975,6 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
         {
             Dictionary<string, object> report = NewReport("RUNNING");
             string projectPath = GetString(request, "project_path", "");
-            string requestedPlcName = GetString(request, "plc_name", "");
             bool attach = GetBool(request, "attach_to_running", true);
             bool withUi = GetBool(request, "with_user_interface", true);
 
@@ -997,145 +1009,7 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
 
                 report["attached_to_existing_tia"] = attachedToExisting;
                 report["project_path"] = project.Path.FullName;
-                report["success"] = false;
-
-                List<KeyValuePair<DeviceItem, PlcSoftware>> candidates = new List<KeyValuePair<DeviceItem, PlcSoftware>>();
-                foreach (Device device in project.Devices)
-                {
-                    foreach (DeviceItem item in device.DeviceItems)
-                    {
-                        CollectPlcCandidates(item, candidates);
-                    }
-                }
-
-                List<KeyValuePair<DeviceItem, PlcSoftware>> matches = String.IsNullOrWhiteSpace(requestedPlcName)
-                    ? candidates
-                    : candidates.Where(c => String.Equals(c.Value.Name, requestedPlcName, StringComparison.OrdinalIgnoreCase)).ToList();
-
-                if (matches.Count != 1)
-                {
-                    report["status"] = "TIA_DOWNLOAD_AMBIGUOUS_TARGET";
-                    report["candidate_plc_names"] = candidates.Select(c => c.Value.Name).ToList();
-                    AddError(report, "No se pudo determinar de forma inequivoca el PLC objetivo del proyecto TIA.");
-                    return report;
-                }
-
-                DeviceItem plcDeviceItem = matches[0].Key;
-                PlcSoftware plcSoftware = matches[0].Value;
-                report["plc_name"] = plcSoftware.Name;
-                report["device_item_name"] = plcDeviceItem.Name;
-                report["device_type"] = plcDeviceItem.TypeIdentifier;
-
-                DownloadProvider downloadProvider = plcDeviceItem.GetService<DownloadProvider>();
-                if (downloadProvider == null)
-                {
-                    throw new InvalidOperationException("The target PLC device does not expose a download service.");
-                }
-
-                string targetType = GetString(request, "target_type", "PLCSIM_ADVANCED").Trim().ToUpperInvariant();
-                bool requireSimulation = GetBool(request, "require_simulation", false);
-                bool startModules = GetBool(request, "start_modules", true);
-                string downloadScope = GetString(request, "download_scope", "SOFTWARE").Trim().ToUpperInvariant();
-                report["target_type"] = targetType;
-                report["target_name"] = GetString(request, "target_name", "");
-                report["require_simulation"] = requireSimulation;
-                report["download_scope"] = downloadScope;
-                report["start_module_requested"] = false;
-                report["start_module_configuration_seen"] = false;
-                report["cpu_run_requested"] = false;
-                report["cpu_run_confirmed"] = null;
-
-                Log("[TIA DOWNLOAD] Target validation");
-                if (requireSimulation && targetType != TargetTypePlcsimAdvanced)
-                {
-                    report["status"] = "EXPERIMENT_TARGET_NOT_SIMULATION";
-                    AddError(report, "El destino configurado no es PLCSIM_ADVANCED (target_type=" + targetType + "). Modo Experimentacion nunca descarga a un PLC fisico.");
-                    return report;
-                }
-
-                ConfigurationPcInterface pcInterface;
-                IConfiguration targetConfiguration = ResolveDownloadTarget(downloadProvider.Configuration, request, targetType, report, out pcInterface);
-                if (targetConfiguration == null)
-                {
-                    report["status"] = "TIA_DOWNLOAD_AMBIGUOUS_TARGET";
-                    return report;
-                }
-
-                // Guardia de simulacion (seccion 4): ademas de lo DECLARADO en la configuracion,
-                // la interfaz PG/PC realmente resuelta en TIA debe ser la del simulador. Si no se
-                // puede confirmar, se aborta sin descargar - nunca se adivina.
-                string pcInterfaceName = pcInterface != null ? pcInterface.Name : "";
-                bool simulatedInterface = pcInterfaceName.IndexOf("PLCSIM", StringComparison.OrdinalIgnoreCase) >= 0;
-                report["simulation_interface_confirmed"] = simulatedInterface;
-                if (requireSimulation && !simulatedInterface)
-                {
-                    report["status"] = "EXPERIMENT_TARGET_NOT_SIMULATION";
-                    AddError(report, "La interfaz PG/PC resuelta ('" + pcInterfaceName + "') no corresponde a PLCSIM. Descarga experimental abortada.");
-                    return report;
-                }
-                if (requireSimulation)
-                {
-                    Log("[TIA DOWNLOAD] PLCSIM Advanced confirmed (" + pcInterfaceName + ")");
-                }
-
-                DownloadOptions options = downloadScope == "HARDWARE_AND_SOFTWARE"
-                    ? DownloadOptions.Hardware | DownloadOptions.Software
-                    : DownloadOptions.Software;
-
-                List<object> handledConfigurations = new List<object>();
-                report["download_configurations"] = handledConfigurations;
-                DownloadConfigurationDelegate handler = configuration =>
-                    HandleDownloadConfiguration(configuration, targetType, startModules, handledConfigurations, report);
-
-                Log("[TIA DOWNLOAD] Starting");
-                DownloadResult downloadResult;
-                try
-                {
-                    downloadResult = downloadProvider.Download(targetConfiguration, handler, handler, options);
-                }
-                catch (DownloadConfigurationRejectedException rejected)
-                {
-                    report["status"] = "DOWNLOAD_CONFIGURATION_UNSUPPORTED";
-                    AddError(report, rejected.Message);
-                    return report;
-                }
-                catch (Exception exception)
-                {
-                    // Openness puede envolver la excepcion lanzada dentro del delegado.
-                    DownloadConfigurationRejectedException inner = FindInner<DownloadConfigurationRejectedException>(exception);
-                    if (inner != null)
-                    {
-                        report["status"] = "DOWNLOAD_CONFIGURATION_UNSUPPORTED";
-                        AddError(report, inner.Message);
-                        return report;
-                    }
-                    throw;
-                }
-
-                int errorCount = downloadResult.ErrorCount;
-                int warningCount = downloadResult.WarningCount;
-                bool success = errorCount == 0 && downloadResult.State != DownloadResultState.Error;
-
-                report["download_state"] = downloadResult.State.ToString();
-                report["download_error_count"] = errorCount;
-                report["download_warning_count"] = warningCount;
-                report["download_messages"] = FlattenDownloadMessages(downloadResult.Messages);
-                report["success"] = success;
-                report["download_success"] = success;
-                bool startRequested = (bool)report["start_module_requested"];
-                // Start Module solo se considera exitoso si TIA lo presento, se selecciono
-                // StartModule y la descarga termino sin errores. Si TIA nunca presento
-                // StartModules (la CPU no se detuvo), el resultado es "no aplica" (null), nunca
-                // un exito inventado. cpu_run_confirmed queda null hasta tener Runtime API.
-                report["start_module_success"] = startRequested ? (object)success : null;
-                report["cpu_run_requested"] = startRequested && success;
-                report["status"] = success ? "TIA_DOWNLOAD_PASSED" : "TIA_DOWNLOAD_FAILED";
-                Log(success ? "[TIA DOWNLOAD] Download completed" : "[TIA DOWNLOAD] Download failed");
-                if (startRequested && success)
-                {
-                    Log("[TIA DOWNLOAD] Start module requested");
-                }
-                Log("[TIA DOWNLOAD] Completed");
+                RunDownload(project, request, report);
             }
             finally
             {
@@ -1149,6 +1023,156 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 }
             }
             return report;
+        }
+
+        /// <summary>
+        /// Descarga del software ya compilado de `project` (compartido por la accion "download" y por
+        /// "evaluate_trial", que descarga en la MISMA sesion la copia del ensayo ya archivada).
+        /// Mismas guardias que siempre: PLC inequivoco, interfaz PLCSIM confirmada si
+        /// require_simulation, configuraciones de descarga explicitas, nunca hardware salvo que se pida.
+        /// </summary>
+        private static void RunDownload(Project project, Dictionary<string, object> request, Dictionary<string, object> report)
+        {
+            string requestedPlcName = GetString(request, "plc_name", "");
+            report["success"] = false;
+
+            List<KeyValuePair<DeviceItem, PlcSoftware>> candidates = new List<KeyValuePair<DeviceItem, PlcSoftware>>();
+            foreach (Device device in project.Devices)
+            {
+                foreach (DeviceItem item in device.DeviceItems)
+                {
+                    CollectPlcCandidates(item, candidates);
+                }
+            }
+
+            List<KeyValuePair<DeviceItem, PlcSoftware>> matches = String.IsNullOrWhiteSpace(requestedPlcName)
+                ? candidates
+                : candidates.Where(c => String.Equals(c.Value.Name, requestedPlcName, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (matches.Count != 1)
+            {
+                report["status"] = "TIA_DOWNLOAD_AMBIGUOUS_TARGET";
+                report["candidate_plc_names"] = candidates.Select(c => c.Value.Name).ToList();
+                AddError(report, "No se pudo determinar de forma inequivoca el PLC objetivo del proyecto TIA.");
+                return;
+            }
+
+            DeviceItem plcDeviceItem = matches[0].Key;
+            PlcSoftware plcSoftware = matches[0].Value;
+            report["plc_name"] = plcSoftware.Name;
+            report["device_item_name"] = plcDeviceItem.Name;
+            report["device_type"] = plcDeviceItem.TypeIdentifier;
+
+            DownloadProvider downloadProvider = plcDeviceItem.GetService<DownloadProvider>();
+            if (downloadProvider == null)
+            {
+                throw new InvalidOperationException("The target PLC device does not expose a download service.");
+            }
+
+            string targetType = GetString(request, "target_type", "PLCSIM_ADVANCED").Trim().ToUpperInvariant();
+            bool requireSimulation = GetBool(request, "require_simulation", false);
+            bool startModules = GetBool(request, "start_modules", true);
+            string downloadScope = GetString(request, "download_scope", "SOFTWARE").Trim().ToUpperInvariant();
+            report["target_type"] = targetType;
+            report["target_name"] = GetString(request, "target_name", "");
+            report["require_simulation"] = requireSimulation;
+            report["download_scope"] = downloadScope;
+            report["start_module_requested"] = false;
+            report["start_module_configuration_seen"] = false;
+            report["cpu_run_requested"] = false;
+            report["cpu_run_confirmed"] = null;
+
+            Log("[TIA DOWNLOAD] Target validation");
+            if (requireSimulation && targetType != TargetTypePlcsimAdvanced)
+            {
+                report["status"] = "EXPERIMENT_TARGET_NOT_SIMULATION";
+                AddError(report, "El destino configurado no es PLCSIM_ADVANCED (target_type=" + targetType + "). Modo Experimentacion nunca descarga a un PLC fisico.");
+                return;
+            }
+
+            ConfigurationPcInterface pcInterface;
+            IConfiguration targetConfiguration = ResolveDownloadTarget(downloadProvider.Configuration, request, targetType, report, out pcInterface);
+            if (targetConfiguration == null)
+            {
+                report["status"] = "TIA_DOWNLOAD_AMBIGUOUS_TARGET";
+                return;
+            }
+
+            // Guardia de simulacion (seccion 4): ademas de lo DECLARADO en la configuracion,
+            // la interfaz PG/PC realmente resuelta en TIA debe ser la del simulador. Si no se
+            // puede confirmar, se aborta sin descargar - nunca se adivina.
+            string pcInterfaceName = pcInterface != null ? pcInterface.Name : "";
+            bool simulatedInterface = pcInterfaceName.IndexOf("PLCSIM", StringComparison.OrdinalIgnoreCase) >= 0;
+            report["simulation_interface_confirmed"] = simulatedInterface;
+            if (requireSimulation && !simulatedInterface)
+            {
+                report["status"] = "EXPERIMENT_TARGET_NOT_SIMULATION";
+                AddError(report, "La interfaz PG/PC resuelta ('" + pcInterfaceName + "') no corresponde a PLCSIM. Descarga experimental abortada.");
+                return;
+            }
+            if (requireSimulation)
+            {
+                Log("[TIA DOWNLOAD] PLCSIM Advanced confirmed (" + pcInterfaceName + ")");
+            }
+
+            DownloadOptions options = downloadScope == "HARDWARE_AND_SOFTWARE"
+                ? DownloadOptions.Hardware | DownloadOptions.Software
+                : DownloadOptions.Software;
+
+            List<object> handledConfigurations = new List<object>();
+            report["download_configurations"] = handledConfigurations;
+            DownloadConfigurationDelegate handler = configuration =>
+                HandleDownloadConfiguration(configuration, targetType, startModules, handledConfigurations, report);
+
+            Log("[TIA DOWNLOAD] Starting");
+            DownloadResult downloadResult;
+            try
+            {
+                downloadResult = downloadProvider.Download(targetConfiguration, handler, handler, options);
+            }
+            catch (DownloadConfigurationRejectedException rejected)
+            {
+                report["status"] = "DOWNLOAD_CONFIGURATION_UNSUPPORTED";
+                AddError(report, rejected.Message);
+                return;
+            }
+            catch (Exception exception)
+            {
+                // Openness puede envolver la excepcion lanzada dentro del delegado.
+                DownloadConfigurationRejectedException inner = FindInner<DownloadConfigurationRejectedException>(exception);
+                if (inner != null)
+                {
+                    report["status"] = "DOWNLOAD_CONFIGURATION_UNSUPPORTED";
+                    AddError(report, inner.Message);
+                    return;
+                }
+                throw;
+            }
+
+            int errorCount = downloadResult.ErrorCount;
+            int warningCount = downloadResult.WarningCount;
+            bool success = errorCount == 0 && downloadResult.State != DownloadResultState.Error;
+
+            report["download_state"] = downloadResult.State.ToString();
+            report["download_error_count"] = errorCount;
+            report["download_warning_count"] = warningCount;
+            report["download_messages"] = FlattenDownloadMessages(downloadResult.Messages);
+            report["success"] = success;
+            report["download_success"] = success;
+            bool startRequested = (bool)report["start_module_requested"];
+            // Start Module solo se considera exitoso si TIA lo presento, se selecciono
+            // StartModule y la descarga termino sin errores. Si TIA nunca presento
+            // StartModules (la CPU no se detuvo), el resultado es "no aplica" (null), nunca
+            // un exito inventado. cpu_run_confirmed queda null hasta tener Runtime API.
+            report["start_module_success"] = startRequested ? (object)success : null;
+            report["cpu_run_requested"] = startRequested && success;
+            report["status"] = success ? "TIA_DOWNLOAD_PASSED" : "TIA_DOWNLOAD_FAILED";
+            Log(success ? "[TIA DOWNLOAD] Download completed" : "[TIA DOWNLOAD] Download failed");
+            if (startRequested && success)
+            {
+                Log("[TIA DOWNLOAD] Start module requested");
+            }
+            Log("[TIA DOWNLOAD] Completed");
         }
 
         private const string TargetTypePlcsimAdvanced = "PLCSIM_ADVANCED";
@@ -1411,6 +1435,753 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             {
                 AddCompilerMessage(child, output);
             }
+        }
+
+
+        // =====================================================================================
+        // Fase 4A-DEFERRED: TIA MASTER + evaluacion diferida de un ensayo guardado
+        // =====================================================================================
+
+        private static string Sha256File(string path)
+        {
+            using (System.Security.Cryptography.SHA256 sha = System.Security.Cryptography.SHA256.Create())
+            using (FileStream stream = File.OpenRead(path))
+            {
+                return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
+        private static List<string> GetStringList(Dictionary<string, object> payload, string key)
+        {
+            List<string> result = new List<string>();
+            object raw;
+            if (payload.TryGetValue(key, out raw) && raw is IEnumerable && !(raw is string))
+            {
+                foreach (object item in (IEnumerable)raw)
+                {
+                    if (item != null)
+                    {
+                        result.Add(item.ToString());
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static void CollectBlocks(PlcBlockGroup group, string path, List<Dictionary<string, object>> result)
+        {
+            foreach (PlcBlock block in group.Blocks)
+            {
+                string language = "";
+                try
+                {
+                    language = block.ProgrammingLanguage.ToString();
+                }
+                catch (Exception)
+                {
+                    language = "";
+                }
+                result.Add(new Dictionary<string, object>
+                {
+                    { "name", block.Name },
+                    { "number", block.Number },
+                    { "type", block.GetType().Name },
+                    { "language", language },
+                    { "group", path }
+                });
+            }
+            foreach (PlcBlockUserGroup child in group.Groups)
+            {
+                CollectBlocks(child, path + "/" + child.Name, result);
+            }
+        }
+
+        private static List<Dictionary<string, object>> ListBlockNames(PlcBlockGroup group, string path)
+        {
+            List<Dictionary<string, object>> result = new List<Dictionary<string, object>>();
+            foreach (PlcBlock block in group.Blocks)
+            {
+                result.Add(new Dictionary<string, object> { { "name", block.Name }, { "type", block.GetType().Name }, { "group", path } });
+            }
+            foreach (PlcBlockUserGroup child in group.Groups)
+            {
+                result.AddRange(ListBlockNames(child, path + "/" + child.Name));
+            }
+            return result;
+        }
+
+        private static PlcBlock FindBlock(PlcBlockGroup group, string name)
+        {
+            PlcBlock found = group.Blocks.Find(name);
+            if (found != null)
+            {
+                return found;
+            }
+            foreach (PlcBlockUserGroup child in group.Groups)
+            {
+                found = FindBlock(child, name);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+            return null;
+        }
+
+        private static List<Dictionary<string, object>> DescribeInterfaces(Project project)
+        {
+            List<Dictionary<string, object>> interfaces = new List<Dictionary<string, object>>();
+            foreach (Device device in project.Devices)
+            {
+                foreach (DeviceItem item in device.DeviceItems)
+                {
+                    CollectInterfaces(item, interfaces);
+                }
+            }
+            return interfaces;
+        }
+
+        private static void CollectInterfaces(DeviceItem item, List<Dictionary<string, object>> result)
+        {
+            NetworkInterface networkInterface = item.GetService<NetworkInterface>();
+            if (networkInterface != null)
+            {
+                List<Dictionary<string, object>> nodes = new List<Dictionary<string, object>>();
+                foreach (Node node in networkInterface.Nodes)
+                {
+                    object address = null;
+                    try
+                    {
+                        address = node.GetAttribute("Address");
+                    }
+                    catch (Exception)
+                    {
+                        address = null;
+                    }
+                    nodes.Add(new Dictionary<string, object>
+                    {
+                        { "name", node.Name },
+                        { "type", node.NodeType.ToString() },
+                        { "address", address == null ? "" : address.ToString() }
+                    });
+                }
+                result.Add(new Dictionary<string, object>
+                {
+                    { "device_item", item.Name },
+                    { "interface_type", networkInterface.InterfaceType.ToString() },
+                    { "nodes", nodes }
+                });
+            }
+            foreach (DeviceItem child in item.DeviceItems)
+            {
+                CollectInterfaces(child, result);
+            }
+        }
+
+        private static Dictionary<string, object> DescribePlcProject(Project project, string requestedPlcName)
+        {
+            List<KeyValuePair<DeviceItem, PlcSoftware>> candidates = new List<KeyValuePair<DeviceItem, PlcSoftware>>();
+            foreach (Device device in project.Devices)
+            {
+                foreach (DeviceItem item in device.DeviceItems)
+                {
+                    CollectPlcCandidates(item, candidates);
+                }
+            }
+            Dictionary<string, object> info = new Dictionary<string, object>
+            {
+                { "project_name", project.Name },
+                { "project_version", project.Version },
+                { "plc_count", candidates.Count },
+                { "plc_names", candidates.Select(c => c.Value.Name).ToList() },
+                { "interfaces", DescribeInterfaces(project) }
+            };
+            List<KeyValuePair<DeviceItem, PlcSoftware>> matches = String.IsNullOrWhiteSpace(requestedPlcName)
+                ? candidates
+                : candidates.Where(c => String.Equals(c.Value.Name, requestedPlcName, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (matches.Count == 1)
+            {
+                PlcSoftware plcSoftware = matches[0].Value;
+                info["plc_name"] = plcSoftware.Name;
+                info["cpu_device_item"] = matches[0].Key.Name;
+                info["cpu_type_identifier"] = matches[0].Key.TypeIdentifier;
+                // Atributos de catalogo (best-effort): si TIA no los expone, quedan null (nunca se inventan).
+                foreach (string attribute in new[] { "TypeName", "OrderNumber", "FirmwareVersion" })
+                {
+                    object value = null;
+                    try
+                    {
+                        value = matches[0].Key.GetAttribute(attribute);
+                    }
+                    catch (Exception)
+                    {
+                        value = null;
+                    }
+                    info["cpu_" + attribute] = value == null ? null : value.ToString();
+                }
+                List<Dictionary<string, object>> blocks = new List<Dictionary<string, object>>();
+                CollectBlocks(plcSoftware.BlockGroup, "", blocks);
+                info["blocks"] = blocks;
+                info["tag_tables"] = plcSoftware.TagTableGroup.TagTables.Select(t => t.Name).ToList();
+                info["plc_agent_io_present"] = plcSoftware.TagTableGroup.TagTables.Find("PLC_Agent_IO") != null;
+                info["external_sources"] = plcSoftware.ExternalSourceGroup.ExternalSources.Select(e => e.Name).ToList();
+            }
+            return info;
+        }
+
+        private const string ZapExtension = ".zap18";
+
+        /// <summary>
+        /// Project.Archive usa targetName LITERALMENTE como nombre del archivo creado (verificado con TIA
+        /// V18 real: sin extension se crea un ZIP sin extension). Por eso el nombre se construye siempre
+        /// explicito con ".zap18" y la ruta esperada es exactamente targetDirectory\targetName.
+        /// </summary>
+        private static string ArchiveTargetName(string requestedName)
+        {
+            string name = Path.GetFileName(requestedName ?? "");
+            if (String.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("archive name is empty");
+            }
+            return name.EndsWith(ZapExtension, StringComparison.OrdinalIgnoreCase) ? name : name + ZapExtension;
+        }
+
+        /// <summary>
+        /// Archive comprimido con nombre explicito .zap18 y verificacion EXACTA del archivo esperado
+        /// (existe, tamano > 0, SHA-256). Nunca busca "otro" archivo parecido: si TIA crea algo con otro
+        /// nombre se informa como NOT_CREATED con la lista de archivos realmente creados.
+        /// Devuelve el codigo de resultado ("CREATED" o el codigo de error) y rellena `report`.
+        /// </summary>
+        private static string ArchiveProject(Project project, string targetDirectory, string requestedName, Dictionary<string, object> report, string errorPrefix)
+        {
+            string targetName = ArchiveTargetName(requestedName);
+            string expectedPath = Path.Combine(targetDirectory, targetName);
+            report["archive_source_project"] = project.Path.FullName;
+            report["archive_target_directory"] = targetDirectory;
+            report["archive_target_name"] = targetName;
+            report["archive_expected_path"] = expectedPath;
+            report["archive_mode"] = ProjectArchivationMode.Compressed.ToString();
+            Log("[TIA ARCHIVE] source=" + project.Path.FullName + " target_dir=" + targetDirectory + " target_name=" + targetName
+                + " expected=" + expectedPath + " mode=" + ProjectArchivationMode.Compressed);
+
+            Directory.CreateDirectory(targetDirectory);
+            if (File.Exists(expectedPath))
+            {
+                report["archive_error"] = "El archivo destino ya existe (nunca se sobrescribe): " + expectedPath;
+                return errorPrefix + "_ARCHIVE_FAILED";
+            }
+            HashSet<string> before = new HashSet<string>(Directory.GetFiles(targetDirectory), StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                project.Archive(new DirectoryInfo(targetDirectory), targetName, ProjectArchivationMode.Compressed);
+            }
+            catch (Exception exception)
+            {
+                report["archive_error_type"] = exception.GetType().FullName;
+                report["archive_error"] = exception.Message;
+                if (exception.GetType().Name == "EngineeringTargetInvocationException")
+                {
+                    report["archive_error_hint"] = "TIA rechazo el archivado; el motivo exacto esta en archive_error.";
+                }
+                return errorPrefix + "_ARCHIVE_FAILED";
+            }
+            List<string> created = Directory.GetFiles(targetDirectory).Where(f => !before.Contains(f)).Select(Path.GetFileName).ToList();
+            report["archive_actual_files_created"] = created;
+            if (!File.Exists(expectedPath))
+            {
+                report["archive_error"] = "Project.Archive no creo el archivo esperado " + expectedPath;
+                return errorPrefix + "_ARCHIVE_NOT_CREATED";
+            }
+            long size = new FileInfo(expectedPath).Length;
+            report["archive_size_bytes"] = size;
+            if (size <= 0)
+            {
+                report["archive_error"] = "El archivo creado esta vacio: " + expectedPath;
+                return errorPrefix + "_ARCHIVE_EMPTY";
+            }
+            report["archive_path"] = expectedPath;
+            report["archive_sha256"] = Sha256File(expectedPath);
+            return "CREATED";
+        }
+
+        private static string _checkpointPath;
+
+        /// <summary>
+        /// Checkpoint persistente ANTES/DESPUES de cada operacion Openness. Lo escribe este proceso (no TIA),
+        /// en modo append + WriteThrough + Flush(true): cada linea queda en disco aunque TIA Portal se caiga
+        /// o el bridge sea terminado despues. Formato: timestamp TAB checkpoint TAB detalle.
+        /// </summary>
+        private static void Checkpoint(string name, string detail)
+        {
+            if (String.IsNullOrWhiteSpace(_checkpointPath))
+            {
+                return;
+            }
+            try
+            {
+                string line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + "\t" + name + "\t"
+                    + (detail ?? "").Replace("\r", " ").Replace("\n", " ") + Environment.NewLine;
+                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(line);
+                using (FileStream stream = new FileStream(_checkpointPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096, FileOptions.WriteThrough))
+                {
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Flush(true);
+                }
+            }
+            catch (Exception)
+            {
+                // Un checkpoint nunca debe romper la evaluacion.
+            }
+        }
+
+        private static int GetInt(Dictionary<string, object> payload, string key, int defaultValue)
+        {
+            object raw;
+            int value;
+            if (payload.TryGetValue(key, out raw) && raw != null && Int32.TryParse(raw.ToString(), out value))
+            {
+                return value;
+            }
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Escribe archived.json (ruta + SHA-256 del .zap18 del workspace) y espera proceed.json de Python.
+        /// Devuelve true solo si Python confirma {"download": true} (copia de evidencia verificada).
+        /// </summary>
+        private static bool WaitForProceed(string handshakeDir, Dictionary<string, object> report, int timeoutSeconds)
+        {
+            string archivedPath = Path.Combine(handshakeDir, "archived.json");
+            string proceedPath = Path.Combine(handshakeDir, "proceed.json");
+            WriteJson(archivedPath, new Dictionary<string, object>
+            {
+                { "archive_path", GetString(report, "archive_path", "") },
+                { "archive_sha256", GetString(report, "archive_sha256", "") },
+                { "written_at", DateTime.Now.ToString("s") }
+            });
+            Log("[TIA HANDSHAKE] archived.json escrito; esperando proceed.json");
+            DateTime deadline = DateTime.Now.AddSeconds(timeoutSeconds);
+            while (DateTime.Now < deadline)
+            {
+                if (File.Exists(proceedPath))
+                {
+                    try
+                    {
+                        Dictionary<string, object> decision = ReadJson(proceedPath);
+                        bool download = GetBool(decision, "download", false);
+                        report["handshake"] = new Dictionary<string, object>
+                        {
+                            { "download", download }, { "reason", GetString(decision, "reason", "") }
+                        };
+                        return download;
+                    }
+                    catch (Exception)
+                    {
+                        // proceed.json aun escribiendose: reintentar
+                    }
+                }
+                System.Threading.Thread.Sleep(500);
+            }
+            report["handshake"] = new Dictionary<string, object> { { "download", false }, { "reason", "HANDSHAKE_TIMEOUT" } };
+            return false;
+        }
+
+        /// <summary>
+        /// Diagnostico: Projects.Retrieve de un .zap18 en un directorio, informa la ruta REAL del proyecto
+        /// recuperado (si TIA crea o no subcarpeta) y el archivo con la ruta mas larga. Cierra sin guardar.
+        /// Sirve para conocer el layout de Retrieve y validar el limite de ruta de TIA antes de evaluar.
+        /// </summary>
+        private static Dictionary<string, object> ExecuteRetrieveProbe(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> report = NewReport("RUNNING");
+            string archive = GetRequiredString(request, "archive_path");
+            string target = GetRequiredString(request, "target_dir");
+            report["archive_path"] = archive;
+            report["target_dir"] = target;
+            report["target_dir_length"] = target.Length;
+            TiaPortal portal = null;
+            Project project = null;
+            try
+            {
+                if (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any())
+                {
+                    throw new InvalidOperationException("target_dir is not empty");
+                }
+                Directory.CreateDirectory(target);
+                portal = new TiaPortal(TiaPortalMode.WithoutUserInterface);
+                project = portal.Projects.Retrieve(new FileInfo(archive), new DirectoryInfo(target));
+                string projectPath = project.Path.FullName;
+                report["retrieved_project_path"] = projectPath;
+                report["retrieved_project_path_length"] = projectPath.Length;
+                report["retrieved_project_dir"] = Path.GetDirectoryName(projectPath);
+                report["subfolder_created"] = !PathsEqual(Path.GetDirectoryName(projectPath), target);
+                string longest = Directory.GetFiles(target, "*", SearchOption.AllDirectories).OrderByDescending(f => f.Length).FirstOrDefault();
+                report["longest_file"] = longest;
+                report["longest_file_length"] = longest == null ? 0 : longest.Length;
+                report["status"] = "TIA_RETRIEVE_PROBE_PASSED";
+            }
+            catch (Exception exception)
+            {
+                report["status"] = "TIA_RETRIEVE_PROBE_FAILED";
+                report["exception_type"] = exception.GetType().FullName;
+                AddError(report, exception.GetType().FullName + ": " + exception.Message);
+            }
+            finally
+            {
+                try
+                {
+                    if (project != null)
+                    {
+                        project.Close();
+                    }
+                }
+                catch (Exception)
+                {
+                }
+                if (portal != null)
+                {
+                    portal.Dispose();
+                }
+            }
+            return report;
+        }
+
+        /// <summary>
+        /// VALIDAR MASTER: abre el MASTER (o se adjunta si ya esta abierto), verifica V18, lo describe
+        /// (CPU, interfaces/IP, bloques, tablas) y crea un SNAPSHOT .zap18 con Project.Archive. El MASTER
+        /// nunca se guarda ni se modifica: con cambios sin guardar se detiene (MASTER_UNSAVED_CHANGES).
+        /// Cada etapa tiene su propio codigo; la descripcion obtenida nunca se pierde por un fallo posterior.
+        /// </summary>
+        private static Dictionary<string, object> ExecuteValidateMaster(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> report = NewReport("RUNNING");
+            string masterPath = GetRequiredString(request, "master_project_path");
+            string archiveDir = GetRequiredString(request, "archive_dir");
+            string archiveName = GetRequiredString(request, "archive_name");
+            string requestedPlcName = GetString(request, "plc_name", "");
+            bool attach = GetBool(request, "attach_to_running", true);
+
+            TiaPortal portal = null;
+            Project project = null;
+            bool attachedToExisting = false;
+            try
+            {
+                try
+                {
+                    if (!masterPath.EndsWith(".ap18", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException("El MASTER no es un proyecto TIA Portal V18 (.ap18): " + masterPath);
+                    }
+                    if (attach)
+                    {
+                        foreach (TiaPortalProcess process in TiaPortal.GetProcesses())
+                        {
+                            if (process.ProjectPath != null && PathsEqual(process.ProjectPath.FullName, masterPath))
+                            {
+                                portal = process.Attach();
+                                project = portal.Projects.FirstOrDefault(p => PathsEqual(p.Path.FullName, masterPath));
+                                attachedToExisting = project != null;
+                                break;
+                            }
+                        }
+                    }
+                    if (project == null)
+                    {
+                        if (portal != null)
+                        {
+                            portal.Dispose();
+                        }
+                        portal = new TiaPortal(TiaPortalMode.WithoutUserInterface);
+                        project = portal.Projects.Open(new FileInfo(masterPath));
+                    }
+                }
+                catch (Exception exception)
+                {
+                    report["status"] = "MASTER_OPEN_FAILED";
+                    report["exception_type"] = exception.GetType().FullName;
+                    AddError(report, exception.GetType().FullName + ": " + exception.Message);
+                    return report;
+                }
+                report["attached_to_existing_tia"] = attachedToExisting;
+                report["master_project_path"] = project.Path.FullName;
+                report["master_is_modified"] = project.IsModified;
+                report["master_project_version"] = project.Version;
+                try
+                {
+                    report["master"] = DescribePlcProject(project, requestedPlcName);
+                }
+                catch (Exception exception)
+                {
+                    List<string> warnings = report["warnings"] as List<string>;
+                    if (warnings != null)
+                    {
+                        warnings.Add("MASTER_DESCRIBE_FAILED: " + exception.GetType().FullName + ": " + exception.Message);
+                    }
+                }
+
+                // Guardar "si corresponde": un MASTER abierto por el bridge no tiene cambios; con cambios
+                // sin guardar (MASTER abierto en otra sesion TIA) NO se guarda (seria modificar el MASTER).
+                if (project.IsModified)
+                {
+                    report["status"] = "MASTER_UNSAVED_CHANGES";
+                    AddError(report, "El MASTER tiene cambios sin guardar en TIA Portal. Guardelo o cierrelo y vuelva a validar (el MASTER nunca se guarda desde la aplicacion).");
+                    return report;
+                }
+
+                string archiveStatus = ArchiveProject(project, archiveDir, archiveName, report, "MASTER");
+                if (archiveStatus != "CREATED")
+                {
+                    report["status"] = archiveStatus;
+                    AddError(report, archiveStatus + ": " + GetString(report, "archive_error", ""));
+                    return report;
+                }
+                report["status"] = "TIA_MASTER_VALIDATION_PASSED";
+            }
+            finally
+            {
+                try
+                {
+                    if (!attachedToExisting && project != null)
+                    {
+                        project.Close();
+                    }
+                }
+                catch (Exception)
+                {
+                }
+                if (portal != null)
+                {
+                    portal.Dispose();
+                }
+            }
+            return report;
+        }
+
+        /// <summary>
+        /// EVALUAR ENSAYO GUARDADO: en una sesion TIA PROPIA (nunca se adjunta a otra), recupera una
+        /// copia nueva del snapshot MASTER dentro del ensayo, reconcilia PLC_Agent_IO, elimina solo
+        /// bloques APP_MANAGED que la fuente actual no redefine, importa EXACTAMENTE program.scl,
+        /// compila, guarda, archiva el proyecto del ensayo (.zap18) y, solo si compilo y el archivo
+        /// existe, descarga a PLCSIM (mismas guardias que la accion download).
+        /// </summary>
+        private static Dictionary<string, object> ExecuteEvaluateTrial(Dictionary<string, object> request)
+        {
+            Dictionary<string, object> report = NewReport("RUNNING");
+            string masterArchive = GetRequiredString(request, "master_archive_path");
+            string workingDir = GetRequiredString(request, "working_dir");
+            string trialArchiveDir = GetRequiredString(request, "trial_archive_dir");
+            string trialArchiveName = GetRequiredString(request, "trial_archive_name");
+            string sourcePath = GetRequiredString(request, "source_path");
+            string sourceName = GetString(request, "source_name", Path.GetFileName(sourcePath));
+            string requestedPlcName = GetString(request, "plc_name", "");
+            bool withUi = GetBool(request, "with_user_interface", false);
+            bool downloadAfterArchive = GetBool(request, "download_after_archive", false);
+            List<string> deleteBlocks = GetStringList(request, "delete_blocks");
+            List<Dictionary<string, object>> stages = new List<Dictionary<string, object>>();
+            report["stages"] = stages;
+            report["archive_status"] = "NOT_CREATED";
+            report["physical_download_executed"] = false;
+
+            _checkpointPath = GetString(request, "checkpoint_path", "");
+            report["checkpoint_path"] = _checkpointPath;
+            string stage = "start_tia";
+            TiaPortal portal = null;
+            Project project = null;
+            try
+            {
+                try
+                {
+                    Checkpoint("tia_start_started", withUi ? "WithUserInterface" : "WithoutUserInterface");
+                    portal = new TiaPortal(withUi ? TiaPortalMode.WithUserInterface : TiaPortalMode.WithoutUserInterface);
+                    Checkpoint("tia_start_completed", "");
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", true } });
+
+                    stage = "retrieve_master_copy";
+                    if (Directory.Exists(workingDir) && Directory.EnumerateFileSystemEntries(workingDir).Any())
+                    {
+                        throw new InvalidOperationException("working_dir is not empty: a trial copy is never reused.");
+                    }
+                    Directory.CreateDirectory(workingDir);
+                    Checkpoint("retrieve_started", masterArchive + " -> " + workingDir);
+                    project = portal.Projects.Retrieve(new FileInfo(masterArchive), new DirectoryInfo(workingDir));
+                    string projectPath = project.Path.FullName;
+                    Checkpoint("retrieve_completed", projectPath + " (" + projectPath.Length + " chars)");
+                    if (!projectPath.StartsWith(Path.GetFullPath(workingDir), StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException("Retrieved project is outside the trial working_dir: " + projectPath);
+                    }
+                    report["working_project_path"] = projectPath;
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", true } });
+
+                    // Verificacion MINIMA de identidad de la copia (Fase 4A-TIA-STABILITY): nombre del proyecto
+                    // y software PLC accesible. NO se describen interfaces/nodos/bloques: CPU, X1, IP, etc. ya
+                    // los registro VALIDAR MASTER (metadata congelada). La descripcion completa provoco el OOM de T0001.
+                    stage = "minimal_identity";
+                    Checkpoint("minimal_identity_started", "");
+                    string expectedProjectName = GetString(request, "expected_project_name", "");
+                    string projectName = project.Name;
+                    if (!String.IsNullOrWhiteSpace(expectedProjectName)
+                        && !String.Equals(projectName, expectedProjectName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException("Retrieved project '" + projectName + "' is not the MASTER '" + expectedProjectName + "'.");
+                    }
+                    PlcSoftware plcSoftware = FindPlcSoftware(project, requestedPlcName);
+                    if (plcSoftware == null)
+                    {
+                        throw new InvalidOperationException("No PLC software was found in the trial project copy.");
+                    }
+                    report["plc_name"] = plcSoftware.Name;
+                    report["copy_identity"] = new Dictionary<string, object>
+                    {
+                        { "project_name", projectName }, { "expected_project_name", expectedProjectName }, { "plc_name", plcSoftware.Name }
+                    };
+                    Checkpoint("minimal_identity_completed", projectName + " / " + plcSoftware.Name);
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", true } });
+
+                    stage = "sync_tags";
+                    Checkpoint("tags_started", "PLC_Agent_IO");
+                    report["tag_reconciliation"] = EnsureTags(plcSoftware, request);
+                    Checkpoint("tags_completed", "");
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", true } });
+
+                    stage = "remove_managed_blocks";
+                    Checkpoint("managed_blocks_started", String.Join(",", deleteBlocks));
+                    List<string> removed = new List<string>();
+                    foreach (string name in deleteBlocks)
+                    {
+                        PlcBlock block = FindBlock(plcSoftware.BlockGroup, name);
+                        if (block != null)
+                        {
+                            block.Delete();
+                            removed.Add(name);
+                        }
+                    }
+                    report["removed_managed_blocks"] = removed;
+                    Checkpoint("managed_blocks_completed", String.Join(",", removed));
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", true } });
+
+                    stage = "generate_blocks";
+                    Checkpoint("import_started", sourcePath);
+                    PlcExternalSource existing = plcSoftware.ExternalSourceGroup.ExternalSources.Find(sourceName);
+                    if (existing != null)
+                    {
+                        existing.Delete();
+                    }
+                    PlcExternalSource source = plcSoftware.ExternalSourceGroup.ExternalSources.CreateFromFile(sourceName, sourcePath);
+                    report["imported_source_sha256"] = Sha256File(sourcePath);
+                    IList<IEngineeringObject> generatedBlocks = source.GenerateBlocksFromSource(GenerateBlockOption.None);
+                    report["generated_blocks_count"] = generatedBlocks == null ? 0 : generatedBlocks.Count;
+                    Checkpoint("import_completed", "blocks=" + report["generated_blocks_count"]);
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", true } });
+
+                    stage = "compile";
+                    Checkpoint("compile_started", "");
+                    ICompilable compilable = plcSoftware.GetService<ICompilable>();
+                    if (compilable == null)
+                    {
+                        throw new InvalidOperationException("The PLC software does not expose the compile service.");
+                    }
+                    CompilerResult compileResult = compilable.Compile();
+                    report["error_count"] = compileResult.ErrorCount;
+                    report["warning_count"] = compileResult.WarningCount;
+                    report["compiler_state"] = compileResult.State.ToString();
+                    report["compiler_messages"] = FlattenMessages(compileResult.Messages);
+                    report["status"] = compileResult.ErrorCount == 0 ? "TIA_COMPILATION_PASSED" : "TIA_COMPILATION_FAILED";
+                    Checkpoint("compile_completed", "errors=" + compileResult.ErrorCount + " warnings=" + compileResult.WarningCount);
+                    // Solo NOMBRES de bloques (sin atributos enumerados ni interfaces) para detectar logica no administrada.
+                    stage = "list_blocks";
+                    Checkpoint("list_blocks_started", "");
+                    report["blocks_after_compile"] = ListBlockNames(plcSoftware.BlockGroup, "");
+                    Checkpoint("list_blocks_completed", "");
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", compileResult.ErrorCount == 0 } });
+                }
+                catch (Exception exception)
+                {
+                    report["status"] = exception is TagSynchronizationException ? "TIA_TAG_SYNC_ERROR" : "TIA_OPENNESS_ERROR";
+                    report["failed_stage"] = stage;
+                    report["exception_type"] = exception.GetType().FullName;
+                    report["exception"] = exception.ToString();
+                    AddError(report, exception.GetType().FullName + ": " + exception.Message);
+                    stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", false } });
+                    Checkpoint(stage + "_failed", exception.GetType().FullName + ": " + exception.Message);
+                }
+
+                // Guardar + archivar SIEMPRE que haya proyecto (tambien con fallo de compilacion).
+                if (project != null)
+                {
+                    try
+                    {
+                        Checkpoint("save_started", "");
+                        project.Save();
+                        Checkpoint("save_completed", "");
+                        report["project_saved"] = true;
+                        Checkpoint("archive_started", Path.Combine(trialArchiveDir, trialArchiveName));
+                        string archiveStatus = ArchiveProject(project, trialArchiveDir, trialArchiveName, report, "TRIAL");
+                        Checkpoint(archiveStatus == "CREATED" ? "archive_completed" : "archive_failed", archiveStatus);
+                        report["archive_status"] = archiveStatus == "CREATED" ? "CREATED" : "NOT_CREATED";
+                        report["archive_result"] = archiveStatus;
+                        stages.Add(new Dictionary<string, object> { { "stage", "archive" }, { "ok", archiveStatus == "CREATED" } });
+                    }
+                    catch (Exception exception)
+                    {
+                        report["archive_status"] = "NOT_CREATED";
+                        report["archive_error_type"] = exception.GetType().FullName;
+                        report["archive_error"] = exception.Message;
+                        Checkpoint("save_or_archive_failed", exception.GetType().FullName + ": " + exception.Message);
+                        stages.Add(new Dictionary<string, object> { { "stage", "archive" }, { "ok", false } });
+                    }
+                }
+
+                bool compiled = GetString(report, "status", "") == "TIA_COMPILATION_PASSED";
+                bool proceedToDownload = downloadAfterArchive && compiled && GetString(report, "archive_status", "") == "CREATED";
+                string handshakeDir = GetString(request, "handshake_dir", "");
+                if (proceedToDownload && !String.IsNullOrWhiteSpace(handshakeDir))
+                {
+                    // Handshake: Python copia y verifica el .zap18 en la evidencia del ensayo ANTES de descargar
+                    // (misma sesion TIA: sin segundo Retrieve). Sin confirmacion no se descarga.
+                    Checkpoint("handshake_started", "");
+                    proceedToDownload = WaitForProceed(handshakeDir, report, GetInt(request, "handshake_timeout_seconds", 600));
+                    Checkpoint("handshake_completed", "download=" + proceedToDownload);
+                }
+                if (proceedToDownload)
+                {
+                    Dictionary<string, object> download = NewReport("RUNNING");
+                    try
+                    {
+                        Checkpoint("download_started", "PLCSIM_ADVANCED");
+                        RunDownload(project, request, download);
+                        Checkpoint("download_completed", GetString(download, "status", ""));
+                    }
+                    catch (Exception exception)
+                    {
+                        Checkpoint("download_failed", exception.GetType().FullName + ": " + exception.Message);
+                        download["status"] = "TIA_DOWNLOAD_FAILED";
+                        download["exception_type"] = exception.GetType().FullName;
+                        download["exception"] = exception.ToString();
+                        AddError(download, exception.GetType().FullName + ": " + exception.Message);
+                    }
+                    report["download"] = download;
+                    stages.Add(new Dictionary<string, object> { { "stage", "download" }, { "ok", GetString(download, "status", "") == "TIA_DOWNLOAD_PASSED" } });
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (project != null)
+                    {
+                        project.Close();
+                    }
+                }
+                catch (Exception)
+                {
+                }
+                if (portal != null)
+                {
+                    portal.Dispose();
+                }
+            }
+            return report;
         }
 
         private static Dictionary<string, object> NewReport(string status)

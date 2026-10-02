@@ -211,6 +211,12 @@ def _sync_clarification_from_validation(result: dict[str, Any], validation: dict
     """
     if not validation.get("requires_clarification") or result.get("clarification_question"):
         return result
+    if validation.get("clarification_question") and not validation.get("functional_requirement_conflicts"):
+        # Dato funcional faltante detectado de forma determinista (p.ej. duracion de una etapa).
+        updated = dict(result)
+        updated["requires_clarification"] = True
+        updated["clarification_question"] = validation["clarification_question"]
+        return updated
     conflicts = validation.get("functional_requirement_conflicts") or []
     if not conflicts:
         return result
@@ -416,8 +422,15 @@ def parse_with_mode(
     intents_catalog: dict[str, Any] | None = None,
     safety_rules: dict[str, Any] | None = None,
     llm_client: PLCInterpretationLLMClient | None = None,
-    llm_response_text: str | dict[str, Any] | None = None
+    llm_response_text: str | dict[str, Any] | None = None,
+    interaction_profile: str | None = None,
+    clarification_history: list[dict[str, str]] | None = None
 ) -> dict[str, Any]:
+    """
+    interaction_profile="normal" (solo Modo Normal): agrega la politica de composicion funcional y el
+    historial ESTRUCTURADO de aclaraciones al contexto del LLM. Sin perfil, el comportamiento es
+    exactamente el anterior (Experimentacion queda congelada).
+    """
     settings = load_parser_settings()
     requested_mode = _normalize_parser_mode(mode or resolve_parser_mode(settings))
     runtime_io_map = io_map or _load_io_map()
@@ -426,8 +439,13 @@ def parse_with_mode(
     threshold = float(os.getenv("LLM_CONFIDENCE_THRESHOLD", settings.get("confidence_threshold", 0.85)))
     allow_rule_fallback = bool(settings.get("allow_rule_fallback", True))
 
+    rule_text = command_text
+    if interaction_profile == "normal" and clarification_history:
+        from normal_interaction import rule_parser_text
+
+        rule_text = rule_parser_text(command_text, clarification_history)
     rule_result = _normalize_semantic_output(
-        parse_command_rule_based(command_text, alias_index=build_alias_index(runtime_io_map)), command_text
+        parse_command_rule_based(rule_text, alias_index=build_alias_index(runtime_io_map)), command_text
     )
     rule_result = _attach_rule_based_functional_requirements(rule_result, command_text, runtime_intents_catalog)
     rule_result, rule_validation = _repair_and_validate(rule_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
@@ -538,6 +556,16 @@ def parse_with_mode(
         safety_rules=runtime_safety_rules
     )
     llm_context["retrieved_context"] = retrieved_context
+    if interaction_profile == "normal":
+        from normal_interaction import NORMAL_MODE_POLICY
+
+        llm_context["normal_mode_policy"] = NORMAL_MODE_POLICY
+        if clarification_history:
+            llm_context["original_command"] = command_text
+            llm_context["clarification_history"] = [
+                {"clarification_question": item.get("question"), "clarification_answer": item.get("answer")}
+                for item in clarification_history
+            ]
 
     try:
         llm_result, llm_usage = _invoke_llm(
@@ -558,6 +586,10 @@ def parse_with_mode(
             )
         raise
 
+    if interaction_profile == "normal":
+        # Marca de perfil (fuera del contrato semantico): habilita la validacion temprana de
+        # recursos funcionales solo en Modo Normal.
+        llm_result = {**llm_result, "interaction_profile": "normal"}
     llm_result, llm_validation = _repair_and_validate(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
     llm_result = _sync_clarification_from_validation(llm_result, llm_validation)
 
@@ -590,6 +622,8 @@ def parse_with_mode(
                 context=retry_context,
                 llm_response_text=None
             )
+            if interaction_profile == "normal":
+                retry_result = {**retry_result, "interaction_profile": "normal"}
             retry_result, retry_validation = _repair_and_validate(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
             second_pass_result = retry_result
             retry_result = _sync_clarification_from_validation(retry_result, retry_validation)
@@ -799,7 +833,9 @@ def parse_command(
     intents_catalog: dict[str, Any] | None = None,
     safety_rules: dict[str, Any] | None = None,
     llm_client: PLCInterpretationLLMClient | None = None,
-    llm_response_text: str | dict[str, Any] | None = None
+    llm_response_text: str | dict[str, Any] | None = None,
+    interaction_profile: str | None = None,
+    clarification_history: list[dict[str, str]] | None = None
 ) -> dict[str, Any]:
     settings = load_parser_settings()
     resolved_mode = _normalize_parser_mode(mode or resolve_parser_mode(settings))
@@ -810,6 +846,8 @@ def parse_command(
         intents_catalog=intents_catalog,
         safety_rules=safety_rules,
         llm_client=llm_client,
-        llm_response_text=llm_response_text
+        llm_response_text=llm_response_text,
+        interaction_profile=interaction_profile,
+        clarification_history=clarification_history
     )
     return _attach_io_assignment_requests(result, command_text, io_map, intents_catalog, safety_rules)

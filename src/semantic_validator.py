@@ -3,9 +3,15 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from functional_requirements import detect_functional_requirement_conflicts
+from functional_requirements import detect_functional_requirement_conflicts, has_composable_program, timed_sequence_missing_data
 from io_allocator import IEC_NAME_PATTERN, propose_assignment
-from functional_requirements import detect_multi_actor_motor_targets
+from functional_requirements import (
+    COMPOSABLE_TYPES,
+    detect_multi_actor_motor_targets,
+    detect_timed_sequences,
+    is_catalog_functional_requirement,
+)
+from functional_resources import resolve_functional_resources
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, INTERNAL_PREFIXES, get_required_variables_for_intent
 from schemas import (
     PLC_TAG_PATTERN,
@@ -112,6 +118,27 @@ def _collect_parameter_tags(parameters: dict[str, Any]) -> list[str]:
     return tags
 
 
+def _humanize_outputs(outputs: list[str]) -> str:
+    names = []
+    for tag in outputs:
+        for prefix in ("Q_", "AO_", "I_", "AI_"):
+            if tag.startswith(prefix):
+                tag = tag[len(prefix):]
+                break
+        names.append(tag.replace("_", " ").strip())
+    return ", ".join(names) or "las salidas indicadas"
+
+
+def describe_sequence_gap(gap: dict[str, Any]) -> str:
+    """Pregunta funcional (una sola) para el primer dato indispensable que falta en una secuencia."""
+    if gap["kind"] == "duration":
+        return (f"¿Cuánto tiempo debe permanecer activa la etapa {gap['step']} ({_humanize_outputs(gap['outputs'])}) "
+                f"antes de pasar a la siguiente ({_humanize_outputs(gap.get('next_outputs') or [])})?")
+    if gap["kind"] == "start_input":
+        return "¿Con qué pulsador o señal debe iniciarse la secuencia?"
+    return f"¿Qué salidas deben activarse en la etapa {gap['step']} de la secuencia?"
+
+
 def _collect_functional_requirement_tags(functional_requirements: list[dict[str, Any]]) -> list[str]:
     """
     A functional_requirement's own fields (target, trigger_input, output_a, output_b, ...) can
@@ -129,14 +156,21 @@ def _collect_functional_requirement_tags(functional_requirements: list[dict[str,
     for requirement in functional_requirements:
         if not isinstance(requirement, dict):
             continue
-        for value in requirement.values():
-            if isinstance(value, str) and PLC_TAG_PATTERN.match(value) and value not in tags:
-                tags.append(value)
-            elif isinstance(value, list):
-                for item in value:
-                    if isinstance(item, str) and PLC_TAG_PATTERN.match(item) and item not in tags:
-                        tags.append(item)
+        _collect_nested_tags(requirement, tags)
     return tags
+
+
+def _collect_nested_tags(value: Any, tags: list[str]) -> None:
+    """Recorre strings, listas y dicts anidados (p.ej. timed_sequence.steps[].outputs[])."""
+    if isinstance(value, str):
+        if PLC_TAG_PATTERN.match(value) and value not in tags:
+            tags.append(value)
+    elif isinstance(value, list):
+        for item in value:
+            _collect_nested_tags(item, tags)
+    elif isinstance(value, dict):
+        for item in value.values():
+            _collect_nested_tags(item, tags)
 
 
 def _core_semantic_payload(semantic_output: dict[str, Any]) -> dict[str, Any]:
@@ -257,6 +291,26 @@ def validate_semantic_output(
     if not isinstance(parameters, dict):
         parameters = {}
 
+    # Recursos funcionales identificables, nombrables y asignables ANTES de IR/codegen (Modo Normal y
+    # programas compuestos; Experimentacion conserva su validacion congelada). Las referencias
+    # {role, actor, kind} sin nombre reciben su tag canonico, que luego entra al IOAllocator.
+    functional_resource_errors: list[dict[str, Any]] = []
+    composition_referenced_tags: list[str] = []
+    raw_requirements = payload.get("functional_requirements", []) or []
+    if semantic_output.get("interaction_profile") == "normal" or detect_timed_sequences(raw_requirements):
+        resolution = resolve_functional_resources(raw_requirements)
+        functional_resource_errors = resolution["errors"]
+        composition_referenced_tags = resolution["referenced_tags"]
+        payload["functional_requirements"] = resolution["requirements"]
+        errors.extend(error["message"] for error in functional_resource_errors)
+        if detect_timed_sequences(resolution["requirements"]):
+            unsupported = [
+                f"functional_requirements[{i}].type={r.get('type')!r}" for i, r in enumerate(resolution["requirements"])
+                if isinstance(r, dict) and is_catalog_functional_requirement(r) and str(r.get("type")) not in COMPOSABLE_TYPES]
+            if unsupported:
+                errors.append("COMPOSITION_NOT_SUPPORTED: comportamiento no soportado dentro de un programa compuesto: "
+                              + ", ".join(unsupported))
+
     if intent_id not in intents_catalog and intent_id != "INT_UNKNOWN":
         errors.append(f"La intencion no existe en el catalogo: {intent_id}")
 
@@ -296,7 +350,7 @@ def validate_semantic_output(
     authorized_tags = set(io_index)
     recognized_tags = list(payload.get("recognized_tags", []))
     parameter_tags = _collect_parameter_tags(parameters)
-    for tag in _collect_functional_requirement_tags(payload.get("functional_requirements", []) or []):
+    for tag in _collect_functional_requirement_tags(payload.get("functional_requirements", []) or []) + composition_referenced_tags:
         if tag not in parameter_tags:
             parameter_tags.append(tag)
 
@@ -352,6 +406,12 @@ def validate_semantic_output(
             or f"Se detecto un conflicto entre requisitos funcionales: {conflict_summary} "
             "Indique cual valor debe aplicarse."
         )
+    sequence_gaps = timed_sequence_missing_data(requirements_payload)
+    if sequence_gaps and not requires_clarification:
+        # Dato FUNCIONAL indispensable ausente en una secuencia compuesta: se pregunta UNA sola cosa,
+        # en lenguaje del proceso (nunca catalogo/intencion/schema).
+        requires_clarification = True
+        clarification_question = payload.get("clarification_question") or describe_sequence_gap(sequence_gaps[0])
     if unsafe_setpoints and not requires_clarification:
         # Regla deterministica (seccion 15 PID): el rango seguro NUNCA queda a criterio del LLM.
         requires_clarification = True
@@ -425,7 +485,7 @@ def validate_semantic_output(
         # es un error real aqui si functional_requirements ya describe >=2 actores independientes
         # con motor_start_latch - el compositor multi-actor genera el programa completo sin
         # depender de ningun template de un solo actor.
-        if INTENT_TEMPLATE_NOT_IMPLEMENTED in message and len(detect_multi_actor_motor_targets(requirements_payload)) >= 2:
+        if INTENT_TEMPLATE_NOT_IMPLEMENTED in message and has_composable_program(requirements_payload):
             pass
         elif INTENT_TEMPLATE_NOT_IMPLEMENTED in message:
             errors.append(f"La intencion no tiene plantilla implementada: {intent_id}")
@@ -443,7 +503,11 @@ def validate_semantic_output(
         missing_parameters=missing_parameters,
         unauthorized_tags=unauthorized_tags,
         requires_clarification=requires_clarification,
+        clarification_question=clarification_question if requires_clarification else None,
         functional_requirement_conflicts=functional_requirement_conflicts,
         io_assignment_proposals=io_assignment_proposals
     )
-    return result.model_dump(mode="python")
+    dumped = result.model_dump(mode="python")
+    if functional_resource_errors:
+        dumped["functional_resource_errors"] = functional_resource_errors  # detalle estructurado (codigo + ruta)
+    return dumped

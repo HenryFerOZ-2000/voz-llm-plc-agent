@@ -3,11 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from functional_requirements import (
+    CLASS_CATALOG,
+    classify_functional_requirement,
+    composition_tags,
     detect_multi_actor_motor_targets,
     get_functional_requirement_process_variables,
     get_functional_requirement_tags,
-    is_catalog_functional_requirement
+    detect_timed_sequences,
+    has_composable_program
 )
+from functional_resources import FunctionalResourceError, resolve_functional_resources
 from plc_ir import PLCFunctionBlockInstance, PLCPOU, PLCProjectIR, PLCTask, PLCVariable
 from utils import build_io_map_index, get_project_root, load_json_file, sanitize_filename
 
@@ -281,6 +286,61 @@ def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]
         if value.startswith(("I_", "Q_", "AI_", "AO_", "M_", "T_", "C_", "R_", "F_")) and value not in ordered:
             ordered.append(value)
     return ordered
+
+
+def build_test_cases_for_composition(functional_requirements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Casos de prueba GENERICOS derivados de la estructura de una secuencia compuesta (nunca de una
+    maquina concreta): arranque -> etapa 1, avance por tiempo a cada etapa siguiente, Stop apaga todo
+    y cada invariante never_together.
+    """
+    from functional_requirements import timed_sequence_steps
+
+    cases: list[dict[str, Any]] = []
+    for index, requirement in enumerate(detect_timed_sequences(functional_requirements), start=1):
+        steps = timed_sequence_steps(requirement)
+        all_outputs = list(dict.fromkeys(output for step in steps for output in step["outputs"]))
+        start_input = requirement.get("start_input") or "I_Start"
+        stop_input = requirement.get("stop_input") or "FALSE"
+        if not steps:
+            continue
+        cases.append({
+            "test_id": f"SEQ{index}_START",
+            "description": "Start inicia la etapa 1 de la secuencia.",
+            "initial_state": {output: False for output in all_outputs},
+            "input_sequence": [{start_input: True}],
+            "expected_outputs": {output: output in steps[0]["outputs"] for output in all_outputs},
+            "safety_expectation": "Solo una etapa activa a la vez."
+        })
+        for position in range(1, len(steps)):
+            cases.append({
+                "test_id": f"SEQ{index}_STEP{position + 1}",
+                "description": f"Tras {steps[position - 1]['duration']} la secuencia pasa a la etapa {position + 1}.",
+                "initial_state": {output: output in steps[position - 1]["outputs"] for output in all_outputs},
+                "input_sequence": [{"wait": steps[position - 1]["duration"]}],
+                "expected_outputs": {output: output in steps[position]["outputs"] for output in all_outputs},
+                "safety_expectation": "La transicion entre etapas es exclusiva."
+            })
+        cases.append({
+            "test_id": f"SEQ{index}_STOP",
+            "description": "Stop apaga todas las salidas de la secuencia.",
+            "initial_state": {output: output in steps[-1]["outputs"] for output in all_outputs},
+            "input_sequence": [{stop_input: True}],
+            "expected_outputs": {output: False for output in all_outputs},
+            "safety_expectation": f"{stop_input} tiene prioridad sobre {start_input}."
+        })
+    for position, requirement in enumerate(functional_requirements, start=1):
+        if str(requirement.get("type", "")) == "never_together":
+            outputs = [o for o in requirement.get("outputs") or [] if isinstance(o, str)]
+            cases.append({
+                "test_id": f"NEVER_TOGETHER_{position}",
+                "description": "Las salidas indicadas nunca pueden estar activas a la vez.",
+                "initial_state": {},
+                "input_sequence": [],
+                "expected_outputs": {},
+                "safety_expectation": f"Nunca simultaneamente: {', '.join(outputs)}."
+            })
+    return cases
 
 
 def build_test_cases_for_intent(intent_id: str, parameters: dict[str, Any]) -> list[dict[str, Any]]:
@@ -723,11 +783,20 @@ def build_project_ir(
     if functional_requirements is None:
         functional_requirements = list(semantic_output.get("functional_requirements") or [])
 
+    # Todo recurso funcional debe ser identificable y nombrable ANTES de construir la IR: las
+    # referencias {role, actor, kind} sin nombre reciben su tag canonico; lo no identificable o un
+    # comportamiento no soportado se detiene aqui con un error estructurado (codigo + ruta JSON),
+    # nunca mas tarde como "variable funcional sin nombre".
+    resolution = resolve_functional_resources(functional_requirements)
+    if resolution["errors"]:
+        raise FunctionalResourceError(resolution["errors"])
+    functional_requirements = resolution["requirements"]
+
     # Dos formas conviven en el mismo parametro: entradas de catalogo ({"type": "run_pilot"}),
     # que se resuelven a tags fijos, y variables funcionales ad-hoc con nombre propio
     # ({"name": "Level_SP", "type": "REAL"}), que sigue resolviendo _resolve_functional_variables.
-    catalog_requirements = [r for r in functional_requirements if is_catalog_functional_requirement(r)]
-    ad_hoc_requirements = [r for r in functional_requirements if not is_catalog_functional_requirement(r)]
+    catalog_requirements = [r for r in functional_requirements if classify_functional_requirement(r) == CLASS_CATALOG]
+    ad_hoc_requirements = [r for r in functional_requirements if classify_functional_requirement(r) != CLASS_CATALOG]
 
     # Algunos tipos de catalogo (PID: set_level_setpoint, enable_pid, etc.) tambien implican
     # variables funcionales de proceso SIN prefijo I_/Q_/M_ (Level_SP, PID_Enable, Auto_Mode...).
@@ -747,8 +816,7 @@ def build_project_ir(
     # intent_id del catalogo representa esto por si solo, asi que intent_id puede legitimamente
     # no tener plantilla (INT_UNKNOWN) sin que eso sea un error - TODAS las variables que necesita
     # el programa llegan via functional_requirement_tags mas abajo, no via el intent base.
-    multi_actor_targets = detect_multi_actor_motor_targets(functional_requirements)
-    if len(multi_actor_targets) >= 2:
+    if has_composable_program(functional_requirements):
         try:
             required_variables = get_required_variables_for_intent(intent_id, parameters)
         except ValueError as error:
@@ -758,10 +826,23 @@ def build_project_ir(
     else:
         required_variables = get_required_variables_for_intent(intent_id, parameters)
     functional_requirement_tags: list[str] = []
-    for requirement in catalog_requirements:
-        for tag in get_functional_requirement_tags(requirement):
+    if detect_timed_sequences(functional_requirements):
+        # La emergencia del compositor llega por `parameters` (semantic_repair la deja en "FALSE" si
+        # el banco no la tiene): declararla si es un tag real, sin plantilla de intent que la aporte.
+        emergency_tag = str(parameters.get("emergency_input") or "")
+        if emergency_tag.startswith("I_"):
+            functional_requirement_tags.append(emergency_tag)
+    if detect_timed_sequences(functional_requirements):
+        # Programa compuesto: modos, ordenes manuales, permisivos, supervisiones y alarmas declaran
+        # sus tags por instancia (ver functional_requirements.composition_tags).
+        for tag in composition_tags(functional_requirements):
             if tag not in functional_requirement_tags:
                 functional_requirement_tags.append(tag)
+    else:
+        for requirement in catalog_requirements:
+            for tag in get_functional_requirement_tags(requirement):
+                if tag not in functional_requirement_tags:
+                    functional_requirement_tags.append(tag)
     required_variables = list(dict.fromkeys(required_variables + functional_requirement_tags))
 
     io_index = build_io_map_index(io_map)
@@ -797,7 +878,15 @@ def build_project_ir(
     variables = external_variables + internal_variables + functional_variables
     function_blocks = _build_function_blocks(variables, parameters)
     safety_rules = _load_safety_rules()
-    test_cases = build_test_cases_for_intent(intent_id, parameters)
+    try:
+        test_cases = build_test_cases_for_intent(intent_id, parameters)
+    except ValueError as error:
+        # Programa compuesto (INT_UNKNOWN + primitivas componibles): casos derivados de su estructura.
+        if INTENT_TEMPLATE_NOT_IMPLEMENTED not in str(error) or not has_composable_program(functional_requirements):
+            raise
+        test_cases = []
+    if detect_timed_sequences(functional_requirements):
+        test_cases = test_cases + build_test_cases_for_composition(functional_requirements)
 
     pou = PLCPOU(
         name="PLC_PRG",
