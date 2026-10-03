@@ -39,7 +39,7 @@ from test_execute_full_pipeline import (  # noqa: E402
 __all__ = ["temp_map", "_tia_ready"]
 
 _REAL_MAPS = [
-    get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico.json",
+    get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico_base.json",
     get_project_root() / "data" / "plc_maps" / "mapa_simulacion_completo.json",
 ]
 

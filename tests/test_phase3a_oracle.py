@@ -39,7 +39,7 @@ __all__ = ["pipeline", "temp_map", "_tia_ready"]
 _ROOT = get_project_root()
 _MAPS_DIR = _ROOT / "data" / "plc_maps"
 _REAL_MAPS = [
-    _MAPS_DIR / "mapa_banco_fisico.json",
+    _MAPS_DIR / "mapa_banco_fisico_base.json",
     _MAPS_DIR / "mapa_simulacion_completo.json",
     _MAPS_DIR / "mapa_pid_simulacion.json",
     _MAPS_DIR / "mapa_pid_banco_fisico.json",
@@ -107,7 +107,7 @@ def _semantic(case_id: str, **parameter_overrides: Any) -> dict[str, Any]:
 def _make_snapshot(tmp_path: Path, case_id: str, semantic_output: dict[str, Any] | None = None,
                    extra_hints: list[tuple[str, str]] | None = None) -> Path:
     base = tmp_path / f"base_{case_id}.json"
-    base.write_bytes((_MAPS_DIR / "mapa_banco_fisico.json").read_bytes())
+    base.write_bytes((_MAPS_DIR / "mapa_banco_fisico_base.json").read_bytes())
     reference = trial_io_map.create_working_map(tmp_path / f"{case_id}_V1_TEXT_001", base)
     working = trial_io_map.load_working_map(Path(reference["working_map_path"]))
     requests = [{"functional_name_hint": name, "role_text": role} for name, role in _CASES[case_id]["hints"] + (extra_hints or [])]

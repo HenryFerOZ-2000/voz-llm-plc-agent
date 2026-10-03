@@ -88,6 +88,8 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 17. `07_registro_pruebas.md`
 18. `17_copias_de_seguridad.md`
 19. `CHANGELOG_TESIS.md`
+20. `development_validation_log.md`
+21. `multi_pc_setup.md`
 
 ## Criterio de uso en tesis
 

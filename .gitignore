@@ -1,58 +1,73 @@
+# =============================================================================
+# voz_llm_plc_agent - que viaja por Git y que es local por PC (docs/multi_pc_setup.md)
+# =============================================================================
+
+# --- Entorno Python / caches -------------------------------------------------
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+.pytest_tmp/
+
+# --- Secretos (versionar solo .env.example) ----------------------------------
 .env
+*.env
+!.env.example
 
-generated_code/OPENPLC/active/*
-generated_code/OPENPLC/logs/*
-generated_code/OPENPLC/archived/*
-generated_code/CODESYS/active/*
-generated_code/CODESYS/logs/*
-generated_code/CODESYS/archived/*
-generated_code/SIEMENS/active/*
-generated_code/SIEMENS/logs/*
-generated_code/SIEMENS/archived/*
-!generated_code/OPENPLC/active/.gitkeep
-!generated_code/OPENPLC/logs/.gitkeep
-!generated_code/OPENPLC/archived/.gitkeep
-!generated_code/CODESYS/active/.gitkeep
-!generated_code/CODESYS/logs/.gitkeep
-!generated_code/CODESYS/archived/.gitkeep
-!generated_code/SIEMENS/active/.gitkeep
-!generated_code/SIEMENS/logs/.gitkeep
-!generated_code/SIEMENS/archived/.gitkeep
+# --- Configuracion local por PC (versionar solo los *.example.json) ----------
+config/tia_openness_config.json
+config/tia_projects.json
+config/normal_voice.json
+config/voice_protocol_dev.json
+config/host_local.json
 
-experimental_results/trials.csv
-experimental_results/trials.jsonl
-voice_evidence/
-tmp_audio/
-generated_code/gui_history.json
+# --- Mapas PLC ----------------------------------------------------------------
+# Versionados: el BASE del banco y los mapas experimentales/simulacion/PID.
+# Locales: <id>_working.json (Modo Normal), _active_map.json y respaldos de migracion.
+data/plc_maps/*
+!data/plc_maps/mapa_simulacion_completo.json
+!data/plc_maps/mapa_banco_fisico_base.json
+!data/plc_maps/mapa_pid_simulacion.json
+!data/plc_maps/mapa_pid_banco_fisico.json
+!data/plc_maps/profiles.json
+!data/plc_maps/experiment_variants.json
+*_working.json
+*.pre_working.bak
+
+# --- Proyectos y archivos TIA (red de seguridad global) ----------------------
+tia_projects/
+tia_master/
+tiaw/
+*.ap18
+*.zap18
+*.zap1[0-9]
+
+# --- Artefactos generados por la aplicacion ----------------------------------
+# Toda la salida de generacion es local; solo se versiona la estructura (.gitkeep).
+generated_code/**
+!generated_code/**/
+!generated_code/**/.gitkeep
 
 tia_openness_bridge/bin/*
 !tia_openness_bridge/bin/.gitkeep
 tia_openness_bridge/sync_map_request.json
 tia_openness_bridge/sync_map_result.json
 
-tia_projects/
-
-data/plc_maps/*
-!data/plc_maps/mapa_simulacion_completo.json
-!data/plc_maps/mapa_banco_fisico.json
-!data/plc_maps/mapa_pid_simulacion.json
-!data/plc_maps/mapa_pid_banco_fisico.json
-!data/plc_maps/profiles.json
-!data/plc_maps/experiment_variants.json
-.pytest_tmp/
-
-experiments/
-results/
-
 plcsim_runtime_bridge/bin/
 plcsim_runtime_bridge/runtime_request.json
 plcsim_runtime_bridge/runtime_result.json
 plcsim_runtime_bridge/plcsim_runtime_report.json
-# Snapshots .zap18 del TIA MASTER (evaluacion diferida)
-tia_master/
-# Workspaces TIA por ensayo (evaluacion diferida; tiaw/Txxxx, se regeneran)
-tiaw/
+
+# --- Resultados experimentales y registros de ejecucion (locales) ------------
+experiments/
+results/
+runtime/
+experimental_results/trials.csv
+experimental_results/trials.jsonl
+voice_evidence/
+tmp_audio/
+audio/
+
+# --- Legacy local sin uso (entradas de menu del commit inicial) --------------
+menu_input_clear.txt
+menu_input_archive.txt

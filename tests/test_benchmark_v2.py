@@ -33,7 +33,7 @@ __all__ = ["pipeline", "temp_map", "_tia_ready"]
 
 _ROOT = get_project_root()
 _MAPS = [_ROOT / "data" / "plc_maps" / f"{n}.json" for n in
-         ("mapa_banco_fisico", "mapa_simulacion_completo", "mapa_pid_simulacion", "mapa_pid_banco_fisico")]
+         ("mapa_banco_fisico_base", "mapa_simulacion_completo", "mapa_pid_simulacion", "mapa_pid_banco_fisico")]
 
 
 def _hash(path: Path) -> str:

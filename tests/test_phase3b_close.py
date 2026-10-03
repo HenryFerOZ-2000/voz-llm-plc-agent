@@ -26,7 +26,7 @@ import test_phase3b_oracles as T  # noqa: E402
 _ROOT = get_project_root()
 _ORACLES_DIR = _ROOT / "data" / "experiment_oracles"
 _MAPS = [_ROOT / "data" / "plc_maps" / f"{n}.json" for n in
-         ("mapa_banco_fisico", "mapa_simulacion_completo", "mapa_pid_simulacion", "mapa_pid_banco_fisico")]
+         ("mapa_banco_fisico_base", "mapa_simulacion_completo", "mapa_pid_simulacion", "mapa_pid_banco_fisico")]
 
 
 def _hash(path: Path) -> str:

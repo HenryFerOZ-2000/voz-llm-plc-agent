@@ -1,0 +1,45 @@
+# =============================================================================
+# requirements-transfer.txt - entorno EXACTO para recrear la PC de desarrollo en otra PC
+# Generado con `pip freeze` del .venv que pasa la suite completa (Python 3.13.4, Windows x64).
+#
+#   py -3.13 -m venv .venv
+#   .venv\Scripts\python.exe -m pip install -r requirements-transfer.txt
+#
+# requirements.txt sigue siendo la lista corta de dependencias directas (sin versiones fijas).
+#
+# Dependencias EXTERNAS que pip NO instala (ver docs/multi_pc_setup.md):
+#   - Siemens TIA Portal V18 (+ Update compatible con el proyecto)
+#   - TIA Portal Openness V18 (Siemens.Engineering.dll; usuario en el grupo "Siemens TIA Openness")
+#   - S7-PLCSIM Advanced V5.x (Runtime API Siemens.Simatic.Simulation.Runtime.Api.x64.dll)
+#   - .NET Framework 4.8 (csc.exe de Framework64 v4.0.30319 compila los bridges C#)
+#   - Controlador de audio/microfono (sounddevice usa PortAudio incluido en la rueda de Windows)
+# Sin secretos: la clave OpenAI va solo en .env (ignorado), a partir de .env.example.
+# =============================================================================
+annotated-types==0.7.0
+anyio==4.14.2
+certifi==2026.6.17
+cffi==2.1.0
+colorama==0.4.6
+customtkinter==6.0.0
+darkdetect==0.8.0
+distro==1.9.0
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.18
+iniconfig==2.3.0
+jiter==0.16.0
+openai==2.45.0
+packaging==26.2
+pluggy==1.6.0
+pycparser==3.0
+pydantic==2.13.4
+pydantic_core==2.46.4
+Pygments==2.20.0
+pytest==9.1.1
+python-dotenv==1.2.2
+sniffio==1.3.1
+sounddevice==0.5.5
+tqdm==4.68.4
+typing-inspection==0.4.2
+typing_extensions==4.16.0

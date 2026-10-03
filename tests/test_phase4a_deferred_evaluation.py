@@ -73,7 +73,7 @@ def _generated_trial(root: Path, case_id: str = "D03", variant: str = "V1") -> P
         extra={key: reference.get(key) for key in ("benchmark_version", "canonical_case_hash", "variant_hash")})
     directory = trial_model.trial_directory(root, case_id, variant, record["trial_id"], phase)
     trial_model.save_trial(directory, record)
-    io_ref = trial_io_map.create_working_map(directory, root / "data" / "plc_maps" / "mapa_banco_fisico.json")
+    io_ref = trial_io_map.create_working_map(directory, root / "data" / "plc_maps" / "mapa_banco_fisico_base.json")
     semantic = _base_semantic_output("INT_MOTOR_START_STOP", {"start_input": "I_Start", "stop_input": "I_Stop",
                                                               "motor_output": "Q_Motor"}, ["I_Start", "I_Stop", "Q_Motor"])
     frozen = trial_io_map.freeze_working_map(io_ref, semantic, trial_io_map.STATE_PREPARING, record["trial_id"])

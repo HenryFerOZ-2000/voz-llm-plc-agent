@@ -23,7 +23,7 @@ from semantic_validator import validate_semantic_output
 from utils import get_project_root
 
 
-REAL_BENCH_MAP_PATH = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico.json"
+REAL_BENCH_MAP_PATH = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico_base.json"
 
 
 def _hash(path: Path) -> str:

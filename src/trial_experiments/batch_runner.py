@@ -46,7 +46,7 @@ FAILURES_JSON = "baseline_failures.json"
 GAP_VALIDATION_RELATIVE = Path("data") / "capability_gap_baseline_validation.json"
 
 MAP_FILES = (
-    "data/plc_maps/mapa_banco_fisico.json",
+    "data/plc_maps/mapa_banco_fisico_base.json",
     "data/plc_maps/mapa_simulacion_completo.json",
     "data/plc_maps/mapa_pid_simulacion.json",
     "data/plc_maps/mapa_pid_banco_fisico.json",

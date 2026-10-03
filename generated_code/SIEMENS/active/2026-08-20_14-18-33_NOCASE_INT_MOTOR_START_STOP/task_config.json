@@ -1,8 +1,0 @@
-{
-  "resource_name": "S7-1200/S7-1500",
-  "task_name": "Main (OB1)",
-  "interval": "T#100ms",
-  "priority": 1,
-  "pou_instance": "PLC_PRG",
-  "instance_db": "DB_PLC_PRG"
-}

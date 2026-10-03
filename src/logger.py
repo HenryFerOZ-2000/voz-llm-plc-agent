@@ -10,6 +10,11 @@ from utils import current_timestamp, ensure_directory, get_project_root, sanitiz
 
 AUTO_TEST_MARKER = "<!-- AUTO-TEST-ROWS -->"
 ROBUSTNESS_MARKER = "<!-- AUTO-ROBUSTNESS-ROWS -->"
+# Registro de EJECUCIONES (runtime, local por PC, ignorado por Git). docs/07_registro_pruebas.md es
+# documentacion curada y ya no recibe escrituras automaticas (docs/multi_pc_setup.md).
+RUNTIME_LOG_DIRNAME = "runtime"
+RUNTIME_LOG_FILENAME = "development_log.md"
+RUNTIME_LOG_TITLE = "# Registro local de ejecuciones (runtime)\n\nGenerado automaticamente por la aplicacion; local por PC, no versionado.\n\n"
 KEEP_FILE_NAME = ".gitkeep"
 
 PLATFORM_DIRECTORY_MAP = {
@@ -529,6 +534,11 @@ def _escape_markdown_cell(value: str) -> str:
     return value.replace("|", "/").replace("\n", " ").strip()
 
 
+def runtime_log_path(docs_dir: Path) -> Path:
+    """<proyecto>/runtime/development_log.md (docs_dir es <proyecto>/docs en todos los llamadores)."""
+    return Path(docs_dir).parent / RUNTIME_LOG_DIRNAME / RUNTIME_LOG_FILENAME
+
+
 def append_test_record_to_docs(
     docs_dir: Path,
     command_text: str,
@@ -537,15 +547,15 @@ def append_test_record_to_docs(
     saved_paths: dict[str, str] | None,
     target_platform: str = "CODESYS_ST"
 ) -> Path:
-    ensure_directory(docs_dir)
-    registry_path = docs_dir / "07_registro_pruebas.md"
+    registry_path = runtime_log_path(docs_dir)
+    ensure_directory(registry_path.parent)
 
     if registry_path.exists():
         content = registry_path.read_text(encoding="utf-8")
     else:
         content = (
-            "# 07 Registro de Pruebas\n\n"
-            "## Registros automaticos del sistema\n\n"
+            RUNTIME_LOG_TITLE
+            + "## Registros automaticos del sistema\n\n"
             "| fecha | comando probado | intencion detectada | tipo de salida | plataforma | paquete o archivo generado | verificacion valida si/no | errores | observaciones |\n"
             "|---|---|---|---|---|---|---|---|---|\n"
             f"{AUTO_TEST_MARKER}\n"
@@ -598,13 +608,13 @@ def append_robustness_record_to_docs(
     st_path: str | None,
     observations: str
 ) -> Path:
-    ensure_directory(docs_dir)
-    registry_path = docs_dir / "07_registro_pruebas.md"
+    registry_path = runtime_log_path(docs_dir)
+    ensure_directory(registry_path.parent)
 
     if registry_path.exists():
         content = registry_path.read_text(encoding="utf-8")
     else:
-        content = "# 07 Registro de Pruebas\n\n"
+        content = RUNTIME_LOG_TITLE
 
     row = (
         f"| {_escape_markdown_cell(current_timestamp())} "

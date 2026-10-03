@@ -350,7 +350,7 @@ def test_llm_context_never_receives_benchmark_or_oracle_information():
 
     context = build_llm_context(
         BC.get_case(_ROOT, "D03")["variants"]["V1"],
-        load_json_file(_ROOT / "data" / "plc_maps" / "mapa_banco_fisico.json"),
+        load_json_file(_ROOT / "data" / "plc_maps" / "mapa_banco_fisico_base.json"),
         load_json_file(_ROOT / "config" / "intents_catalog.json"),
         load_json_file(_ROOT / "config" / "safety_rules.json"),
     )

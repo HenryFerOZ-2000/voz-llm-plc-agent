@@ -1,5 +1,5 @@
 """
-Section 1 of the request: a direct check that the REAL, live `mapa_banco_fisico.json` currently
+Section 1 of the request: a direct check that the versioned base `mapa_banco_fisico_base.json` (hardware reference) currently
 contains exactly the 24 confirmed physical channels (8 DI + 8 DO + 4 AI + 4 AO). Unlike
 `test_physical_bench_addresses.py` (which intentionally uses a frozen snapshot to stay decoupled
 from live GUI usage), this test is explicitly requested as a live state check - it is expected to
@@ -14,7 +14,7 @@ from utils import get_project_root
 
 
 def test_real_bench_map_has_all_24_physical_channels():
-    path = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico.json"
+    path = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico_base.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     addresses = {variable["location"] for variable in payload["variables"]}
 
@@ -29,7 +29,7 @@ def test_real_bench_map_has_all_24_physical_channels():
 
 
 def test_real_bench_map_start_stop_are_locked():
-    path = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico.json"
+    path = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico_base.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     by_address = {v["location"]: v for v in payload["variables"]}
     assert by_address["%IX16.0"]["state"] == "LOCKED"
@@ -39,7 +39,7 @@ def test_real_bench_map_start_stop_are_locked():
 def test_real_bench_map_has_no_i_emergency():
     """El paro de emergencia esta cableado externo al PLC - nunca debe existir I_Emergency en
     este mapa (no se crea automaticamente)."""
-    path = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico.json"
+    path = get_project_root() / "data" / "plc_maps" / "mapa_banco_fisico_base.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     names = {v["name"] for v in payload["variables"]}
     assert "I_Emergency" not in names

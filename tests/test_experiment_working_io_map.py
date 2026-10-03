@@ -33,7 +33,7 @@ __all__ = ["pipeline", "temp_map", "_tia_ready"]
 
 _MAPS_DIR = get_project_root() / "data" / "plc_maps"
 _REAL_MAPS = [
-    _MAPS_DIR / "mapa_banco_fisico.json",
+    _MAPS_DIR / "mapa_banco_fisico_base.json",
     _MAPS_DIR / "mapa_simulacion_completo.json",
     _MAPS_DIR / "mapa_pid_simulacion.json",
     _MAPS_DIR / "mapa_pid_banco_fisico.json",
@@ -52,7 +52,7 @@ def bench_map(tmp_path) -> Path:
     """Copia temporal del mapa REAL del banco (con sus residuos ASSIGNED de Modo Normal)."""
     path = tmp_path / "base" / "mapa_banco_fisico.json"
     path.parent.mkdir(parents=True)
-    path.write_bytes((_MAPS_DIR / "mapa_banco_fisico.json").read_bytes())
+    path.write_bytes((_MAPS_DIR / "mapa_banco_fisico_base.json").read_bytes())
     return path
 
 

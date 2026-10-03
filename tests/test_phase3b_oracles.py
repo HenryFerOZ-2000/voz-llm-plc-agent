@@ -38,7 +38,7 @@ _ROOT = get_project_root()
 _MAPS_DIR = _ROOT / "data" / "plc_maps"
 _ORACLES_DIR = _ROOT / "data" / "experiment_oracles"
 _REAL_MAPS = [_MAPS_DIR / f"{name}.json" for name in
-              ("mapa_banco_fisico", "mapa_simulacion_completo", "mapa_pid_simulacion", "mapa_pid_banco_fisico")]
+              ("mapa_banco_fisico_base", "mapa_simulacion_completo", "mapa_pid_simulacion", "mapa_pid_banco_fisico")]
 
 
 def _hash(path: Path) -> str:
@@ -317,7 +317,7 @@ def _snapshot(tmp_path: Path, case_id: str, params: dict[str, Any] | None = None
     params = params if params is not None else case["params"]
     base = tmp_path / f"base_{case_id}.json"
     if not base.exists():
-        base.write_bytes((_MAPS_DIR / "mapa_banco_fisico.json").read_bytes())
+        base.write_bytes((_MAPS_DIR / "mapa_banco_fisico_base.json").read_bytes())
     directory = tmp_path / f"{case_id}_{len(list(tmp_path.glob(case_id + '_*')))}"
     reference = trial_io_map.create_working_map(directory, base)
     working = trial_io_map.load_working_map(Path(reference["working_map_path"]))

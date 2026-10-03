@@ -15,7 +15,9 @@ if str(SRC_DIR) not in sys.path:
 
 from utils import load_json_file  # noqa: E402
 
-REAL_BENCH_MAP_PATH = PROJECT_ROOT / "data" / "plc_maps" / "mapa_banco_fisico.json"
+REAL_BENCH_MAP_PATH = PROJECT_ROOT / "data" / "plc_maps" / "mapa_banco_fisico_base.json"
+# Mapa working local de Modo Normal (ignorado por Git; puede no existir en un clon nuevo).
+REAL_BENCH_WORKING_MAP_PATH = PROJECT_ROOT / "data" / "plc_maps" / "mapa_banco_fisico_working.json"
 
 
 def _hash_file(path: Path) -> str | None:
@@ -36,14 +38,17 @@ def _real_bench_map_untouched_guard():
     entera falla aqui con un mensaje claro, sin depender de que cada test se acuerde de revisarlo
     por su cuenta.
     """
-    before = _hash_file(REAL_BENCH_MAP_PATH)
+    guarded = (REAL_BENCH_MAP_PATH, REAL_BENCH_WORKING_MAP_PATH)
+    before = {path: _hash_file(path) for path in guarded}
     yield
-    after = _hash_file(REAL_BENCH_MAP_PATH)
-    assert before == after, (
-        "data/plc_maps/mapa_banco_fisico.json cambio durante la corrida de la suite - ningun test "
-        "debe escribir sobre el mapa fisico real (usar tmp_path o el patron `temp_map`). Restaure "
-        "el archivo desde un estado conocido antes de continuar."
-    )
+    for path in guarded:
+        if before[path] is None:
+            continue  # el working se crea en la primera ejecucion de la app; crearlo no es modificarlo
+        assert before[path] == _hash_file(path), (
+            f"data/plc_maps/{path.name} cambio durante la corrida de la suite - ningun test "
+            "debe escribir sobre el mapa fisico real (usar tmp_path o el patron `temp_map`). Restaure "
+            "el archivo desde un estado conocido antes de continuar."
+        )
 
 
 @pytest.fixture

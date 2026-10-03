@@ -31,7 +31,7 @@ from utils import get_project_root  # noqa: E402
 
 _MAPS_DIR = get_project_root() / "data" / "plc_maps"
 _REAL_MAPS = [
-    _MAPS_DIR / "mapa_banco_fisico.json",
+    _MAPS_DIR / "mapa_banco_fisico_base.json",
     _MAPS_DIR / "mapa_simulacion_completo.json",
     _MAPS_DIR / "mapa_pid_simulacion.json",
     _MAPS_DIR / "mapa_pid_banco_fisico.json",
@@ -56,7 +56,7 @@ _RUN = {"connected": True, "instance_name": "TESIS_PLC_SIM", "cpu_state": "RUN",
 @pytest.fixture
 def snapshot_path(tmp_path) -> Path:
     base = tmp_path / "mapa_banco_fisico.json"
-    base.write_bytes((_MAPS_DIR / "mapa_banco_fisico.json").read_bytes())
+    base.write_bytes((_MAPS_DIR / "mapa_banco_fisico_base.json").read_bytes())
     reference = trial_io_map.create_working_map(tmp_path / "D03_V1_TEXT_001", base)
     working = trial_io_map.load_working_map(Path(reference["working_map_path"]))
     requests = io_allocator.extract_io_assignment_requests("Usa Q8.0 para el motor") + [

@@ -11,13 +11,16 @@ from plc_maps.profiles import (
     profile_readiness_summary
 )
 from plc_maps.registry import (
+    experiment_reference_map_path,
     get_active_pointer_path,
     load_active_map_id,
     resolve_active_map_path,
     save_active_map_id
 )
 from plc_maps.store import (
+    base_path_for,
     create_plc_map,
+    ensure_working_maps,
     delete_plc_map,
     get_plc_maps_dir,
     list_plc_maps,
@@ -39,6 +42,9 @@ __all__ = [
     "get_profiles_path",
     "load_profiles",
     "profile_readiness_summary",
+    "experiment_reference_map_path",
+    "base_path_for",
+    "ensure_working_maps",
     "get_active_pointer_path",
     "load_active_map_id",
     "resolve_active_map_path",

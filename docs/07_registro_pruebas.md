@@ -1,5 +1,9 @@
 # 07 Registro de Pruebas
 
+> **Documento curado (desde 2026-10-02).** La aplicacion ya no agrega filas automaticas aqui: cada
+> ejecucion se registra localmente en `runtime/development_log.md` (por PC, ignorado por Git; ver
+> `docs/multi_pc_setup.md`). Las filas automaticas existentes abajo se conservan como historico.
+
 Este documento concentra:
 
 - la matriz base de pruebas del MVP,

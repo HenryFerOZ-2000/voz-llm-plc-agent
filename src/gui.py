@@ -68,6 +68,7 @@ from plc_maps import (
     create_plc_map,
     delete_plc_map,
     ensure_plc_maps_library,
+    experiment_reference_map_path,
     format_validation_report,
     get_profile,
     list_plc_maps,
@@ -6128,12 +6129,15 @@ class VozLLMPLCGUI(ctk.CTk):
         self._update_new_trial({"lifecycle_state": state})
 
     def _prepare_trial_working_map(self) -> bool:
-        """Copia el mapa base (inventario fisico del mapa activo, sin residuos) al ensayo."""
+        """
+        Copia el mapa base (inventario fisico, sin residuos) al ensayo. La fuente es el mapa BASE
+        versionado (<id>_base.json), nunca el working local de Modo Normal de esta PC.
+        """
         info = (self.active_trial or {}).get("new_trial")
         if not info:
             return True
         try:
-            reference = trial_io_map.create_working_map(Path(info["dir"]), self.io_map_path)
+            reference = trial_io_map.create_working_map(Path(info["dir"]), experiment_reference_map_path(self.io_map_path))
         except trial_io_map.ExperimentIOError as error:
             self._log(f"[EXPERIMENT IO] {error}")
             self._update_new_trial({"io_map": {"error": error.code}})
