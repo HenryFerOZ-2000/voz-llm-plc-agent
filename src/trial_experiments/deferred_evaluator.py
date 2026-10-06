@@ -1102,7 +1102,11 @@ def evaluate_trial(
     if runtime_report is not None:
         patch["runtime"] = plcsim_runtime.trial_runtime_section(runtime_report)
     if oracle_result is not None:
-        patch.update(oracle_runner.trial_patch(oracle_result, {"evaluation_report": str(attempt_dir / oracle_runner.EVALUATION_REPORT_FILENAME)}))
+        # Fusion POR SECCION (como trial_model.update_trial): un patch.update() plano reemplazaba
+        # "stages"/"timing" enteros y perdia compile_success, download_success, compile_ms...
+        oracle_patch = oracle_runner.trial_patch(oracle_result, {"evaluation_report": str(attempt_dir / oracle_runner.EVALUATION_REPORT_FILENAME)})
+        for key, value in oracle_patch.items():
+            patch[key] = {**patch[key], **value} if isinstance(value, dict) and isinstance(patch.get(key), dict) else value
     trial_model.update_trial(trial_dir, patch)
     record = trial_model.load_trial(trial_dir)
     record["final_status"] = final_status
@@ -1134,7 +1138,77 @@ def _pass_fail(value: Any) -> str:
     return "PASS" if value is True else ("FAIL" if value is False else "-")
 
 
-def verdict_table(record: dict[str, Any]) -> list[tuple[str, str]]:
+STAGE_KEYS = ("semantic", "io_allocation", "ir", "compilation", "tia_archive", "download", "runtime", "functional",
+              "safety", "final_verdict")
+STAGE_LABELS = {"semantic": "Semantic", "io_allocation": "I/O Allocation", "ir": "IR", "compilation": "Compilation",
+                "tia_archive": "TIA Archive", "download": "Download", "runtime": "Runtime", "functional": "Functional",
+                "safety": "Safety", "final_verdict": "FINAL"}
+STATUS_PENDING_LABEL = "PENDIENTE DE EVALUACION"
+
+
+def _last_attempt(record: dict[str, Any]) -> dict[str, Any]:
+    attempts = (record.get("evaluation") or {}).get("attempts") or []
+    return attempts[-1] if attempts and isinstance(attempts[-1], dict) else {}
+
+
+def _compilation_value(record: dict[str, Any]) -> str:
+    """
+    Evidencia REAL de compilacion: stages.compile_success; si no esta (ensayos evaluados antes de la
+    correccion de la fusion de stages), la clasificacion persistida del reporte de compilacion de TIA
+    (compile.classification / ultimo intento). Nunca se deduce de Archive ni de Runtime.
+    """
+    value = (record.get("stages") or {}).get("compile_success")
+    if value is not None:
+        return _pass_fail(value)
+    attempt = _last_attempt(record)
+    category = ((record.get("compile") or {}).get("classification") or {}).get("category") or attempt.get("compile")
+    if category == TC.INFRASTRUCTURE_ERROR:
+        return "INFRA"
+    if category == TC.COMPILE_FAILURE:
+        return "FAIL"
+    if category == TC.COMPILE_PASSED:
+        # Igual que la evaluacion: si TIA importo un program.scl distinto del congelado, no cuenta como PASS.
+        source_mismatch = any(ERROR_INTEGRITY in str(error) for error in (attempt.get("errors") or record.get("errors") or []))
+        return "FAIL" if source_mismatch else "PASS"
+    return "-"
+
+
+def _download_value(record: dict[str, Any]) -> str:
+    """Evidencia REAL de descarga: stages.download_success o el download_success del bridge en el ultimo intento."""
+    value = (record.get("stages") or {}).get("download_success")
+    if value is None:
+        value = _last_attempt(record).get("download_success")
+    return _pass_fail(value if isinstance(value, bool) else None)
+
+
+def _final_verdict(record: dict[str, Any]) -> str | None:
+    final = (record.get("evaluation") or {}).get("final_verdict") or record.get("final_verdict") or record.get("final_status")
+    return None if final in (None, "", trial_model.FINAL_STATUS_PREPARED) else str(final)
+
+
+def trial_status_label(record: dict[str, Any]) -> str:
+    """Estado del ensayo para encabezados y listas, siempre desde lo persistido (nunca un estado visual previo)."""
+    evaluation = record.get("evaluation") or {}
+    status = evaluation.get("status")
+    if status in (ERROR_MASTER_INTEGRITY, EVALUATION_INTEGRITY_FAILED):
+        return str(status)
+    final = _final_verdict(record)
+    if final == trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR:
+        return trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR
+    if final:
+        return f"{final} / COMPLETADO"
+    if status == EVALUATION_PENDING:
+        return STATUS_PENDING_LABEL
+    return str(status or "LEGACY")
+
+
+def trial_stage_summary(record: dict[str, Any]) -> dict[str, Any]:
+    """
+    FUENTE UNICA del estado de un ensayo (detalle, encabezado, lista principal y futuro lote): lee solo el
+    registro persistido (trial.json). Claves: semantic, io_allocation, ir, compilation, tia_archive,
+    download, runtime, functional, safety, final_verdict ("PASS"/"FAIL"/"INFRA"/"REVIEW"/"-"/...),
+    mas status (encabezado) y voice (filas de voz o []).
+    """
     stages = record.get("stages") or {}
     oracle = record.get("oracle") or {}
     io_failed = record.get("failure_stage") == "io_allocation" or bool((record.get("io_map") or {}).get("error"))
@@ -1147,19 +1221,29 @@ def verdict_table(record: dict[str, Any]) -> list[tuple[str, str]]:
         voice_rows = [("Voice Capture", _pass_fail(voice.get("audio_capture_success"))),
                       ("ASR", _pass_fail(voice.get("asr_success"))),
                       ("WER", "-" if wer is None else f"{wer:.3f}")]
-    return voice_rows + [
-        ("Semantic", _pass_fail(stages.get("semantic_success"))),
-        ("I/O Allocation", "FAIL" if io_failed else ("PASS" if (record.get("io_map") or {}).get("frozen") else "-")),
-        ("IR", "FAIL" if ir_failed else _pass_fail(stages.get("verification_success"))),
-        ("Compilation", _pass_fail(stages.get("compile_success")) if stages.get("compile_success") is not None
-         else ("INFRA" if (record.get("compile") or {}).get("classification", {}).get("category") == TC.INFRASTRUCTURE_ERROR else "-")),
-        ("TIA Archive", {"CREATED": "PASS", "NOT_CREATED": "FAIL"}.get((record.get("tia_archive") or {}).get("status"), "-")),
-        ("Download", _pass_fail(stages.get("download_success"))),
-        ("Runtime", _pass_fail((record.get("download") or {}).get("cpu_run_confirmed"))),
-        ("Functional", "REVIEW" if oracle.get("verdict") == "REVIEW" and functional is None else _pass_fail(functional)),
-        ("Safety", _pass_fail(stages.get("safety_success"))),
-        ("FINAL", str((record.get("evaluation") or {}).get("final_verdict") or record.get("final_status") or "PENDIENTE")),
-    ]
+    return {
+        "semantic": _pass_fail(stages.get("semantic_success")),
+        "io_allocation": "FAIL" if io_failed else ("PASS" if (record.get("io_map") or {}).get("frozen") else "-"),
+        "ir": "FAIL" if ir_failed else _pass_fail(stages.get("verification_success")),
+        "compilation": _compilation_value(record),
+        "tia_archive": {"CREATED": "PASS", "NOT_CREATED": "FAIL"}.get((record.get("tia_archive") or {}).get("status"), "-"),
+        "download": _download_value(record),
+        "runtime": _pass_fail((record.get("download") or {}).get("cpu_run_confirmed")),
+        "functional": "REVIEW" if oracle.get("verdict") == "REVIEW" and functional is None else _pass_fail(functional),
+        "safety": _pass_fail(stages.get("safety_success")),
+        "final_verdict": str((record.get("evaluation") or {}).get("final_verdict") or record.get("final_status") or "PENDIENTE"),
+        "status": trial_status_label(record),
+        "voice": voice_rows,
+        # Auxiliares para la linea de progreso de la GUI (evidencia propia, no deducida de otras etapas).
+        "cpu_start": _pass_fail(stages.get("start_module_success") if stages.get("start_module_success") is not None
+                                else (record.get("download") or {}).get("start_module_success")),
+        "oracle": str(oracle.get("verdict") or "-"),
+    }
+
+
+def verdict_table(record: dict[str, Any]) -> list[tuple[str, str]]:
+    summary = trial_stage_summary(record)
+    return list(summary["voice"]) + [(STAGE_LABELS[key], summary[key]) for key in STAGE_KEYS]
 
 
 def evaluation_summary_lines(project_root: Path, trial_dir: Path) -> list[str]:
@@ -1170,7 +1254,6 @@ def evaluation_summary_lines(project_root: Path, trial_dir: Path) -> list[str]:
     validation = master.get("validation") or {}
     oracle = manifest.get("oracle") or {}
     command = (Path(trial_dir) / COMMAND_FILENAME).read_text(encoding="utf-8").strip() if (Path(trial_dir) / COMMAND_FILENAME).exists() else ""
-    evaluation = record.get("evaluation") or {}
     return [
         f"Trial: {record.get('trial_id')}",
         f"Caso: {record.get('case_id')}",
@@ -1181,7 +1264,7 @@ def evaluation_summary_lines(project_root: Path, trial_dir: Path) -> list[str]:
         f"Oracle: {oracle.get('oracle_id')} v{oracle.get('oracle_version')} · {oracle.get('oracle_status')}",
         f"MASTER: {master.get('path') or '(no configurado)'} · {validation.get('master_status') or 'SIN VALIDAR'}",
         f"Integrity: {'OK' if integrity['ok'] else ' | '.join(integrity['errors'])}",
-        f"Estado: {'PENDIENTE DE EVALUACION' if evaluation.get('status') == EVALUATION_PENDING else evaluation.get('status') or 'LEGACY'}",
+        f"Estado: {trial_status_label(record)}",
     ]
 
 
@@ -1211,6 +1294,8 @@ def list_trials(project_root: Path, phases: tuple[str, ...] = (trial_model.PHASE
                 "evaluation": evaluation.get("status") or ("LEGACY" if not generation else None),
                 "verdict": evaluation.get("final_verdict") or record.get("final_status"),
                 "deferred": (path.parent / MANIFEST_FILENAME).exists(),
+                # Misma fuente que el detalle (verdict_table) y que el futuro lote.
+                "summary": trial_stage_summary(record),
             })
     return rows
 

@@ -834,6 +834,9 @@ class DeferredEvaluationDialog(ctk.CTkToplevel):
             self._fill(self.result_box, ["EVALUACION NO REALIZADA"] + list(errors or []))
             return
         record = trial_model.load_trial(self.trial_dir)
+        # El resumen superior se lleno al abrir el dialogo ("PENDIENTE DE EVALUACION"): se recalcula ahora
+        # desde lo persistido para no dejar un estado visual obsoleto.
+        self._fill(self.summary_box, deferred_evaluator.evaluation_summary_lines(self.app.project_root, self.trial_dir))
         header = f"{record.get('case_id')} · {record.get('variant_id')} · {record.get('input_mode')}"
         self._fill(self.result_box, [header, ""] + [f"{label:<20}{value}" for label, value in deferred_evaluator.verdict_table(record)]
                    + [""] + [f"! {error}" for error in (payload.get("errors") or [])]
@@ -6079,6 +6082,23 @@ class VozLLMPLCGUI(ctk.CTk):
         io_text = getattr(self, "_experiment_io_text", "")
         self.experiment_stage_var.set(stages_text + (f"\nI/O: {io_text}" if io_text else ""))
 
+    # Etapa del panel -> clave de deferred_evaluator.trial_stage_summary (fuente unica persistida).
+    _SUMMARY_STAGE_KEYS = {"Semantica": "semantic", "I/O": "io_allocation", "Generacion": "ir", "Verificacion": "ir",
+                           "Compilacion": "compilation", "Descarga": "download", "CPU Start": "cpu_start",
+                           "Runtime": "runtime", "Oracle": "oracle", "Functional": "functional", "Safety": "safety"}
+    _SUMMARY_VALUE_STATES = {"PASS": "ok", "FAIL": "fail", "INFRA": "fail", "INFRASTRUCTURE_ERROR": "fail", "REVIEW": "pending"}
+
+    def _apply_trial_summary_to_stages(self, trial_dir: Path) -> dict[str, Any] | None:
+        """Sincroniza la linea de etapas con el registro persistido del ensayo (tras evaluar o al verlo)."""
+        try:
+            summary = deferred_evaluator.trial_stage_summary(trial_model.load_trial(Path(trial_dir)))
+        except (OSError, ValueError):
+            return None
+        for stage, key in self._SUMMARY_STAGE_KEYS.items():
+            self._experiment_stage_states[stage] = self._SUMMARY_VALUE_STATES.get(summary[key], "pending")
+        self._render_experiment_stages()
+        return summary
+
     def _new_trial_dir(self) -> Path | None:
         info = (self.active_trial or {}).get("new_trial")
         return Path(info["dir"]) if info else None
@@ -6484,6 +6504,7 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
         self._deferred_worker_active = True
         self._deferred_dialog = dialog
+        self._deferred_trial_dir = Path(trial_dir)
         self._log(f"[DEFERRED] Evaluando {Path(trial_dir).name}...")
 
         def _worker() -> None:
@@ -6513,6 +6534,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 self._deferred_dialog.show_result(outcome, payload)
             except tk.TclError:  # pragma: no cover - dialogo cerrado
                 pass
+        if getattr(self, "_deferred_trial_dir", None) is not None:
+            self._apply_trial_summary_to_stages(self._deferred_trial_dir)
         self._refresh_generated_trials()
         # Intencional: NUNCA se encadena la evaluacion del siguiente pendiente (control de recursos).
 
@@ -6672,7 +6695,8 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def show_trial_detail(self, trial_dir: Path) -> None:
         record = trial_model.load_trial(Path(trial_dir))
-        lines = [f"{record.get('case_id')} · {record.get('variant_id')} · {record.get('input_mode')}", ""]
+        lines = [f"{record.get('case_id')} · {record.get('variant_id')} · {record.get('input_mode')}",
+                 f"Estado: {deferred_evaluator.trial_status_label(record)}", ""]
         lines += [f"{label}: {value}" for label, value in deferred_evaluator.verdict_table(record)]
         voice = record.get("voice") or {}
         if voice:
