@@ -90,6 +90,7 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 19. `CHANGELOG_TESIS.md`
 20. `development_validation_log.md`
 21. `multi_pc_setup.md`
+22. `text_batch_execution.md`
 
 ## Criterio de uso en tesis
 

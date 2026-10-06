@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 import queue
+import sys
 import threading
 import time
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
-from typing import Any
+from typing import Any, Callable
 import os
 import socket
 
@@ -106,7 +108,8 @@ import tia_projects
 from plcsim_runtime import get_plcsim_runtime_status
 from trial_experiments import benchmark_catalog, oracle_review, oracle_runner, oracle_schema, trial_io_map, trial_model
 from trial_experiments import deferred_evaluator, experimental_design, resource_policy, tia_classification
-from trial_experiments import voice_protocol
+from trial_experiments import text_batch, voice_protocol
+from host_local import load_host_id
 from trial_experiments.oracle_runner import run_oracle
 from trial_experiments.oracle_schema import find_case_oracle
 from trial_experiments import (
@@ -841,6 +844,167 @@ class DeferredEvaluationDialog(ctk.CTkToplevel):
         self._fill(self.result_box, [header, ""] + [f"{label:<20}{value}" for label, value in deferred_evaluator.verdict_table(record)]
                    + [""] + [f"! {error}" for error in (payload.get("errors") or [])]
                    + ["", "El siguiente ensayo NO se inicia automaticamente."])
+
+
+class TextBatchDialog(ctk.CTkToplevel):
+    """EJECUTAR LOTE TEXT: seleccion (fase, casos, variantes) y progreso del lote abierto."""
+
+    PHASES = {"DEVELOPMENT": trial_model.PHASE_DEVELOPMENT, "FORMAL": trial_model.PHASE_FORMAL}
+
+    def __init__(self, app: "VozLLMPLCGUI") -> None:
+        super().__init__(app)
+        self.app = app
+        self.title("Lote TEXT")
+        self.geometry("760x760")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        setup = ctk.CTkFrame(self)
+        setup.grid(row=0, column=0, padx=16, pady=(14, 8), sticky="ew")
+        setup.grid_columnconfigure((0, 1, 2), weight=1, uniform="batch_setup")
+        self.setup_frame = setup
+        ctk.CTkLabel(setup, text="Fase", font=app.section_label_font).grid(row=0, column=0, padx=10, pady=(8, 2), sticky="w")
+        self.phase_var = tk.StringVar(value="DEVELOPMENT")
+        ctk.CTkSegmentedButton(setup, values=list(self.PHASES), variable=self.phase_var, command=lambda _v: self._update_total(),
+                               font=app.button_font).grid(row=1, column=0, columnspan=3, padx=10, pady=(0, 8), sticky="ew")
+        ctk.CTkLabel(setup, text="Casos", font=app.section_label_font).grid(row=2, column=0, padx=10, pady=(4, 2), sticky="w")
+        self.d_var, self.p_var = tk.BooleanVar(value=True), tk.BooleanVar(value=False)
+        ctk.CTkCheckBox(setup, text="D01-D20", variable=self.d_var, command=self._update_total, font=app.body_font).grid(
+            row=3, column=0, padx=10, sticky="w")
+        ctk.CTkCheckBox(setup, text="P01-P12", variable=self.p_var, command=self._update_total, font=app.body_font).grid(
+            row=3, column=1, padx=10, sticky="w")
+        self.range_var = tk.StringVar(value="")
+        self.range_var.trace_add("write", lambda *_a: self._update_total())
+        ctk.CTkLabel(setup, text="Rango opcional (p. ej. D01-D03, P02):", font=app.body_font).grid(
+            row=4, column=0, columnspan=3, padx=10, pady=(8, 0), sticky="w")
+        ctk.CTkEntry(setup, textvariable=self.range_var, font=app.body_font).grid(row=5, column=0, columnspan=3, padx=10, sticky="ew")
+        ctk.CTkLabel(setup, text="Variantes", font=app.section_label_font).grid(row=6, column=0, padx=10, pady=(8, 2), sticky="w")
+        self.variant_vars = {variant: tk.BooleanVar(value=True) for variant in text_batch.VARIANT_ORDER}
+        for column, (variant, var) in enumerate(self.variant_vars.items()):
+            ctk.CTkCheckBox(setup, text=variant, variable=var, command=self._update_total, font=app.body_font).grid(
+                row=7, column=column, padx=10, sticky="w")
+        ctk.CTkLabel(setup, text="Modalidad: TEXT (fija)", font=app.body_font).grid(row=8, column=0, columnspan=3, padx=10, pady=(8, 0), sticky="w")
+        self.total_var = tk.StringVar(value="")
+        ctk.CTkLabel(setup, textvariable=self.total_var, font=app.section_label_font, justify="left", wraplength=640).grid(
+            row=9, column=0, columnspan=3, padx=10, pady=(4, 4), sticky="w")
+        self.start_button = ctk.CTkButton(setup, text="INICIAR LOTE", height=40, fg_color="#0F766E", hover_color="#115E59",
+                                          command=self.start, font=ctk.CTkFont(size=14, weight="bold"))
+        self.start_button.grid(row=10, column=0, columnspan=3, padx=10, pady=(4, 10), sticky="ew")
+
+        self.progress_box = ctk.CTkTextbox(self, font=ctk.CTkFont(family="Consolas", size=13))
+        self.progress_box.grid(row=1, column=0, padx=16, pady=(0, 8), sticky="nsew")
+
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.grid(row=2, column=0, padx=16, pady=(0, 14), sticky="ew")
+        buttons.grid_columnconfigure((0, 1), weight=1, uniform="batch_buttons")
+        self.resume_button = ctk.CTkButton(buttons, text="REANUDAR", command=self.resume, font=app.button_font)
+        self.resume_button.grid(row=0, column=0, padx=(0, 4), pady=3, sticky="ew")
+        self.pause_button = ctk.CTkButton(buttons, text="PAUSAR DESPUES DEL ENSAYO ACTUAL", command=self.app.request_text_batch_pause,
+                                          font=app.button_font)
+        self.pause_button.grid(row=0, column=1, padx=(4, 0), pady=3, sticky="ew")
+        self.retry_button = ctk.CTkButton(buttons, text="REINTENTAR ESTE ENSAYO", command=self.retry, font=app.button_font)
+        self.retry_button.grid(row=1, column=0, padx=(0, 4), pady=3, sticky="ew")
+        self.stop_button = ctk.CTkButton(buttons, text="DETENER LOTE", fg_color="#B91C1C", hover_color="#991B1B",
+                                         command=self.stop, font=app.button_font)
+        self.stop_button.grid(row=1, column=1, padx=(4, 0), pady=3, sticky="ew")
+        self.protocol("WM_DELETE_WINDOW", self._close)
+        self._update_total()
+        self.refresh()
+        self.after(1000, self._tick)
+
+    def selection(self) -> tuple[str, list[str], list[str]]:
+        groups = (["D"] if self.d_var.get() else []) + (["P"] if self.p_var.get() else [])
+        case_ids = text_batch.parse_case_selection(self.app.project_root, self.range_var.get(), groups)
+        variants = [variant for variant, var in self.variant_vars.items() if var.get()]
+        return self.PHASES[self.phase_var.get()], case_ids, variants
+
+    def _update_total(self) -> None:
+        try:
+            phase, case_ids, variants = self.selection()
+            plan = text_batch.build_plan(self.app.project_root, case_ids, variants)
+        except ValueError as error:
+            self.total_var.set(f"Seleccion invalida: {error}")
+            return
+        not_evaluable = sorted({entry["case_id"] for entry in plan if not entry["evaluable"]})
+        text = f"Total de ensayos: {len(plan)}"
+        if not_evaluable:
+            text += (f"\n{len(not_evaluable)} caso(s) ({not_evaluable[0]}...{not_evaluable[-1]}): el Oracle requiere extension del "
+                     "Runtime; se generan pero no se evaluan" + (" - FORMAL no lo permite." if phase == trial_model.PHASE_FORMAL else "."))
+        self.total_var.set(text)
+
+    def start(self) -> None:
+        try:
+            phase, case_ids, variants = self.selection()
+        except ValueError as error:
+            messagebox.showwarning("Lote TEXT", str(error), parent=self)
+            return
+        if phase == trial_model.PHASE_FORMAL and not messagebox.askyesno(
+                "Lote TEXT FORMAL", "Los resultados FORMAL son oficiales. ¿Iniciar el lote FORMAL?", parent=self):
+            return
+        result = self.app.start_text_batch(phase, case_ids, variants)
+        if not result["ok"] and not result.get("paused"):
+            messagebox.showwarning("Lote TEXT", "No se inicia el lote:\n\n" + "\n".join(result["errors"][:10]), parent=self)
+        self.refresh()
+
+    def resume(self) -> None:
+        result = self.app.resume_text_batch()
+        if not result["ok"]:
+            messagebox.showwarning("Lote TEXT", "El lote sigue pausado:\n\n" + "\n".join(result["errors"][:6]), parent=self)
+        self.refresh()
+
+    def retry(self) -> None:
+        reason = simpledialog.askstring("Reintentar ensayo", "Motivo del reintento (obligatorio):", parent=self)
+        if not reason:
+            return
+        result = self.app.retry_text_batch_trial(reason)
+        if not result["ok"]:
+            messagebox.showwarning("Lote TEXT", "\n".join(result["errors"]), parent=self)
+        self.refresh()
+
+    def stop(self) -> None:
+        manifest = self.app._text_batch_manifest()
+        if manifest and messagebox.askyesno(
+                "Detener lote", "El lote se cerrara (los ensayos hechos se conservan). Si hay un ensayo en curso, "
+                "se detiene al terminarlo. ¿Continuar?", parent=self):
+            self.app.stop_text_batch()
+        self.refresh()
+
+    def refresh(self) -> None:
+        manifest = self.app._text_batch_manifest()
+        status = (manifest or {}).get("status")
+        open_batch = status in text_batch.OPEN_STATUSES
+        running = status == text_batch.STATUS_RUNNING
+        paused = status in (text_batch.STATUS_PAUSED, text_batch.STATUS_CREATED)
+        attention = paused and any(e["status"] in text_batch.ATTENTION_ENTRY_STATES for e in manifest["ordered_trial_plan"])
+        for widget in self.setup_frame.winfo_children():
+            try:
+                widget.configure(state="disabled" if open_batch else "normal")
+            except (tk.TclError, ValueError):
+                pass
+        self.resume_button.configure(state="normal" if paused and not attention else "disabled")
+        self.retry_button.configure(state="normal" if attention else "disabled")
+        self.pause_button.configure(state="normal" if running and not manifest.get("pause_requested") else "disabled")
+        self.stop_button.configure(state="normal" if open_batch else "disabled")
+        lines = self.app.text_batch_progress_lines()
+        if paused and not running and open_batch and status == text_batch.STATUS_PAUSED:
+            lines = (["LOTE TEXT INCOMPLETO"] if not attention else []) + lines
+        self.progress_box.configure(state="normal")
+        self.progress_box.delete("1.0", "end")
+        self.progress_box.insert("1.0", "\n".join(lines))
+        self.progress_box.configure(state="disabled")
+
+    def _tick(self) -> None:
+        try:
+            if self.winfo_exists():
+                if self.app._text_batch_running():
+                    self.refresh()
+                self.after(1000, self._tick)
+        except tk.TclError:
+            pass
+
+    def _close(self) -> None:
+        self.app._text_batch_dialog = None
+        self.destroy()
 
 
 class VoiceCaptureDialog(ctk.CTkToplevel):
@@ -1611,6 +1775,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self._log(f"Archivo de configuracion LLM: {self.env_path}")
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(120, self._apply_responsive_layout)
+        self.after(600, self._announce_open_text_batch)
 
     def _build_theme_tokens(self) -> None:
         self.panel_title_font = ctk.CTkFont(family="Segoe UI", size=24, weight="bold")
@@ -2560,9 +2725,17 @@ class VozLLMPLCGUI(ctk.CTk):
 
         self.start_trial_button.configure(text="EJECUTAR ENSAYO COMPLETO", command=self.run_complete_trial)
         self.start_trial_button.grid(row=23, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
-        self.generate_only_button = ctk.CTkButton(frame, text="GENERAR SOLO (DEVELOPMENT/DEBUG)", command=self.generate_experiment_trial,
+        # Fila 24: EJECUTAR LOTE TEXT (uno por uno, mismo flujo) y GENERAR SOLO, apilados.
+        batch_actions = ctk.CTkFrame(frame, fg_color="transparent")
+        batch_actions.grid(row=24, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        batch_actions.grid_columnconfigure(0, weight=1)
+        self.text_batch_button = ctk.CTkButton(batch_actions, text="EJECUTAR LOTE TEXT", height=36, fg_color="#1D4ED8",
+                                               hover_color="#1E40AF", command=self.open_text_batch_dialog,
+                                               font=ctk.CTkFont(size=13, weight="bold"))
+        self.text_batch_button.grid(row=0, column=0, pady=(0, 6), sticky="ew")
+        self.generate_only_button = ctk.CTkButton(batch_actions, text="GENERAR SOLO (DEVELOPMENT/DEBUG)", command=self.generate_experiment_trial,
                                                   font=self.button_font)
-        self.generate_only_button.grid(row=24, column=0, columnspan=2, padx=12, pady=(0, 12), sticky="ew")
+        self.generate_only_button.grid(row=1, column=0, sticky="ew")
 
         ctk.CTkLabel(frame, text="Ensayos generados", font=self.section_label_font).grid(
             row=25, column=0, columnspan=2, padx=12, pady=(4, 2), sticky="w")
@@ -6537,12 +6710,403 @@ class VozLLMPLCGUI(ctk.CTk):
         if getattr(self, "_deferred_trial_dir", None) is not None:
             self._apply_trial_summary_to_stages(self._deferred_trial_dir)
         self._refresh_generated_trials()
+        batch_dir = getattr(self, "_batch_evaluating_dir", None)
+        if batch_dir is not None and Path(batch_dir) == getattr(self, "_deferred_trial_dir", None):
+            self._batch_evaluating_dir = None
+            self.after(0, self._batch_on_evaluation_finished)
         # Intencional: NUNCA se encadena la evaluacion del siguiente pendiente (control de recursos).
 
 
     # ------------------------------------------------------------------------------------------
     # Fase 4A-FINAL: EJECUTAR ENSAYO COMPLETO (un clic = un ensayo) + protocolo de voz
     # ------------------------------------------------------------------------------------------
+
+    # ------------------------------------------------------------------------------------------
+    # LOTE TEXT (trial_experiments.text_batch): uno por uno, con el MISMO flujo de EJECUTAR ENSAYO
+    # COMPLETO. Maquina de estados sobre el bucle de Tk: el ensayo N+1 solo se programa desde el
+    # callback de fin del ensayo N, despues de persistir su resultado (nunca dos ensayos ni dos TIA).
+    # ------------------------------------------------------------------------------------------
+
+    BATCH_SPEAKER_ID = "TEXT_BATCH"
+    BATCH_STEP_DELAY_MS = 1500
+
+    def _text_batch_running(self) -> bool:
+        state = getattr(self, "_text_batch", None)
+        return bool(state) and state["manifest"].get("status") == text_batch.STATUS_RUNNING
+
+    def _text_batch_manifest(self) -> dict[str, Any] | None:
+        state = getattr(self, "_text_batch", None)
+        return state["manifest"] if state else None
+
+    def _batch_save(self) -> None:
+        state = self._text_batch
+        text_batch.save_manifest(state["dir"], state["manifest"])
+        text_batch.write_summaries(self.project_root, state["dir"], state["manifest"])
+        self._refresh_text_batch_dialog()
+
+    def _load_open_text_batch(self) -> dict[str, Any] | None:
+        """Lote abierto persistido (tras cerrar la GUI o una caida). Nunca se reanuda solo."""
+        state = getattr(self, "_text_batch", None)
+        if state and state["manifest"].get("status") in text_batch.OPEN_STATUSES:
+            return state["manifest"]
+        self._text_batch = None
+        manifest = text_batch.find_open_batch(self.project_root)
+        if manifest is not None:
+            self._text_batch = {"dir": text_batch.batch_dir_for(self.project_root, manifest), "manifest": manifest, "dialogs": []}
+        return manifest
+
+    def start_text_batch(self, phase: str, case_ids: list[str] | None, variants: list[str]) -> dict[str, Any]:
+        """Crea y arranca un lote TEXT. FORMAL solo si TODAS las guardas pasan."""
+        if self._text_batch_running() or self._tia_busy() or self._voice_worker_active:
+            return {"ok": False, "errors": ["Hay una operacion o un lote en curso."]}
+        if self._load_open_text_batch() is not None:
+            return {"ok": False, "errors": [f"{text_batch.ERROR_OPEN_BATCH}: reanude o cancele el lote abierto."]}
+        try:
+            plan = text_batch.build_plan(self.project_root, case_ids, variants)
+        except ValueError as error:
+            return {"ok": False, "errors": [str(error)]}
+        git = text_batch.git_info(self.project_root)
+        if phase == trial_model.PHASE_FORMAL:
+            guards = text_batch.formal_guards(self.project_root, plan, git=git,
+                                              runtime_status_fn=lambda root: plcsim_runtime.get_plcsim_runtime_status(root))
+            if not guards["ok"]:
+                return {"ok": False, "errors": [f"{text_batch.ERROR_FORMAL_GUARD}: {c['id']}: {c['detail']}" for c in guards["checks"] if not c["ok"]],
+                        "guards": guards}
+        batch_dir, manifest = text_batch.create_batch(self.project_root, phase, case_ids, variants,
+                                                      host_id=load_host_id(self.project_root), git=git)
+        self._text_batch = {"dir": batch_dir, "manifest": manifest, "dialogs": []}
+        self._log(f"[BATCH] {manifest['batch_id']}: {manifest['total_trials']} ensayos TEXT ({phase}).")
+        return self.resume_text_batch()
+
+    def resume_text_batch(self) -> dict[str, Any]:
+        """REANUDAR: contrasta el manifiesto con los trial.json; ante inconsistencias queda PAUSADO."""
+        manifest = self._load_open_text_batch()
+        if manifest is None:
+            return {"ok": False, "errors": ["No hay lote abierto."]}
+        if self._tia_busy() or self._voice_worker_active:
+            return {"ok": False, "errors": ["Hay una operacion TIA/PLCSIM en curso."]}
+        issues = text_batch.reconcile(self.project_root, manifest)
+        attention = [e for e in manifest["ordered_trial_plan"] if e["status"] in text_batch.ATTENTION_ENTRY_STATES]
+        if issues or attention:
+            detail = "; ".join(issues) or "; ".join(f"{text_batch.entry_label(e)}: {e['status']}" for e in attention)
+            text_batch.pause(manifest, text_batch.PAUSE_INCONSISTENT if issues else manifest.get("pause_reason") or text_batch.PAUSE_INFRASTRUCTURE, detail)
+            self._batch_save()
+            return {"ok": False, "errors": [detail], "paused": True}
+        text_batch.mark_started(manifest)
+        self._batch_save()
+        self.after(0, self._batch_run_next)
+        return {"ok": True, "errors": []}
+
+    def request_text_batch_pause(self) -> None:
+        """PAUSAR DESPUES DEL ENSAYO ACTUAL: nunca interrumpe TIA."""
+        manifest = self._text_batch_manifest()
+        if manifest and manifest["status"] == text_batch.STATUS_RUNNING:
+            text_batch.request_pause(manifest)
+            self._batch_save()
+            self._log("[BATCH] Pausa solicitada: se aplicara al terminar el ensayo actual.")
+
+    def stop_text_batch(self) -> None:
+        """DETENER LOTE: si hay un ensayo en curso, se detiene de forma segura al terminarlo."""
+        manifest = self._text_batch_manifest()
+        if not manifest:
+            return
+        if manifest["status"] == text_batch.STATUS_RUNNING:
+            manifest["stop_requested"] = True
+            text_batch.request_pause(manifest)
+            self._batch_save()
+            self._log("[BATCH] Detencion solicitada: se aplicara al terminar el ensayo actual.")
+            return
+        text_batch.cancel(manifest, "detenido por el usuario")
+        self._batch_save()
+        self._log(f"[BATCH] {manifest['batch_id']} detenido.")
+
+    def retry_text_batch_trial(self, reason: str) -> dict[str, Any]:
+        """
+        REINTENTAR ESTE ENSAYO (solo explicito). Misma politica que deferred_evaluator:
+          INFRASTRUCTURE_ERROR de la evaluacion -> nuevo intento del MISMO ensayo (attempt_002, motivo);
+          precheck bloqueado (ensayo generado, evaluacion PENDING) -> se evalua ese MISMO ensayo;
+          generacion caida / ensayo interrumpido -> ensayo NUEVO para la celda (el anterior se conserva).
+        """
+        manifest = self._load_open_text_batch()
+        if manifest is None or manifest["status"] != text_batch.STATUS_PAUSED:
+            return {"ok": False, "errors": ["El lote no esta pausado."]}
+        if not (reason or "").strip():
+            return {"ok": False, "errors": [f"{deferred_evaluator.ERROR_RETRY_REASON}: indique el motivo del reintento."]}
+        entry = text_batch.next_entry(manifest)
+        if entry is None or entry["status"] not in text_batch.ATTENTION_ENTRY_STATES:
+            return {"ok": False, "errors": ["No hay un ensayo pendiente de reintento: use REANUDAR."]}
+        record = trial_model.load_trial(Path(entry["trial_dir"])) if entry.get("trial_dir") and \
+            (Path(entry["trial_dir"]) / trial_model.TRIAL_FILENAME).exists() else {}
+        generation = (record.get("generation") or {}).get("status")
+        evaluation = (record.get("evaluation") or {}).get("status")
+        retry_reason = None
+        if entry["status"] == text_batch.ENTRY_INFRASTRUCTURE and generation == deferred_evaluator.GENERATION_SUCCESS \
+                and evaluation == deferred_evaluator.EVALUATION_INFRASTRUCTURE:
+            entry["status"], retry_reason = text_batch.ENTRY_EVALUATING, reason.strip()
+        elif entry["status"] == text_batch.ENTRY_BLOCKED and evaluation == deferred_evaluator.EVALUATION_PENDING:
+            entry["status"] = text_batch.ENTRY_EVALUATING
+        else:
+            text_batch.supersede_for_new_trial(manifest, entry, reason.strip())
+            entry["retry_reason"] = reason.strip()
+        text_batch.mark_started(manifest)
+        self._batch_save()
+        self.after(0, lambda: self._batch_run_next(retry_reason))
+        return {"ok": True, "errors": []}
+
+    def _configure_experiment_selection(self, entry: dict[str, Any], phase: str) -> None:
+        """Fija los selectores de la GUI que lee EJECUTAR ENSAYO COMPLETO (mismo camino que un clic)."""
+        if self.work_mode_var.get() != "Experimentacion":
+            self.work_mode_var.set("Experimentacion")
+            self._on_work_mode_changed()
+        group = "PID P01-P12" if entry["case_id"].startswith("P") else "Discreto D01-D20"
+        if self.experiment_group_var.get() != group:
+            self.experiment_group_var.set(group)
+            self._refresh_experiment_case_selector()  # sin cambiar el mapa activo en silencio
+        label = next((name for name, profile in self._experiment_profiles_by_case.items() if profile.get("case_id") == entry["case_id"]), None)
+        if label is None:
+            raise RuntimeError(f"No existe el perfil experimental de {entry['case_id']}.")
+        self.experiment_case_var.set(label)
+        self._on_experiment_case_changed()
+        self.experiment_variant_var.set(entry["variant_id"])
+        self._on_experiment_variant_changed()
+        self.experiment_input_mode_var.set(INPUT_MODE_LABELS[trial_model.INPUT_MODE_TEXT])
+        self._on_experiment_input_mode_changed()
+        self.experiment_phase_var.set(EXPERIMENT_PHASE_LABELS[phase])
+        if not self.experiment_speaker_var.get().strip():
+            self.experiment_speaker_var.set(self.BATCH_SPEAKER_ID)
+        if self._active_variant_command_text != entry["reference_text"]:
+            raise RuntimeError(f"El comando cargado para {text_batch.entry_label(entry)} no coincide con el benchmark.")
+
+    @contextlib.contextmanager
+    def _unattended_interactions(self, dialogs: list[dict[str, str]]) -> Any:
+        """
+        Lote desatendido: ningun dialogo bloquea. Los mensajes se registran (y se guardan en el ensayo);
+        las confirmaciones responden NO y las aclaraciones quedan SIN responder (protocolo del lote:
+        nadie responde; el ensayo registra clarification_requested).
+        """
+        module = sys.modules[__name__]
+        originals = {name: getattr(messagebox, name) for name in ("showinfo", "showwarning", "showerror", "askyesno", "askokcancel")}
+        original_ask = simpledialog.askstring
+        original_dialog = module.ClarificationDialog
+        original_wait = self.wait_window
+
+        def _record(kind: str) -> Callable[..., Any]:
+            def _dialog(title: str = "", message: str = "", *args: Any, **kwargs: Any) -> Any:
+                dialogs.append({"kind": kind, "title": str(title), "message": str(message)[:500]})
+                self._log(f"[BATCH] {kind}: {title}: {str(message)[:200]}")
+                return False if kind.startswith("ask") else None
+            return _dialog
+
+        class _NoAnswer:
+            def __init__(self, _parent: Any, question: str) -> None:
+                dialogs.append({"kind": "clarification", "title": "Aclaracion (sin respuesta en lote)", "message": str(question)[:500]})
+                self.result = None
+
+        try:
+            for name in originals:
+                setattr(messagebox, name, _record(name))
+            simpledialog.askstring = lambda *a, **k: None
+            module.ClarificationDialog = _NoAnswer
+            self.wait_window = lambda *a, **k: None
+            yield dialogs
+        finally:
+            for name, function in originals.items():
+                setattr(messagebox, name, function)
+            simpledialog.askstring = original_ask
+            module.ClarificationDialog = original_dialog
+            self.wait_window = original_wait
+
+    def _batch_run_next(self, retry_reason: str | None = None) -> None:
+        state = getattr(self, "_text_batch", None)
+        if not state:
+            return
+        manifest, batch_dir = state["manifest"], state["dir"]
+        if manifest["status"] != text_batch.STATUS_RUNNING:
+            return
+        if self._tia_busy() or self._voice_worker_active or self.active_trial is not None:
+            self.after(1000, lambda: self._batch_run_next(retry_reason))  # nunca se solapa con otra operacion
+            return
+        if manifest.get("pause_requested"):
+            self._batch_finish_pause()
+            return
+        entry = text_batch.next_entry(manifest)
+        if entry is None:
+            self._batch_apply_decision(text_batch.DECISION_COMPLETED if text_batch._complete_if_done(manifest) else text_batch.DECISION_PAUSE)
+            return
+        state["current_index"] = entry["index"]
+        if entry["status"] == text_batch.ENTRY_EVALUATING and entry.get("trial_dir"):
+            self._batch_evaluate(entry, retry_reason)  # reanudacion: se evalua el MISMO ensayo ya generado
+            return
+        if entry["status"] != text_batch.ENTRY_PENDING:
+            text_batch.pause(manifest, text_batch.PAUSE_INCONSISTENT, f"{text_batch.entry_label(entry)} en estado {entry['status']}")
+            self._batch_save()
+            return
+        environment = deferred_evaluator.environment_precheck(self.project_root, manifest["phase"])
+        if not environment["ok"]:
+            # El entorno no puede evaluar: no se gasta un ensayo (ni LLM) - pausa antes de generar.
+            text_batch.pause(manifest, text_batch.PAUSE_ENVIRONMENT, "; ".join(environment["errors"][:4]))
+            self._batch_save()
+            self._log(f"[BATCH] Pausado: entorno no listo: {'; '.join(environment['errors'][:3])}")
+            return
+        try:
+            self._configure_experiment_selection(entry, manifest["phase"])
+        except RuntimeError as error:
+            text_batch.pause(manifest, text_batch.PAUSE_INCONSISTENT, str(error))
+            self._batch_save()
+            return
+        dialogs: list[dict[str, str]] = []
+        repeat_reason = entry.get("retry_reason") or f"Lote {manifest['batch_id']}"
+        batch_trial = {"batch_id": manifest["batch_id"], "index": entry["index"], "repeat_reason": repeat_reason,
+                       "on_started": lambda directory: self._batch_on_started(entry, directory),
+                       "on_generated": lambda directory, generation: self._batch_on_generated(entry, directory, generation, dialogs)}
+        self._log(f"[BATCH] {manifest['batch_id']} · {entry['index'] + 1}/{manifest['total_trials']} · {text_batch.entry_label(entry)}")
+        self._refresh_text_batch_dialog()
+        with self._unattended_interactions(dialogs):
+            new_dir = self.run_complete_trial(batch_trial=batch_trial)
+        if new_dir is None:
+            # El flujo individual rechazo el ensayo antes de crearlo (mismo criterio que un clic).
+            if entry["status"] == text_batch.ENTRY_GENERATING and entry.get("trial_dir"):
+                return  # ya creado: on_generated decide
+            text_batch.pause(manifest, text_batch.PAUSE_ENVIRONMENT,
+                             "; ".join(d["message"] for d in dialogs[:3]) or "el ensayo no pudo iniciarse")
+            self._batch_save()
+
+    def _batch_on_started(self, entry: dict[str, Any], trial_dir: Path) -> None:
+        trial_id = Path(trial_dir).name
+        text_batch.begin_entry(self._text_batch["manifest"], entry, Path(trial_dir), trial_id)
+        self._batch_save()
+
+    def _batch_on_generated(self, entry: dict[str, Any], trial_dir: Path, generation: str | None, dialogs: list[dict[str, str]]) -> None:
+        if dialogs:
+            trial_model.update_trial(Path(trial_dir), {"batch_dialogs": dialogs[:10]})
+        if generation == deferred_evaluator.GENERATION_SUCCESS:
+            self._batch_evaluate(entry)
+            return
+        # Generacion terminada sin paquete (p.ej. Semantic/IR FAIL): resultado experimental del ensayo.
+        state = self._text_batch
+        self._batch_apply_decision(text_batch.record_trial_result(self.project_root, state["dir"], state["manifest"], entry))
+
+    def _batch_evaluate(self, entry: dict[str, Any], retry_reason: str | None = None) -> None:
+        state = self._text_batch
+        manifest, batch_dir = state["manifest"], state["dir"]
+        trial_dir = Path(entry["trial_dir"])
+        check = deferred_evaluator.precheck(self.project_root, trial_dir, retry_reason)  # el mismo del dialogo individual
+        if not check["ok"]:
+            self._batch_apply_decision(text_batch.record_precheck_block(self.project_root, batch_dir, manifest, entry, check["errors"]))
+            return
+        text_batch.mark_evaluating(manifest, entry)
+        self._batch_save()
+        self._batch_evaluating_dir = trial_dir
+        if not self._start_deferred_evaluation(trial_dir, retry_reason, None):
+            self._batch_evaluating_dir = None
+            entry["status"] = text_batch.ENTRY_BLOCKED
+            text_batch.pause(manifest, text_batch.PAUSE_BLOCKED, "no se pudo iniciar la evaluacion (operacion TIA en curso)")
+            self._batch_save()
+
+    def _batch_on_evaluation_finished(self) -> None:
+        state = getattr(self, "_text_batch", None)
+        if not state:
+            return
+        manifest = state["manifest"]
+        entry = next((e for e in manifest["ordered_trial_plan"] if e["index"] == state.get("current_index")), None)
+        if entry is None:
+            return
+        self._batch_apply_decision(text_batch.record_trial_result(self.project_root, state["dir"], manifest, entry))
+
+    def _batch_finish_pause(self) -> None:
+        manifest = self._text_batch["manifest"]
+        if manifest.pop("stop_requested", False):
+            text_batch.cancel(manifest, "detenido por el usuario tras el ensayo actual")
+        else:
+            text_batch.pause(manifest, text_batch.PAUSE_USER, "pausa solicitada por el usuario")
+        self._batch_save()
+
+    def _batch_apply_decision(self, decision: str) -> None:
+        manifest = self._text_batch["manifest"]
+        if decision == text_batch.DECISION_PAUSE and manifest.pop("stop_requested", False) and \
+                manifest.get("pause_reason") == text_batch.PAUSE_USER:
+            text_batch.cancel(manifest, "detenido por el usuario tras el ensayo actual")
+        self._batch_save()
+        self._log(f"[BATCH] {manifest['batch_id']}: {decision} · {manifest['status']}"
+                  + (f" ({manifest.get('pause_reason')}: {manifest.get('pause_detail')})" if manifest["status"] == text_batch.STATUS_PAUSED else ""))
+        if decision == text_batch.DECISION_CONTINUE and manifest["status"] == text_batch.STATUS_RUNNING:
+            self.after(self.BATCH_STEP_DELAY_MS, self._batch_run_next)
+
+    def open_text_batch_dialog(self) -> "TextBatchDialog":
+        dialog = getattr(self, "_text_batch_dialog", None)
+        if dialog is not None:
+            try:
+                dialog.lift()
+                dialog.refresh()
+                return dialog
+            except tk.TclError:
+                pass
+        self._load_open_text_batch()
+        self._text_batch_dialog = TextBatchDialog(self)
+        return self._text_batch_dialog
+
+    def _announce_open_text_batch(self) -> None:
+        """Al abrir la aplicacion: un lote incompleto se anuncia (nunca se reanuda solo)."""
+        try:
+            manifest = self._load_open_text_batch()
+        except (OSError, ValueError):
+            return
+        self._refresh_text_batch_button()
+        if manifest is not None:
+            entry = text_batch.next_entry(manifest)
+            self._log(f"[BATCH] LOTE TEXT INCOMPLETO {manifest['batch_id']}: {manifest.get('completed_trials', 0)} / "
+                      f"{manifest['total_trials']} completados; siguiente {text_batch.entry_label(entry)}. Use EJECUTAR LOTE TEXT.")
+
+    def _refresh_text_batch_button(self) -> None:
+        button = getattr(self, "text_batch_button", None)
+        manifest = self._text_batch_manifest()
+        if button is None:
+            return
+        if manifest and manifest.get("status") in text_batch.OPEN_STATUSES:
+            button.configure(text=f"LOTE TEXT ({manifest.get('completed_trials', 0)}/{manifest['total_trials']}) · {manifest['status']}")
+        else:
+            button.configure(text="EJECUTAR LOTE TEXT")
+
+    def _refresh_text_batch_dialog(self) -> None:
+        self._refresh_text_batch_button()
+        dialog = getattr(self, "_text_batch_dialog", None)
+        if dialog is not None:
+            try:
+                dialog.refresh()
+            except tk.TclError:
+                self._text_batch_dialog = None
+
+    def text_batch_progress_lines(self) -> list[str]:
+        """Progreso del lote; las etapas del ensayo actual salen de trial_stage_summary (fuente unica)."""
+        manifest = self._text_batch_manifest()
+        if not manifest:
+            return ["No hay lote TEXT abierto."]
+        state = text_batch.progress(manifest)
+        entry = text_batch.next_entry(manifest)
+        title = {text_batch.STATUS_RUNNING: "LOTE TEXT EN CURSO", text_batch.STATUS_CREATED: "LOTE TEXT CREADO"}.get(manifest["status"])
+        if manifest["status"] == text_batch.STATUS_PAUSED:
+            title = ("LOTE PAUSADO POR INFRASTRUCTURE_ERROR" if manifest.get("pause_reason") == text_batch.PAUSE_INFRASTRUCTURE
+                     else "LOTE TEXT PAUSADO")
+        if manifest["status"] in (text_batch.STATUS_COMPLETED, text_batch.STATUS_CANCELLED):
+            return text_batch.final_report_lines(manifest)
+        lines = [title or manifest["status"], f"{manifest['batch_id']} · {manifest['phase']}", "",
+                 f"Completados: {state['completed']} / {state['total']}  ·  PASS {state['pass']} · FAIL {state['fail']} · "
+                 f"REVIEW {state['review']} · INFRA {state['infrastructure_error']} · No evaluables {state['not_evaluable']}"]
+        if manifest.get("started_at"):
+            elapsed = int((datetime.now() - datetime.fromisoformat(manifest["started_at"])).total_seconds())
+            lines.append(f"Tiempo del lote: {elapsed // 3600:d}h {elapsed % 3600 // 60:02d}m {elapsed % 60:02d}s")
+        if manifest["status"] == text_batch.STATUS_PAUSED:
+            lines += ["", f"Motivo: {manifest.get('pause_reason')}", f"Detalle: {manifest.get('pause_detail') or '-'}"]
+        if entry is not None:
+            lines += ["", f"Ensayo actual: {entry['index'] + 1} / {manifest['total_trials']}", f"{text_batch.entry_label(entry)}  [{entry['status']}]",
+                      f"Trial: {entry.get('trial_id') or '-'}"]
+            if entry.get("started_at") and entry["status"] in (text_batch.ENTRY_GENERATING, text_batch.ENTRY_EVALUATING):
+                seconds = int((datetime.now() - datetime.fromisoformat(entry["started_at"])).total_seconds())
+                lines.append(f"Tiempo del ensayo: {seconds // 60:d}m {seconds % 60:02d}s")
+            if entry.get("trial_dir") and (Path(entry["trial_dir"]) / trial_model.TRIAL_FILENAME).exists():
+                lines += [""] + [f"{label:<16}{value}" for label, value in
+                                 deferred_evaluator.verdict_table(trial_model.load_trial(Path(entry["trial_dir"])))]
+        return lines
 
     def _experiment_asr(self, audio_path: Path) -> dict[str, Any]:
         """ASR del producto sobre el audio de la modalidad; la validez tecnica ya la decidio el protocolo."""
@@ -6554,13 +7118,16 @@ class VozLLMPLCGUI(ctk.CTk):
         self.wait_window(dialog)
         return dialog.result
 
-    def _repeat_info(self, case_id: str, variant_id: str, input_mode: str, phase: str) -> dict[str, Any] | None:
+    def _repeat_info(self, case_id: str, variant_id: str, input_mode: str, phase: str,
+                     batch_reason: str | None = None) -> dict[str, Any] | None:
         """Repetir una celda nunca borra el resultado anterior: exige motivo y enlaza el ensayo previo."""
         previous = [row for row in deferred_evaluator.list_trials(self.project_root, (phase,))
                     if row["case_id"] == case_id and row["variant_id"] == variant_id and row["input_mode"] == input_mode]
         if not previous:
             return {}
         last = sorted(previous, key=lambda r: (r.get("created_at") or "", r["trial_id"]))[-1]
+        if batch_reason:  # lote TEXT: el motivo lo aporta el lote (desatendido)
+            return {"repeat_of_trial_id": last["trial_id"], "repeat_reason": batch_reason}
         reason = simpledialog.askstring(
             "Repetir ensayo",
             f"Ya existe {len(previous)} ensayo(s) para {case_id} {variant_id} {input_mode} ({last['trial_id']}).\n"
@@ -6569,12 +7136,20 @@ class VozLLMPLCGUI(ctk.CTk):
             return None
         return {"repeat_of_trial_id": last["trial_id"], "repeat_reason": reason.strip()}
 
-    def run_complete_trial(self) -> Path | None:
+    def run_complete_trial(self, batch_trial: dict[str, Any] | None = None) -> Path | None:
         """
         EJECUTAR ENSAYO COMPLETO: entrada (TEXT / VOICE_CLEAN / VOICE_NOISE) -> MISMO pipeline ->
         generacion -> copia del MASTER -> TIA -> Archive .zap18 verificado -> PLCSIM -> Oracle.
         Un clic = un ensayo; nunca inicia el siguiente.
+
+        `batch_trial` (solo LOTE TEXT, docs/text_batch_execution.md): el MISMO flujo, con tres diferencias
+        de interaccion: el motivo de repeticion lo aporta el lote, el lote recibe el ensayo creado
+        (on_started) y, en lugar de abrir el dialogo individual, recibe el fin de la generacion
+        (on_generated) para lanzar la MISMA evaluacion diferida.
         """
+        if batch_trial is None and self._text_batch_running():
+            messagebox.showwarning("Ejecutar ensayo completo", "Hay un LOTE TEXT en curso: pauselo o detengalo primero.")
+            return None
         if self._tia_busy() or self._voice_worker_active:
             messagebox.showwarning("Ejecutar ensayo completo", "Espere a que termine la operacion en curso.")
             return None
@@ -6617,7 +7192,8 @@ class VozLLMPLCGUI(ctk.CTk):
             capture = self._capture_voice(case_id, variant_id, reference_text)
             if capture is None:
                 return None  # cancelado antes de grabar: no hay resultado experimental
-        repeat = self._repeat_info(case_id, variant_id, input_mode, phase)
+        repeat = self._repeat_info(case_id, variant_id, input_mode, phase,
+                                   batch_reason=(batch_trial or {}).get("repeat_reason"))
         if repeat is None:
             self._discard_capture(capture)
             return None
@@ -6630,9 +7206,12 @@ class VozLLMPLCGUI(ctk.CTk):
         info = (self.active_trial or {}).get("new_trial") or {}
         new_dir = Path(info["dir"]) if info.get("dir") else None
         started_perf = info.get("started_perf")
+        if batch_trial is not None and new_dir is not None:
+            batch_trial["on_started"](new_dir)  # el lote persiste el ensayo ANTES del LLM (sobrevive a una caida)
         self.start_trial_button.configure(state="disabled")
         try:
             patch: dict[str, Any] = {"trial_flow": "COMPLETE", "reference_text": reference_text,
+                                     **({"batch_id": batch_trial["batch_id"], "batch_index": batch_trial["index"]} if batch_trial else {}),
                                      "reference_text_hash": voice_protocol.sha256_text(reference_text),
                                      "speaker_id": speaker_id if input_mode != trial_model.INPUT_MODE_TEXT else None, **repeat}
             if input_mode == trial_model.INPUT_MODE_TEXT:
@@ -6674,7 +7253,10 @@ class VozLLMPLCGUI(ctk.CTk):
             record = deferred_evaluator.finalize_generation(self.project_root, new_dir, Path(package_dir) if ok and package_dir else None)
             generation = (record.get("generation") or {}).get("status")
             self._log(f"[EXPERIMENT] {record.get('trial_id')}: generacion {generation}")
-            if generation == deferred_evaluator.GENERATION_SUCCESS:
+            if batch_trial is not None:
+                # Lote: la evaluacion (la misma) la lanza el lote despues de cerrar este ensayo (finally).
+                self.after(0, lambda: batch_trial["on_generated"](new_dir, generation))
+            elif generation == deferred_evaluator.GENERATION_SUCCESS:
                 self.active_trial = None
                 self._open_deferred_dialog(new_dir, retry=False, autostart=True)
             else:
