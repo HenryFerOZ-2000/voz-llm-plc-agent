@@ -27,6 +27,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 
 from datetime import datetime
 from pathlib import Path
@@ -757,6 +758,92 @@ def check_plcsim(runtime_report: dict[str, Any], instance_name: str) -> list[str
 # ---------------------------------------------------------------------------------------------
 
 MEMORY_PREFLIGHT_REPORT = "memory_preflight.json"
+CLEANUP_REPORT = "workspace_cleanup.json"
+DIAGNOSTICS_DIRNAME = "diagnostics"
+ERROR_PERSISTENCE_VERIFICATION = "TRIAL_PERSISTENCE_VERIFICATION_FAILED"
+
+_SECRET_PATTERNS = (
+    re.compile(r"sk-[A-Za-z0-9_\-]{8,}"),
+    re.compile(r"(?i)\b(api[_-]?key|token|password|secret|authorization)\b(\s*[=:]\s*)(\S+)"),
+)
+
+
+def _redact(text: str) -> str:
+    """Nunca se persisten secretos: claves conocidas del entorno y patrones tipicos (sk-..., api_key=...)."""
+    text = str(text)
+    for name, value in os.environ.items():
+        if value and len(value) >= 8 and any(word in name.upper() for word in ("KEY", "TOKEN", "SECRET", "PASSWORD")):
+            text = text.replace(value, "***")
+    text = _SECRET_PATTERNS[0].sub("***", text)
+    return _SECRET_PATTERNS[1].sub(lambda m: f"{m.group(1)}{m.group(2)}***", text)
+
+
+def record_unexpected_error(trial_dir: Path, error: BaseException, phase: str, attempt: int | None = None,
+                            trial_id: str | None = None, annotate_trial: bool = True) -> str | None:
+    """
+    Evidencia de diagnostico de una excepcion inesperada (evaluacion o worker de la GUI):
+    <trial_dir>/evaluation/diagnostics/<stamp>_<fase>.json con tipo, mensaje, fase, trial_id, intento,
+    timestamp y traceback (sin secretos). Con annotate_trial anade evaluation.last_unexpected_error en
+    trial.json SIN tocar status/veredicto. Nunca lanza; devuelve la ruta o None.
+    """
+    try:
+        trial_dir = Path(trial_dir)
+        if not (trial_dir / trial_model.TRIAL_FILENAME).is_file():
+            return None
+        record = trial_model.load_trial(trial_dir)
+        evaluation = record.get("evaluation") or {}
+        now = datetime.now()
+        payload = {
+            "trial_id": trial_id or record.get("trial_id"),
+            "attempt": attempt if attempt is not None else evaluation.get("attempt"),
+            "phase": phase,
+            "timestamp": now.isoformat(timespec="milliseconds"),
+            "exception_type": type(error).__name__,
+            "exception_message": _redact(str(error)),
+            "traceback": _redact("".join(traceback.format_exception(type(error), error, error.__traceback__))),
+            "evaluation_status_at_error": evaluation.get("status"),
+            "final_verdict_at_error": record.get("final_verdict"),
+        }
+        safe_phase = re.sub(r"[^A-Za-z0-9_]+", "_", phase)[:40]
+        path = trial_dir / EVALUATION_DIRNAME / DIAGNOSTICS_DIRNAME / f"{now.strftime('%Y%m%d_%H%M%S_%f')}_{safe_phase}.json"
+        _write_json(path, payload)
+        if annotate_trial:
+            trial_model.update_trial(trial_dir, {"evaluation": {"last_unexpected_error": {
+                key: payload[key] for key in ("phase", "attempt", "timestamp", "exception_type", "exception_message")} | {
+                "diagnostic_path": str(path)}}})
+        return str(path)
+    except Exception:  # noqa: BLE001 - el diagnostico nunca puede empeorar el fallo original
+        return None
+
+
+def _verify_persisted(trial_dir: Path, trial_id: str, attempt_number: int, final_status: str) -> list[str]:
+    """Relee trial.json: el resultado debe estar completo y coherente antes de cualquier mantenimiento."""
+    record = trial_model.load_trial(Path(trial_dir))
+    evaluation = record.get("evaluation") or {}
+    attempts = evaluation.get("attempts") or []
+    last = attempts[-1] if attempts else {}
+    problems = []
+    if record.get("trial_id") != trial_id:
+        problems.append(f"trial_id {record.get('trial_id')} != {trial_id}")
+    if record.get("final_verdict") != final_status or evaluation.get("final_verdict") != final_status:
+        problems.append(f"final_verdict {record.get('final_verdict')}/{evaluation.get('final_verdict')} != {final_status}")
+    if evaluation.get("status") in (None, "RUNNING") or evaluation.get("attempt") != attempt_number:
+        problems.append(f"evaluation status={evaluation.get('status')} attempt={evaluation.get('attempt')}")
+    if len(attempts) != attempt_number or last.get("attempt") != attempt_number or last.get("final_status") != final_status:
+        problems.append(f"attempts={len(attempts)} ultimo={last.get('attempt')}/{last.get('final_status')}")
+    return problems
+
+
+def _persist_cleanup_outcome(trial_dir: Path, attempt_number: int, cleanup: dict[str, Any]) -> None:
+    """Solo actualiza workspace_cleanup / tia_workspace_cleaned del intento: nunca el veredicto."""
+    record = trial_model.load_trial(Path(trial_dir))
+    attempts = (record.get("evaluation") or {}).get("attempts") or []
+    target = next((a for a in reversed(attempts) if isinstance(a, dict) and a.get("attempt") == attempt_number), None)
+    if target is None:
+        return
+    target["workspace_cleanup"] = cleanup
+    target["tia_workspace_cleaned"] = cleanup.get("status") == TW.CLEANUP_CLEANED
+    trial_model.save_trial(Path(trial_dir), record)
 
 
 def _record_memory_abort(project_root: Path, trial_dir: Path, record: dict[str, Any], attempts: list[dict[str, Any]],
@@ -803,7 +890,43 @@ def evaluate_trial(
     """
     Evalua un ensayo GENERADO sin volver a interpretar/generar nada. TIA solo ve el workspace corto
     tiaw/<Tnnnn>; la evidencia (.zap18 verificado por hash) queda en la carpeta del ensayo.
+
+    Orden: veredicto -> evidencias -> trial.json (atomico, verificado) -> registro del workspace ->
+    limpieza. La limpieza es mantenimiento: si falla, el workspace queda KEPT y el veredicto no cambia.
+    Una excepcion inesperada ANTES de persistir el veredicto deja diagnostico y se propaga (el ensayo
+    sigue sin veredicto: nunca se inventa uno).
     """
+    context: dict[str, Any] = {"phase": "precheck", "attempt": None, "trial_id": None, "workspace_id": None,
+                               "verdict_persisted": False}
+    try:
+        return _evaluate_trial(project_root, trial_dir, retry_reason, bridge, runtime_status_fn, oracle_fn, log, memory_fn, context)
+    except Exception as error:
+        path = record_unexpected_error(Path(trial_dir), error, context["phase"], context["attempt"], context["trial_id"],
+                                       annotate_trial=not context["verdict_persisted"])
+        if context["workspace_id"] and not context["verdict_persisted"]:
+            try:  # workspace conservado para diagnostico (nunca se limpia un ensayo sin veredicto)
+                TW.update_entry(Path(project_root), context["workspace_id"], state=TW.STATE_KEPT,
+                                keep_reason=f"UNEXPECTED_ERROR en {context['phase']}: {type(error).__name__}", diagnostic_path=path)
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            error.diagnostic_path = path  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001
+            pass
+        raise
+
+
+def _evaluate_trial(
+    project_root: Path,
+    trial_dir: Path,
+    retry_reason: str | None,
+    bridge: Callable[..., dict[str, Any]] | None,
+    runtime_status_fn: Callable[[Path], dict[str, Any]] | None,
+    oracle_fn: Callable[..., dict[str, Any]] | None,
+    log: Callable[[str], None],
+    memory_fn: Callable[[], dict[str, Any]] | None,
+    context: dict[str, Any],
+) -> dict[str, Any]:
     import plcsim_runtime
     import tia_openness
     from trial_experiments import oracle_runner
@@ -825,6 +948,7 @@ def evaluate_trial(
     evaluation = record.get("evaluation") or {}
     attempts = list(evaluation.get("attempts") or [])
     attempt_number = len(attempts) + 1
+    context.update({"phase": "attempt_setup", "attempt": attempt_number, "trial_id": record.get("trial_id")})
     attempt_dir = _attempt_dir(trial_dir, attempt_number)
     if attempt_dir.exists():
         raise RuntimeError(f"{attempt_dir} ya existe: un intento nunca se sobrescribe.")
@@ -839,8 +963,10 @@ def evaluate_trial(
         return _record_memory_abort(project_root, trial_dir, record, attempts, attempt_number, attempt_dir, retry_reason, memory, log)
 
     # Workspace corto NUEVO (ID nunca reutilizado). Es lo unico que recibe TIA.
+    context["phase"] = "workspace_allocation"
     workspace = TW.allocate(project_root, record["trial_id"], attempt_number, trial_dir)
     workspace_id, workspace_path = workspace["workspace_id"], Path(workspace["path"])
+    context["workspace_id"] = workspace_id
     paths = TW.layout(workspace_path, workspace_id)
     path_validation = TW.validate_paths(workspace_path, workspace_id, master_internal_project_name(master), TIA_ARCHIVE_MAX_PATH)
     started_at, started = _now(), time.perf_counter()
@@ -924,6 +1050,7 @@ def evaluate_trial(
         "physical_download_allowed": False,
     }
     tia_ms = 0
+    context["phase"] = "tia_bridge"
     if path_validation["ok"] and source_ok:
         tia_started = time.perf_counter()
         raw = (bridge or run_bridge)(request, workspace_path, project_root=project_root, on_archived=_on_archived)
@@ -931,6 +1058,7 @@ def evaluate_trial(
     else:
         raw = {"status": "TIA_NOT_CALLED", "errors": list(errors)}
     download_raw = raw.pop("download", None)
+    context["phase"] = "tia_evidence"
     # Checkpoints persistentes del bridge: se copian a la evidencia aunque TIA se haya caido.
     checkpoints_source = workspace_path / TW.CHECKPOINTS_FILENAME
     checkpoints = TW.parse_checkpoints(checkpoints_source)
@@ -960,6 +1088,7 @@ def evaluate_trial(
     archive_reason = None if archive_status == "CREATED" else (
         copy_state.get("error") or raw.get("archive_error") or ("INFRASTRUCTURE_ERROR" if compile_infra else "ARCHIVE_NOT_AVAILABLE"))
 
+    context["phase"] = "download_runtime"
     download_report = None
     download_ok = None
     if download_raw is not None:
@@ -978,12 +1107,14 @@ def evaluate_trial(
         _write_json(attempt_dir / RUNTIME_REPORT, runtime_report)
         cpu_run = bool(runtime_report.get("connected")) and runtime_report.get("cpu_state") == plcsim_runtime.CPU_STATE_RUN
         if cpu_run:
+            context["phase"] = "oracle"
             oracle = S.load_oracle(project_root, manifest["case_id"])
             run = oracle_fn or oracle_runner.run_oracle
             oracle_result = run(oracle, trial_dir / SNAPSHOT_FILENAME, runtime_report, "PLCSIM_ADVANCED",
                                 _read_json(trial_dir / SEMANTIC_FILENAME), project_root)
 
     # Veredicto (misma precedencia que el pipeline inmediato).
+    context["phase"] = "verdict"
     source_mismatch = any(ERROR_INTEGRITY in error for error in errors)
     evidence_failed = archive_created and not evidence_ok
     if compile_infra or source_mismatch or evidence_failed:
@@ -1002,6 +1133,7 @@ def evaluate_trial(
     if not master_intact:
         errors.append(f"{ERROR_MASTER_INTEGRITY}: el MASTER o su snapshot cambiaron durante la evaluacion.")
 
+    context["phase"] = "evidence_manifest"
     tia_manifest = {
         "trial_id": record["trial_id"],
         "attempt_number": attempt_number,
@@ -1039,23 +1171,29 @@ def evaluate_trial(
     }
     _write_json(evidence_dir / TIA_PROJECT_MANIFEST, tia_manifest)
 
+    context["phase"] = "oracle_artifacts"
     if oracle_result is not None:
         record_now = trial_model.load_trial(trial_dir)
         report = oracle_runner.build_evaluation_report(record_now, oracle_result, final_status)
         oracle_runner.write_oracle_artifacts(attempt_dir, oracle_result, report)
 
-    # Limpieza: solo con evidencia copiada y verificada, manifiesto escrito, sesion TIA cerrada (el bridge
-    # termino) y estado final. Con INFRASTRUCTURE_ERROR se conserva el workspace para diagnostico.
+    # Decision de limpieza (se EJECUTA solo despues de persistir y verificar el veredicto): solo con evidencia
+    # copiada y verificada, manifiesto escrito, sesion TIA cerrada (el bridge termino) y estado final.
+    # Con INFRASTRUCTURE_ERROR o sin evidencia se conserva el workspace para diagnostico.
     keep_all = bool(tia_config.get("deferred_keep_workspaces", False))
-    TW.update_entry(project_root, workspace_id, state=TW.STATE_EVIDENCE_COPIED if evidence_ok else TW.STATE_KEPT,
-                    evidence_copied_ok=evidence_ok, final_status=final_status, evidence_path=str(evidence_archive))
-    workspace_cleaned = False
-    if evidence_ok and final_status != trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR and not keep_all:
-        workspace_cleaned = TW.remove_workspace(project_root, workspace_id)
-    elif not evidence_ok or final_status == trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR:
-        TW.update_entry(project_root, workspace_id, state=TW.STATE_KEPT,
-                        keep_reason="INFRASTRUCTURE_ERROR: workspace conservado para diagnostico" if evidence_ok
-                        else "evidencia .zap18 no copiada/verificada")
+    infra = final_status == trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR
+    cleanup_planned = evidence_ok and not infra and not keep_all
+    keep_reason = None
+    if not evidence_ok:
+        keep_reason = "evidencia .zap18 no copiada/verificada"
+    elif infra:
+        keep_reason = "INFRASTRUCTURE_ERROR: workspace conservado para diagnostico"
+    workspace_cleanup: dict[str, Any] = {
+        "status": TW.CLEANUP_PENDING if cleanup_planned else TW.CLEANUP_SKIPPED,
+        "workspace_id": workspace_id, "workspace_path": str(workspace_path), "timestamp": None,
+        "reason": None if cleanup_planned else (keep_reason or "deferred_keep_workspaces"),
+        "error_code": None, "error_type": None, "error_message": None,
+    }
 
     completed_at = _now()
     attempt_summary = {
@@ -1063,7 +1201,7 @@ def evaluate_trial(
         "attempt_dir": str(attempt_dir),
         "tia_workspace_id": workspace_id,
         "tia_workspace_path": str(workspace_path),
-        "tia_workspace_cleaned": workspace_cleaned,
+        "tia_workspace_cleaned": False,
         "started_at": started_at,
         "completed_at": completed_at,
         "retry_reason": retry_reason if attempt_number > 1 else None,
@@ -1080,6 +1218,7 @@ def evaluate_trial(
         "tia_last_completed_checkpoint": checkpoints["last_completed"],
         "tia_first_failed_checkpoint": checkpoints["first_failed"],
         "errors": errors + list(raw.get("errors") or [])[:5],
+        "workspace_cleanup": workspace_cleanup,
     }
     stages = {
         "compile_success": None if compile_infra else bool(compile_ok),
@@ -1107,8 +1246,10 @@ def evaluate_trial(
         oracle_patch = oracle_runner.trial_patch(oracle_result, {"evaluation_report": str(attempt_dir / oracle_runner.EVALUATION_REPORT_FILENAME)})
         for key, value in oracle_patch.items():
             patch[key] = {**patch[key], **value} if isinstance(value, dict) and isinstance(patch.get(key), dict) else value
-    trial_model.update_trial(trial_dir, patch)
-    record = trial_model.load_trial(trial_dir)
+
+    # 1) RESULTADO DEFINITIVO: patch + veredicto + intentos + timing en UNA escritura atomica de trial.json.
+    context["phase"] = "persist_result"
+    record = trial_model.merge_patch(trial_model.load_trial(trial_dir), patch)
     record["final_status"] = final_status
     record["completed_at"] = completed_at
     record["errors"] = list(attempt_summary["errors"])
@@ -1126,7 +1267,55 @@ def evaluate_trial(
                             "started_at": started_at, "completed_at": completed_at, "final_verdict": final_status,
                             "tia_workspace_id": workspace_id, "attempts": attempts + [attempt_summary]}
     trial_model.save_trial(trial_dir, record)
+
+    # 2) Verificacion: sin un trial.json coherente no se hace ningun mantenimiento (el workspace se conserva).
+    context["phase"] = "verify_persistence"
+    problems = _verify_persisted(trial_dir, record["trial_id"], attempt_number, final_status)
+    if problems:
+        raise RuntimeError(f"{ERROR_PERSISTENCE_VERIFICATION}: " + "; ".join(problems))
+    context["verdict_persisted"] = True
     log(f"[DEFERRED] {record['trial_id']}: {final_status} ({classification['failure_category']}) workspace {workspace_id}")
+
+    # 3) Mantenimiento (nunca lanza ni altera el veredicto): registro del workspace y limpieza.
+    context["phase"] = "workspace_registry"
+    try:
+        TW.update_entry(project_root, workspace_id, state=TW.STATE_KEPT if keep_reason else TW.STATE_EVIDENCE_COPIED,
+                        evidence_copied_ok=evidence_ok, final_status=final_status, evidence_path=str(evidence_archive),
+                        **({"keep_reason": keep_reason} if keep_reason else {}))
+    except Exception as error:  # noqa: BLE001 - sin registro coherente no se borra nada
+        workspace_cleanup = {**workspace_cleanup, "error_code": "WORKSPACE_REGISTRY_UPDATE_FAILED", "error_type": type(error).__name__,
+                             "error_message": str(error), "timestamp": _now()}
+        if cleanup_planned:
+            cleanup_planned = False
+            workspace_cleanup["status"] = TW.CLEANUP_FAILED
+    if cleanup_planned:
+        context["phase"] = "workspace_cleanup"
+        protected = [Path(master["path"]).parent, master_archive.parent, Path(trial_dir)]
+        if normal_path:
+            protected.append(Path(normal_path).parent)
+        try:
+            outcome = TW.remove_workspace_safe(project_root, workspace_id, expected_trial_id=record["trial_id"],
+                                               expected_attempt=attempt_number, protected=protected)
+        except Exception as error:  # noqa: BLE001 - remove_workspace_safe no deberia lanzar; si lo hace, se conserva
+            outcome = TW._failure(workspace_id, workspace_path, TW.ERROR_WORKSPACE_REMOVE_FAILED, error)
+            TW._record_outcome(project_root, workspace_id, outcome)
+        workspace_cleanup = {**workspace_cleanup, **{key: value for key, value in outcome.items() if key != "traceback"}}
+        try:
+            _write_json(attempt_dir / CLEANUP_REPORT, {"trial_id": record["trial_id"], "attempt": attempt_number,
+                                                       "final_verdict": final_status, **outcome})
+        except Exception:  # noqa: BLE001
+            pass
+        if outcome["status"] != TW.CLEANUP_CLEANED:
+            log(f"[DEFERRED] {record['trial_id']}: limpieza del workspace {workspace_id} {outcome['status']} "
+                f"({outcome.get('error_type')}: {outcome.get('error_message')}); workspace conservado (KEPT). Veredicto {final_status} intacto.")
+    if workspace_cleanup["status"] != TW.CLEANUP_SKIPPED or workspace_cleanup.get("error_code"):
+        context["phase"] = "cleanup_record"
+        try:
+            _persist_cleanup_outcome(trial_dir, attempt_number, workspace_cleanup)
+        except Exception as error:  # noqa: BLE001
+            record_unexpected_error(trial_dir, error, "cleanup_record", attempt_number, record["trial_id"], annotate_trial=False)
+    attempt_summary.update({"workspace_cleanup": workspace_cleanup,
+                            "tia_workspace_cleaned": workspace_cleanup.get("status") == TW.CLEANUP_CLEANED})
     return {"aborted": False, **attempt_summary, "failure_category": classification["failure_category"], "evaluation_status": status}
 
 

@@ -17,8 +17,10 @@ cambiar el formato:
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -233,10 +235,24 @@ def new_trial_record(
     return record
 
 
+# os.replace sobre trial.json puede fallar un instante en Windows si otro hilo/proceso lo esta leyendo.
+_REPLACE_RETRY_DELAYS_S = (0.05, 0.2, 0.5, 1.0)
+
+
 def save_trial(directory: Path, record: dict[str, Any]) -> Path:
+    """Escritura ATOMICA (temporal + os.replace): nunca deja un trial.json a medio escribir."""
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / TRIAL_FILENAME
-    path.write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
+    for delay in _REPLACE_RETRY_DELAYS_S + (None,):
+        try:
+            os.replace(temporary, path)
+            return path
+        except PermissionError:
+            if delay is None:
+                raise
+            time.sleep(delay)
     return path
 
 
@@ -250,13 +266,18 @@ def load_trial(directory: Path) -> dict[str, Any]:
 
 def update_trial(directory: Path, patch: dict[str, Any]) -> dict[str, Any]:
     """Merge 1 nivel: los dicts de seccion (stages, timing, semantic, ...) se fusionan, no se pisan."""
-    record = load_trial(directory)
+    record = merge_patch(load_trial(directory), patch)
+    save_trial(directory, record)
+    return record
+
+
+def merge_patch(record: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
+    """Merge 1 nivel en memoria (misma regla que update_trial), para persistir varios cambios en UNA escritura."""
     for key, value in patch.items():
         if isinstance(value, dict) and isinstance(record.get(key), dict):
             record[key] = {**record[key], **value}
         else:
             record[key] = value
-    save_trial(directory, record)
     return record
 
 

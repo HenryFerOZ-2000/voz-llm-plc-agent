@@ -6685,7 +6685,12 @@ class VozLLMPLCGUI(ctk.CTk):
                 result = deferred_evaluator.evaluate_trial(self.project_root, Path(trial_dir), retry_reason, log=lambda m: None)
                 self._deferred_queue.put(("ok", result))
             except Exception as error:  # pragma: no cover - feedback de GUI
-                self._deferred_queue.put(("error", str(error)))
+                # Diagnostico persistido (tipo, fase, intento, traceback sin secretos): evaluate_trial ya lo
+                # registra si el fallo ocurrio dentro de la evaluacion; si no, se registra aqui.
+                diagnostic = getattr(error, "diagnostic_path", None) or deferred_evaluator.record_unexpected_error(
+                    Path(trial_dir), error, "gui_deferred_worker")
+                self._deferred_queue.put(("error", f"{type(error).__name__}: {error}"
+                                          + (f" (diagnostico: {diagnostic})" if diagnostic else "")))
 
         threading.Thread(target=_worker, name="deferred-eval", daemon=True).start()
         self.after(500, self._poll_deferred_evaluation)

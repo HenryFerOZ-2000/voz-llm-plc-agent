@@ -272,3 +272,45 @@ descarga, runtime y Oracle. El estado de cada una queda en `stages` y en
 - `baseline_failures.json`.
 
 No calcula estadísticas formales.
+
+## Persistencia del veredicto y limpieza del workspace
+
+Orden de cierre de `evaluate_trial` (la limpieza es mantenimiento, nunca parte del resultado):
+
+1. Veredicto (Oracle + precedencia de etapas).
+2. Evidencias: `tia/tia_project_manifest.json`, `evaluation_report.json`, `oracle_trace.json`.
+3. `trial.json` en UNA escritura atómica (temporal + `os.replace`): etapas, timing, `final_verdict`,
+   `evaluation.status`, `evaluation.attempts[]`.
+4. Verificación: se relee `trial.json`; si no es coherente, no se hace ningún mantenimiento.
+5. Registro `tiaw/_workspaces.json`.
+6. Limpieza del workspace (solo PASS/FAIL/REVIEW con `.zap18` verificado).
+
+La limpieza primero intenta renombrar `tiaw/Tnnnn` (sondeo: en Windows falla si algún proceso, p.ej.
+TIA Portal tras cerrar la sesión Openness, retiene un archivo dentro). Si falla —o si `shutil.rmtree`
+falla (`PermissionError`, WinError 32)— el workspace queda `KEPT` con todos sus archivos y se registra
+`workspace_cleanup` (`status = FAILED`, `error_type`, `error_message`, `workspace_path`, `timestamp`) en
+el intento de `trial.json`, en `evaluation/attempt_NNN/workspace_cleanup.json` y en el registro. El
+veredicto no cambia. Solo se borra `<tiaw>/<Tnnnn>` del propio ensayo e intento (nunca `tia_master/`,
+`tia_projects/`, `results/`, la carpeta del MASTER ni otro workspace). Cuando el proceso libere el
+archivo: `python -m trial_experiments.deferred_evaluator --cleanup-workspaces --include-kept`.
+
+Una excepción inesperada ANTES de persistir el veredicto deja `evaluation/diagnostics/<stamp>_<fase>.json`
+(tipo, mensaje, fase, trial_id, intento, traceback sin secretos) y `evaluation.last_unexpected_error`;
+el ensayo sigue sin veredicto (el lote lo marca INTERRUPTED). Nunca se inventa un resultado.
+
+### Recuperación de persistencia (ensayos históricos)
+
+Ensayos cuyo Oracle terminó pero cuyo resultado no llegó a `trial.json` (`evaluation.status = RUNNING`,
+`attempts = []`, `final_verdict = null`) se auditan en modo SOLO LECTURA:
+
+```
+.venv\Scripts\python.exe scripts\audit_trial_persistence.py D03_V1_TEXT_DEV_001 D03_V2_TEXT_DEV_001
+.venv\Scripts\python.exe scripts\audit_trial_persistence.py --json D03_V1_TEXT_DEV_001 > audit.json
+```
+
+La auditoría no escribe nada, no llama al LLM, no genera SCL, no abre TIA/PLCSIM y no vuelve a ejecutar
+el Oracle. Verifica identidad, hashes congelados, `evaluation_report.json`, intento, `.zap18`, MASTER y
+registro del workspace, y muestra el registro reconstruido (`RECONSTRUCTIBLE`) sin aplicarlo. Aplicarlo
+es una recuperación de persistencia (no un reintento ni una nueva generación) y exige autorización
+explícita, respaldo previo de `trial.json` y registro de cada cambio; nunca se reemplaza el ensayo ni
+se borran sus intentos.
