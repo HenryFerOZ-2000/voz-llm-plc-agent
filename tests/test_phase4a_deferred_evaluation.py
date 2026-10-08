@@ -151,7 +151,19 @@ class _FakeBridge:
                        "error_count": 0 if compiled else 2, "warning_count": 0})
         assert request["trial_archive_name"].endswith(".zap18")
         archive = Path(request["trial_archive_dir"]) / request["trial_archive_name"]
+        # Mismo contrato que ArchiveWithRetry del bridge real (3 intentos; solo "Could not find file" es transitorio).
+        failures = {"ARCHIVE_RECOVERED": 1, "ARCHIVE_RECOVERED_3": 2, "ARCHIVE_FAILED": 3}.get(self.outcome, 0)
+        attempts = [self.archive_attempt(n, str(archive)) for n in range(1, failures + 1)]
+        report.update({"archive_settle_ms": 2000, "archive_max_attempts": 3, "archive_retry_backoff_ms": [2000, 3000],
+                       "archive_attempts": attempts, "archive_attempt_count": len(attempts),
+                       "archive_recovered_after_retry": False})
+        if failures >= 3:
+            report.update({"archive_status": "NOT_CREATED", "archive_result": "TRIAL_ARCHIVE_FAILED",
+                           "archive_error_type": attempts[-1]["exception_type"], "archive_error": attempts[-1]["error_message"]})
+            return report  # sin .zap18 el bridge nunca llama a on_archived ni a Download
         archive.write_bytes(b"trial-project-" + request["trial_archive_name"].encode())
+        attempts.append(self.archive_attempt(failures + 1, str(archive), ok=True))
+        report.update({"archive_attempt_count": len(attempts), "archive_recovered_after_retry": failures > 0})
         report.update({"archive_status": "CREATED", "archive_path": str(archive), "archive_sha256": DE.sha256_file(archive)})
         if self.outcome == "CORRUPT_AFTER_ARCHIVE":
             archive.write_bytes(b"corrupted")  # el .zap18 cambia entre Archive y la copia
@@ -162,6 +174,19 @@ class _FakeBridge:
                 report["download"] = {"status": "TIA_DOWNLOAD_PASSED", "success": True, "target_type": "PLCSIM_ADVANCED",
                                       "start_module_requested": True, "start_module_success": True, "cpu_run_requested": True}
         return report
+
+    @staticmethod
+    def archive_attempt(number: int, target: str, ok: bool = False) -> dict[str, Any]:
+        message = None if ok else ("Error when calling method 'Archive' of type 'Siemens.Engineering.Project'.\r\n\r\n"
+                                   f"Unable to archive the project.\r\n\r\nArchiving failed.\r\nCould not find file '{target}'.")
+        attempt = {"attempt_number": number, "started_at": f"2026-10-08T11:18:{10 + number:02d}.000",
+                   "completed_at": f"2026-10-08T11:18:{10 + number:02d}.250", "duration_ms": 250,
+                   "status": "CREATED" if ok else "FAILED",
+                   "exception_type": None if ok else "Siemens.Engineering.EngineeringTargetInvocationException",
+                   "error_message": message, "transient": not ok}
+        if not ok:
+            attempt["target_after_failure"] = "ABSENT"
+        return attempt
 
 
 def _runtime(root):

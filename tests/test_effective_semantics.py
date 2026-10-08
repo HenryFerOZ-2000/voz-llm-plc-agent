@@ -392,8 +392,9 @@ def test_batch_row_exports_every_dimension(tmp_path):
         "safety_success": True, "infrastructure_status": "OK", "final_verdict": "REVIEW"}
     assert row["semantic"] == "PASS" and row["semantic_benchmark"] == "FAIL" and row["functional"] == "PASS"
     # Columnas nuevas AL FINAL: las anteriores conservan nombre y posicion.
-    assert TB.CSV_FIELDS[-6:] == ("semantic_benchmark", "semantic_pipeline_success", "semantic_benchmark_match",
-                                  "functional_success", "safety_success", "infrastructure_status")
+    assert TB.CSV_FIELDS[-8:-2] == ("semantic_benchmark", "semantic_pipeline_success", "semantic_benchmark_match",
+                                    "functional_success", "safety_success", "infrastructure_status")
+    assert TB.CSV_FIELDS[-2:] == ("archive_attempt_count", "archive_recovered_after_retry")  # reintentos de Archive, al final
     assert TB.CSV_FIELDS[TB.CSV_FIELDS.index("superseded_trial_ids") + 1] == "semantic_benchmark"
 
 

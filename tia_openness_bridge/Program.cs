@@ -329,6 +329,8 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             assertDecision("physical.certificate", "DownloadCertificate", "PHYSICAL_PLC", true, false, null);
             assertDecision("physical.start", "StartModules", "PHYSICAL_PLC", true, true, "StartModule");
 
+            RunArchiveRetrySelfTest(report, checks);
+
             if (((List<string>)report["errors"]).Count > 0)
             {
                 report["status"] = "SELF_TEST_FAILED";
@@ -1652,7 +1654,214 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
         /// nombre se informa como NOT_CREATED con la lista de archivos realmente creados.
         /// Devuelve el codigo de resultado ("CREATED" o el codigo de error) y rellena `report`.
         /// </summary>
-        private static string ArchiveProject(Project project, string targetDirectory, string requestedName, Dictionary<string, object> report, string errorPrefix)
+        /// <summary>Dobles de prueba del self_test: mismo nombre de tipo que la excepcion real de Openness.</summary>
+        private static class SelfTestFakes
+        {
+            internal sealed class EngineeringTargetInvocationException : Exception
+            {
+                internal EngineeringTargetInvocationException(string message) : base(message) { }
+            }
+        }
+
+        private static readonly byte[] SelfTestZipBytes =
+        {
+            0x50, 0x4B, 0x03, 0x04, 0x0A, 0x00, 0x00, 0x00,
+            0x50, 0x4B, 0x05, 0x06, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        };
+
+        /// <summary>
+        /// Escenarios de ArchiveWithRetry sin TIA (accion de Archive simulada, sin esperas reales). Cada
+        /// escenario anade un check {"archive_scenario", status, attempt_count, recovered, calls, sleeps,
+        /// attempt_statuses, transient_flags, target_after_failure, files, passed}.
+        /// </summary>
+        private static void RunArchiveRetrySelfTest(Dictionary<string, object> report, List<object> checks)
+        {
+            string root = Path.Combine(Path.GetTempPath(), "tia_archive_selftest_" + Guid.NewGuid().ToString("N"));
+            const string transientMessage = "Error when calling method 'Archive' of type 'Siemens.Engineering.Project'.\r\n\r\n"
+                + "Unable to archive the project.\r\n\r\nArchiving failed.\r\nCould not find file 'C:\\x\\T0001.zap18'.";
+            try
+            {
+                // steps: "ok" (escribe ZIP completo), "transient", "transient_partial" (deja destino truncado),
+                // "transient_complete" (deja ZIP completo), "other" (ETIE con otro mensaje), "io" (IOException
+                // con el mismo texto: tipo distinto -> no transitorio). preexisting: destino creado antes.
+                Func<string, string[], bool, Dictionary<string, object>> run = (name, steps, preexisting) =>
+                {
+                    string directory = Path.Combine(root, name);
+                    Directory.CreateDirectory(directory);
+                    string target = Path.Combine(directory, "T0001.zap18");
+                    if (preexisting)
+                    {
+                        File.WriteAllBytes(target, SelfTestZipBytes);
+                    }
+                    int calls = 0;
+                    List<int> sleeps = new List<int>();
+                    Dictionary<string, object> scenarioReport = new Dictionary<string, object>();
+                    Action archive = () =>
+                    {
+                        string step = steps[Math.Min(calls, steps.Length - 1)];
+                        calls++;
+                        if (step == "ok")
+                        {
+                            File.WriteAllBytes(target, SelfTestZipBytes);
+                            return;
+                        }
+                        if (step == "transient_partial")
+                        {
+                            File.WriteAllBytes(target, new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x01 });
+                        }
+                        if (step == "transient_complete")
+                        {
+                            File.WriteAllBytes(target, SelfTestZipBytes);
+                        }
+                        if (step == "other")
+                        {
+                            throw new SelfTestFakes.EngineeringTargetInvocationException("Unable to archive the project. Access denied.");
+                        }
+                        if (step == "io")
+                        {
+                            throw new IOException("Could not find file 'C:\\x\\T0001.zap18'.");
+                        }
+                        throw new SelfTestFakes.EngineeringTargetInvocationException(transientMessage);
+                    };
+                    string status = ArchiveWithRetry(archive, directory, target, TrialArchiveMaxAttempts, ArchiveRetryBackoffMs,
+                        milliseconds => sleeps.Add(milliseconds), scenarioReport, "TRIAL");
+                    List<object> attemptList = (List<object>)scenarioReport["archive_attempts"];
+                    return new Dictionary<string, object>
+                    {
+                        { "archive_scenario", name },
+                        { "status", status },
+                        { "attempt_count", scenarioReport["archive_attempt_count"] },
+                        { "recovered", scenarioReport["archive_recovered_after_retry"] },
+                        { "calls", calls },
+                        { "sleeps", sleeps },
+                        { "attempt_statuses", attemptList.Select(a => ((Dictionary<string, object>)a)["status"]).ToList() },
+                        { "transient_flags", attemptList.Select(a => ((Dictionary<string, object>)a)["transient"]).ToList() },
+                        { "target_after_failure", attemptList.Select(a => ((Dictionary<string, object>)a).ContainsKey("target_after_failure")
+                            ? ((Dictionary<string, object>)a)["target_after_failure"] : null).ToList() },
+                        { "attempt_fields_complete", attemptList.All(a => new[] { "attempt_number", "started_at", "completed_at", "duration_ms",
+                            "status", "exception_type", "error_message", "transient" }.All(((Dictionary<string, object>)a).ContainsKey)) },
+                        { "sha256", scenarioReport.ContainsKey("archive_sha256") ? scenarioReport["archive_sha256"] : null },
+                        { "error_kept", scenarioReport.ContainsKey("archive_error") },
+                        { "files", Directory.GetFiles(directory).Select(Path.GetFileName).OrderBy(f => f).ToList() }
+                    };
+                };
+
+                Action<Dictionary<string, object>, string, int, int, bool> expect = (result, expectedStatus, expectedAttempts, expectedCalls, expectedRecovered) =>
+                {
+                    bool passed = (string)result["status"] == expectedStatus && (int)result["attempt_count"] == expectedAttempts
+                        && (int)result["calls"] == expectedCalls && (bool)result["recovered"] == expectedRecovered
+                        && (bool)result["attempt_fields_complete"];
+                    result["passed"] = passed;
+                    checks.Add(result);
+                    if (!passed)
+                    {
+                        AddError(report, "ArchiveWithRetry[" + result["archive_scenario"] + "]: status=" + result["status"]
+                            + " attempts=" + result["attempt_count"] + " calls=" + result["calls"] + " recovered=" + result["recovered"]);
+                    }
+                };
+
+                expect(run("pass_first", new[] { "ok" }, false), "CREATED", 1, 1, false);
+                expect(run("transient_then_pass", new[] { "transient", "ok" }, false), "CREATED", 2, 2, true);
+                expect(run("two_transient_then_pass", new[] { "transient", "transient", "ok" }, false), "CREATED", 3, 3, true);
+                expect(run("three_transient", new[] { "transient", "transient", "transient", "ok" }, false), "TRIAL_ARCHIVE_FAILED", 3, 3, false);
+                expect(run("other_error_no_retry", new[] { "other", "ok" }, false), "TRIAL_ARCHIVE_FAILED", 1, 1, false);
+                expect(run("io_exception_no_retry", new[] { "io", "ok" }, false), "TRIAL_ARCHIVE_FAILED", 1, 1, false);
+                expect(run("partial_target_quarantined", new[] { "transient_partial", "ok" }, false), "CREATED", 2, 2, true);
+                expect(run("complete_target_kept", new[] { "transient_complete", "ok" }, false), "TRIAL_ARCHIVE_FAILED", 1, 1, false);
+                expect(run("preexisting_target", new[] { "ok" }, true), "TRIAL_ARCHIVE_FAILED", 0, 0, false);
+            }
+            finally
+            {
+                try
+                {
+                    Directory.Delete(root, true);
+                }
+                catch (Exception)
+                {
+                    // Solo es la carpeta temporal del self_test: si no se puede borrar no afecta al resultado.
+                }
+            }
+        }
+
+        // Politica de reintento de Project.Archive (solo ensayos; el MASTER sigue con un unico intento).
+        // Causa manejada: carrera interna de TIA V18 entre Archive (que copia el proyecto a
+        // %TEMP%\#TempArchive_<pid>\<nombre>.zap18 antes de comprimir) y el indexador de busqueda que
+        // reescribe IM/SearchIndex tras Save -> EngineeringTargetInvocationException "Could not find file".
+        internal const int TrialArchiveMaxAttempts = 3;
+        internal const int TrialArchiveSettleMs = 2000;                    // espera fija entre Save y el 1er Archive
+        internal static readonly int[] ArchiveRetryBackoffMs = { 2000, 3000 }; // antes del 2do y del 3er intento
+        internal const string TransientArchiveMarker = "Could not find file";
+
+        /// <summary>
+        /// Unico error de Archive que se reintenta: EngineeringTargetInvocationException cuyo mensaje (o el de
+        /// una excepcion interna) contiene "Could not find file". Cualquier otro error falla sin reintento.
+        /// </summary>
+        internal static bool IsTransientArchiveError(Exception exception)
+        {
+            if (exception == null || exception.GetType().Name != "EngineeringTargetInvocationException")
+            {
+                return false;
+            }
+            for (Exception current = exception; current != null; current = current.InnerException)
+            {
+                if ((current.Message ?? "").IndexOf(TransientArchiveMarker, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// ZIP estructuralmente completo: firma local "PK\x03\x04" al inicio y registro de fin de directorio
+        /// central "PK\x05\x06" en la cola. Un .zap18 truncado por un Archive abortado no lo cumple.
+        /// </summary>
+        internal static bool LooksLikeCompleteZip(string path)
+        {
+            try
+            {
+                using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    if (stream.Length < 22)
+                    {
+                        return false;
+                    }
+                    byte[] head = new byte[4];
+                    if (stream.Read(head, 0, 4) != 4 || head[0] != 0x50 || head[1] != 0x4B || head[2] != 0x03 || head[3] != 0x04)
+                    {
+                        return false;
+                    }
+                    int tailLength = (int)Math.Min(stream.Length, 22 + 65535);
+                    byte[] tail = new byte[tailLength];
+                    stream.Seek(-tailLength, SeekOrigin.End);
+                    int read = 0;
+                    while (read < tailLength)
+                    {
+                        int chunk = stream.Read(tail, read, tailLength - read);
+                        if (chunk <= 0)
+                        {
+                            return false;
+                        }
+                        read += chunk;
+                    }
+                    for (int index = tailLength - 22; index >= 0; index--)
+                    {
+                        if (tail[index] == 0x50 && tail[index + 1] == 0x4B && tail[index + 2] == 0x05 && tail[index + 3] == 0x06)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+        }
+
+        private static string ArchiveProject(Project project, string targetDirectory, string requestedName, Dictionary<string, object> report,
+            string errorPrefix, int maxAttempts = 1)
         {
             string targetName = ArchiveTargetName(requestedName);
             string expectedPath = Path.Combine(targetDirectory, targetName);
@@ -1662,7 +1871,34 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             report["archive_expected_path"] = expectedPath;
             report["archive_mode"] = ProjectArchivationMode.Compressed.ToString();
             Log("[TIA ARCHIVE] source=" + project.Path.FullName + " target_dir=" + targetDirectory + " target_name=" + targetName
-                + " expected=" + expectedPath + " mode=" + ProjectArchivationMode.Compressed);
+                + " expected=" + expectedPath + " mode=" + ProjectArchivationMode.Compressed + " max_attempts=" + maxAttempts);
+            // Cada intento: MISMA sesion TIA, MISMO proyecto ya guardado y compilado, MISMO destino. Nunca se recompila.
+            return ArchiveWithRetry(
+                () => project.Archive(new DirectoryInfo(targetDirectory), targetName, ProjectArchivationMode.Compressed),
+                targetDirectory, expectedPath, maxAttempts, ArchiveRetryBackoffMs,
+                milliseconds => System.Threading.Thread.Sleep(milliseconds), report, errorPrefix);
+        }
+
+        /// <summary>
+        /// Motor de reintento de Archive (inyectable: lo ejercita self_test sin TIA). Reglas:
+        ///  - destino existente ANTES del primer intento -> error, nunca se sobrescribe ni se llama a Archive;
+        ///  - solo se reintenta un error transitorio (IsTransientArchiveError), hasta maxAttempts en total,
+        ///    esperando backoffMs[n-1] antes del intento n+1;
+        ///  - si tras un fallo quedo un destino: ZIP completo -> se conserva intacto y NO se reintenta (no se
+        ///    sobrescribe); parcial/corrupto -> se renombra a "<destino>.partial_attemptN" (nunca se borra);
+        ///  - cada intento queda en report["archive_attempts"] (attempt_number, started_at, completed_at,
+        ///    duration_ms, status, exception_type, error_message, transient).
+        /// </summary>
+        internal static string ArchiveWithRetry(Action archiveCall, string targetDirectory, string expectedPath, int maxAttempts,
+            int[] backoffMs, Action<int> sleep, Dictionary<string, object> report, string errorPrefix)
+        {
+            maxAttempts = Math.Max(1, maxAttempts);
+            List<object> attempts = new List<object>();
+            report["archive_attempts"] = attempts;
+            report["archive_attempt_count"] = 0;
+            report["archive_max_attempts"] = maxAttempts;
+            report["archive_retry_backoff_ms"] = backoffMs;
+            report["archive_recovered_after_retry"] = false;
 
             Directory.CreateDirectory(targetDirectory);
             if (File.Exists(expectedPath))
@@ -1671,37 +1907,106 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 return errorPrefix + "_ARCHIVE_FAILED";
             }
             HashSet<string> before = new HashSet<string>(Directory.GetFiles(targetDirectory), StringComparer.OrdinalIgnoreCase);
-            try
+
+            for (int attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber++)
             {
-                project.Archive(new DirectoryInfo(targetDirectory), targetName, ProjectArchivationMode.Compressed);
-            }
-            catch (Exception exception)
-            {
-                report["archive_error_type"] = exception.GetType().FullName;
-                report["archive_error"] = exception.Message;
-                if (exception.GetType().Name == "EngineeringTargetInvocationException")
+                Checkpoint("archive_attempt", attemptNumber + "/" + maxAttempts);
+                DateTime startedAt = DateTime.Now;
+                System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+                Exception failure = null;
+                try
                 {
-                    report["archive_error_hint"] = "TIA rechazo el archivado; el motivo exacto esta en archive_error.";
+                    archiveCall();
                 }
-                return errorPrefix + "_ARCHIVE_FAILED";
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+                watch.Stop();
+                Dictionary<string, object> attempt = new Dictionary<string, object>
+                {
+                    { "attempt_number", attemptNumber },
+                    { "started_at", startedAt.ToString("yyyy-MM-ddTHH:mm:ss.fff") },
+                    { "completed_at", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") },
+                    { "duration_ms", (long)watch.ElapsedMilliseconds },
+                    { "status", failure == null ? "CREATED" : "FAILED" },
+                    { "exception_type", failure == null ? null : failure.GetType().FullName },
+                    { "error_message", failure == null ? null : failure.Message },
+                    { "transient", failure != null && IsTransientArchiveError(failure) }
+                };
+                attempts.Add(attempt);
+                report["archive_attempt_count"] = attemptNumber;
+
+                if (failure == null)
+                {
+                    List<string> created = Directory.GetFiles(targetDirectory).Where(f => !before.Contains(f)).Select(Path.GetFileName).ToList();
+                    report["archive_actual_files_created"] = created;
+                    if (!File.Exists(expectedPath))
+                    {
+                        attempt["status"] = "NOT_CREATED";
+                        report["archive_error"] = "Project.Archive no creo el archivo esperado " + expectedPath;
+                        return errorPrefix + "_ARCHIVE_NOT_CREATED";
+                    }
+                    long size = new FileInfo(expectedPath).Length;
+                    report["archive_size_bytes"] = size;
+                    if (size <= 0)
+                    {
+                        attempt["status"] = "EMPTY";
+                        report["archive_error"] = "El archivo creado esta vacio: " + expectedPath;
+                        return errorPrefix + "_ARCHIVE_EMPTY";
+                    }
+                    // Los errores de intentos anteriores quedan SOLO en archive_attempts: el archivado termino bien.
+                    report.Remove("archive_error");
+                    report.Remove("archive_error_type");
+                    report.Remove("archive_error_hint");
+                    report["archive_recovered_after_retry"] = attemptNumber > 1;
+                    report["archive_path"] = expectedPath;
+                    report["archive_sha256"] = Sha256File(expectedPath);
+                    return "CREATED";
+                }
+
+                bool transient = (bool)attempt["transient"];
+                report["archive_error_type"] = failure.GetType().FullName;
+                report["archive_error"] = failure.Message;
+                if (failure.GetType().Name == "EngineeringTargetInvocationException")
+                {
+                    report["archive_error_hint"] = transient
+                        ? "Error transitorio de TIA (carrera con IM/SearchIndex durante Archive)."
+                        : "TIA rechazo el archivado; el motivo exacto esta en archive_error.";
+                }
+                Checkpoint("archive_attempt_error", attemptNumber + "/" + maxAttempts + " transient=" + transient + " "
+                    + failure.GetType().Name + ": " + failure.Message);
+
+                if (File.Exists(expectedPath))
+                {
+                    if (LooksLikeCompleteZip(expectedPath))
+                    {
+                        // Archive lanzo excepcion pero dejo un ZIP completo: se conserva tal cual y no se reintenta.
+                        attempt["target_after_failure"] = "COMPLETE_KEPT";
+                        report["archive_error"] = failure.Message + " | Quedo un destino con ZIP completo tras la excepcion; "
+                            + "se conserva sin sobrescribir y no se reintenta: " + expectedPath;
+                        return errorPrefix + "_ARCHIVE_FAILED";
+                    }
+                    string quarantine = expectedPath + ".partial_attempt" + attemptNumber;
+                    File.Move(expectedPath, quarantine);
+                    attempt["target_after_failure"] = "PARTIAL_QUARANTINED";
+                    attempt["quarantined_path"] = quarantine;
+                }
+                else
+                {
+                    attempt["target_after_failure"] = "ABSENT";
+                }
+
+                if (!transient || attemptNumber == maxAttempts)
+                {
+                    return errorPrefix + "_ARCHIVE_FAILED";
+                }
+                int waitMs = backoffMs.Length == 0 ? 0 : backoffMs[Math.Min(attemptNumber - 1, backoffMs.Length - 1)];
+                attempt["retry_wait_ms"] = waitMs;
+                Checkpoint("archive_retry_wait", waitMs + "ms");
+                sleep(waitMs);
             }
-            List<string> created = Directory.GetFiles(targetDirectory).Where(f => !before.Contains(f)).Select(Path.GetFileName).ToList();
-            report["archive_actual_files_created"] = created;
-            if (!File.Exists(expectedPath))
-            {
-                report["archive_error"] = "Project.Archive no creo el archivo esperado " + expectedPath;
-                return errorPrefix + "_ARCHIVE_NOT_CREATED";
-            }
-            long size = new FileInfo(expectedPath).Length;
-            report["archive_size_bytes"] = size;
-            if (size <= 0)
-            {
-                report["archive_error"] = "El archivo creado esta vacio: " + expectedPath;
-                return errorPrefix + "_ARCHIVE_EMPTY";
-            }
-            report["archive_path"] = expectedPath;
-            report["archive_sha256"] = Sha256File(expectedPath);
-            return "CREATED";
+            return errorPrefix + "_ARCHIVE_FAILED";
         }
 
         private static string _checkpointPath;
@@ -2115,8 +2420,13 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                         project.Save();
                         Checkpoint("save_completed", "");
                         report["project_saved"] = true;
+                        // Espera fija y determinista tras Save: deja terminar al indexador de busqueda de TIA
+                        // (IM/SearchIndex) antes de que Archive copie el proyecto.
+                        Checkpoint("archive_settle_wait", TrialArchiveSettleMs + "ms");
+                        System.Threading.Thread.Sleep(TrialArchiveSettleMs);
+                        report["archive_settle_ms"] = TrialArchiveSettleMs;
                         Checkpoint("archive_started", Path.Combine(trialArchiveDir, trialArchiveName));
-                        string archiveStatus = ArchiveProject(project, trialArchiveDir, trialArchiveName, report, "TRIAL");
+                        string archiveStatus = ArchiveProject(project, trialArchiveDir, trialArchiveName, report, "TRIAL", TrialArchiveMaxAttempts);
                         Checkpoint(archiveStatus == "CREATED" ? "archive_completed" : "archive_failed", archiveStatus);
                         report["archive_status"] = archiveStatus == "CREATED" ? "CREATED" : "NOT_CREATED";
                         report["archive_result"] = archiveStatus;

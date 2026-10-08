@@ -877,6 +877,23 @@ def _attempt_dir(trial_dir: Path, attempt: int) -> Path:
     return Path(trial_dir) / EVALUATION_DIRNAME / f"attempt_{attempt:03d}"
 
 
+def archive_attempts_trace(raw: dict[str, Any]) -> dict[str, Any]:
+    """
+    Traza de Project.Archive tal como la reporto el bridge (politica de reintento ante la carrera de TIA con
+    IM/SearchIndex). Bridges anteriores (sin el campo) -> attempt_count None, nunca se inventan intentos.
+    """
+    attempts = [dict(item) for item in raw.get("archive_attempts") or [] if isinstance(item, dict)]
+    count = raw.get("archive_attempt_count")
+    return {
+        "attempt_count": count if isinstance(count, int) else (len(attempts) or None),
+        "max_attempts": raw.get("archive_max_attempts"),
+        "settle_ms": raw.get("archive_settle_ms"),
+        "retry_backoff_ms": raw.get("archive_retry_backoff_ms"),
+        "recovered_after_retry": bool(raw.get("archive_recovered_after_retry")),
+        "attempts": attempts,
+    }
+
+
 def evaluate_trial(
     project_root: Path,
     trial_dir: Path,
@@ -1065,7 +1082,8 @@ def _evaluate_trial(
     if checkpoints_source.is_file():
         shutil.copyfile(TW.fs_path(checkpoints_source), TW.fs_path(attempt_dir / TW.CHECKPOINTS_FILENAME))
     raw["checkpoints"] = {key: checkpoints[key] for key in ("last_completed", "first_failed", "first_failed_detail", "unfinished")}
-    _write_json(attempt_dir / COMPILE_REPORT, {**raw, "duration_ms": tia_ms})
+    archive_trace = archive_attempts_trace(raw)
+    _write_json(attempt_dir / COMPILE_REPORT, {**raw, "archive": archive_trace, "duration_ms": tia_ms})
 
     compile_class = TC.classify_tia_compile(raw)
     if raw.get("status") == "TIA_NOT_CALLED":
@@ -1096,8 +1114,9 @@ def _evaluate_trial(
         download_report = tia_openness._finalize_download_report(download_raw, target, tia_openness.DOWNLOAD_PURPOSE_EXPERIMENT, started_dl, time.perf_counter())
         _write_json(attempt_dir / DOWNLOAD_REPORT, download_report)
         download_ok = bool(download_report.get("download_success"))
-    elif compile_ok and not plcsim_errors:
-        download_ok = False  # compilo pero no hubo descarga (evidencia no verificada, handshake o caida)
+    elif compile_ok and not plcsim_errors and archive_status == "CREATED":
+        download_ok = False  # archivo y evidencia OK pero no hubo descarga (handshake o caida del bridge)
+    # Sin .zap18 verificado el bridge nunca llama a Download: download_ok queda None (NOT_RUN), nunca False.
 
     runtime_report = None
     cpu_run = None
@@ -1153,7 +1172,8 @@ def _evaluate_trial(
         "compile_classification": compile_class,
         "archive": {"workspace_path": str(paths["archive_path"]), "workspace_hash": copy_state.get("workspace_hash"),
                     "evidence_path": str(evidence_archive), "evidence_hash": copy_state.get("evidence_hash"),
-                    "copied_ok": evidence_ok, "error": copy_state.get("error") or (None if archive_created else archive_reason)},
+                    "copied_ok": evidence_ok, "error": copy_state.get("error") or (None if archive_created else archive_reason),
+                    **archive_trace},
         "handshake": raw.get("handshake"),
         "checkpoints": raw.get("checkpoints"),
         "master": {"path": master.get("path"), "master_hash_after": master_hash_after,
@@ -1208,6 +1228,8 @@ def _evaluate_trial(
         "final_status": final_status,
         "compile": compile_class["category"],
         "tia_archive": archive_status,
+        "archive_attempt_count": archive_trace["attempt_count"],
+        "archive_recovered_after_retry": archive_trace["recovered_after_retry"],
         "evidence_copied_ok": evidence_ok,
         "download_success": download_ok,
         "cpu_run": cpu_run,
@@ -1235,7 +1257,9 @@ def _evaluate_trial(
         "timing": {"compile_ms": tia_ms, "runtime_ms": (runtime_report or {}).get("duration_ms"),
                    "oracle_ms": (oracle_result or {}).get("duration_ms"), "evaluation_ms": int(round((time.perf_counter() - started) * 1000))},
         "tia_archive": {"status": archive_status, "reason": archive_reason, "zap18_path": str(evidence_archive) if evidence_ok else None,
-                        "zap18_hash": copy_state.get("evidence_hash") if evidence_ok else None, "tia_workspace_id": workspace_id},
+                        "zap18_hash": copy_state.get("evidence_hash") if evidence_ok else None, "tia_workspace_id": workspace_id,
+                        "attempt_count": archive_trace["attempt_count"],
+                        "recovered_after_retry": archive_trace["recovered_after_retry"]},
         "lifecycle_state": STATE_EVALUATED,
     }
     if runtime_report is not None:
@@ -1336,6 +1360,7 @@ STAGE_LABELS = {"semantic": "Semantic", "semantic_benchmark": "Semantic Benchmar
                 "tia_archive": "TIA Archive", "download": "Download", "runtime": "Runtime", "functional": "Functional",
                 "safety": "Safety", "final_verdict": "FINAL"}
 STATUS_PENDING_LABEL = "PENDIENTE DE EVALUACION"
+STAGE_NOT_RUN = "NOT_RUN"  # etapa no ejecutada en una evaluacion terminada (distinto de FAIL y de "-" pendiente)
 
 
 def _last_attempt(record: dict[str, Any]) -> dict[str, Any]:
@@ -1413,6 +1438,26 @@ def trial_stage_summary(record: dict[str, Any]) -> dict[str, Any]:
         voice_rows = [("Voice Capture", _pass_fail(voice.get("audio_capture_success"))),
                       ("ASR", _pass_fail(voice.get("asr_success"))),
                       ("WER", "-" if wer is None else f"{wer:.3f}")]
+    # Etapas posteriores a Archive: con una evaluacion TIA terminada, la COLA de etapas sin evidencia (ninguna
+    # posterior se ejecuto) es NOT_RUN (p.ej. Archive FAIL -> Download NOT_RUN), nunca FAIL. Un hueco entre etapas
+    # ejecutadas sigue "-" (desconocido, nunca se deduce); sin evaluacion todo sigue "-" (pendiente).
+    evaluated = bool((record.get("evaluation") or {}).get("attempts")) and _final_verdict(record) is not None
+    archive_not_created = (record.get("tia_archive") or {}).get("status") == "NOT_CREATED"
+    tail = {
+        # El bridge solo descarga con .zap18 CREATED: Archive NOT_CREATED sin reporte de descarga es NOT_RUN
+        # (tambien en ensayos antiguos que persistieron download_success=False por omision).
+        "download": "-" if evaluated and archive_not_created and not (record.get("download") or {}).get("status")
+        else _download_value(record),
+        "runtime": _pass_fail((record.get("download") or {}).get("cpu_run_confirmed")),
+        "functional": "REVIEW" if oracle.get("verdict") == "REVIEW" and functional is None else _pass_fail(functional),
+        "safety": _pass_fail(stages.get("safety_success")),
+    }
+    if evaluated:
+        for key in reversed(tuple(tail)):
+            if tail[key] != "-":
+                break
+            tail[key] = STAGE_NOT_RUN
+
     return {
         "semantic": _pass_fail(stages.get("semantic_success")),
         # Solo lo persistido por el Oracle: ensayos anteriores (sin el campo) muestran "-", nunca se recalcula.
@@ -1421,10 +1466,9 @@ def trial_stage_summary(record: dict[str, Any]) -> dict[str, Any]:
         "ir": "FAIL" if ir_failed else _pass_fail(stages.get("verification_success")),
         "compilation": _compilation_value(record),
         "tia_archive": {"CREATED": "PASS", "NOT_CREATED": "FAIL"}.get((record.get("tia_archive") or {}).get("status"), "-"),
-        "download": _download_value(record),
-        "runtime": _pass_fail((record.get("download") or {}).get("cpu_run_confirmed")),
-        "functional": "REVIEW" if oracle.get("verdict") == "REVIEW" and functional is None else _pass_fail(functional),
-        "safety": _pass_fail(stages.get("safety_success")),
+        **tail,
+        "archive_attempt_count": (record.get("tia_archive") or {}).get("attempt_count"),
+        "archive_recovered_after_retry": (record.get("tia_archive") or {}).get("recovered_after_retry"),
         "final_verdict": str((record.get("evaluation") or {}).get("final_verdict") or record.get("final_status") or "PENDIENTE"),
         "status": trial_status_label(record),
         "voice": voice_rows,

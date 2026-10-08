@@ -229,7 +229,8 @@ def batch(app, tmp_path, monkeypatch):
             state["max_active"] = max(state["max_active"], state["active"])
         try:
             time.sleep(0.05)
-            bridge = _FakeBridge({"COMPILE_FAIL": "COMPILE_FAIL", "INFRA": "NON_RECOVERABLE", "INFRA_ONCE": "NON_RECOVERABLE"}.get(outcome, "PASS"))
+            bridge = _FakeBridge({"COMPILE_FAIL": "COMPILE_FAIL", "INFRA": "NON_RECOVERABLE", "INFRA_ONCE": "NON_RECOVERABLE",
+                                  "ARCHIVE_RECOVERED": "ARCHIVE_RECOVERED", "ARCHIVE_FAILED": "ARCHIVE_FAILED"}.get(outcome, "PASS"))
             oracle = _oracle_with(functional=outcome != "FUNCTIONAL_FAIL", safety=outcome != "SAFETY_FAIL")
             result = _evaluate_with(project_root, Path(trial_dir), bridge, oracle, retry_reason)
             state["evaluated"].append((Path(trial_dir).name, retry_reason))
@@ -288,7 +289,8 @@ def test_experimental_fails_are_recorded_and_the_batch_continues_without_retry(a
     assert manifest["status"] == TB.STATUS_COMPLETED
     results = {(e["case_id"], e["variant_id"]): e["result"] for e in manifest["ordered_trial_plan"]}
     assert results[("D01", "V1")]["functional"] == "FAIL" and results[("D01", "V1")]["final_verdict"] == "FAIL"
-    assert results[("D01", "V2")]["compilation"] == "FAIL" and results[("D01", "V2")]["download"] == "-"
+    # Evaluacion terminada sin descarga: NOT_RUN (nunca FAIL ni "-" pendiente).
+    assert results[("D01", "V2")]["compilation"] == "FAIL" and results[("D01", "V2")]["download"] == DE.STAGE_NOT_RUN
     assert results[("D01", "V3")]["safety"] == "FAIL" and results[("D01", "V3")]["final_verdict"] == "FAIL"
     assert results[("D02", "V1")]["semantic"] == "FAIL" and results[("D02", "V1")]["final_verdict"] == "FAIL"
     assert all(reason is None for _, reason in batch["evaluated"])  # nunca se reintenta un FAIL
@@ -314,6 +316,36 @@ def test_infrastructure_error_pauses_and_retry_is_only_explicit_and_keeps_attemp
     assert [a["final_status"] for a in attempts] == ["INFRASTRUCTURE_ERROR", "PASS"]  # attempt_001 se conserva
     assert (Path(entries[1]["trial_dir"]) / "evaluation" / "attempt_001").exists()
     assert entries[1]["result"]["attempts"] == 2 and entries[1]["trial_id"] == Path(entries[1]["trial_dir"]).name
+
+
+def test_n_batch_continues_when_the_internal_archive_retry_recovers(app, batch):
+    batch["outcomes"] = {("D01", "V2"): "ARCHIVE_RECOVERED"}
+    manifest = _run_batch(app, ["D01"])
+    assert manifest["status"] == TB.STATUS_COMPLETED and manifest["completed_trials"] == 3
+    assert all(e["result"]["final_verdict"] == "PASS" for e in manifest["ordered_trial_plan"])
+    assert all(reason is None for _, reason in batch["evaluated"]) and len(batch["evaluated"]) == 3  # sin reintento de ensayo
+    recovered = manifest["ordered_trial_plan"][1]["result"]
+    assert recovered["archive_attempt_count"] == 2 and recovered["archive_recovered_after_retry"] is True
+    assert recovered["tia_archive"] == "PASS" and recovered["download"] == "PASS" and recovered["attempts"] == 1
+    payload = json.loads((Path(app._text_batch["dir"]) / TB.SUMMARY_JSON).read_text(encoding="utf-8"))
+    assert payload["totals"]["archive"] == {"trials_with_retry": 1, "recovered_after_retry": 1, "archive_failures": 0}
+    with (Path(app._text_batch["dir"]) / TB.SUMMARY_CSV).open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert tuple(rows[0])[-2:] == ("archive_attempt_count", "archive_recovered_after_retry")
+    assert [row["archive_attempt_count"] for row in rows] == ["1", "2", "1"]
+
+
+def test_o_batch_pauses_when_all_archive_attempts_fail(app, batch):
+    batch["outcomes"] = {("D01", "V2"): "ARCHIVE_FAILED"}
+    manifest = _run_batch(app, ["D01"])
+    assert manifest["status"] == TB.STATUS_PAUSED and manifest["pause_reason"] == TB.PAUSE_INFRASTRUCTURE
+    entries = manifest["ordered_trial_plan"]
+    assert [e["status"] for e in entries] == [TB.ENTRY_COMPLETED, TB.ENTRY_INFRASTRUCTURE, TB.ENTRY_PENDING]
+    failed = entries[1]["result"]
+    assert failed["failure_category"] == "ARCHIVE_FAILURE" and failed["final_verdict"] == "INFRASTRUCTURE_ERROR"
+    assert failed["tia_archive"] == "FAIL" and failed["archive_attempt_count"] == 3
+    assert failed["archive_recovered_after_retry"] is False
+    assert [failed[s] for s in ("download", "runtime", "functional", "safety")] == [DE.STAGE_NOT_RUN] * 4
 
 
 def test_pause_after_current_and_resume_never_repeats_completed_trials(app, batch):
@@ -385,7 +417,7 @@ def test_summaries_have_one_row_per_trial_from_trial_stage_summary(app, batch, m
     assert set(calls) >= {e["trial_id"] for e in manifest["ordered_trial_plan"]}
     totals = payload["totals"]
     assert totals["trials_recorded"] == 3 and totals["final"]["PASS"] == 2 and totals["final"]["FAIL"] == 1
-    assert totals["stages"]["functional"] == {"PASS": 2, "FAIL": 1, "recorded": 3}
+    assert totals["stages"]["functional"] == {"PASS": 2, "FAIL": 1, "NOT_RUN": 0, "recorded": 3}
     assert "LOTE TEXT COMPLETADO" in TB.final_report_lines(manifest)[0]
 
 

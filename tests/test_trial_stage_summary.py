@@ -120,13 +120,13 @@ def test_download_fail_is_shown_as_fail(tmp_path):
     assert record["stages"]["download_success"] is False and record["final_status"] == "INFRASTRUCTURE_ERROR"
     assert dict(DE.verdict_table(record))["Download"] == "FAIL"
     assert dict(DE.verdict_table(_without_stage_copies(record)))["Download"] == "FAIL"
-    assert dict(DE.verdict_table(record))["Runtime"] == "-"  # sin descarga no se consulta el Runtime
+    assert dict(DE.verdict_table(record))["Runtime"] == DE.STAGE_NOT_RUN  # sin descarga no se consulta el Runtime
 
 
 def test_download_not_run_never_invents_pass(tmp_path):
     _, _, record = _evaluated(tmp_path, _FakeBridge("COMPILE_FAIL"))
     assert record["stages"]["download_success"] is None
-    assert dict(DE.verdict_table(record))["Download"] == "-"
+    assert dict(DE.verdict_table(record))["Download"] == DE.STAGE_NOT_RUN  # evaluacion terminada sin descarga
 
 
 # --- Runtime / Functional / Safety ---------------------------------------------------------------

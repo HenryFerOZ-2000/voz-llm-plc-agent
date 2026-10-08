@@ -6259,7 +6259,8 @@ class VozLLMPLCGUI(ctk.CTk):
     _SUMMARY_STAGE_KEYS = {"Semantica": "semantic", "I/O": "io_allocation", "Generacion": "ir", "Verificacion": "ir",
                            "Compilacion": "compilation", "Descarga": "download", "CPU Start": "cpu_start",
                            "Runtime": "runtime", "Oracle": "oracle", "Functional": "functional", "Safety": "safety"}
-    _SUMMARY_VALUE_STATES = {"PASS": "ok", "FAIL": "fail", "INFRA": "fail", "INFRASTRUCTURE_ERROR": "fail", "REVIEW": "pending"}
+    _SUMMARY_VALUE_STATES = {"PASS": "ok", "FAIL": "fail", "INFRA": "fail", "INFRASTRUCTURE_ERROR": "fail", "REVIEW": "pending",
+                             deferred_evaluator.STAGE_NOT_RUN: "skipped"}
 
     def _apply_trial_summary_to_stages(self, trial_dir: Path) -> dict[str, Any] | None:
         """Sincroniza la linea de etapas con el registro persistido del ensayo (tras evaluar o al verlo)."""

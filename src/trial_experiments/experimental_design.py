@@ -37,6 +37,7 @@ IR_FAILURE = "IR_FAILURE"
 CODEGEN_FAILURE = "CODEGEN_FAILURE"
 VERIFICATION_FAILURE = "VERIFICATION_FAILURE"
 COMPILE_FAILURE = "COMPILE_FAILURE"
+ARCHIVE_FAILURE = "ARCHIVE_FAILURE"  # compilo, pero no hubo .zap18 verificado (Download nunca se ejecuto)
 DOWNLOAD_FAILURE = "DOWNLOAD_FAILURE"
 RUNTIME_FAILURE = "RUNTIME_FAILURE"
 FUNCTIONAL_FAILURE = "FUNCTIONAL_FAILURE"
@@ -44,7 +45,7 @@ SAFETY_FAILURE = "SAFETY_FAILURE"
 INFRASTRUCTURE_ERROR = "INFRASTRUCTURE_ERROR"
 ASR_FAILURE = "ASR_FAILURE"
 REVIEW = "REVIEW"
-INFRASTRUCTURE_CATEGORIES = (DOWNLOAD_FAILURE, RUNTIME_FAILURE, INFRASTRUCTURE_ERROR)
+INFRASTRUCTURE_CATEGORIES = (ARCHIVE_FAILURE, DOWNLOAD_FAILURE, RUNTIME_FAILURE, INFRASTRUCTURE_ERROR)
 
 ERROR_FORMAL_NOT_ALLOWED = "FORMAL_TRIAL_NOT_ALLOWED"
 
@@ -196,7 +197,9 @@ def classify_trial(record: dict[str, Any]) -> dict[str, Any]:
     elif final == "REVIEW":
         category = REVIEW
     elif final == "INFRASTRUCTURE_ERROR":
-        if stages.get("download_success") is False:
+        if stages.get("compile_success") is True and (record.get("tia_archive") or {}).get("status") == "NOT_CREATED":
+            category = ARCHIVE_FAILURE
+        elif stages.get("download_success") is False:
             category = DOWNLOAD_FAILURE
         elif stages.get("runtime_connection_success") is False or "ORACLE_RUNTIME_NOT_READY" in errors:
             category = RUNTIME_FAILURE

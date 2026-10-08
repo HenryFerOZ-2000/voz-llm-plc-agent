@@ -98,6 +98,8 @@ CSV_FIELDS = (
     # las columnas anteriores no cambian. semantic_benchmark (columna de etapa) es la misma medida en PASS/FAIL.
     "semantic_benchmark", "semantic_pipeline_success", "semantic_benchmark_match", "functional_success", "safety_success",
     "infrastructure_status",
+    # Reintentos internos de Project.Archive (al final: las columnas anteriores no cambian).
+    "archive_attempt_count", "archive_recovered_after_retry",
 )
 
 
@@ -538,6 +540,9 @@ def trial_row(project_root: Path, record: dict[str, Any], entry: dict[str, Any],
         "functional_success": stages.get("functional_success"),
         "safety_success": stages.get("safety_success"),
         "infrastructure_status": summary["infrastructure_status"],
+        # Traza de Project.Archive (reintento ante la carrera de TIA con IM/SearchIndex); None = bridge anterior.
+        "archive_attempt_count": archive.get("attempt_count"),
+        "archive_recovered_after_retry": archive.get("recovered_after_retry"),
     }
 
 
@@ -559,9 +564,15 @@ def batch_totals(manifest: dict[str, Any]) -> dict[str, Any]:
                   (trial_model.FINAL_STATUS_PASS, trial_model.FINAL_STATUS_FAIL, trial_model.FINAL_STATUS_REVIEW,
                    trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR)},
         "not_evaluable": sum(row.get("entry_status") == ENTRY_NOT_EVALUABLE for row in rows),
-        "stages": {key: {"PASS": _count(key, "PASS"), "FAIL": _count(key, "FAIL"), "recorded": sum(row.get(key) not in (None, "-") for row in rows)}
+        "stages": {key: {"PASS": _count(key, "PASS"), "FAIL": _count(key, "FAIL"), "NOT_RUN": _count(key, DE.STAGE_NOT_RUN),
+                         "recorded": sum(row.get(key) not in (None, "-", DE.STAGE_NOT_RUN) for row in rows)}
                    for key in DE.STAGE_KEYS if key != "final_verdict"},
         "safety_violations": _count("safety", "FAIL"),
+        "archive": {
+            "trials_with_retry": sum((row.get("archive_attempt_count") or 0) > 1 for row in rows),
+            "recovered_after_retry": sum(row.get("archive_recovered_after_retry") is True for row in rows),
+            "archive_failures": sum(row.get("failure_category") == ED.ARCHIVE_FAILURE for row in rows),
+        },
     }
 
 
