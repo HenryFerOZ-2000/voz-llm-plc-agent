@@ -11,6 +11,7 @@ from functional_requirements import (
     detect_timed_sequences,
     is_catalog_functional_requirement,
 )
+from effective_semantics import validation_errors as effective_validation_errors
 from functional_resources import resolve_functional_resources
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, INTERNAL_PREFIXES, get_required_variables_for_intent
 from schemas import (
@@ -341,6 +342,10 @@ def validate_semantic_output(
 
     if missing_parameters:
         errors.append("Faltan parametros requeridos: " + ", ".join(missing_parameters))
+
+    # Semantica efectiva: un recurso funcional ambiguo o incompatible se detiene aqui, antes del
+    # IOAllocator/IR/SCL (nunca se adivina ni se deja que el generador ponga un default oculto).
+    errors.extend(effective_validation_errors(semantic_output))
 
     errors.extend(_validate_time_literals(parameters, validation_rules.get("time_keys", [])))
     errors.extend(_validate_positive_ints(parameters, validation_rules.get("positive_int_keys", [])))

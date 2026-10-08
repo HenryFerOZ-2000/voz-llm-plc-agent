@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import contextvars
 import textwrap
 from typing import Any
 
-from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, get_required_variables_for_intent
+from ir_builder import EXTERNAL_PREFIXES, INTENT_TEMPLATE_NOT_IMPLEMENTED, INTENT_VALUE_DEFAULTS, get_required_variables_for_intent
 from plc_ir import PLCProjectIR
 from functional_requirements import (
     AUTO_MODE_MEMORY,
@@ -40,6 +41,19 @@ class TemplateNotImplementedError(RuntimeError):
     pass
 
 
+FUNCTIONAL_RESOURCE_UNRESOLVED = "FUNCTIONAL_RESOURCE_UNRESOLVED"
+
+
+class FunctionalResourceUnresolvedError(ValueError):
+    """La plantilla necesitaria un recurso externo que la semantica efectiva no fijo (default oculto)."""
+
+
+# Activa mientras se genera una plantilla de intent a partir de una semantica efectiva RESUELTA
+# (effective_semantics): el generador ya no puede introducir por su cuenta un recurso externo
+# (I_/Q_/AI_/AO_) que no este en `parameters`; si lo necesitara, falla con un error estructurado.
+_STRICT_EXTERNAL_RESOURCES: contextvars.ContextVar[bool] = contextvars.ContextVar("strict_external_resources", default=False)
+
+
 def _normalize_target_platform(target_platform: str) -> str:
     normalized = (target_platform or "").strip().upper()
     if normalized in {"OPENPLC", "OPENPLC_ST"}:
@@ -60,6 +74,11 @@ def _param(parameters: dict[str, Any], *keys: str, default: Any) -> Any:
     for key in keys:
         if key in parameters:
             return parameters[key]
+    if _STRICT_EXTERNAL_RESOURCES.get() and isinstance(default, str) and default.startswith(EXTERNAL_PREFIXES):
+        raise FunctionalResourceUnresolvedError(
+            f"{FUNCTIONAL_RESOURCE_UNRESOLVED}: la plantilla necesita '{keys[0]}' y la semantica efectiva no lo fijo; "
+            f"el generador no introduce el recurso externo por defecto {default!r}."
+        )
     return default
 
 
@@ -84,7 +103,7 @@ def _generate_timed_pulse_body(parameters: dict[str, Any]) -> str:
     trigger_input = _param(parameters, "trigger_input", default="I_Start")
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     output_tag = _param(parameters, "output", default="Q_Aux_Output")
-    duration = _param(parameters, "duration", default="T#5s")
+    duration = _param(parameters, "duration", default=INTENT_VALUE_DEFAULTS["INT_TIMED_PULSE"]["duration"])
     timer_tag = _param(parameters, "timer", default="T_Pulse5s")
     return _dedented(
         f"""\
@@ -218,7 +237,7 @@ def _generate_delayed_start_body(parameters: dict[str, Any]) -> str:
     stop_input = _param(parameters, "stop_input", default="I_Stop")
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
-    delay_time = _param(parameters, "delay_time", default="T#3s")
+    delay_time = _param(parameters, "delay_time", default=INTENT_VALUE_DEFAULTS["INT_DELAYED_START"]["delay_time"])
     timer_tag = _param(parameters, "timer", default="T_DelayStart")
     return _dedented(
         f"""\
@@ -236,7 +255,7 @@ def _generate_delayed_stop_body(parameters: dict[str, Any]) -> str:
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
     run_latch = _param(parameters, "run_latch", default="M_RunLatch")
     stop_delay_active = _param(parameters, "stop_delay_active", default="M_StopDelayActive")
-    stop_delay_time = _param(parameters, "stop_delay_time", default="T#10s")
+    stop_delay_time = _param(parameters, "stop_delay_time", default=INTENT_VALUE_DEFAULTS["INT_DELAYED_STOP"]["stop_delay_time"])
     timer_tag = _param(parameters, "timer", default="T_StopDelay")
     return _dedented(
         f"""\
@@ -270,7 +289,7 @@ def _generate_auto_stop_timer_body(parameters: dict[str, Any]) -> str:
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
     run_latch = _param(parameters, "run_latch", default="M_RunLatch")
     timer_tag = _param(parameters, "timer", default="T_OperationLimit")
-    operation_time = _param(parameters, "operation_time", default="T#10s")
+    operation_time = _param(parameters, "operation_time", default=INTENT_VALUE_DEFAULTS["INT_AUTO_STOP_TIMER"]["operation_time"])
     return _dedented(
         f"""\
         (* Paro automatico del motor por tiempo de operacion *)
@@ -318,7 +337,7 @@ def _generate_counter_pulses_body(parameters: dict[str, Any]) -> str:
     output_tag = _param(parameters, "output", default="Q_Alarm")
     counter_tag = _param(parameters, "counter", default="C_PulseCount")
     edge_detector = _param(parameters, "edge_detector", default="R_SensorPulse")
-    preset = _param(parameters, "preset", default=5)
+    preset = _param(parameters, "preset", default=INTENT_VALUE_DEFAULTS["INT_COUNTER_PULSES"]["preset"])
     return _dedented(
         f"""\
         (* Conteo de pulsos con detector de flanco ascendente *)
@@ -437,7 +456,7 @@ def _generate_sensor_timeout_alarm_body(parameters: dict[str, Any]) -> str:
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     last_state_memory = _param(parameters, "last_state_memory", default="M_SensorLastState")
     alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
-    timeout = _param(parameters, "timeout", default="T#5s")
+    timeout = _param(parameters, "timeout", default=INTENT_VALUE_DEFAULTS["INT_SENSOR_TIMEOUT_ALARM"]["timeout"])
     timer_tag = _param(parameters, "timer", default="T_SensorTimeout")
     return _dedented(
         f"""\
@@ -496,8 +515,8 @@ def _generate_cyclic_motor_body(parameters: dict[str, Any]) -> str:
     start_edge = _param(parameters, "start_edge", default="R_CycleStart")
     on_timer = _param(parameters, "on_timer", default="T_CycleOn")
     off_timer = _param(parameters, "off_timer", default="T_CycleOff")
-    on_time = _param(parameters, "on_time", default="T#3s")
-    off_time = _param(parameters, "off_time", default="T#3s")
+    on_time = _param(parameters, "on_time", default=INTENT_VALUE_DEFAULTS["INT_CYCLIC_MOTOR"]["on_time"])
+    off_time = _param(parameters, "off_time", default=INTENT_VALUE_DEFAULTS["INT_CYCLIC_MOTOR"]["off_time"])
     return _dedented(
         f"""\
         (* Motor ciclico: alterna fases de encendido y apagado hasta Stop o emergencia. *)
@@ -1275,6 +1294,11 @@ def _generate_composed_program(
     return "\n".join(lines) + "\n"
 
 
+def _effective_semantics_resolved(project_ir: PLCProjectIR) -> bool:
+    semantic_output = (project_ir.metadata or {}).get("semantic_output") or {}
+    return (semantic_output.get("effective_semantics") or {}).get("status") == "RESOLVED"
+
+
 def generate_implementation_from_ir(project_ir: PLCProjectIR) -> str:
     parameters = _resolve_parameters_from_ir(project_ir)
     functional_requirements = project_ir.metadata.get("functional_requirements", [])
@@ -1304,7 +1328,11 @@ def generate_implementation_from_ir(project_ir: PLCProjectIR) -> str:
     generator = IMPLEMENTED_TEMPLATES.get(project_ir.intent_id)
     if generator is None:
         raise TemplateNotImplementedError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {project_ir.intent_id}")
-    base_body = generator(parameters)
+    token = _STRICT_EXTERNAL_RESOURCES.set(_effective_semantics_resolved(project_ir))
+    try:
+        base_body = generator(parameters)
+    finally:
+        _STRICT_EXTERNAL_RESOURCES.reset(token)
     extra_body = _generate_functional_requirement_clauses(functional_requirements, parameters)
     return base_body + extra_body if extra_body else base_body
 

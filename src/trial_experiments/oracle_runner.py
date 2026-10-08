@@ -15,6 +15,14 @@ Separacion de resultados:
   - verdict: PASS / FAIL / REVIEW / INFRASTRUCTURE_ERROR con precedencia
       INFRASTRUCTURE_ERROR > FAIL por seguridad > REVIEW > FAIL funcional > PASS.
     REVIEW nunca se convierte en FAIL: significa que el evaluador no puede decidir.
+
+Tres dimensiones separadas (ninguna oculta a otra):
+  - semantic_benchmark_match: la semantica coincide con la expectativa del Oracle (intent aceptado,
+    no prohibido, roles, requisitos y parametros INTERPRETADOS; un default trazado nunca cuenta);
+  - functional_success / safety_success: comportamiento medido en PLCSIM.
+Un intent distinto NO impide la prueba funcional: si los roles se resuelven desde los bindings
+congelados, la secuencia se ejecuta y functional/safety se miden igual. Solo roles no resolubles
+(ausentes, ambiguos, tipo incorrecto) dejan el resultado en REVIEW sin ejecutar el Runtime.
 """
 from __future__ import annotations
 
@@ -27,6 +35,7 @@ from typing import Any
 
 import plcsim_runtime
 import plcsim_runtime_io as rio
+from effective_semantics import interpreted_parameters
 from trial_experiments import oracle_schema, trial_model
 
 VERDICT_PASS = trial_model.FINAL_STATUS_PASS
@@ -155,7 +164,10 @@ def evaluate_semantics(oracle: dict[str, Any], semantic_output: dict[str, Any] |
     if not semantic_output:
         return {"evaluable": False, "success": None, "checks": [], "warnings": ["Sin semantic_output del ensayo."]}
     intent = semantic_output.get("intent_id")
-    parameters = semantic_output.get("parameters") or {}
+    # Solo lo que la interpretacion expreso (LLM/reglas/repair): los recursos completados por la
+    # semantica efectiva (DEFAULT) no son evidencia semantica del comando.
+    parameters = interpreted_parameters(semantic_output)
+    provenance = semantic_output.get("parameter_provenance") or {}
     checks: list[dict[str, Any]] = []
     warnings: list[str] = []
 
@@ -166,8 +178,12 @@ def evaluate_semantics(oracle: dict[str, Any], semantic_output: dict[str, Any] |
     if forbidden:
         checks.append({"check": "intent_not_forbidden", "expected": f"no {forbidden}", "actual": intent, "passed": intent not in forbidden})
     for role in expectations.get("required_roles") or []:
-        checks.append({"check": f"role:{role}", "expected": "resuelto", "actual": (role_resolution["roles"].get(role) or {}).get("functional_name"),
-                       "passed": role in role_resolution["roles"]})
+        entry = role_resolution["roles"].get(role) or {}
+        sources = sorted({(provenance.get(_root_key(path)) or {}).get("source") or "PARSER" for path in entry.get("matched_paths") or []})
+        checks.append({"check": f"role:{role}", "expected": "resuelto", "actual": entry.get("functional_name"),
+                       "passed": role in role_resolution["roles"], "provenance": sources})
+        if entry and sources and all(source == "DEFAULT" for source in sources):
+            warnings.append(f"Rol {role} resuelto por un recurso completado por la semantica efectiva (DEFAULT, trazado).")
     present_types = {str(r.get("type")) for r in semantic_output.get("functional_requirements") or [] if isinstance(r, dict)}
     for requirement in expectations.get("required_functional_requirements") or []:
         checks.append({"check": f"functional_requirement:{requirement}", "expected": requirement,
@@ -203,13 +219,21 @@ def evaluate_semantics(oracle: dict[str, Any], semantic_output: dict[str, Any] |
         else:
             checks.append({"check": f"parameter:{key}", "expected": spec.get("value"), "actual": raw, "passed": raw == spec.get("value")})
     evaluable = [check for check in checks if check["passed"] is not None]
+    intent_check = next((check for check in checks if check["check"] == "intent_accepted"), None)
     return {
         "evaluable": bool(evaluable),
         "success": all(check["passed"] for check in evaluable) if evaluable else None,
         "intent_id": intent,
+        "intent_expected": accepted,
+        "intent_match": intent_check["passed"] if intent_check else None,
+        "failed_checks": [check["check"] for check in evaluable if not check["passed"]],
         "checks": checks,
         "warnings": warnings,
     }
+
+
+def _root_key(path: str) -> str:
+    return re.split(r"[.\[]", str(path))[0]
 
 
 def evaluate_resources(oracle: dict[str, Any], snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -687,6 +711,12 @@ def build_evaluation_report(trial_record: dict[str, Any], oracle_result: dict[st
         "oracle": oracle_result.get("oracle_reference"),
         "semantic": {
             "stage_success": stages.get("semantic_success"),
+            # semantic_pipeline_success: interpretacion estructuralmente valida que permitio continuar;
+            # semantic_benchmark_match: coincidencia con la expectativa semantica del Oracle.
+            "pipeline_success": stages.get("semantic_success"),
+            "benchmark_match": (oracle_result.get("semantic") or {}).get("success"),
+            "intent_expected": (oracle_result.get("semantic") or {}).get("intent_expected"),
+            "intent_match": (oracle_result.get("semantic") or {}).get("intent_match"),
             "oracle_evaluation": oracle_result.get("semantic"),
             "intent_id": (trial_record.get("semantic") or {}).get("intent_id"),
         },
@@ -732,7 +762,16 @@ def trial_patch(oracle_result: dict[str, Any], artifacts: dict[str, str] | None 
     """Campos de trial.json que rellena el Oracle Runner (functional/safety separados)."""
     functional = {k: oracle_result["functional"].get(k) for k in ("evaluated", "success", "passed_checks", "total_checks", "pass_rate")}
     safety = {k: oracle_result["safety"].get(k) for k in ("evaluated", "success", "invariants_defined", "critical_violations", "samples_checked")}
+    semantic = oracle_result.get("semantic") or {}
     return {
+        # Coincidencia con la expectativa semantica del benchmark: dimension propia, nunca Functional.
+        "semantic_benchmark": {
+            "match": semantic.get("success"),
+            "intent_actual": semantic.get("intent_id"),
+            "intent_expected": semantic.get("intent_expected"),
+            "intent_match": semantic.get("intent_match"),
+            "failed_checks": semantic.get("failed_checks") or [],
+        },
         "oracle_reference": oracle_result.get("oracle_reference"),
         "oracle": {
             "verdict": oracle_result.get("verdict"),
@@ -746,6 +785,7 @@ def trial_patch(oracle_result: dict[str, Any], artifacts: dict[str, str] | None 
         },
         "functional": functional,
         "safety": safety,
-        "stages": {"functional_success": functional["success"], "safety_success": safety["success"]},
+        "stages": {"functional_success": functional["success"], "safety_success": safety["success"],
+                   "semantic_benchmark_match": semantic.get("success")},
         "timing": {"functional_test_ms": oracle_result.get("duration_ms"), "oracle_ms": oracle_result.get("duration_ms")},
     }

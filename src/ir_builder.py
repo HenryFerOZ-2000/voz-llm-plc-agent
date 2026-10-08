@@ -105,179 +105,114 @@ OPTIONAL_PARAMETER_KEYS: dict[str, set[str]] = {
     "INT_MOTOR_START_STOP": {"reset_input", "alarm_output", "run_indicator", "fault_indicator"}
 }
 
-
-def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]) -> list[str]:
-    motor_start_stop_required: list[str] = [
-        parameters.get("trigger_input", "I_Start"),
-        parameters.get("stop_input", "I_Stop"),
-        parameters.get("emergency_input", "I_Emergency"),
-        parameters.get("motor_output", "Q_Motor_Enable"),
-        parameters.get("run_latch", "M_RunLatch"),
+# CONTRATO DE RECURSOS POR INTENT (fuente unica): (clave semantica, valor por defecto) en el orden en
+# que el IR declara las variables. La consumen get_required_variables_for_intent (IR), la etapa de
+# semantica efectiva (effective_semantics.normalize_effective_semantics, que vuelve EXPLICITOS y
+# trazables los defaults externos antes del IOAllocator y del snapshot) y el generador (code_generator:
+# guardia de "ningun default externo oculto"). Los defaults I_/Q_/AI_/AO_ son recursos externos
+# funcionales; M_/T_/C_/R_ son recursos internos tecnicos (se autogeneran, nunca tocan el mapa).
+INTENT_RESOURCE_TABLE: dict[str, tuple[tuple[str, str], ...]] = {
+    "INT_TIMED_PULSE": (
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"), ("output", "Q_Aux_Output"), ("timer", "T_Pulse5s")),
+    "INT_DIRECT_OUTPUT": (
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"), ("output", "Q_Aux_Output")),
+    "INT_MOTOR_START_STOP": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"),
         # fault_latch es un recurso INTERNO (M_, autogenerado sin exigir presencia en el mapa
         # fisico) usado por la logica CORE de arranque/paro para recordar que hubo una falla -
-        # se mantiene incondicional, solo las claves externas opcionales de abajo dependen de si
-        # el comando las pidio.
-        parameters.get("fault_latch", "M_FaultLatch")
-    ]
-    for optional_key in OPTIONAL_PARAMETER_KEYS["INT_MOTOR_START_STOP"]:
-        if optional_key in parameters:
-            motor_start_stop_required.append(parameters[optional_key])
+        # se mantiene incondicional, solo las claves externas opcionales dependen de si el comando
+        # las pidio (OPTIONAL_PARAMETER_KEYS).
+        ("fault_latch", "M_FaultLatch")),
+    "INT_MOTOR_LATCH": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch")),
+    "INT_SAFE_START_ALARM": (
+        ("trigger_input", "I_Start"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("safety_input", "I_Sensor1"), ("alarm_output", "Q_Alarm"), ("motor_output", "Q_Motor_Enable"),
+        ("fault_latch", "M_FaultLatch")),
+    "INT_DELAYED_START": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("motor_output", "Q_Motor_Enable"), ("timer", "T_DelayStart")),
+    "INT_DELAYED_STOP": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"), ("stop_delay_active", "M_StopDelayActive"),
+        ("timer", "T_StopDelay")),
+    "INT_AUTO_STOP_TIMER": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"), ("timer", "T_OperationLimit")),
+    "INT_EMERGENCY_PRIORITY": (
+        ("emergency_input", "I_Emergency"), ("motor_output", "Q_Motor_Enable"), ("output", "Q_Aux_Output"),
+        ("alarm_output", "Q_Alarm")),
+    "INT_COUNTER_PULSES": (
+        ("pulse_input", "I_Sensor1"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("output", "Q_Alarm"), ("counter", "C_PulseCount"), ("edge_detector", "R_SensorPulse")),
+    "INT_COUNTER_RESET": (
+        ("reset_input", "I_Reset"), ("counter", "C_PulseCount")),
+    "INT_MUTUAL_INTERLOCK": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("contactor_a", "Q_Contactor_A"), ("contactor_b", "Q_Contactor_B")),
+    "INT_VFD_ENABLE_NO_ALARM": (
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"), ("alarm_output", "Q_Alarm"),
+        ("motor_output", "Q_Motor_Enable")),
+    "INT_MANUAL_AUTO_MODE": (
+        ("manual_input", "I_Mode_Manual"), ("auto_input", "I_Mode_Auto"), ("trigger_input", "I_Start"),
+        ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"), ("motor_output", "Q_Motor_Enable"),
+        ("manual_mode_memory", "M_ManualMode"), ("auto_mode_memory", "M_AutoMode")),
+    "INT_SEQUENCE_THREE_STEPS": (
+        ("trigger_input", "I_Start"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("step_memory", "M_Step"), ("output", "Q_Aux_Output")),
+    "INT_SENSOR_TIMEOUT_ALARM": (
+        ("sensor_input", "I_Sensor1"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("alarm_output", "Q_Alarm"), ("timer", "T_SensorTimeout"), ("last_state_memory", "M_SensorLastState")),
+    "INT_MAINTENANCE_BLOCK": (
+        ("maintenance_input", "I_Maintenance"), ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"),
+        ("motor_output", "Q_Motor_Enable")),
+    "INT_STATUS_PILOTS": (
+        ("emergency_input", "I_Emergency"), ("motor_output", "Q_Motor_Enable"), ("alarm_output", "Q_Alarm"),
+        ("run_indicator", "Q_Pilot_Run"), ("fault_indicator", "Q_Pilot_Fault")),
+    "INT_CYCLIC_MOTOR": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"), ("step_memory", "M_Step"),
+        ("start_edge", "R_CycleStart"), ("on_timer", "T_CycleOn"), ("off_timer", "T_CycleOff")),
+    "INT_AUTO_CYCLE": (
+        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("reset_input", "I_Reset"), ("motor_output", "Q_Motor_Enable"), ("aux_output", "Q_Aux_Output"),
+        ("alarm_output", "Q_Alarm"), ("step_memory", "M_Step"), ("auto_input", "I_Mode_Auto")),
+    "INT_PID_SUPERVISOR": (
+        ("emergency_input", "I_Emergency"), ("reset_input", "I_Reset"), ("alarm_output", "Q_Alarm"),
+        ("pump_output", "Q_Pump_Enable")),
+}
 
-    parameter_overrides = {
-        "INT_TIMED_PULSE": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("output", "Q_Aux_Output"),
-            parameters.get("timer", "T_Pulse5s")
-        ],
-        "INT_DIRECT_OUTPUT": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("output", "Q_Aux_Output")
-        ],
-        "INT_MOTOR_START_STOP": motor_start_stop_required,
-        "INT_MOTOR_LATCH": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("run_latch", "M_RunLatch")
-        ],
-        "INT_SAFE_START_ALARM": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("safety_input", "I_Sensor1"),
-            parameters.get("alarm_output", "Q_Alarm"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("fault_latch", "M_FaultLatch")
-        ],
-        "INT_DELAYED_START": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("timer", "T_DelayStart")
-        ],
-        "INT_DELAYED_STOP": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("run_latch", "M_RunLatch"),
-            parameters.get("stop_delay_active", "M_StopDelayActive"),
-            parameters.get("timer", "T_StopDelay")
-        ],
-        "INT_AUTO_STOP_TIMER": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("run_latch", "M_RunLatch"),
-            parameters.get("timer", "T_OperationLimit")
-        ],
-        "INT_EMERGENCY_PRIORITY": [
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("output", "Q_Aux_Output"),
-            parameters.get("alarm_output", "Q_Alarm")
-        ],
-        "INT_COUNTER_PULSES": [
-            parameters.get("pulse_input", "I_Sensor1"),
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("output", "Q_Alarm"),
-            parameters.get("counter", "C_PulseCount"),
-            parameters.get("edge_detector", "R_SensorPulse")
-        ],
-        "INT_COUNTER_RESET": [
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("counter", "C_PulseCount")
-        ],
-        "INT_MUTUAL_INTERLOCK": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("contactor_a", "Q_Contactor_A"),
-            parameters.get("contactor_b", "Q_Contactor_B")
-        ],
-        "INT_VFD_ENABLE_NO_ALARM": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("alarm_output", "Q_Alarm"),
-            parameters.get("motor_output", "Q_Motor_Enable")
-        ],
-        "INT_MANUAL_AUTO_MODE": [
-            parameters.get("manual_input", "I_Mode_Manual"),
-            parameters.get("auto_input", "I_Mode_Auto"),
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("manual_mode_memory", "M_ManualMode"),
-            parameters.get("auto_mode_memory", "M_AutoMode")
-        ],
-        "INT_SEQUENCE_THREE_STEPS": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("step_memory", "M_Step"),
-            parameters.get("output", "Q_Aux_Output")
-        ],
-        "INT_SENSOR_TIMEOUT_ALARM": [
-            parameters.get("sensor_input", "I_Sensor1"),
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("alarm_output", "Q_Alarm"),
-            parameters.get("timer", "T_SensorTimeout"),
-            parameters.get("last_state_memory", "M_SensorLastState")
-        ],
-        "INT_MAINTENANCE_BLOCK": [
-            parameters.get("maintenance_input", "I_Maintenance"),
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable")
-        ],
-        "INT_STATUS_PILOTS": [
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("alarm_output", "Q_Alarm"),
-            parameters.get("run_indicator", "Q_Pilot_Run"),
-            parameters.get("fault_indicator", "Q_Pilot_Fault")
-        ],
-        "INT_CYCLIC_MOTOR": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("run_latch", "M_RunLatch"),
-            parameters.get("step_memory", "M_Step"),
-            parameters.get("start_edge", "R_CycleStart"),
-            parameters.get("on_timer", "T_CycleOn"),
-            parameters.get("off_timer", "T_CycleOff")
-        ],
-        "INT_AUTO_CYCLE": [
-            parameters.get("trigger_input", "I_Start"),
-            parameters.get("stop_input", "I_Stop"),
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("motor_output", "Q_Motor_Enable"),
-            parameters.get("aux_output", "Q_Aux_Output"),
-            parameters.get("alarm_output", "Q_Alarm"),
-            parameters.get("step_memory", "M_Step"),
-            parameters.get("auto_input", "I_Mode_Auto")
-        ],
-        "INT_PID_SUPERVISOR": [
-            parameters.get("emergency_input", "I_Emergency"),
-            parameters.get("reset_input", "I_Reset"),
-            parameters.get("alarm_output", "Q_Alarm"),
-            parameters.get("pump_output", "Q_Pump_Enable")
-        ]
-    }
+# Valores funcionales (no recursos) que la plantilla del generador usa si el parser no los dio. Fuente
+# unica para code_generator y para la traza de la semantica efectiva (nunca se rellenan en `parameters`:
+# solo se registran, para que la evaluacion semantica no los confunda con algo que el comando dijo).
+INTENT_VALUE_DEFAULTS: dict[str, dict[str, Any]] = {
+    "INT_TIMED_PULSE": {"duration": "T#5s"},
+    "INT_DELAYED_START": {"delay_time": "T#3s"},
+    "INT_DELAYED_STOP": {"stop_delay_time": "T#10s"},
+    "INT_AUTO_STOP_TIMER": {"operation_time": "T#10s"},
+    "INT_COUNTER_PULSES": {"preset": 5},
+    "INT_SENSOR_TIMEOUT_ALARM": {"timeout": "T#5s"},
+    "INT_CYCLIC_MOTOR": {"on_time": "T#3s", "off_time": "T#3s"},
+}
 
-    required = parameter_overrides.get(intent_id)
-    if required is None:
+
+def intent_resource_table(intent_id: str) -> tuple[tuple[str, str], ...] | None:
+    """(clave, default) de los recursos del intent; None si el intent no tiene plantilla."""
+    return INTENT_RESOURCE_TABLE.get(intent_id)
+
+
+def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]) -> list[str]:
+    table = INTENT_RESOURCE_TABLE.get(intent_id)
+    if table is None:
         raise ValueError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {intent_id}")
+    required: list[Any] = [parameters.get(key, default) for key, default in table]
+    # Claves OPCIONALES: solo aportan un recurso si el comando realmente las pidio (presentes en
+    # `parameters`); nunca se sustituyen por un tag fisico por defecto.
+    for optional_key in OPTIONAL_PARAMETER_KEYS.get(intent_id, ()):
+        if optional_key in parameters:
+            required.append(parameters[optional_key])
 
     ordered: list[str] = []
     for value in required:
@@ -863,7 +798,7 @@ def build_project_ir(
     missing_variables = [name for name in external_names if name not in io_index]
     if missing_variables:
         raise ValueError(
-            "Recurso externo no autorizado/no existente en el mapa PLC: "
+            "FUNCTIONAL_RESOURCE_UNRESOLVED: Recurso externo no autorizado/no existente en el mapa PLC: "
             + ", ".join(missing_variables)
         )
 

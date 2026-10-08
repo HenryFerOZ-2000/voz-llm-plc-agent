@@ -194,7 +194,9 @@ def test_snapshot_contains_full_physical_inventory_and_active_bindings(tmp_path,
     assert bound["Q_Motor"]["address"] == "%QX8.3" and bound["Q_Motor"]["roles"] == ["output"]
     assert bound["I_Start"]["address"] == "%IX16.0"
     # role -> functional_name -> physical_address (para el Oracle futuro)
-    assert snapshot["parameter_bindings"]["output"] == {"functional_name": "Q_Motor", "address": "%QX8.3"}
+    binding = snapshot["parameter_bindings"]["output"]  # campos originales intactos (+ name/signal/data_type/state/provenance)
+    assert {key: binding[key] for key in ("functional_name", "address")} == {"functional_name": "Q_Motor", "address": "%QX8.3"}
+    assert binding["signal"] == "DO" and binding["name"] == "Q_Motor"
     assert snapshot["base_map_id"] == "mapa_banco_fisico" and snapshot["trial_id"] == "D12_V2_TEXT_001"
     assert frozen["frozen"] is True and frozen["resolved_at"]
 

@@ -1327,9 +1327,12 @@ def _pass_fail(value: Any) -> str:
     return "PASS" if value is True else ("FAIL" if value is False else "-")
 
 
-STAGE_KEYS = ("semantic", "io_allocation", "ir", "compilation", "tia_archive", "download", "runtime", "functional",
-              "safety", "final_verdict")
-STAGE_LABELS = {"semantic": "Semantic", "io_allocation": "I/O Allocation", "ir": "IR", "compilation": "Compilation",
+# "semantic" = semantic_pipeline_success (interpretacion valida que permitio continuar);
+# "semantic_benchmark" = semantic_benchmark_match (coincide con la expectativa del Oracle). Son
+# dimensiones distintas de "functional" (comportamiento medido en PLCSIM): ninguna oculta a otra.
+STAGE_KEYS = ("semantic", "semantic_benchmark", "io_allocation", "ir", "compilation", "tia_archive", "download", "runtime",
+              "functional", "safety", "final_verdict")
+STAGE_LABELS = {"semantic": "Semantic", "semantic_benchmark": "Semantic Benchmark", "io_allocation": "I/O Allocation", "ir": "IR", "compilation": "Compilation",
                 "tia_archive": "TIA Archive", "download": "Download", "runtime": "Runtime", "functional": "Functional",
                 "safety": "Safety", "final_verdict": "FINAL"}
 STATUS_PENDING_LABEL = "PENDIENTE DE EVALUACION"
@@ -1412,6 +1415,8 @@ def trial_stage_summary(record: dict[str, Any]) -> dict[str, Any]:
                       ("WER", "-" if wer is None else f"{wer:.3f}")]
     return {
         "semantic": _pass_fail(stages.get("semantic_success")),
+        # Solo lo persistido por el Oracle: ensayos anteriores (sin el campo) muestran "-", nunca se recalcula.
+        "semantic_benchmark": _pass_fail(stages.get("semantic_benchmark_match")),
         "io_allocation": "FAIL" if io_failed else ("PASS" if (record.get("io_map") or {}).get("frozen") else "-"),
         "ir": "FAIL" if ir_failed else _pass_fail(stages.get("verification_success")),
         "compilation": _compilation_value(record),
@@ -1427,7 +1432,16 @@ def trial_stage_summary(record: dict[str, Any]) -> dict[str, Any]:
         "cpu_start": _pass_fail(stages.get("start_module_success") if stages.get("start_module_success") is not None
                                 else (record.get("download") or {}).get("start_module_success")),
         "oracle": str(oracle.get("verdict") or "-"),
+        "infrastructure_status": infrastructure_status(record),
     }
+
+
+def infrastructure_status(record: dict[str, Any]) -> str:
+    """INFRASTRUCTURE_ERROR / OK (evaluacion terminada sin fallo de infraestructura) / '-' (sin evaluar)."""
+    final = _final_verdict(record)
+    if final == trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR or record.get("infrastructure_error") is True:
+        return trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR
+    return "OK" if final else "-"
 
 
 def verdict_table(record: dict[str, Any]) -> list[tuple[str, str]]:

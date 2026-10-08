@@ -292,7 +292,8 @@ def test_bindings_come_from_the_trial_snapshot(program, snapshot_path):
     assert {s["name"] for s in rio.bool_inputs(program)} == {"I_Start", "I_Stop"}
     assert {s["name"] for s in rio.bool_outputs(program)} == {"Q_Motor"}
     assert program["signals"]["Q_Motor"]["roles"] == ["output"]
-    assert program["parameter_bindings"]["start_input"] == {"functional_name": "I_Start", "address": "%IX16.0"}
+    binding = program["parameter_bindings"]["start_input"]  # campos originales intactos (+ campos aditivos)
+    assert {key: binding[key] for key in ("functional_name", "address")} == {"functional_name": "I_Start", "address": "%IX16.0"}
     # Sin snapshot ni variables.json no hay programa: nunca se inventan senales.
     with pytest.raises(rio.RuntimeIOError) as error:
         rio.load_program_signals(None, None)

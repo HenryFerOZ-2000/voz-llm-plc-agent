@@ -19,6 +19,7 @@ from knowledge_retriever import retrieve_relevant_context
 from llm_client import PLCInterpretationLLMClient
 from llm_context_builder import build_llm_context
 from semantic_parser import normalize_text, parse_command as parse_command_rule_based
+from effective_semantics import SOURCE_LLM, SOURCE_PARSER, SOURCE_RULES, normalize_effective_semantics
 from semantic_repair import repair_semantic_output, strip_unavailable_emergency_reference
 from semantic_validator import INTENT_PARAMETER_RULES, validate_semantic_output
 from utils import get_project_root, load_json_file
@@ -247,7 +248,8 @@ def _repair_and_validate(
     payload: dict[str, Any],
     io_map: dict[str, Any],
     intents_catalog: dict[str, Any],
-    safety_rules: dict[str, Any]
+    safety_rules: dict[str, Any],
+    origin: str = SOURCE_PARSER
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """
     Shape-normalization pass (see semantic_repair.py) BEFORE validation: a compound-command
@@ -260,10 +262,18 @@ def _repair_and_validate(
     payload, its validation) so callers keep using the SAME repaired object downstream (IR building
     reads semantic_output["parameters"] directly), never the pre-repair one.
     """
+    parameters_before_repair = dict(payload.get("parameters") or {}) if isinstance(payload.get("parameters"), dict) else None
     payload = strip_unavailable_emergency_reference(payload, io_map)
     repaired = repair_semantic_output(payload, INTENT_PARAMETER_RULES)
-    validation = _validate_result(repaired, io_map, intents_catalog, safety_rules)
-    return repaired, validation
+    # SEMANTICA EFECTIVA (effective_semantics.py): todo recurso externo que usara el programa queda
+    # explicito en `parameters` y trazado (parameter_provenance) ANTES de validar/asignar E/S, congelar
+    # el snapshot y construir IR/SCL. Nunca se completan claves que el parser debe expresar.
+    effective = normalize_effective_semantics(
+        repaired, io_map, origin=origin, parameters_before_repair=parameters_before_repair,
+        parser_required_keys=tuple((INTENT_PARAMETER_RULES.get(str(repaired.get("intent_id"))) or {}).get("required", [])),
+    )
+    validation = _validate_result(effective, io_map, intents_catalog, safety_rules)
+    return effective, validation
 
 
 def _agreement(rule_result: dict[str, Any] | None, llm_result: dict[str, Any] | None) -> bool:
@@ -382,7 +392,7 @@ def _fallback_to_rules(
     rule_result = _normalize_semantic_output(
         parse_command_rule_based(command_text, alias_index=build_alias_index(io_map)), command_text
     )
-    rule_result, semantic_validation = _repair_and_validate(rule_result, io_map, intents_catalog, safety_rules)
+    rule_result, semantic_validation = _repair_and_validate(rule_result, io_map, intents_catalog, safety_rules, SOURCE_RULES)
     return _annotate_result(
         rule_result,
         requested_mode=requested_mode,
@@ -448,7 +458,7 @@ def parse_with_mode(
         parse_command_rule_based(rule_text, alias_index=build_alias_index(runtime_io_map)), command_text
     )
     rule_result = _attach_rule_based_functional_requirements(rule_result, command_text, runtime_intents_catalog)
-    rule_result, rule_validation = _repair_and_validate(rule_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+    rule_result, rule_validation = _repair_and_validate(rule_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules, SOURCE_RULES)
     rule_result = _sync_clarification_from_validation(rule_result, rule_validation)
 
     if requested_mode == "rule_based":
@@ -590,7 +600,7 @@ def parse_with_mode(
         # Marca de perfil (fuera del contrato semantico): habilita la validacion temprana de
         # recursos funcionales solo en Modo Normal.
         llm_result = {**llm_result, "interaction_profile": "normal"}
-    llm_result, llm_validation = _repair_and_validate(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+    llm_result, llm_validation = _repair_and_validate(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules, SOURCE_LLM)
     llm_result = _sync_clarification_from_validation(llm_result, llm_validation)
 
     first_pass_result = dict(llm_result)
@@ -624,7 +634,7 @@ def parse_with_mode(
             )
             if interaction_profile == "normal":
                 retry_result = {**retry_result, "interaction_profile": "normal"}
-            retry_result, retry_validation = _repair_and_validate(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules)
+            retry_result, retry_validation = _repair_and_validate(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules, SOURCE_LLM)
             second_pass_result = retry_result
             retry_result = _sync_clarification_from_validation(retry_result, retry_validation)
             retry_coverage = compute_semantic_coverage(

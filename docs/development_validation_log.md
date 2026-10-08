@@ -100,3 +100,50 @@ ensayo experimental guardado contiene `sensor_timeout_alarm`.
 
 **Regresión.** `tests/test_functional_resources.py` (25 pruebas), que usa como fixture la respuesta exacta
 del LLM: `tests/fixtures/normal_incident_manual_auto_sequence.json`.
+
+---
+
+## DVL-002: recursos funcionales completados en silencio por IR/generador (D03 V2, REVIEW)
+
+| Campo | Valor |
+|---|---|
+| fecha | 2026-10-08 |
+| modo | Experimentación, fase DEVELOPMENT_VALIDATION (parser híbrido, LLM elegido) |
+| ensayo | `D03_V2_TEXT_DEV_006` (no se modifica: conserva REVIEW) |
+| clasificación | DEVELOPMENT_VALIDATION, no es FORMAL_TRIAL |
+| stage | Semantic → I/O snapshot → Oracle (resolución de roles) |
+| type | Trazabilidad de recursos funcionales / separación semantic vs functional |
+| symptom | Semantic, IR, Compilation, Download y Runtime en PASS; Functional REVIEW (`ORACLE_ROLE_NOT_FOUND`); el Runtime no se ejecutó |
+| status | detected / corrected (cambio de DEVELOPMENT, no reinterpretación retroactiva) |
+
+**Causa raíz.** El LLM devolvió `INT_MOTOR_LATCH` con `parameters = {}`. El `{"emergency_input": "FALSE"}`
+lo añadió `semantic_repair`, porque el banco no tiene I_Emergency. El IR y el generador completaron en
+silencio `I_Start`, `I_Stop` y `Q_Motor_Enable` sin registrarlos en `parameters`. El snapshot quedó con
+`parameter_bindings = {}` y el Oracle (que resuelve roles solo desde ahí) no encontró START, STOP ni
+MOTOR_MAIN. El programa era correcto para D03.
+
+**Corrección.** Etapa de semántica efectiva (`src/effective_semantics.py`, `docs/24_semantica_efectiva.md`):
+
+- recursos externos explícitos y con provenance antes del IOAllocator, el snapshot, el IR y el SCL;
+- tabla única de recursos por intent (`ir_builder.INTENT_RESOURCE_TABLE`);
+- guardia contra defaults ocultos en el generador;
+- `parameter_bindings` con señal, tipo y provenance;
+- `semantic_benchmark_match` como dimensión propia (evaluada solo sobre los parámetros interpretados).
+
+Benchmark, Oracles y veredicto global sin cambios.
+
+**D03 frente a D04.** Mismo comportamiento exigido (Start, memoria de marcha y Stop, con roles y caminos
+semánticos idénticos). D04 añade un segundo ciclo de rearme y acepta `INT_MOTOR_LATCH` e
+`INT_MOTOR_START_STOP`; D03 solo acepta `INT_MOTOR_START_STOP`. Son funcionalmente equivalentes en lo que
+D03 prueba, pero distintos en la taxonomía del benchmark. Por eso **no** se crea un alias
+`INT_MOTOR_LATCH = INT_MOTOR_START_STOP`: el mismatch se mantiene como discrepancia semántica.
+
+**Resultado esperado de un D03 V2 nuevo con la misma respuesta del LLM.**
+- Semantic (pipeline) PASS;
+- Semantic Benchmark FAIL;
+- Functional PASS (si el programa enclava);
+- Safety PASS;
+- FINAL REVIEW (`ORACLE_SEMANTIC_MISMATCH`), por la política vigente.
+
+**Regresión.** `tests/test_effective_semantics.py` (45 pruebas): pipeline real con una copia del banco y
+el IOAllocator, y Oracle D03/D04 con PLC simulado.

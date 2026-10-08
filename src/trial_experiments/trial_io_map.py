@@ -328,11 +328,23 @@ def build_snapshot(
         }
         for channel in channels if channel["bound"]
     ]
-    address_by_name = {channel["functional_name"]: channel["address"] for channel in channels}
+    channel_by_name = {channel["functional_name"]: channel for channel in channels}
+    provenance = semantic_output.get("parameter_provenance") or {}
+    # Rol semantico -> recurso fisico congelado. Incluye los recursos completados por la semantica
+    # efectiva (provenance DEFAULT): el Oracle resuelve START/STOP/MOTOR_MAIN desde aqui, nunca leyendo
+    # program.scl. signal/data_type permiten roles analogicos (AI/AO, REAL/INT/WORD) sin rediseno.
     parameter_bindings = {
-        path: {"functional_name": value, "address": address_by_name[value]}
+        path: {
+            "functional_name": value,
+            "name": value,
+            "address": channel_by_name[value]["address"],
+            "signal": channel_by_name[value]["signal"],
+            "data_type": channel_by_name[value]["data_type"],
+            "state": channel_by_name[value]["state"],
+            "provenance": (provenance.get(path.split(".")[0].split("[")[0]) or {}).get("source"),
+        }
         for path, value in _parameter_roles(semantic_output.get("parameters"))
-        if value in address_by_name
+        if value in channel_by_name
     }
     return {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
@@ -346,6 +358,8 @@ def build_snapshot(
         "channels": channels,
         "bindings": bindings,
         "parameter_bindings": parameter_bindings,
+        "parameter_provenance": provenance,
+        "effective_semantics_status": (semantic_output.get("effective_semantics") or {}).get("status"),
         "internal_variables": internal,
         "generated_internal_variables": [],
         "allocation_history": list(working_map.get("history", []) or []),

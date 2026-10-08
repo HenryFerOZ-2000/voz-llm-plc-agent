@@ -94,6 +94,10 @@ CSV_FIELDS = (
     "final_verdict", "failure_category", "clarification_requested", "semantic_ms", "generation_ms", "compile_ms",
     "runtime_ms", "evaluation_ms", "total_ms", "attempts", "trial_dir", "zap18_path", "zap18_hash", "started_at",
     "completed_at", "superseded_trial_ids",
+    # Dimensiones separadas (booleanos crudos de trial.json; vacio = no evaluado). Se anaden al final:
+    # las columnas anteriores no cambian. semantic_benchmark (columna de etapa) es la misma medida en PASS/FAIL.
+    "semantic_benchmark", "semantic_pipeline_success", "semantic_benchmark_match", "functional_success", "safety_success",
+    "infrastructure_status",
 )
 
 
@@ -493,6 +497,7 @@ def reconcile(project_root: Path, manifest: dict[str, Any]) -> list[str]:
 def trial_row(project_root: Path, record: dict[str, Any], entry: dict[str, Any], manifest: dict[str, Any]) -> dict[str, Any]:
     """Una fila por ensayo. Valores ausentes -> None (nunca se inventan)."""
     summary = DE.trial_stage_summary(record)
+    stages = record.get("stages") or {}
     timing = record.get("timing") or {}
     archive = record.get("tia_archive") or {}
     evaluation = record.get("evaluation") or {}
@@ -528,6 +533,11 @@ def trial_row(project_root: Path, record: dict[str, Any], entry: dict[str, Any],
         "started_at": entry.get("started_at") or record.get("created_at"),
         "completed_at": record.get("completed_at"),
         "superseded_trial_ids": [s.get("trial_id") for s in entry.get("superseded") or [] if s.get("trial_id")],
+        "semantic_pipeline_success": stages.get("semantic_success"),
+        "semantic_benchmark_match": stages.get("semantic_benchmark_match"),
+        "functional_success": stages.get("functional_success"),
+        "safety_success": stages.get("safety_success"),
+        "infrastructure_status": summary["infrastructure_status"],
     }
 
 
@@ -597,6 +607,7 @@ def final_report_lines(manifest: dict[str, Any]) -> list[str]:
         f"Final REVIEW: {totals['final']['REVIEW']}", f"Infrastructure errors: {totals['final']['INFRASTRUCTURE_ERROR']}",
         f"No evaluables (Runtime): {totals['not_evaluable']}", "",
         f"Semantic PASS: {stages['semantic']['PASS']} / {stages['semantic']['recorded']}",
+        f"Semantic benchmark match: {stages['semantic_benchmark']['PASS']} / {stages['semantic_benchmark']['recorded']}",
         f"Compilation PASS: {stages['compilation']['PASS']} / {stages['compilation']['recorded']}",
         f"Functional PASS: {stages['functional']['PASS']} / {stages['functional']['recorded']}",
         f"Safety violations: {totals['safety_violations']} / {stages['safety']['recorded']}", "",

@@ -65,7 +65,8 @@ def test_full_evaluation_persists_compile_and_download_evidence_in_stages(tmp_pa
     summary = DE.trial_stage_summary(record)
     assert {key: summary[key] for key in DE.STAGE_KEYS} == {
         "semantic": "PASS", "io_allocation": "PASS", "ir": "PASS", "compilation": "PASS", "tia_archive": "PASS",
-        "download": "PASS", "runtime": "PASS", "functional": "PASS", "safety": "PASS", "final_verdict": "PASS"}
+        "download": "PASS", "runtime": "PASS", "functional": "PASS", "safety": "PASS", "final_verdict": "PASS",
+        "semantic_benchmark": "-"}  # el doble del Oracle no evalua semantica: nunca se inventa la coincidencia
 
 
 def test_compilation_pass_persisted_is_shown_as_pass(tmp_path):

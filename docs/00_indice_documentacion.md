@@ -91,6 +91,7 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 20. `development_validation_log.md`
 21. `multi_pc_setup.md`
 22. `text_batch_execution.md`
+23. `24_semantica_efectiva.md`
 
 ## Criterio de uso en tesis
 
