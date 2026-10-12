@@ -179,7 +179,8 @@ _REPRESENTATIVE_INTENTS = [
         "stop_delay_time": "T#3s", "timer": "T_StopDelay"
     }),
     ("INT_MUTUAL_INTERLOCK", {
-        "trigger_input": "I_Start", "stop_input": "I_Stop",
+        # Contrato vigente: una orden por contactor (request_a/request_b), aqui con los tags del mapa de prueba.
+        "request_a": "I_Start", "request_b": "I_Stop",
         "contactor_a": "Q_Contactor_A", "contactor_b": "Q_Contactor_B"
     }),
     ("INT_TIMED_PULSE", {

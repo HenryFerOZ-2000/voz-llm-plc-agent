@@ -31,8 +31,12 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from functional_requirements import has_composable_program
-from ir_builder import EXTERNAL_PREFIXES, INTENT_VALUE_DEFAULTS, OPTIONAL_PARAMETER_KEYS, intent_resource_table
+from functional_requirements import (
+    FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS,
+    canonical_requirement_type,
+    has_composable_program,
+)
+from ir_builder import EXTERNAL_PREFIXES, INTENT_VALUE_DEFAULTS, OPTIONAL_PARAMETER_KEYS, intent_resource_table, slot_value
 
 SCHEMA_VERSION = 1
 
@@ -150,7 +154,7 @@ def normalize_effective_semantics(
         optional = OPTIONAL_PARAMETER_KEYS.get(intent_id, set())
         required_by_parser = set(parser_required_keys or ())
         for key, default in table:
-            if key in effective or key in optional:
+            if key in effective or key in optional or slot_value(intent_id, effective, key) is not None:
                 continue
             if not default.startswith(EXTERNAL_PREFIXES):
                 internal_defaults[key] = default  # A: tecnico interno, lo autogenera el IR
@@ -176,6 +180,27 @@ def normalize_effective_semantics(
                 **resolution,
             }
             defaulted.append(key)
+        # Recursos que exige un REQUISITO presente (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS): mismo criterio que
+        # el contrato del intent - explicitos y trazados antes del IOAllocator, para que el snapshot los ligue
+        # a su rol (p.ej. la orden manual de manual_pump_enable). Nunca se crea una emergencia.
+        for requirement in semantic_output.get("functional_requirements") or []:
+            if not isinstance(requirement, dict):
+                continue
+            req_type = canonical_requirement_type(requirement.get("type"))
+            for key, default in (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS.get(req_type) or {}).items():
+                if key in effective or key == EMERGENCY_KEY or not default.startswith(EXTERNAL_PREFIXES):
+                    continue
+                resolution, error = _resolve_default(default, key, effective, io_map)
+                if error:
+                    errors.append(error)
+                    continue
+                effective[key] = default
+                provenance[key] = {
+                    "source": SOURCE_DEFAULT, "category": CATEGORY_EXTERNAL, "original_value": None,
+                    "reason": f"El requisito '{req_type}' exige '{key}' y el parser no lo dio: recurso del contrato del requisito.",
+                    **resolution,
+                }
+                defaulted.append(key)
         for key, default in (INTENT_VALUE_DEFAULTS.get(intent_id) or {}).items():
             if key not in effective:
                 value_defaults[key] = default  # D: solo trazado; la plantilla lo usa, el comando no lo dijo

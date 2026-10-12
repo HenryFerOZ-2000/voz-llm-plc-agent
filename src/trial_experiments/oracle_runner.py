@@ -36,6 +36,7 @@ from typing import Any
 import plcsim_runtime
 import plcsim_runtime_io as rio
 from effective_semantics import interpreted_parameters
+from functional_requirements import canonical_requirement_type
 from trial_experiments import oracle_schema, trial_model
 from trial_experiments import process_variables as PV
 
@@ -270,10 +271,13 @@ def evaluate_semantics(oracle: dict[str, Any], semantic_output: dict[str, Any] |
                        "passed": role in role_resolution["roles"], "provenance": sources})
         if entry and sources and all(source == "DEFAULT" for source in sources):
             warnings.append(f"Rol {role} resuelto por un recurso completado por la semantica efectiva (DEFAULT, trazado).")
-    present_types = {str(r.get("type")) for r in semantic_output.get("functional_requirements") or [] if isinstance(r, dict)}
+    # Comparacion por nombre CANONICO (functional_requirements.FUNCTIONAL_REQUIREMENT_ALIASES): un alias historico
+    # cumple la expectativa de su canonico y viceversa, sin modificar ningun Oracle congelado.
+    present_types = {canonical_requirement_type(r.get("type")) for r in semantic_output.get("functional_requirements") or []
+                     if isinstance(r, dict)}
     for requirement in expectations.get("required_functional_requirements") or []:
         checks.append({"check": f"functional_requirement:{requirement}", "expected": requirement,
-                       "actual": sorted(present_types), "passed": requirement in present_types})
+                       "actual": sorted(present_types), "passed": canonical_requirement_type(requirement) in present_types})
     for key, spec in (expectations.get("required_parameters") or {}).items():
         raw = parameters.get(key)
         if raw is None:

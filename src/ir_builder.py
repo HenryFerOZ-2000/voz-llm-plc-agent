@@ -39,6 +39,9 @@ INTERNAL_RESOURCE_SPECS: dict[str, dict[str, str]] = {
     "M_Step": {"type": "INT", "class": "internal"},
     "M_StopDelayActive": {"type": "BOOL", "class": "internal"},
     "M_SensorLastState": {"type": "BOOL", "class": "internal"},
+    "M_SupervisionActive": {"type": "BOOL", "class": "internal"},
+    "T_SeqDelay": {"type": "TON", "class": "timer"},
+    "T_Cycle": {"type": "TON", "class": "timer"},
     "T_Pulse5s": {"type": "TP", "class": "timer"},
     "T_DelayStart": {"type": "TON", "class": "timer"},
     "T_OperationLimit": {"type": "TON", "class": "timer"},
@@ -103,7 +106,20 @@ def _flatten_safety_rules(safety_rules: dict[str, Any]) -> list[str]:
 # necesitar un parche especifico por tag - ver tambien code_generator._generate_motor_start_stop_body
 # y semantic_parser._build_motor_start_stop_parameters, que respetan la misma clasificacion.
 OPTIONAL_PARAMETER_KEYS: dict[str, set[str]] = {
-    "INT_MOTOR_START_STOP": {"reset_input", "alarm_output", "run_indicator", "fault_indicator"}
+    "INT_MOTOR_START_STOP": {"reset_input", "alarm_output", "run_indicator", "fault_indicator"},
+    # auto_input: entrada de seleccion de modo del operador (MODE_AUTO); manual_pump_input: orden manual de
+    # la bomba. Solo existen si el comando describe esa funcion (o la exige un requisito presente).
+    "INT_PID_SUPERVISOR": {"auto_input", "manual_pump_input"},
+    # Ruta de arranque opcional (Start/Stop) subordinada a la emergencia.
+    "INT_EMERGENCY_PRIORITY": {"trigger_input", "stop_input", "output", "alarm_output"},
+    # Orden propia por modo (manual_command_input / auto_command_input); sin ellas, forma historica Start/Stop.
+    "INT_MANUAL_AUTO_MODE": {"manual_command_input", "auto_command_input"},
+    "INT_SEQUENCE_THREE_STEPS": {"reset_input", "stop_input"},
+    # Supervision armada por la orden de arranque.
+    "INT_SENSOR_TIMEOUT_ALARM": {"trigger_input"},
+    # Pilotos derivados de senales de estado (marcha/falla) y piloto de detenido.
+    "INT_STATUS_PILOTS": {"run_state_input", "fault_input", "stop_indicator"},
+    "INT_AUTO_CYCLE": {"auto_input", "stop_input"},
 }
 
 # CONTRATO DE RECURSOS POR INTENT (fuente unica): (clave semantica, valor por defecto) en el orden en
@@ -143,29 +159,29 @@ INTENT_RESOURCE_TABLE: dict[str, tuple[tuple[str, str], ...]] = {
         ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
         ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"), ("timer", "T_OperationLimit")),
     "INT_EMERGENCY_PRIORITY": (
-        ("emergency_input", "I_Emergency"), ("motor_output", "Q_Motor_Enable"), ("output", "Q_Aux_Output"),
-        ("alarm_output", "Q_Alarm")),
+        ("emergency_input", "I_Emergency"), ("motor_output", "Q_Motor_Enable")),
     "INT_COUNTER_PULSES": (
         ("pulse_input", "I_Sensor1"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
         ("output", "Q_Alarm"), ("counter", "C_PulseCount"), ("edge_detector", "R_SensorPulse")),
     "INT_COUNTER_RESET": (
         ("reset_input", "I_Reset"), ("counter", "C_PulseCount")),
     "INT_MUTUAL_INTERLOCK": (
-        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("request_a", "I_Request_A"), ("request_b", "I_Request_B"), ("emergency_input", "I_Emergency"),
         ("contactor_a", "Q_Contactor_A"), ("contactor_b", "Q_Contactor_B")),
     "INT_VFD_ENABLE_NO_ALARM": (
-        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"), ("alarm_output", "Q_Alarm"),
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"), ("alarm_input", "I_Alarm"),
         ("motor_output", "Q_Motor_Enable")),
     "INT_MANUAL_AUTO_MODE": (
         ("manual_input", "I_Mode_Manual"), ("auto_input", "I_Mode_Auto"), ("trigger_input", "I_Start"),
         ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"), ("motor_output", "Q_Motor_Enable"),
         ("manual_mode_memory", "M_ManualMode"), ("auto_mode_memory", "M_AutoMode")),
     "INT_SEQUENCE_THREE_STEPS": (
-        ("trigger_input", "I_Start"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
-        ("step_memory", "M_Step"), ("output", "Q_Aux_Output")),
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"), ("main_output", "Q_Motor_Enable"),
+        ("aux_output", "Q_Aux_Output"), ("step_memory", "M_Step"), ("timer", "T_SeqDelay")),
     "INT_SENSOR_TIMEOUT_ALARM": (
         ("sensor_input", "I_Sensor1"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
-        ("alarm_output", "Q_Alarm"), ("timer", "T_SensorTimeout"), ("last_state_memory", "M_SensorLastState")),
+        ("alarm_output", "Q_Alarm"), ("timer", "T_SensorTimeout"), ("last_state_memory", "M_SensorLastState"),
+        ("supervision_memory", "M_SupervisionActive")),
     "INT_MAINTENANCE_BLOCK": (
         ("maintenance_input", "I_Maintenance"), ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"),
         ("motor_output", "Q_Motor_Enable")),
@@ -177,13 +193,33 @@ INTENT_RESOURCE_TABLE: dict[str, tuple[tuple[str, str], ...]] = {
         ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"), ("step_memory", "M_Step"),
         ("start_edge", "R_CycleStart"), ("on_timer", "T_CycleOn"), ("off_timer", "T_CycleOff")),
     "INT_AUTO_CYCLE": (
-        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
-        ("reset_input", "I_Reset"), ("motor_output", "Q_Motor_Enable"), ("aux_output", "Q_Aux_Output"),
-        ("alarm_output", "Q_Alarm"), ("step_memory", "M_Step"), ("auto_input", "I_Mode_Auto")),
+        ("trigger_input", "I_Start"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("run_output", "Q_Motor_Enable"), ("complete_output", "Q_Cycle_Complete"), ("step_memory", "M_Step"),
+        ("timer", "T_Cycle")),
+    "INT_SPEED_SELECTION": (
+        ("speed_low_input", "I_Speed_Low"), ("speed_medium_input", "I_Speed_Medium"), ("speed_high_input", "I_Speed_High"),
+        ("emergency_input", "I_Emergency"), ("speed_low_output", "Q_Speed_Low"),
+        ("speed_medium_output", "Q_Speed_Medium"), ("speed_high_output", "Q_Speed_High")),
     "INT_PID_SUPERVISOR": (
         ("emergency_input", "I_Emergency"), ("reset_input", "I_Reset"), ("alarm_output", "Q_Alarm"),
         ("pump_output", "Q_Pump_Enable")),
 }
+
+# Claves equivalentes de un slot del contrato (nombre historico -> mismo recurso): si el parser uso el alias, el
+# slot esta cubierto (no se completa el default) y la plantilla lee el valor del alias. INT_MUTUAL_INTERLOCK: las
+# ordenes de cada contactor se expresaban historicamente como trigger_input / stop_input.
+INTENT_SLOT_ALIASES: dict[str, dict[str, tuple[str, ...]]] = {
+    "INT_MUTUAL_INTERLOCK": {"request_a": ("trigger_input",), "request_b": ("stop_input",)},
+}
+
+
+def slot_value(intent_id: str, parameters: dict[str, Any], key: str) -> Any:
+    """Valor del slot `key` (o de su alias historico) presente en `parameters`; None si ninguno esta."""
+    for candidate in (key, *INTENT_SLOT_ALIASES.get(intent_id, {}).get(key, ())):
+        if candidate in parameters:
+            return parameters[candidate]
+    return None
+
 
 # Valores funcionales (no recursos) que la plantilla del generador usa si el parser no los dio. Fuente
 # unica para code_generator y para la traza de la semantica efectiva (nunca se rellenan en `parameters`:
@@ -196,6 +232,8 @@ INTENT_VALUE_DEFAULTS: dict[str, dict[str, Any]] = {
     "INT_COUNTER_PULSES": {"preset": 5},
     "INT_SENSOR_TIMEOUT_ALARM": {"timeout": "T#5s"},
     "INT_CYCLIC_MOTOR": {"on_time": "T#3s", "off_time": "T#3s"},
+    "INT_SEQUENCE_THREE_STEPS": {"delay_time": "T#3s"},
+    "INT_AUTO_CYCLE": {"cycle_time": "T#3s"},
 }
 
 
@@ -208,7 +246,10 @@ def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]
     table = INTENT_RESOURCE_TABLE.get(intent_id)
     if table is None:
         raise ValueError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {intent_id}")
-    required: list[Any] = [parameters.get(key, default) for key, default in table]
+    required: list[Any] = [
+        slot_value(intent_id, parameters, key) if slot_value(intent_id, parameters, key) is not None else default
+        for key, default in table
+    ]
     # Claves OPCIONALES: solo aportan un recurso si el comando realmente las pidio (presentes en
     # `parameters`); nunca se sustituyen por un tag fisico por defecto.
     for optional_key in OPTIONAL_PARAMETER_KEYS.get(intent_id, ()):
@@ -441,10 +482,11 @@ def build_test_cases_for_intent(intent_id: str, parameters: dict[str, Any]) -> l
         "INT_EMERGENCY_PRIORITY": [
             {
                 "test_id": "EP_01",
-                "description": "La emergencia desenergiza motor y salida auxiliar.",
-                "initial_state": {motor_output: True, output: True},
+                "description": "La emergencia desenergiza las salidas criticas.",
+                "initial_state": {motor_output: True, **({output: True} if "output" in parameters else {})},
                 "input_sequence": [{emergency_input: True}],
-                "expected_outputs": {motor_output: False, output: False, alarm_output: True},
+                "expected_outputs": {motor_output: False, **({output: False} if "output" in parameters else {}),
+                                     **({alarm_output: True} if "alarm_output" in parameters else {})},
                 "safety_expectation": "Prioridad absoluta de seguridad."
             }
         ],
@@ -540,7 +582,8 @@ def build_test_cases_for_intent(intent_id: str, parameters: dict[str, Any]) -> l
         "INT_MAINTENANCE_BLOCK",
         "INT_STATUS_PILOTS",
         "INT_AUTO_CYCLE",
-        "INT_PID_SUPERVISOR"
+        "INT_PID_SUPERVISOR",
+        "INT_SPEED_SELECTION"
     }:
         return [
             {

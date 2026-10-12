@@ -11,6 +11,7 @@ from functional_requirements import (
     COMPOSABLE_TYPES,
     FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS,
     MANUAL_BEHAVIORS,
+    canonicalize_functional_requirements,
     MANUAL_MODE_MEMORY,
     TIME_LITERAL_PATTERN,
     alarm_outputs,
@@ -81,6 +82,14 @@ def _param(parameters: dict[str, Any], *keys: str, default: Any) -> Any:
             f"el generador no introduce el recurso externo por defecto {default!r}."
         )
     return default
+
+
+def _optional_tag(parameters: dict[str, Any], key: str) -> str | None:
+    """Clave OPCIONAL: solo cuenta si la semantica efectiva la fijo con un tag (nunca un default oculto)."""
+    value = parameters.get(key)
+    if isinstance(value, str) and value.strip() and value.strip().upper() not in ("FALSE", "TRUE"):
+        return value.strip()
+    return None
 
 
 def _normalize_tag_list(value: Any) -> list[str]:
@@ -313,22 +322,28 @@ def _generate_auto_stop_timer_body(parameters: dict[str, Any]) -> str:
 
 def _generate_emergency_priority_body(parameters: dict[str, Any]) -> str:
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
-    alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
     affected_outputs = _normalize_tag_list(parameters.get("affected_outputs"))
     motor_output = _param(parameters, "motor_output", default=affected_outputs[0] if affected_outputs else "Q_Motor_Enable")
-    aux_output = _param(parameters, "output", default=affected_outputs[1] if len(affected_outputs) > 1 else "Q_Aux_Output")
-    return _dedented(
-        f"""\
-        (* Prioridad absoluta del paro de emergencia *)
-        IF {emergency_input} THEN
-            {motor_output} := FALSE;
-            {aux_output} := FALSE;
-            {alarm_output} := TRUE;
-        ELSE
-            {alarm_output} := FALSE;
-        END_IF;
-        """
-    )
+    # Salida auxiliar y alarma: solo si el comando las pidio (claves opcionales del contrato).
+    aux_output = _optional_tag(parameters, "output") or (affected_outputs[1] if len(affected_outputs) > 1 else None)
+    alarm_output = _optional_tag(parameters, "alarm_output")
+    start_input = _optional_tag(parameters, "trigger_input")
+    stop_input = _optional_tag(parameters, "stop_input")
+    run_logic = ""
+    if start_input and stop_input:
+        # Arranque con Start y paro con Stop (memoria en la propia salida), siempre subordinado a la emergencia.
+        run_logic = (f"(* Arranque subordinado a la emergencia *)\nIF {emergency_input} OR {stop_input} THEN\n"
+                     f"    {motor_output} := FALSE;\nELSIF {start_input} THEN\n    {motor_output} := TRUE;\nEND_IF;\n")
+    elif start_input:
+        # Arranque con Start solo sin emergencia (sin memoria: el comando no pide mantener la marcha).
+        run_logic = f"(* Arranque subordinado a la emergencia *)\n{motor_output} := {start_input} AND NOT {emergency_input};\n"
+    priority = ["(* Prioridad absoluta del paro de emergencia *)", f"IF {emergency_input} THEN", f"    {motor_output} := FALSE;"]
+    if aux_output:
+        priority.append(f"    {aux_output} := FALSE;")
+    if alarm_output:
+        priority += [f"    {alarm_output} := TRUE;", "ELSE", f"    {alarm_output} := FALSE;"]
+    priority.append("END_IF;")
+    return run_logic + "\n".join(priority) + "\n"
 
 
 def _generate_counter_pulses_body(parameters: dict[str, Any]) -> str:
@@ -361,21 +376,22 @@ def _generate_counter_reset_body(parameters: dict[str, Any]) -> str:
 
 
 def _generate_mutual_interlock_body(parameters: dict[str, Any]) -> str:
-    start_input = _param(parameters, "trigger_input", default="I_Start")
-    stop_input = _param(parameters, "stop_input", default="I_Stop")
+    # trigger_input / stop_input: nombres historicos de las mismas ordenes (ir_builder.INTENT_SLOT_ALIASES).
+    request_a = _param(parameters, "request_a", "trigger_input", default="I_Request_A")
+    request_b = _param(parameters, "request_b", "stop_input", default="I_Request_B")
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     contactor_a = _param(parameters, "contactor_a", default="Q_Contactor_A")
     contactor_b = _param(parameters, "contactor_b", default="Q_Contactor_B")
     return _dedented(
         f"""\
-        (* Enclavamiento mutuo para evitar activacion simultanea *)
+        (* Enclavamiento mutuo: cada contactor sigue su propia orden y nunca se activan los dos a la vez *)
+        (* (el contactor que ya esta activo conserva la prioridad mientras su orden siga presente). *)
         IF {emergency_input} THEN
             {contactor_a} := FALSE;
             {contactor_b} := FALSE;
-        ELSIF {start_input} THEN
-            {contactor_a} := NOT {contactor_b};
-        ELSIF {stop_input} THEN
-            {contactor_b} := NOT {contactor_a};
+        ELSE
+            {contactor_a} := {request_a} AND NOT {contactor_b};
+            {contactor_b} := {request_b} AND NOT {contactor_a};
         END_IF;
         """
     )
@@ -384,17 +400,34 @@ def _generate_mutual_interlock_body(parameters: dict[str, Any]) -> str:
 def _generate_vfd_enable_no_alarm_body(parameters: dict[str, Any]) -> str:
     trigger_input = _param(parameters, "trigger_input", default="I_Start")
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
-    alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
+    alarm_input = _param(parameters, "alarm_input", default="I_Alarm")
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
     return _dedented(
         f"""\
-        (* Habilitacion del motor solo si no existe alarma *)
-        {motor_output} := {trigger_input} AND NOT {alarm_output} AND NOT {emergency_input};
+        (* Habilitacion solo mientras no exista una alarma activa (condicion de entrada) *)
+        {motor_output} := {trigger_input} AND NOT {alarm_input} AND NOT {emergency_input};
         """
     )
 
 
 def _generate_manual_auto_mode_body(parameters: dict[str, Any]) -> str:
+    manual_command = _optional_tag(parameters, "manual_command_input")
+    auto_command = _optional_tag(parameters, "auto_command_input")
+    if manual_command or auto_command:
+        auto_input = _param(parameters, "auto_input", default="I_Mode_Auto")
+        emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+        motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
+        manual_mode_memory = _param(parameters, "manual_mode_memory", default="M_ManualMode")
+        auto_mode_memory = _param(parameters, "auto_mode_memory", default="M_AutoMode")
+        return _dedented(
+            f"""\
+            (* Selector de modo MODE_AUTO (TRUE = Automatico, FALSE = Manual): el motor sigue la orden del *)
+            (* modo seleccionado; la orden del otro modo no tiene efecto. *)
+            {auto_mode_memory} := {auto_input};
+            {manual_mode_memory} := NOT {auto_input};
+            {motor_output} := (({auto_mode_memory} AND {auto_command or 'FALSE'}) OR ({manual_mode_memory} AND {manual_command or 'FALSE'})) AND NOT {emergency_input};
+            """
+        )
     manual_input = _param(parameters, "manual_input", default="I_Mode_Manual")
     auto_input = _param(parameters, "auto_input", default="I_Mode_Auto")
     start_input = _param(parameters, "trigger_input", default="I_Start")
@@ -424,29 +457,25 @@ def _generate_manual_auto_mode_body(parameters: dict[str, Any]) -> str:
 
 def _generate_sequence_three_steps_body(parameters: dict[str, Any]) -> str:
     trigger_input = _param(parameters, "trigger_input", default="I_Start")
-    reset_input = _param(parameters, "reset_input", default="I_Reset")
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     step_memory = _param(parameters, "step_memory", default="M_Step")
-    output_tag = _param(parameters, "output", default="Q_Aux_Output")
+    main_output = _param(parameters, "main_output", default="Q_Motor_Enable")
+    aux_output = _param(parameters, "aux_output", default="Q_Aux_Output")
+    timer_tag = _param(parameters, "timer", default="T_SeqDelay")
+    delay_time = _param(parameters, "delay_time", default=INTENT_VALUE_DEFAULTS["INT_SEQUENCE_THREE_STEPS"]["delay_time"])
+    reset_terms = [emergency_input] + [tag for tag in (_optional_tag(parameters, "reset_input"), _optional_tag(parameters, "stop_input")) if tag]
     return _dedented(
         f"""\
-        (* Secuencia automatica de tres pasos *)
-        IF {reset_input} OR {emergency_input} THEN
+        (* Secuencia: con la orden de arranque se activa la salida principal y, tras la espera, la auxiliar *)
+        IF {' OR '.join(reset_terms)} THEN
             {step_memory} := 0;
-            {output_tag} := FALSE;
         ELSIF {trigger_input} AND {step_memory} = 0 THEN
             {step_memory} := 1;
         END_IF;
 
-        CASE {step_memory} OF
-            1:
-                {step_memory} := 2;
-            2:
-                {output_tag} := TRUE;
-                {step_memory} := 3;
-            3:
-                {output_tag} := TRUE;
-        END_CASE;
+        {timer_tag}(IN := {step_memory} = 1, PT := {delay_time});
+        {main_output} := {step_memory} = 1 AND NOT {emergency_input};
+        {aux_output} := {step_memory} = 1 AND {timer_tag}.Q AND NOT {emergency_input};
         """
     )
 
@@ -459,6 +488,24 @@ def _generate_sensor_timeout_alarm_body(parameters: dict[str, Any]) -> str:
     alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
     timeout = _param(parameters, "timeout", default=INTENT_VALUE_DEFAULTS["INT_SENSOR_TIMEOUT_ALARM"]["timeout"])
     timer_tag = _param(parameters, "timer", default="T_SensorTimeout")
+    start_input = _optional_tag(parameters, "trigger_input")
+    if start_input:
+        supervision = _param(parameters, "supervision_memory", default="M_SupervisionActive")
+        return _dedented(
+            f"""\
+            (* Supervision del sensor desde la orden de arranque: alarma si no cambia de estado durante el *)
+            (* tiempo indicado; cada cambio reinicia la cuenta. *)
+            IF {reset_input} OR {emergency_input} THEN
+                {supervision} := FALSE;
+            ELSIF {start_input} THEN
+                {supervision} := TRUE;
+            END_IF;
+
+            {timer_tag}(IN := {supervision} AND ({sensor_input} = {last_state_memory}) AND NOT {emergency_input}, PT := {timeout});
+            {alarm_output} := {timer_tag}.Q AND {supervision} AND NOT {emergency_input};
+            {last_state_memory} := {sensor_input};
+            """
+        )
     return _dedented(
         f"""\
         (* Alarma por falta de cambio en el sensor *)
@@ -492,6 +539,22 @@ def _generate_maintenance_block_body(parameters: dict[str, Any]) -> str:
 
 
 def _generate_status_pilots_body(parameters: dict[str, Any]) -> str:
+    run_state = _optional_tag(parameters, "run_state_input")
+    if run_state:
+        emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+        fault_input = _optional_tag(parameters, "fault_input")
+        run_indicator = _param(parameters, "run_indicator", default="Q_Pilot_Run")
+        fault_indicator = _param(parameters, "fault_indicator", default="Q_Pilot_Fault")
+        stop_indicator = _optional_tag(parameters, "stop_indicator")
+        fault_condition = f"{fault_input} OR {emergency_input}" if fault_input else emergency_input
+        lines = [
+            "(* Pilotos de estado: falla, marcha o detenido; solo uno encendido (la falla tiene prioridad) *)",
+            f"{fault_indicator} := {fault_condition};",
+            f"{run_indicator} := {run_state} AND NOT {fault_indicator};",
+        ]
+        if stop_indicator:
+            lines.append(f"{stop_indicator} := NOT {run_state} AND NOT {fault_indicator};")
+        return "\n".join(lines) + "\n"
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
     alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
@@ -563,44 +626,51 @@ def _generate_cyclic_motor_body(parameters: dict[str, Any]) -> str:
 
 
 def _generate_auto_cycle_body(parameters: dict[str, Any]) -> str:
-    auto_input = _param(parameters, "auto_input", default="I_Mode_Auto")
     trigger_input = _param(parameters, "trigger_input", default="I_Start")
-    stop_input = _param(parameters, "stop_input", default="I_Stop")
     reset_input = _param(parameters, "reset_input", default="I_Reset")
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     step_memory = _param(parameters, "step_memory", default="M_Step")
-    motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
-    aux_output = _param(parameters, "aux_output", default="Q_Aux_Output")
-    alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
+    run_output = _param(parameters, "run_output", default="Q_Motor_Enable")
+    complete_output = _param(parameters, "complete_output", default="Q_Cycle_Complete")
+    timer_tag = _param(parameters, "timer", default="T_Cycle")
+    cycle_time = _param(parameters, "cycle_time", default=INTENT_VALUE_DEFAULTS["INT_AUTO_CYCLE"]["cycle_time"])
+    start_terms = [trigger_input] + [tag for tag in (_optional_tag(parameters, "auto_input"),) if tag]
+    reset_terms = [emergency_input, reset_input] + [tag for tag in (_optional_tag(parameters, "stop_input"),) if tag]
     return _dedented(
         f"""\
-        (* Ciclo automatico por estados con salidas auxiliares *)
-        IF {emergency_input} THEN
+        (* Ciclo automatico temporizado: 0 = inicial, 1 = en ejecucion, 2 = finalizado (hasta Reset) *)
+        IF {' OR '.join(reset_terms)} THEN
             {step_memory} := 0;
-            {motor_output} := FALSE;
-            {aux_output} := FALSE;
-            {alarm_output} := TRUE;
-        ELSIF {reset_input} OR {stop_input} THEN
-            {step_memory} := 0;
-            {motor_output} := FALSE;
-            {aux_output} := FALSE;
-            {alarm_output} := FALSE;
-        ELSIF {auto_input} AND {trigger_input} THEN
-            CASE {step_memory} OF
-                0:
-                    {motor_output} := TRUE;
-                    {aux_output} := FALSE;
-                    {step_memory} := 1;
-                1:
-                    {motor_output} := TRUE;
-                    {aux_output} := TRUE;
-                    {step_memory} := 2;
-                2:
-                    {motor_output} := FALSE;
-                    {aux_output} := FALSE;
-                    {step_memory} := 0;
-            END_CASE;
+        ELSIF {step_memory} = 0 AND {' AND '.join(start_terms)} THEN
+            {step_memory} := 1;
         END_IF;
+
+        {timer_tag}(IN := {step_memory} = 1, PT := {cycle_time});
+        IF {step_memory} = 1 AND {timer_tag}.Q THEN
+            {step_memory} := 2;
+        END_IF;
+
+        {run_output} := {step_memory} = 1 AND NOT {emergency_input};
+        {complete_output} := {step_memory} = 2;
+        """
+    )
+
+
+def _generate_speed_selection_body(parameters: dict[str, Any]) -> str:
+    low_input = _param(parameters, "speed_low_input", default="I_Speed_Low")
+    medium_input = _param(parameters, "speed_medium_input", default="I_Speed_Medium")
+    high_input = _param(parameters, "speed_high_input", default="I_Speed_High")
+    emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+    low_output = _param(parameters, "speed_low_output", default="Q_Speed_Low")
+    medium_output = _param(parameters, "speed_medium_output", default="Q_Speed_Medium")
+    high_output = _param(parameters, "speed_high_output", default="Q_Speed_High")
+    return _dedented(
+        f"""\
+        (* Seleccion de velocidad: solo se activa la velocidad seleccionada; con mas de una seleccion *)
+        (* simultanea ninguna se activa (nunca dos velocidades a la vez). *)
+        {low_output} := {low_input} AND NOT {medium_input} AND NOT {high_input} AND NOT {emergency_input};
+        {medium_output} := {medium_input} AND NOT {low_input} AND NOT {high_input} AND NOT {emergency_input};
+        {high_output} := {high_input} AND NOT {low_input} AND NOT {medium_input} AND NOT {emergency_input};
         """
     )
 
@@ -813,6 +883,7 @@ def _generate_pid_supervisor_body(parameters: dict[str, Any], functional_require
     emitting one independent line per type.
     """
     config = _load_pid_supervisor_config()
+    functional_requirements = canonicalize_functional_requirements(functional_requirements)
     types_present = {str(r.get("type", "")) for r in functional_requirements if is_catalog_functional_requirement(r)}
     declared_process_vars: set[str] = set()
     for requirement in functional_requirements:
@@ -841,9 +912,13 @@ def _generate_pid_supervisor_body(parameters: dict[str, Any], functional_require
     sensor_min = config.get("sensor_valid_range", {}).get("min", 0.0)
     sensor_max = config.get("sensor_valid_range", {}).get("max", 100.0)
     if "sensor_range_fault" in types_present and "Sensor_Fault" in declared_process_vars:
+        # Con conditional_alarm_reset la falla de sensor es una de las condiciones que ENCLAVAN la alarma
+        # (el Reset solo la borra cuando la falla desaparecio); sin el, la falla solo se indica.
+        alarm_line = f"    {alarm_output} := TRUE;\n" if "conditional_alarm_reset" in types_present else ""
         lines.append(
             f"IF Level_PV < {sensor_min} OR Level_PV > {sensor_max} THEN\n"
             "    Sensor_Fault := TRUE;\n"
+            f"{alarm_line}"
             "ELSE\n"
             "    Sensor_Fault := FALSE;\n"
             "END_IF;"
@@ -882,28 +957,41 @@ def _generate_pid_supervisor_body(parameters: dict[str, Any], functional_require
             (r.get("limit") for r in functional_requirements if r.get("type") == "safe_overfill_stop" and r.get("limit") is not None),
             config.get("safe_overfill_stop", {}).get("default_limit", 95.0)
         )
-        overfill_block = [f"IF Level_PV >= {limit} THEN", "    Safe_Stop := TRUE;"]
+        comparison = next(
+            (str(r.get("comparison")).strip() for r in functional_requirements
+             if r.get("type") == "safe_overfill_stop" and str(r.get("comparison") or "").strip() in (">", ">=")),
+            ">="
+        )
+        # Condicion segura MIENTRAS dure la condicion (sin enclavamiento): al volver el nivel, Safe_Stop cae y
+        # quien dependa de el (PID_Enable, bomba) se recupera solo; la alarma queda enclavada hasta el Reset.
+        overfill_block = [f"IF Level_PV {comparison} {limit} THEN", "    Safe_Stop := TRUE;"]
         if "PID_Enable" in declared_process_vars:
             overfill_block.append("    PID_Enable := FALSE;")
         overfill_block.append(f"    {pump_output} := FALSE;")
         overfill_block.append(f"    {alarm_output} := TRUE;")
+        overfill_block.append("ELSE")
+        overfill_block.append("    Safe_Stop := FALSE;")
         overfill_block.append("END_IF;")
         lines.append("\n".join(overfill_block))
 
     if "conditional_alarm_reset" in types_present:
-        reset_terms = [f"NOT {name}" for name in ("High_Level_Alarm", "Low_Level_Alarm", "Sensor_Fault") if name in declared_process_vars]
+        reset_terms = [f"NOT {name}" for name in ("High_Level_Alarm", "Low_Level_Alarm", "Sensor_Fault", "Safe_Stop")
+                       if name in declared_process_vars]
         condition = " AND ".join([reset_input] + reset_terms) if reset_terms else reset_input
-        reset_lines = [f"IF {condition} THEN", f"    {alarm_output} := FALSE;"]
-        if "Safe_Stop" in declared_process_vars:
-            reset_lines.append("    Safe_Stop := FALSE;")
-        reset_lines.append("END_IF;")
+        reset_lines = [f"IF {condition} THEN", f"    {alarm_output} := FALSE;", "END_IF;"]
         lines.append("\n".join(reset_lines))
 
-    if "set_auto_mode" in types_present:
-        lines.append(f"IF NOT {emergency_input} THEN\n    Auto_Mode := TRUE;\n    Manual_Mode := FALSE;\nEND_IF;")
-
-    if "set_manual_mode" in types_present:
-        lines.append(f"IF NOT {emergency_input} THEN\n    Auto_Mode := FALSE;\n    Manual_Mode := TRUE;\nEND_IF;")
+    auto_input = str(parameters.get("auto_input") or "").strip()
+    if auto_input and ({"set_auto_mode", "set_manual_mode"} & types_present):
+        # Modo seleccionado por el operador (convencion MODE_AUTO: TRUE = Automatico, FALSE = Manual): el modo
+        # SIGUE a la entrada de seleccion; nunca se fuerza de forma incondicional.
+        lines.append(f"Auto_Mode := {auto_input} AND NOT {emergency_input};\nManual_Mode := NOT Auto_Mode;")
+    else:
+        # Sin entrada de seleccion, set_auto_mode / set_manual_mode son ORDENES (accion) de cambiar el modo.
+        if "set_auto_mode" in types_present:
+            lines.append(f"IF NOT {emergency_input} THEN\n    Auto_Mode := TRUE;\n    Manual_Mode := FALSE;\nEND_IF;")
+        if "set_manual_mode" in types_present:
+            lines.append(f"IF NOT {emergency_input} THEN\n    Auto_Mode := FALSE;\n    Manual_Mode := TRUE;\nEND_IF;")
 
     if "set_level_setpoint" in types_present and "Level_SP" in declared_process_vars:
         value = next(
@@ -912,6 +1000,18 @@ def _generate_pid_supervisor_body(parameters: dict[str, Any], functional_require
         )
         if value is not None:
             lines.append(f"Level_SP := {value};")
+
+    if "reject_unsafe_setpoint" in types_present and "Level_SP_Command" in declared_process_vars:
+        guard = next((r for r in functional_requirements if r.get("type") == "reject_unsafe_setpoint"), {})
+        sp_range = config.get("level_setpoint", {})
+        sp_min = guard.get("min") if guard.get("min") is not None else sp_range.get("min", 0.0)
+        sp_max = guard.get("max") if guard.get("max") is not None else sp_range.get("max", 100.0)
+        # La solicitud solo se acepta dentro del rango; fuera de rango Level_SP conserva el ultimo valor valido.
+        lines.append(
+            f"IF Level_SP_Command >= {float(sp_min)} AND Level_SP_Command <= {float(sp_max)} THEN\n"
+            "    Level_SP := Level_SP_Command;\n"
+            "END_IF;"
+        )
 
     if "enable_pid" in types_present and "PID_Enable" in declared_process_vars:
         enable_terms = [f"NOT {emergency_input}"]
@@ -926,14 +1026,21 @@ def _generate_pid_supervisor_body(parameters: dict[str, Any], functional_require
     # incondicional de arriba ya fuerza PID_Enable a FALSE cuando corresponde (P07), y el valor
     # BOOL inicial (FALSE) ya representa "deshabilitado" mientras nada lo habilite explicitamente.
 
-    if "manual_pump_limit" in types_present:
-        limit_terms = [f"NOT {emergency_input}"]
+    safety_terms = [f"NOT {emergency_input}"]
+    if "Safe_Stop" in declared_process_vars:
+        safety_terms.append("NOT Safe_Stop")
+    if "enable_pump" in types_present:
+        # Operacion normal: la bomba marcha salvo emergencia o condicion segura activa.
+        lines.append(f"{pump_output} := {' AND '.join(safety_terms)};")
+
+    if "manual_pump_enable" in types_present and "Auto_Mode" in declared_process_vars:
+        manual_input = _param(parameters, "manual_pump_input",
+                              default=FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS["manual_pump_enable"]["manual_pump_input"])
+        manual_terms = [manual_input] + safety_terms
         if "Sensor_Fault" in declared_process_vars:
-            limit_terms.append("NOT Sensor_Fault")
-        if "Safe_Stop" in declared_process_vars:
-            limit_terms.append("NOT Safe_Stop")
-        condition = " AND ".join(["Manual_Mode"] + limit_terms)
-        lines.append(f"IF {condition} THEN\n    {pump_output} := TRUE;\nELSE\n    {pump_output} := FALSE;\nEND_IF;")
+            manual_terms.append("NOT Sensor_Fault")
+        # Manual (= no Automatico): la bomba sigue SOLO la orden manual; en Automatico este bloque no actua.
+        lines.append(f"IF NOT Auto_Mode THEN\n    {pump_output} := {' AND '.join(manual_terms)};\nEND_IF;")
 
     return "\n".join(lines) + "\n"
 
@@ -959,6 +1066,7 @@ IMPLEMENTED_TEMPLATES = {
     "INT_STATUS_PILOTS": _generate_status_pilots_body,
     "INT_CYCLIC_MOTOR": _generate_cyclic_motor_body,
     "INT_AUTO_CYCLE": _generate_auto_cycle_body,
+    "INT_SPEED_SELECTION": _generate_speed_selection_body,
     "INT_PID_SUPERVISOR": lambda parameters: _generate_pid_supervisor_body(parameters, [])
 }
 

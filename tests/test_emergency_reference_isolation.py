@@ -76,7 +76,7 @@ def _llm_response(with_functional_requirement: bool = True) -> dict[str, Any]:
         ),
         "normalized_command": "dos motores",
         "parameters": {
-            "trigger_input": "I_Start", "stop_input": "I_Stop", "emergency_input": "I_Emergency",
+            "request_a": "I_Start", "request_b": "I_Stop", "emergency_input": "I_Emergency",
             "contactor_a": "Q_Motor_1", "contactor_b": "Q_Motor_2"
         },
         "confidence": 0.95,
@@ -203,7 +203,7 @@ def test_build_project_ir_drops_i_emergency_from_required_variables_even_if_stil
         "case_id": None,
         "command_text": "x",
         "parameters": {
-            "trigger_input": "I_Start", "stop_input": "I_Stop",
+            "request_a": "I_Start", "request_b": "I_Stop",
             "contactor_a": "Q_Motor_1", "contactor_b": "Q_Motor_2"
         },
         "recognized_tags": ["I_Start", "I_Stop", "Q_Motor_1", "Q_Motor_2"],
