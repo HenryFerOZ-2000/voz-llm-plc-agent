@@ -510,6 +510,38 @@ def approve_oracle(
     return oracle
 
 
+def record_human_approval_marker(project_root: Path, oracle_id: str) -> dict[str, Any]:
+    """
+    Cierra el marcador `human_formal_approval` de un Oracle YA aprobado por el investigador (FROZEN/APPROVED con
+    approved_by/approved_at de la aprobacion real) que quedo en PENDING porque se aprobo antes de que approve_oracle
+    actualizara ese marcador. Solo toca ese campo del bloque approval (fuera del hash): nunca firma, nunca cambia
+    approved_by/approved_at ni el contenido; la copia inmutable de versions/ recibe el mismo bloque.
+    """
+    path = oracle_path(project_root, oracle_id)
+    oracle = json.loads(path.read_text(encoding="utf-8"))
+    assert_valid(oracle)
+    verify_integrity(oracle)
+    approval = oracle["approval"]
+    if not is_formal(oracle) or not str(approval.get("approved_by") or "").strip() or not approval.get("approved_at"):
+        raise OracleError(ERROR_FROZEN, f"{oracle_id} no tiene una aprobacion humana registrada: use approve_oracle.")
+    if approval.get("technical_validation", {}).get("status") not in (None, "PASSED"):
+        raise OracleError(ERROR_INTEGRITY, f"{oracle_id}: validacion tecnica no PASSED.")
+    if approval.get("human_formal_approval") == "APPROVED":
+        return oracle
+    before = compute_oracle_hash(oracle)
+    approval["human_formal_approval"] = "APPROVED"
+    if compute_oracle_hash(oracle) != before or approval.get("hash") != before:
+        raise OracleError(ERROR_INTEGRITY, f"{oracle_id}: el marcador alteraria el hash aprobado.")
+    _write(path, oracle)
+    archived = get_oracles_dir(project_root) / VERSIONS_DIRNAME / f"{oracle_id}_v{approval['version']}.json"
+    if archived.exists():
+        stored = json.loads(archived.read_text(encoding="utf-8"))
+        if compute_oracle_hash(stored) != before:
+            raise OracleError(ERROR_INTEGRITY, f"{archived.name} no coincide con la version aprobada.")
+        _write(archived, oracle)
+    return oracle
+
+
 def supersede_frozen(project_root: Path, draft: dict[str, Any]) -> Path:
     """
     Publica la version N+1 (borrador) de un Oracle congelado SIN perder la version N: exige que
