@@ -203,8 +203,8 @@ def build_capability_gaps_report(project_root: Path) -> dict[str, Any]:
     } for entry in report["oracles"] if not entry["runtime_executable"]]
     return {
         "generated_at": report["generated_at"],
-        "note": "SYSTEM_CAPABILITY_GAP: el Oracle define la evaluacion; estos gaps describen lo que el generador actual no produce. "
-                "No se corrigen en la fase de Oracles.",
+        "note": "SYSTEM_CAPABILITY_GAP registrados en los Oracles durante la Fase 3B (historicos, parte del contenido congelado). "
+                "El estado VIGENTE de cada caso lo da la auditoria pre-FORMAL: data/preformal_readiness_report.json.",
         "total_generator_gaps": len(gaps),
         "by_severity": {level: sum(1 for g in gaps if g["severity"] == level) for level in ("HIGH", "MEDIUM", "LOW")},
         "generator_gaps": gaps,

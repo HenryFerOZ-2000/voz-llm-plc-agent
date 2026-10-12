@@ -1,0 +1,2804 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-12T16:36:13",
+  "benchmark_version": 3,
+  "mode": "READ_ONLY (sin LLM, sin TIA, sin PLCSIM; SCL generado simulado contra los Oracles congelados)",
+  "evaluable": 32,
+  "total": 32,
+  "all_evaluable": true,
+  "not_evaluable": [],
+  "simulation_map_cases": [
+    "D05",
+    "P07"
+  ],
+  "cases": [
+    {
+      "case_id": "D01",
+      "title": "Salida temporizada de 5 s",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": [
+              {
+                "step_id": "step_2",
+                "role": "AUX_OUTPUT",
+                "measured_ms": 5020.5,
+                "window_ms": {
+                  "nominal_ms": 5000,
+                  "from_ms": 4700,
+                  "to_ms": 5700
+                },
+                "passed": true
+              }
+            ]
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D02",
+      "title": "Lampara mientras la entrada este activa",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D03",
+      "title": "Arranque y paro con memoria de marcha",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D04",
+      "title": "Motor enclavado con Start y Stop",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D05",
+      "title": "Prioridad de la condicion de emergencia sobre el arranque",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_experimental_simulacion",
+        "map_hash": "ae7e87881a978607c08a39bd6fe4f76cf4d9f8073234264ac8182fda5ef6917b",
+        "source": "config/experiment_maps.json",
+        "simulation_only": true,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': ['SAFETY_TRIP']}; descartados: [{'map_id': 'mapa_banco_fisico', 'missing': ['senales restringidas no disponibles: SAFETY_TRIP']}]"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_experimental_simulacion",
+            "map_hash": "ae7e87881a978607c08a39bd6fe4f76cf4d9f8073234264ac8182fda5ef6917b",
+            "source": "config/experiment_maps.json",
+            "simulation_only": true,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': ['SAFETY_TRIP']}; descartados: [{'map_id': 'mapa_banco_fisico', 'missing': ['senales restringidas no disponibles: SAFETY_TRIP']}]"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D06",
+      "title": "Alarma por arranque sin condicion de seguridad",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D07",
+      "title": "Arranque retardado 3 s con Start mantenido",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v3"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": [
+              {
+                "step_id": "step_1",
+                "role": "MOTOR_MAIN",
+                "measured_ms": 3010.0,
+                "window_ms": {
+                  "nominal_ms": 3000,
+                  "from_ms": 2700,
+                  "to_ms": 3700
+                },
+                "passed": true
+              }
+            ]
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D08",
+      "title": "Paro automatico tras 10 s de funcionamiento continuo",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": [
+              {
+                "step_id": "step_2",
+                "role": "MOTOR_MAIN",
+                "measured_ms": 10020.5,
+                "window_ms": {
+                  "nominal_ms": 10000,
+                  "from_ms": 9500,
+                  "to_ms": 11000
+                },
+                "passed": true
+              }
+            ]
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D09",
+      "title": "Contador de 5 pulsos",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D10",
+      "title": "Contador de 5 pulsos con Reset",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D11",
+      "title": "Contactor con enclavamiento de marcha",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D12",
+      "title": "Dos contactores con ordenes independientes e interbloqueo",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 2, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v3"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 2, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D13",
+      "title": "Variador habilitado solo sin alarma",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D14",
+      "title": "Seleccion de velocidad baja/media/alta",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 3, 'digital_outputs': 3, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 3, 'digital_outputs': 3, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D15",
+      "title": "Modo Manual/Automatico con orden por modo",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 3, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 3, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D16",
+      "title": "Secuencia: principal, espera 3 s, auxiliar",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 2, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 2, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": [
+              {
+                "step_id": "step_2",
+                "role": "AUX_OUTPUT",
+                "measured_ms": 3020.5,
+                "window_ms": {
+                  "nominal_ms": 3000,
+                  "from_ms": 2700,
+                  "to_ms": 3700
+                },
+                "passed": true
+              }
+            ]
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D17",
+      "title": "Supervision de sensor 5 s tras Start",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": [
+              {
+                "step_id": "t4_timeout",
+                "role": "ALARM",
+                "measured_ms": 5010.0,
+                "window_ms": {
+                  "nominal_ms": 5000,
+                  "from_ms": 4700,
+                  "to_ms": 5700
+                },
+                "passed": true
+              }
+            ]
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D18",
+      "title": "Bloqueo del arranque en mantenimiento",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D19",
+      "title": "Pilotos de estado: detenido, marcha y falla",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 3, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 3, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "D20",
+      "title": "Ciclo automatico de 3 s con Reset",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 2, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 2, 'digital_outputs': 2, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "EXECUTABLE_NOW",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": [
+              {
+                "step_id": "s2_run",
+                "role": "RUN_OUTPUT",
+                "measured_ms": 3020.5,
+                "window_ms": {
+                  "nominal_ms": 3000,
+                  "from_ms": 2700,
+                  "to_ms": 3700
+                },
+                "passed": true
+              }
+            ]
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P01",
+      "title": "Modo automatico al seleccionar Automatico",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 0, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "set_auto_mode"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 0, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "INTERNAL_TAG_READ"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P02",
+      "title": "Setpoint de nivel al 60 %",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "set_level_setpoint"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "REAL",
+              "INTERNAL_TAG_READ"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P03",
+      "title": "Setpoint validado en el rango 0-100 %",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "reject_unsafe_setpoint"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P04",
+      "title": "Alarma de nivel alto > 90 %",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "high_level_alarm"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P05",
+      "title": "Alarma de nivel bajo < 10 %",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "low_level_alarm"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P06",
+      "title": "PID habilitado solo en Automatico",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "enable_pid"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P07",
+      "title": "PID deshabilitado ante emergencia",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_experimental_simulacion",
+        "map_hash": "ae7e87881a978607c08a39bd6fe4f76cf4d9f8073234264ac8182fda5ef6917b",
+        "source": "config/experiment_maps.json",
+        "simulation_only": true,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 0, 'restricted_signals': ['SAFETY_TRIP']}; descartados: [{'map_id': 'mapa_banco_fisico', 'missing': ['senales restringidas no disponibles: SAFETY_TRIP']}]"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "enable_pid",
+              "disable_pid"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_experimental_simulacion",
+            "map_hash": "ae7e87881a978607c08a39bd6fe4f76cf4d9f8073234264ac8182fda5ef6917b",
+            "source": "config/experiment_maps.json",
+            "simulation_only": true,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 0, 'restricted_signals': ['SAFETY_TRIP']}; descartados: [{'map_id': 'mapa_banco_fisico', 'missing': ['senales restringidas no disponibles: SAFETY_TRIP']}]"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": [
+              "El comando menciona emergencia y la intencion elegida podria requerir revision."
+            ]
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P08",
+      "title": "Bomba manual ON/OFF en modo Manual",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "manual_pump_enable"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P09",
+      "title": "Fallo de sensor fuera de 0-100 %",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "sensor_range_fault"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 0, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P10",
+      "title": "Reset de alarma de sensor solo sin falla",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "sensor_range_fault",
+              "conditional_alarm_reset"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 1, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P11",
+      "title": "Bomba apagada por sobrellenado >= 95 %",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 1, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "enable_pump",
+              "safe_overfill_stop"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 1, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    },
+    {
+      "case_id": "P12",
+      "title": "Automatico con SP 60 %, alarma > 90 % y recuperacion",
+      "evaluable": true,
+      "known_gaps": [],
+      "map": {
+        "map_id": "mapa_banco_fisico",
+        "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+        "source": "config/experiment_maps.json",
+        "simulation_only": false,
+        "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 2, 'restricted_signals': []}"
+      },
+      "checks": {
+        "oracle_frozen": {
+          "ok": true,
+          "detail": "FROZEN v2"
+        },
+        "functional_requirements": {
+          "ok": true,
+          "detail": {
+            "types": [
+              "set_level_setpoint",
+              "enable_pid",
+              "high_level_alarm",
+              "safe_overfill_stop"
+            ],
+            "unsupported": []
+          }
+        },
+        "map_resources": {
+          "ok": true,
+          "detail": {
+            "map_id": "mapa_banco_fisico",
+            "map_hash": "edfe5486f1880f5b7e20a2a6b4740a85728842a767730357f6b2e9818ab5a1d4",
+            "source": "config/experiment_maps.json",
+            "simulation_only": false,
+            "reason": "primer mapa por prioridad que cubre {'digital_inputs': 0, 'digital_outputs': 2, 'restricted_signals': []}"
+          }
+        },
+        "semantic_capability": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "conflicts": [],
+            "question": null
+          }
+        },
+        "generation": {
+          "ok": true,
+          "detail": {
+            "errors": [],
+            "warnings": []
+          }
+        },
+        "oracle_roles": {
+          "ok": true,
+          "detail": "RESOLVED"
+        },
+        "runtime_capabilities": {
+          "ok": true,
+          "detail": {
+            "declared_runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+            "runtime_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "required_capabilities": [
+              "BOOL",
+              "REAL",
+              "INTERNAL_TAG_READ",
+              "INTERNAL_TAG_WRITE"
+            ],
+            "missing_capabilities": [],
+            "executable": true
+          }
+        },
+        "reference_behavior": {
+          "ok": true,
+          "detail": {
+            "verdict": "PASS",
+            "reason": "ALL_CHECKS_PASSED",
+            "failed_checks": [],
+            "safety_violations": [],
+            "timing": []
+          }
+        }
+      },
+      "errors": []
+    }
+  ]
+}
