@@ -147,12 +147,28 @@ def test_evaluation_passes_expected_identity_and_uses_frozen_master_metadata(tmp
 
 # ---------- evidencia real del fallo ----------
 
-def test_real_d03_attempt_001_evidence_is_untouched():
-    attempt = _ROOT / "results" / "development_validation_v2" / "D03" / "V1" / "D03_V1_TEXT_DEV_002" / "evaluation" / "attempt_001"
-    if not attempt.exists():
-        return
-    assert TW.sha256(attempt / "compile_report.json") == "8d9e59122ff01ba3bfd0c0eabc5551db04f4f550e6bd97e0d7cdf28c19be26ac"
-    assert TW.sha256(attempt / "tia" / "tia_project_manifest.json") == "37ac52c55da421232b0352eb815629b331a94a3dfad31c032ecb13f033dcd2ae"
+def _tree_hashes(directory: Path) -> dict[str, str]:
+    return {path.relative_to(directory).as_posix(): TW.sha256(path) for path in sorted(directory.rglob("*")) if path.is_file()}
+
+
+def test_failed_attempt_001_evidence_is_untouched_by_a_later_retry(tmp_path):
+    # Evidencia CONTROLADA (antes: hashes fijos de un resultado real de otra PC; los trial_id se repiten entre
+    # PCs y results/ no se versiona, asi que no eran portables). Se verifica la integridad real byte a byte:
+    # el reintento tecnico crea attempt_002 y nunca reescribe ni borra nada de attempt_001.
+    root = _project(tmp_path)
+    _master(root)
+    trial_dir = _generated_trial(root)
+    failed = _evaluate(root, trial_dir, _FakeBridge("NON_RECOVERABLE"), _memory(8000, 20000))
+    assert failed["final_status"] == "INFRASTRUCTURE_ERROR"
+    attempt_001 = trial_dir / "evaluation" / "attempt_001"
+    before = _tree_hashes(attempt_001)
+    assert {"compile_report.json", "tia/tia_project_manifest.json", "memory_preflight.json"} <= set(before)
+
+    retried = DE.evaluate_trial(root, trial_dir, "TIA reiniciado", bridge=_FakeBridge(), runtime_status_fn=_runtime,
+                                oracle_fn=_oracle_pass, log=lambda _m: None, memory_fn=_memory(8000, 20000))
+    assert retried["final_status"] == "PASS" and retried["attempt"] == 2
+    assert (trial_dir / "evaluation" / "attempt_002" / "compile_report.json").is_file()
+    assert _tree_hashes(attempt_001) == before  # mismos archivos y mismos SHA-256
 
 
 def test_maps_oracles_and_benchmark_unchanged():

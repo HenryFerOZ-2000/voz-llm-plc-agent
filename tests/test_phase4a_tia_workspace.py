@@ -46,17 +46,41 @@ def test_short_ids_are_never_reused_and_independent_of_trial_id(tmp_path):
     assert TW.load_registry(root)["workspaces"]["T0001"]["state"] == TW.STATE_CLEANED
 
 
-def test_tia_paths_fit_the_real_limit_for_the_real_project_root(tmp_path):
-    workspace = _REAL_ROOT / "tiaw" / "T0001"
-    # Nombre INTERNO real del MASTER (el Retrieve real creo p/S71500_MASTER/S71500_MASTER.ap18).
-    validation = TW.validate_paths(workspace, "T0001", "S71500_MASTER", TW.TIA_PATH_LIMIT)
-    assert validation["ok"], validation["errors"]
-    assert validation["retrieve_path_length"] <= 143 and validation["archive_path_length"] <= 143
-    assert validation["source_path_length"] <= 143 and validation["max_path_length"] <= 143
-    retrieve = next(c for c in validation["checks"] if c["operation"] == "retrieve_project_file")
+def _synthetic_workspace(drive: str, length: int) -> str:
+    """Ruta absoluta sintetica de EXACTAMENTE `length` caracteres que termina en \\tiaw\\T0001 (no toca disco)."""
+    suffix = "\\tiaw\\T0001"
+    path = drive + "\\" + "r" * (length - len(drive) - 1 - len(suffix)) + suffix
+    assert len(path) == length
+    return path
+
+
+@pytest.mark.skipif(os.name != "nt", reason="validate_paths mide rutas Windows (separador \\)")
+@pytest.mark.parametrize("drive", ["C:", "D:"])
+def test_tia_path_limit_143_is_enforced_exactly_with_synthetic_roots(drive):
+    # Portable: no depende de la longitud real de C:\TESIS_HENRY\... ni de D:\... en cada PC. Peor caso de
+    # Retrieve con el nombre INTERNO real del MASTER: <ws>\p\S71500_MASTER\S71500_MASTER.ap18 = len(ws) + 35.
+    name = "S71500_MASTER"
+    retrieve_extra = len("\\p\\") + len(name) + 1 + len(name) + len(".ap18")
+    at_limit = _synthetic_workspace(drive, TW.TIA_PATH_LIMIT - retrieve_extra)
+
+    ok = TW.validate_paths(Path(at_limit), "T0001", name, TW.TIA_PATH_LIMIT)
+    assert ok["ok"], ok["errors"]
+    assert ok["retrieve_path_length"] == ok["max_path_length"] == 143  # justo en el limite: permitido
+    assert ok["archive_path_length"] == len(at_limit) + len("\\T0001.zap18")
+    assert ok["source_path_length"] == len(at_limit) + len("\\s.scl")
+    retrieve = next(c for c in ok["checks"] if c["operation"] == "retrieve_project_file")
     assert retrieve["path"].endswith("p\\S71500_MASTER\\S71500_MASTER.ap18") and "subcarpeta" in retrieve["note"]
-    long_name = TW.validate_paths(workspace, "T0001", "S71500_MASTER_PROYECTO_EXPERIMENTAL_LARGO", TW.TIA_PATH_LIMIT)
-    assert not long_name["ok"] and any(TW.ERROR_PATH_TOO_LONG in error for error in long_name["errors"])
+
+    # Un caracter mas en la raiz -> 144 > 143: solo falla el Retrieve (peor caso) y se informa la ruta exacta.
+    over = TW.validate_paths(Path(_synthetic_workspace(drive, len(at_limit) + 1)), "T0001", name, TW.TIA_PATH_LIMIT)
+    assert not over["ok"] and over["retrieve_path_length"] == 144
+    assert [c["operation"] for c in over["checks"] if not c["ok"]] == ["retrieve_project_file"]
+    assert len(over["errors"]) == 1 and TW.ERROR_PATH_TOO_LONG in over["errors"][0] and "(144 > 143)" in over["errors"][0]
+
+    # Misma raiz valida pero nombre interno mas largo: cada caracter cuenta dos veces (subcarpeta + archivo).
+    longer = TW.validate_paths(Path(at_limit), "T0001", name + "X", TW.TIA_PATH_LIMIT)
+    assert not longer["ok"] and longer["retrieve_path_length"] == 145
+    assert any(TW.ERROR_PATH_TOO_LONG in error for error in longer["errors"])
 
 
 def test_path_validation_uses_the_registered_internal_name_never_the_snapshot_name(tmp_path):
