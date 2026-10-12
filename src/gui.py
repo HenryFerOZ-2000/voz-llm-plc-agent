@@ -108,7 +108,7 @@ import tia_projects
 from plcsim_runtime import get_plcsim_runtime_status
 from trial_experiments import benchmark_catalog, oracle_review, oracle_runner, oracle_schema, trial_io_map, trial_model
 from trial_experiments import deferred_evaluator, experimental_design, resource_policy, tia_classification
-from trial_experiments import text_batch, voice_protocol
+from trial_experiments import experiment_maps, text_batch, voice_protocol
 from host_local import load_host_id
 from trial_experiments.oracle_runner import run_oracle
 from trial_experiments.oracle_schema import find_case_oracle
@@ -6330,8 +6330,17 @@ class VozLLMPLCGUI(ctk.CTk):
         info = (self.active_trial or {}).get("new_trial")
         if not info:
             return True
+        source_path, selection = self._experiment_base_map_source()
+        if selection is not None and not selection.get("path"):
+            self._log(f"[EXPERIMENT IO] {selection.get('reason')}")
+            self._update_new_trial({"experiment_map": experiment_maps.selection_evidence(selection),
+                                    "io_map": {"error": experiment_maps.ERROR_NO_MAP}})
+            self._finalize_new_trial(trial_model.FINAL_STATUS_FAIL, [str(selection.get("reason"))])
+            self._cancel_active_trial(experiment_maps.ERROR_NO_MAP)
+            messagebox.showerror("Ejecutar ensayo", f"Ningun mapa experimental cubre este caso.\n\n{selection.get('reason')}")
+            return False
         try:
-            reference = trial_io_map.create_working_map(Path(info["dir"]), experiment_reference_map_path(self.io_map_path))
+            reference = trial_io_map.create_working_map(Path(info["dir"]), source_path)
         except trial_io_map.ExperimentIOError as error:
             self._log(f"[EXPERIMENT IO] {error}")
             self._update_new_trial({"io_map": {"error": error.code}})
@@ -6343,13 +6352,32 @@ class VozLLMPLCGUI(ctk.CTk):
         info["lifecycle_state"] = trial_io_map.STATE_PREPARING
         self._update_new_trial({
             "io_map": trial_io_map.trial_record_reference(reference),
-            "lifecycle_state": trial_io_map.STATE_PREPARING
+            "lifecycle_state": trial_io_map.STATE_PREPARING,
+            **({"experiment_map": experiment_maps.selection_evidence(selection)} if selection is not None else {}),
         })
+        if selection is not None:
+            self._log(f"[EXPERIMENT IO] Mapa experimental: {selection['map_id']} (simulation_only={selection['simulation_only']}; "
+                      f"{selection['reason']})")
         self._log(
             f"[EXPERIMENT IO] Working map creado desde {reference['base_map_id']} "
             f"({reference['physical_channel_count']} canales fisicos)."
         )
         return True
+
+    def _experiment_base_map_source(self) -> tuple[Path, dict[str, Any] | None]:
+        """
+        Mapa base del ensayo: seleccion DETERMINISTA por capacidad (config/experiment_maps.json) a partir de los roles
+        del Oracle congelado del caso. Sin Oracle (casos legacy) se conserva el mapa base del mapa activo.
+        """
+        case_id = (self.active_trial or {}).get("case_id")
+        try:
+            oracle = oracle_schema.find_case_oracle(self.project_root, case_id)
+        except Exception:  # noqa: BLE001 - un Oracle invalido lo bloquea el precheck; aqui no se decide nada
+            oracle = None
+        if oracle is None:
+            return experiment_reference_map_path(self.io_map_path), None
+        selection = experiment_maps.select_experiment_map(self.project_root, oracle)
+        return (Path(selection["path"]) if selection.get("path") else experiment_reference_map_path(self.io_map_path)), selection
 
     def _freeze_trial_io(self, semantic_output: dict[str, Any]) -> bool:
         """Freeze de bindings + io_map_snapshot.json, antes de IR/SCL/TIA. True si no aplica."""

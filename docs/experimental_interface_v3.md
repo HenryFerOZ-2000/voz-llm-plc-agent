@@ -46,15 +46,18 @@ Nótese la polaridad opuesta entre `SAFETY_OK` (D06, TRUE = condición segura) y
 
 - En D05 y P07 la emergencia es una **señal lógica de simulación**. **No representa hardware físico**: el paro de
   emergencia real del banco está cableado fuera del PLC y **no** existe `I_Emergency` en `mapa_banco_fisico_base.json`
-  (que no se modifica).
-- Interfaz de simulación disponible: `data/plc_maps/mapa_simulacion_completo.json` define `I_Emergency` en `%IX0.2`,
-  utilizable como fuente de `SAFETY_TRIP` en simulación (roles `emergency_input` / `safety_trip_input`).
-- **Pendiente de cableado (no implementado):** el flujo experimental actual parte siempre del mapa del banco físico
-  (`trial_io_map.create_working_map` con `mapa_banco_fisico_base.json`), donde no hay entrada de disparo ni DI libre.
-  Para evaluar D05/P07 en FORMAL hace falta seleccionar un mapa de simulación por caso o fase; mientras tanto el rol
-  `SAFETY_TRIP` no se resuelve (REVIEW `ORACLE_ROLE_NOT_FOUND`).
-- Riesgo a verificar en D05: `semantic_repair` conserva el requisito de emergencia cuando el intent es
-  `INT_EMERGENCY_PRIORITY`; con el mapa físico la generación puede fallar antes de evaluar.
+  (que no se modifica y sigue byte-idéntico).
+- La señal la aporta el **mapa experimental de simulación** `data/plc_maps/mapa_experimental_simulacion.json`
+  (`metadata.simulation_only = true`, `metadata.harness_signals = {"SAFETY_TRIP": "I_Emergency"}`): canal LOCKED
+  `I_Emergency` en `%IX20.2`, descrito como "SAFETY_TRIP SIMULADO: señal lógica del test harness". Solo se usa con
+  PLCSIM; nunca se descarga a hardware.
+- **Selección automática por caso** (`config/experiment_maps.json`, `trial_experiments.experiment_maps`): el Oracle de
+  D05/P07 tiene un rol IO cuyos `semantic_paths` incluyen `emergency_input`/`safety_trip*`; esa es una señal
+  RESTRINGIDA que solo cubre un mapa que la declare en `harness_signals`. El banco no la declara, así que esos casos
+  se ejecutan sobre el mapa de simulación; el resto sigue en el banco físico.
+- En el banco físico la emergencia nunca se convierte en una entrada: `semantic_repair`/semántica efectiva la dejan en
+  el literal seguro `FALSE` (sin tag fantasma). En el mapa de simulación `INT_EMERGENCY_PRIORITY` conserva
+  `emergency_input = I_Emergency`, el Oracle la escribe en PLCSIM y el cleanup la devuelve a `FALSE`.
 
 ## 5. Variables de proceso (`PROCESS_VARIABLE`, P01-P12)
 
@@ -72,15 +75,24 @@ Nótese la polaridad opuesta entre `SAFETY_OK` (D06, TRUE = condición segura) y
 
 | Mapa | Uso | Estado |
 |---|---|---|
-| `mapa_banco_fisico_base.json` | banco físico real (8 DI, 8 DO, 4 AI, 4 AO) | **intacto**; sin `I_Emergency`; sin DI libres |
-| `mapa_simulacion_completo.json` | simulación con recursos ampliados | intacto |
+| `mapa_banco_fisico_base.json` | banco físico real (8 DI, 8 DO, 4 AI, 4 AO) | **intacto** (byte-idéntico); sin `I_Emergency` |
+| `mapa_experimental_simulacion.json` | mapa FORMAL/EXPERIMENTAL de simulación (16 DI `%IX20.0-21.7`, 16 DO `%QX20.0-21.7`, rango disjunto del banco) | nuevo; `simulation_only`; aporta `SAFETY_TRIP` |
+| `mapa_simulacion_completo.json` | simulación con recursos ampliados (Modo Normal) | intacto |
 | `mapa_pid_simulacion.json` | recursos físicos de simulación para P01-P12 | intacto |
 | `mapa_pid_banco_fisico.json` | banco PID físico | vacío a propósito (no confirmado) |
 
-**D14 (selección de velocidad):** requiere 3 entradas de selección y 3 salidas de velocidad. Verificación del mapa de
-simulación: `mapa_simulacion_completo.json` tiene `I_Speed_Low/Medium/High` (`%IX1.1-1.3`) pero **no tiene salidas de
-velocidad**. Para la evaluación formal de D14 hace falta un mapa de simulación con tres salidas `Q_Speed_*` (y que el
-flujo experimental lo seleccione). No se ha creado ni se ha modificado ningún mapa.
+**Selección del mapa base de cada ensayo** (determinista, por capacidad, nunca por `case_id`): se recorren los mapas
+de `config/experiment_maps.json` por prioridad (banco físico primero) y se elige el primero que cubre las necesidades
+derivadas de los roles IO del Oracle congelado (entradas/salidas digitales y señales restringidas). La base
+experimental del banco libera todo canal ASSIGNED (solo `I_Start`/`I_Stop` son LOCKED), por lo que ofrece 8 DI y 8 DO.
+La selección queda congelada en el ensayo (`trial.json → experiment_map`: `map_id`, `map_hash` canónico, `source`,
+`simulation_only`, motivo) y se copia en `evaluation_report.json`. Resultado vigente: D05 y P07 → simulación; los
+otros 30 casos → banco físico.
+
+**D14 (selección de velocidad):** 3 entradas de selección + 3 salidas de velocidad caben en el banco (8 DI / 8 DO), así
+que la selección por capacidad lo mantiene en el banco físico; el mapa de simulación tiene recursos de sobra si el
+banco no alcanzara. La capacidad de generación es el intent `INT_SPEED_SELECTION` (salida solo de la velocidad
+seleccionada; con dos selecciones simultáneas ninguna se activa → invariante "como máximo una").
 
 ## 7. Familias funcionales
 

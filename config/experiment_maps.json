@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "description": "Politica de seleccion del mapa base de cada ensayo experimental (determinista, por capacidad; nunca por case_id). Se recorren los mapas por prioridad y se elige el primero que cubre las necesidades derivadas de los roles IO del Oracle congelado: numero de entradas/salidas digitales y senales restringidas. El banco fisico es el preferido; el mapa de simulacion solo se usa cuando el banco no puede representar el caso. La seleccion queda congelada en el ensayo (map_id, map_hash, source, simulation_only).",
+  "maps": [
+    {
+      "map_id": "mapa_banco_fisico",
+      "path": "data/plc_maps/mapa_banco_fisico_base.json",
+      "priority": 1
+    },
+    {
+      "map_id": "mapa_experimental_simulacion",
+      "path": "data/plc_maps/mapa_experimental_simulacion.json",
+      "priority": 2
+    }
+  ],
+  "restricted_signals": {
+    "SAFETY_TRIP": {
+      "semantic_paths": [
+        "emergency_input",
+        "safety_trip",
+        "safety_trip_input",
+        "trip_input"
+      ],
+      "rule": "Solo un canal declarado explicitamente en metadata.harness_signals del mapa; nunca un canal FREE del banco (el paro de emergencia del banco fisico esta cableado fuera del PLC)."
+    }
+  }
+}
