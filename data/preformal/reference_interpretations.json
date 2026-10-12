@@ -7,8 +7,7 @@
       "parameters": {
         "trigger_input": "I_Start",
         "output": "Q_Aux_Output",
-        "duration": "T#5s",
-        "timer": "T_Pulse5s"
+        "duration": "T#5s"
       },
       "functional_requirements": [],
       "confidence": 0.95,
@@ -137,9 +136,7 @@
       "parameters": {
         "trigger_input": "I_Start",
         "motor_output": "Q_Motor_Enable",
-        "delay_time": "T#3s",
-        "stop_input": "I_Stop",
-        "timer": "T_DelayStart"
+        "delay_time": "T#3s"
       },
       "functional_requirements": [],
       "confidence": 0.95,
@@ -148,8 +145,7 @@
       "clarification_question": null,
       "recognized_tags": [
         "I_Start",
-        "Q_Motor_Enable",
-        "I_Stop"
+        "Q_Motor_Enable"
       ],
       "unrecognized_terms": [],
       "assumptions": [],
@@ -182,9 +178,7 @@
       "parameters": {
         "pulse_input": "I_Sensor1",
         "output": "Q_Aux_Output",
-        "preset": 5,
-        "reset_input": "I_Reset",
-        "counter": "C_PulseCount"
+        "preset": 5
       },
       "functional_requirements": [],
       "confidence": 0.95,
@@ -193,8 +187,7 @@
       "clarification_question": null,
       "recognized_tags": [
         "I_Sensor1",
-        "Q_Aux_Output",
-        "I_Reset"
+        "Q_Aux_Output"
       ],
       "unrecognized_terms": [],
       "assumptions": [],
@@ -207,8 +200,7 @@
         "pulse_input": "I_Sensor1",
         "reset_input": "I_Reset",
         "output": "Q_Aux_Output",
-        "preset": 5,
-        "counter": "C_PulseCount"
+        "preset": 5
       },
       "functional_requirements": [],
       "confidence": 0.95,

@@ -1,6 +1,6 @@
 # Auditoria de preparacion pre-FORMAL
 
-Generado: 2026-10-12T16:36:13 · benchmark v3 · READ_ONLY (sin LLM, sin TIA, sin PLCSIM; SCL generado simulado contra los Oracles congelados).
+Generado: 2026-10-12T17:41:46 · benchmark v3 · READ_ONLY (sin LLM, sin TIA, sin PLCSIM; SCL generado simulado contra los Oracles congelados).
 
 Evaluable = el experimento puede ejecutarse completo y un FAIL sera atribuible al sistema bajo prueba (no a una capacidad inexistente conocida). NO significa que el LLM vaya a obtener PASS.
 

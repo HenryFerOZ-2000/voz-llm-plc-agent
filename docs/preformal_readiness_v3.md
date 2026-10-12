@@ -123,9 +123,11 @@ veredicto de los 37 ensayos reales TIA/PLCSIM existentes (PASS, FAIL por sobresc
 
 ## Riesgos conocidos (no bloqueantes)
 
-- `INTENT_PARAMETER_RULES.required` exige al parser recursos que el comando no menciona (p.ej. `stop_input` en
-  `INT_DELAYED_START`, `reset_input` en `INT_COUNTER_PULSES`); el LLM los ve en `expected_parameters` y los suele
-  incluir, pero si los omite el ensayo falla en semántica. Es una decisión de diseño previa que no se cambió.
+- RESUELTO (requisitos implícitos): el parser ya no debe expresar recursos que el comando no pide. Los nombres técnicos
+  internos (timer, counter, memorias) se autogeneran y no se exigen; las entradas no intrínsecas pasan a opcionales con
+  valor neutro seguro `FALSE` (Stop en `INT_DELAYED_START`/`INT_AUTO_STOP_TIMER`, Reset en `INT_COUNTER_PULSES`/
+  `INT_SAFE_START_ALARM`/`INT_SENSOR_TIMEOUT_ALARM`); Reset sigue exigido donde es la función (`INT_COUNTER_RESET`, y
+  el rol RESET del Oracle de D10). Test: sin recursos que ningún rol use, los 32 casos siguen válidos y PASS.
 - El mapa de simulación usa bytes de E/S (`%I20.x`/`%Q20.x`) sin módulo en el hardware del MASTER; el bridge escribe por
   imagen de proceso. Los pilotos reales lo verifican.
 - Las descripciones `related_cases` del catálogo conservan IDs (no se envían al LLM).

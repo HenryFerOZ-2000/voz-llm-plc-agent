@@ -25,6 +25,14 @@ from schemas import (
 from utils import build_io_map_index, get_project_root, load_json_file
 
 
+def _is_internal_contract_resource(intent_id: str, key: str) -> bool:
+    """True si el contrato del intent asigna a `key` un recurso INTERNO (M_/T_/C_/R_/F_): se autogenera."""
+    from ir_builder import INTERNAL_PREFIXES, intent_resource_table
+
+    default = dict(intent_resource_table(intent_id) or ()).get(key)
+    return isinstance(default, str) and default.startswith(INTERNAL_PREFIXES)
+
+
 def _load_pid_supervisor_config() -> dict[str, Any]:
     try:
         return load_json_file(get_project_root() / "config" / "pid_supervisor_config.json")
@@ -68,7 +76,7 @@ INTENT_PARAMETER_RULES = {
         "time_keys": []
     },
     "INT_DELAYED_START": {
-        "required": ["trigger_input", "stop_input", "emergency_input", "motor_output", "delay_time", "timer"],
+        "required": ["trigger_input", "emergency_input", "motor_output", "delay_time", "timer"],
         "time_keys": ["delay_time"]
     },
     "INT_DELAYED_STOP": {
@@ -96,8 +104,12 @@ INTENT_PARAMETER_RULES = {
         "required": [],
         "time_keys": ["timeout"]
     },
+    "INT_COUNTER_RESET": {
+        "required": ["reset_input"],
+        "time_keys": []
+    },
     "INT_COUNTER_PULSES": {
-        "required": ["pulse_input", "reset_input", "emergency_input", "output", "counter", "preset"],
+        "required": ["pulse_input", "emergency_input", "output", "counter", "preset"],
         "time_keys": [],
         "positive_int_keys": ["preset"]
     },
@@ -351,6 +363,8 @@ def validate_semantic_output(
     for parameter_name in validation_rules.get("required", []):
         if parameter_name == "emergency_input" and not bench_has_emergency:
             continue
+        if _is_internal_contract_resource(intent_id, parameter_name):
+            continue  # recurso tecnico interno (timer, contador, memoria): lo autogenera el IR, el parser no lo nombra
         if parameter_name not in parameters:
             missing_parameters.append(parameter_name)
 

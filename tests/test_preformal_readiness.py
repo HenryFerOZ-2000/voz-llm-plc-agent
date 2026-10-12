@@ -499,3 +499,85 @@ def test_audit_reports_a_missing_capability_as_not_evaluable():
 def test_benchmark_oracles_and_maps_untouched():
     for path in _PROTECTED:
         assert hashlib.sha256(path.read_bytes()).hexdigest() == _HASHES[str(path)], path
+
+
+# =============================================================================================
+# Requisitos implicitos (D07 / D09 / D10): el parser nunca debe expresar recursos que el comando no pide
+# =============================================================================================
+
+def _run_params(case_id: str, parameters: dict[str, Any], intent_id: str | None = None) -> dict[str, Any]:
+    interpretation = {**json.loads(json.dumps(_REFS[case_id])), "parameters": parameters}
+    if intent_id:
+        interpretation["intent_id"] = intent_id
+    return RP.run_reference(_ROOT, case_id, interpretation, _CASES[case_id]["canonical_command"])
+
+
+def test_a_d07_is_valid_without_stop_input():
+    result = _run_params("D07", {"trigger_input": "I_Start", "motor_output": "Q_Motor_Enable", "delay_time": "T#3s"})
+    assert result["stages"]["semantic"]["success"] and result["verdict"] == "PASS"
+    assert "I_Stop" not in result["program_scl"]  # no se inventa ni se asigna ningun Stop
+
+
+def test_b_d07_uses_an_explicit_stop():
+    result = _run_params("D07", {"trigger_input": "I_Start", "stop_input": "I_Stop", "motor_output": "Q_Motor_Enable",
+                                 "delay_time": "T#3s"})
+    assert result["verdict"] == "PASS" and "AND NOT #I_Stop" in result["program_scl"]
+
+
+def test_c_d09_is_valid_without_reset_input():
+    result = _run_params("D09", {"pulse_input": "I_Sensor1", "output": "Q_Aux_Output", "preset": 5})
+    assert result["stages"]["semantic"]["success"] and result["verdict"] == "PASS"
+    assert "I_Reset" not in result["program_scl"]
+
+
+def test_d_d10_still_requires_reset():
+    # Por su funcion (rol RESET del Oracle): sin Reset el ensayo no puede pasar.
+    without = _run_params("D10", {"pulse_input": "I_Sensor1", "output": "Q_Aux_Output", "preset": 5})
+    assert without["verdict"] == "REVIEW" and without["verdict_reason"] == "ORACLE_ROLE_NOT_FOUND"
+    # Por contrato: el intent cuya funcion es el reinicio lo exige al parser.
+    counter_reset = _run_params("D10", {"pulse_input": "I_Sensor1", "output": "Q_Aux_Output"}, intent_id="INT_COUNTER_RESET")
+    assert "Faltan parametros requeridos: reset_input" in counter_reset["stages"]["semantic"]["detail"]["errors"]
+    assert _run_params("D10", _REFS["D10"]["parameters"])["verdict"] == "PASS"
+
+
+def test_e_no_hidden_requirement_in_any_case():
+    """Sin recursos que ningun rol del Oracle usa y sin nombres tecnicos internos, los 32 casos siguen validos y PASS."""
+    for case_id in BC.CASE_IDS:
+        oracle = oracle_schema.load_oracle(_ROOT, case_id)
+        paths = {path for role in oracle["roles"].values() for path in role.get("semantic_paths") or []}
+        minimal = {key: value for key, value in _REFS[case_id]["parameters"].items()
+                   if not (isinstance(value, str) and value[:2] in ("M_", "T_", "C_", "R_"))
+                   and not (isinstance(value, str) and value[:2] in ("I_", "Q_") and key not in paths)}
+        result = _run_params(case_id, minimal)
+        assert result["verdict"] == "PASS", (case_id, result["stages"].get("semantic"), result.get("verdict_reason"))
+
+
+def test_f_readiness_still_32_of_32_with_minimal_interpretations():
+    assert all(not any(isinstance(v, str) and v[:2] in ("T_", "C_") for v in ref["parameters"].values()) for ref in _REFS.values())
+    assert "stop_input" not in _REFS["D07"]["parameters"] and "reset_input" not in _REFS["D09"]["parameters"]
+    assert PR.run_audit(_ROOT, ["D01", "D07", "D09", "D10"])["all_evaluable"]
+
+
+def test_32_oracles_frozen_with_technical_validation_and_human_approval():
+    for case_id in BC.CASE_IDS:
+        oracle = oracle_schema.load_oracle(_ROOT, case_id)
+        approval = oracle["approval"]
+        assert approval["status"] == "FROZEN" and approval["approved_by"] == "Henry Ochoa", case_id
+        assert approval["technical_validation"]["status"] == "PASSED" and approval["human_formal_approval"] == "APPROVED", case_id
+        assert approval["approved_at"] > approval["technical_validation"]["validated_at"], case_id
+        assert approval["hash"] == oracle_schema.compute_oracle_hash(oracle) == approval["technical_validation"]["content_hash"]
+        archived = json.loads((_ROOT / "data" / "experiment_oracles" / "versions" / f"{case_id}_v{approval['version']}.json")
+                              .read_text(encoding="utf-8"))
+        assert archived["approval"] == approval  # la copia inmutable lleva el mismo bloque de aprobacion
+
+
+def test_human_approval_marker_never_signs_an_unapproved_oracle(tmp_path):
+    import shutil
+    shutil.copytree(_ROOT / "data" / "experiment_oracles", tmp_path / "data" / "experiment_oracles")
+    path = tmp_path / "data" / "experiment_oracles" / "D01.json"
+    oracle = json.loads(path.read_text(encoding="utf-8"))
+    oracle["approval"].update({"status": "DRAFT_REVIEWED", "approved_by": None, "approved_at": None, "hash": None,
+                               "human_formal_approval": "PENDING"})
+    path.write_text(json.dumps(oracle), encoding="utf-8")
+    with pytest.raises(oracle_schema.OracleError):
+        oracle_schema.record_human_approval_marker(tmp_path, "D01")

@@ -214,7 +214,8 @@ def _generate_motor_latch_body(parameters: dict[str, Any]) -> str:
 
 def _generate_safe_start_alarm_body(parameters: dict[str, Any]) -> str:
     start_input = _param(parameters, "trigger_input", default="I_Start")
-    reset_input = _param(parameters, "reset_input", default="I_Reset")
+    # Opcional: sin la funcion en el comando, valor neutro seguro (nunca pulsado); no se inventa ningun tag.
+    reset_input = _optional_tag(parameters, "reset_input") or "FALSE"
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     safety_input = _param(parameters, "safety_input", default="I_Sensor1")
     alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
@@ -244,7 +245,8 @@ def _generate_safe_start_alarm_body(parameters: dict[str, Any]) -> str:
 
 def _generate_delayed_start_body(parameters: dict[str, Any]) -> str:
     start_input = _param(parameters, "trigger_input", default="I_Start")
-    stop_input = _param(parameters, "stop_input", default="I_Stop")
+    # Opcional: sin la funcion en el comando, valor neutro seguro (nunca pulsado); no se inventa ningun tag.
+    stop_input = _optional_tag(parameters, "stop_input") or "FALSE"
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
     delay_time = _param(parameters, "delay_time", default=INTENT_VALUE_DEFAULTS["INT_DELAYED_START"]["delay_time"])
@@ -294,7 +296,8 @@ def _generate_delayed_stop_body(parameters: dict[str, Any]) -> str:
 
 def _generate_auto_stop_timer_body(parameters: dict[str, Any]) -> str:
     start_input = _param(parameters, "trigger_input", default="I_Start")
-    stop_input = _param(parameters, "stop_input", default="I_Stop")
+    # Opcional: sin la funcion en el comando, valor neutro seguro (nunca pulsado); no se inventa ningun tag.
+    stop_input = _optional_tag(parameters, "stop_input") or "FALSE"
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     motor_output = _param(parameters, "motor_output", default="Q_Motor_Enable")
     run_latch = _param(parameters, "run_latch", default="M_RunLatch")
@@ -348,7 +351,8 @@ def _generate_emergency_priority_body(parameters: dict[str, Any]) -> str:
 
 def _generate_counter_pulses_body(parameters: dict[str, Any]) -> str:
     pulse_input = _param(parameters, "pulse_input", default="I_Sensor1")
-    reset_input = _param(parameters, "reset_input", default="I_Reset")
+    # Opcional: sin la funcion en el comando, valor neutro seguro (nunca pulsado); no se inventa ningun tag.
+    reset_input = _optional_tag(parameters, "reset_input") or "FALSE"
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     output_tag = _param(parameters, "output", default="Q_Alarm")
     counter_tag = _param(parameters, "counter", default="C_PulseCount")
@@ -482,7 +486,8 @@ def _generate_sequence_three_steps_body(parameters: dict[str, Any]) -> str:
 
 def _generate_sensor_timeout_alarm_body(parameters: dict[str, Any]) -> str:
     sensor_input = _param(parameters, "sensor_input", default="I_Sensor1")
-    reset_input = _param(parameters, "reset_input", default="I_Reset")
+    # Opcional: sin la funcion en el comando, valor neutro seguro (nunca pulsado); no se inventa ningun tag.
+    reset_input = _optional_tag(parameters, "reset_input") or "FALSE"
     emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
     last_state_memory = _param(parameters, "last_state_memory", default="M_SensorLastState")
     alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")

@@ -116,7 +116,12 @@ OPTIONAL_PARAMETER_KEYS: dict[str, set[str]] = {
     "INT_MANUAL_AUTO_MODE": {"manual_command_input", "auto_command_input"},
     "INT_SEQUENCE_THREE_STEPS": {"reset_input", "stop_input"},
     # Supervision armada por la orden de arranque.
-    "INT_SENSOR_TIMEOUT_ALARM": {"trigger_input"},
+    "INT_SENSOR_TIMEOUT_ALARM": {"trigger_input", "reset_input"},
+    # Entradas que el intent no necesita para su funcion: solo si el comando las pide (si no, neutro FALSE).
+    "INT_DELAYED_START": {"stop_input"},
+    "INT_AUTO_STOP_TIMER": {"stop_input"},
+    "INT_COUNTER_PULSES": {"reset_input"},
+    "INT_SAFE_START_ALARM": {"reset_input"},
     # Pilotos derivados de senales de estado (marcha/falla) y piloto de detenido.
     "INT_STATUS_PILOTS": {"run_state_input", "fault_input", "stop_indicator"},
     "INT_AUTO_CYCLE": {"auto_input", "stop_input"},
@@ -145,23 +150,23 @@ INTENT_RESOURCE_TABLE: dict[str, tuple[tuple[str, str], ...]] = {
         ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
         ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch")),
     "INT_SAFE_START_ALARM": (
-        ("trigger_input", "I_Start"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"),
         ("safety_input", "I_Sensor1"), ("alarm_output", "Q_Alarm"), ("motor_output", "Q_Motor_Enable"),
         ("fault_latch", "M_FaultLatch")),
     "INT_DELAYED_START": (
-        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"),
         ("motor_output", "Q_Motor_Enable"), ("timer", "T_DelayStart")),
     "INT_DELAYED_STOP": (
         ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
         ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"), ("stop_delay_active", "M_StopDelayActive"),
         ("timer", "T_StopDelay")),
     "INT_AUTO_STOP_TIMER": (
-        ("trigger_input", "I_Start"), ("stop_input", "I_Stop"), ("emergency_input", "I_Emergency"),
+        ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"),
         ("motor_output", "Q_Motor_Enable"), ("run_latch", "M_RunLatch"), ("timer", "T_OperationLimit")),
     "INT_EMERGENCY_PRIORITY": (
         ("emergency_input", "I_Emergency"), ("motor_output", "Q_Motor_Enable")),
     "INT_COUNTER_PULSES": (
-        ("pulse_input", "I_Sensor1"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("pulse_input", "I_Sensor1"), ("emergency_input", "I_Emergency"),
         ("output", "Q_Alarm"), ("counter", "C_PulseCount"), ("edge_detector", "R_SensorPulse")),
     "INT_COUNTER_RESET": (
         ("reset_input", "I_Reset"), ("counter", "C_PulseCount")),
@@ -179,7 +184,7 @@ INTENT_RESOURCE_TABLE: dict[str, tuple[tuple[str, str], ...]] = {
         ("trigger_input", "I_Start"), ("emergency_input", "I_Emergency"), ("main_output", "Q_Motor_Enable"),
         ("aux_output", "Q_Aux_Output"), ("step_memory", "M_Step"), ("timer", "T_SeqDelay")),
     "INT_SENSOR_TIMEOUT_ALARM": (
-        ("sensor_input", "I_Sensor1"), ("reset_input", "I_Reset"), ("emergency_input", "I_Emergency"),
+        ("sensor_input", "I_Sensor1"), ("emergency_input", "I_Emergency"),
         ("alarm_output", "Q_Alarm"), ("timer", "T_SensorTimeout"), ("last_state_memory", "M_SensorLastState"),
         ("supervision_memory", "M_SupervisionActive")),
     "INT_MAINTENANCE_BLOCK": (
