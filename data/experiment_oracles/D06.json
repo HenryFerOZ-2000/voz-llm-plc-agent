@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:00",
-    "version": 1,
-    "hash": "ee564bbaf58f5f436c90d4f148346a00b133b687959f17e165037f9606def17f",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D06 (INT_SAFE_START_ALARM)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "2f4540fb9185b97022443f7b719f356a81872dc530bc46066ce6a7659aa5818c",
+    "previous_hash": "ee564bbaf58f5f436c90d4f148346a00b133b687959f17e165037f9606def17f",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -24,17 +28,21 @@
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
         "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Alarma por arranque sin condicion de seguridad",
     "original_requirement": "Activar alarma si se intenta arrancar sin condicion de seguridad.",
     "canonical_command": "Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.",
-    "canonical_case_hash": "481070e4b8f8b1bc1b15cdb1574d9bc983cdc75a6760917a647bd107ced86fdb",
+    "canonical_case_hash": "929bfabeb1e8f9b63246c668715a02b90772ffcaf21ecb908fed98ef1451b2ed",
     "legacy_reference_intent": "INT_SAFE_START_ALARM"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -100,7 +108,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma."
+      "text": "COMANDO CANONICO (benchmark v3): Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma."
     },
     {
       "id": "C-D06-SCOPE",

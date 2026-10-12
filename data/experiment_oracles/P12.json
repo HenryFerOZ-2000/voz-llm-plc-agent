@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "08877566a2105e89beea0c1d86981534bc8ddff64bcf41e2b5ad06657f9e92f4",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json P12 (INT_PID_SUPERVISOR)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "df683f9a4fdf8ad4b53118992b6b8afd92cb7566f182b6b25b496652e9f2bac1",
+    "previous_hash": "08877566a2105e89beea0c1d86981534bc8ddff64bcf41e2b5ad06657f9e92f4",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -22,17 +26,21 @@
       "notes": [
         "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
         "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
-        "Benchmark v2: alineado con el comando canonico (Reescrito segun el comando canonico: alarma > 90 % con condicion segura y recuperacion automatica sin Reset.)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (Reescrito segun el comando canonico: alarma > 90 % con condicion segura y recuperacion automatica sin Reset.).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Automatico con SP 60 %, alarma > 90 % y recuperacion",
     "original_requirement": "Secuencia completa: automatico -> setpoint -> alarma -> recuperacion.",
-    "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
-    "canonical_case_hash": "7f57f3010e0a3dfb5f696c0418a98abcbbcbb8a7e7badae0733bc1d0bae74767",
+    "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura: PID deshabilitado y bomba apagada. Cuando el nivel vuelva a 90 % o menos, el PID debe volver a habilitarse por sí solo, sin intervención del operador.",
+    "canonical_case_hash": "b29c09f58b50d16de5be86b4c0b72b694b1b332817a6f4960b87c1425a3863b5",
     "legacy_reference_intent": "INT_PID_SUPERVISOR"
   },
   "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
@@ -140,7 +148,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática."
+      "text": "COMANDO CANONICO (benchmark v3): En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura: PID deshabilitado y bomba apagada. Cuando el nivel vuelva a 90 % o menos, el PID debe volver a habilitarse por sí solo, sin intervención del operador."
     },
     {
       "id": "C-PID",

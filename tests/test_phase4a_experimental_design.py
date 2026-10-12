@@ -101,9 +101,11 @@ def test_development_trials_are_excluded_from_formal_statistics():
         {"trial_kind": "DEVELOPMENT_TRIAL", "experiment_phase": "BASELINE", "benchmark_version": 2},
         {"trial_kind": "DEVELOPMENT_TRIAL", "experiment_phase": "DEVELOPMENT_VALIDATION", "benchmark_version": 2},
         {"trial_kind": "FORMAL_TRIAL", "experiment_phase": "FORMAL", "benchmark_version": 1},
-        {"trial_kind": "FORMAL_TRIAL", "experiment_phase": "FORMAL", "benchmark_version": 2},
+        {"trial_kind": "FORMAL_TRIAL", "experiment_phase": "FORMAL", "benchmark_version": 2},  # v2: historico DEVELOPMENT
+        {"trial_kind": "FORMAL_TRIAL", "experiment_phase": "FORMAL", "benchmark_version": 3},
     ]
-    assert ED.formal_statistics_records(records) == [records[3]]
+    assert ED.FORMAL_BENCHMARK_VERSION == 3
+    assert ED.formal_statistics_records(records) == [records[4]]
 
 
 def test_formal_trial_requires_software_freeze_manifest(tmp_path):

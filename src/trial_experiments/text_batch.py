@@ -656,8 +656,9 @@ def formal_guards(
     _check("software_frozen", allowed, "; ".join(reasons) or "software_freeze_manifest valido")
     catalog = BC.load_catalog(project_root)
     consistency = BC.build_variant_consistency_report(project_root)
-    _check("benchmark_integrity", catalog.get("benchmark_version") == 2 and len(catalog["cases"]) == 32
-           and consistency["consistent_variants"] == consistency["total_variants"] == 96,
+    # FORMAL usa el benchmark que fija el diseno experimental (v3); el v2 es historico DEVELOPMENT.
+    _check("benchmark_integrity", catalog.get("benchmark_version") == ED.load_design(project_root).get("benchmark_version")
+           and len(catalog["cases"]) == 32 and consistency["consistent_variants"] == consistency["total_variants"] == 96,
            f"v{catalog.get('benchmark_version')}, {len(catalog['cases'])} casos, {consistency['consistent_variants']}/96 variantes")
     oracles = batch_runner.integrity_snapshot(project_root)["oracles"]
     frozen = [c for c, e in oracles.items() if e["status"] == "FROZEN" and e["stored_hash"] == e["computed_hash"]]

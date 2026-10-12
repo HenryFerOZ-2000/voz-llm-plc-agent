@@ -1,5 +1,5 @@
 {
-  "benchmark_version": 2,
+  "benchmark_version": 3,
   "total_cases": 32,
   "total_variants": 96,
   "consistent_variants": 96,
@@ -248,7 +248,7 @@
     },
     {
       "case_id": "D05",
-      "canonical_command": "Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+      "canonical_command": "Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
       "canonical_signature": {
         "actors": [
           "motor"
@@ -272,8 +272,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Arranca el motor con Start solo si la condición de seguridad es normal; si se activa la emergencia, apágalo y bloquea el arranque mientras siga activa.",
-        "variant_hash": "3d286f50361c093e3d81ad73fb838f56f6c62e2a279af7242c9a4d89dd923574",
+        "command": "Arranca el motor con Start únicamente si no hay emergencia activa; si se activa, apágalo y bloquea el arranque mientras siga activa.",
+        "variant_hash": "0eeebff31c7aa5de3f241ba389dabe56d9073ae895cda8895534cf8f1984791e",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -281,8 +281,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que el motor arranque con Start únicamente con la seguridad normal, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
-        "variant_hash": "a396da186be3f3596761516cd224cf747738dadce5de4bd511bdc5c891b4bf02",
+        "command": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+        "variant_hash": "ce110777bc18b21eb97a43a4e07c2ed213938c13b3b6870d17338359f70a3179",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -290,8 +290,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; con la seguridad normal, Start enciende el motor.",
-        "variant_hash": "5e4055ed242b33e6995cd34951d2f5194cfe745681caf6844129bb05e3965886",
+        "command": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+        "variant_hash": "cf6c61bb67d00b55cfb5f19cc2fdc31f565302dbb0c49a9e85958f723776a31b",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -431,7 +431,7 @@
     },
     {
       "case_id": "D08",
-      "canonical_command": "Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
+      "canonical_command": "Al activar Start, enciende el motor, mantenlo en marcha aunque se suelte Start y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
       "canonical_signature": {
         "actors": [
           "motor"
@@ -458,8 +458,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Enciende el motor con Start y apágalo automáticamente después de 10 segundos de funcionamiento.",
-        "variant_hash": "2ab58de1d15a91fc307d896a0ade14572424ae42cae062678f81208f37c5d1b9",
+        "command": "Enciende el motor con Start, que siga en marcha aunque se suelte el pulsador, y apágalo automáticamente tras 10 segundos de funcionamiento.",
+        "variant_hash": "aa46313efb7ae9cfe5d8bd807875dad1525c389f8cafc96ed96b942eae985c39",
         "missing_concepts": [],
         "numbers": [
           10
@@ -469,8 +469,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Haz que el motor arranque con Start y se detenga solo tras funcionar durante 10 segundos.",
-        "variant_hash": "df56da9805d9b3ccda1cd50423bf584b165b4e2e4303f3c3166a6a6c94996e5d",
+        "command": "Haz que el motor arranque con Start, siga funcionando aunque se suelte y se detenga solo tras 10 segundos.",
+        "variant_hash": "90a920cea26d69d392fe405431ed81617e7bf9371a5b82f69ea2b7d094b61543",
         "missing_concepts": [],
         "numbers": [
           10
@@ -480,8 +480,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Cuando se active Start, mantén el motor funcionando 10 segundos y después apágalo.",
-        "variant_hash": "226fb328c83df168f323ad9d900bfe7130abe397e17f007287a1f74b8faa4b8c",
+        "command": "Cuando se active Start, mantén el motor funcionando 10 segundos, aunque se suelte el pulsador, y después apágalo.",
+        "variant_hash": "0f157e9209218ae6a8b5c2bc4223bea1264597c16dc391ae9f93a12a3e8d36ce",
         "missing_concepts": [],
         "numbers": [
           10
@@ -769,7 +769,7 @@
     },
     {
       "case_id": "D13",
-      "canonical_command": "Ante una orden de marcha, habilita el variador solo si no existe una alarma activa.",
+      "canonical_command": "Con una orden de marcha, habilita el variador solo mientras no exista una alarma activa; si la alarma aparece con el variador habilitado, deshabilítalo.",
       "canonical_signature": {
         "actors": [
           "variador"
@@ -791,8 +791,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Ante una orden de marcha, habilita el variador solo si no hay alarma activa.",
-        "variant_hash": "2f8bef84baa742ce5ebc3ddae5c2a7e70775d8b102518011fe5d345f15c301ee",
+        "command": "Habilita el variador con la orden de marcha únicamente mientras no haya alarma activa; si aparece una alarma, deshabilítalo.",
+        "variant_hash": "d9d2416b0774753a49dfc8e5951e2a77db5c1f15761aed4f2b710a0f55c70e55",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -800,8 +800,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que el variador se habilite con la orden de marcha, pero nunca si existe una alarma activa.",
-        "variant_hash": "694586da1165e212390c2498a90bf10e9830b48f18906c34ead3bb1e59bdd2d8",
+        "command": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.",
+        "variant_hash": "e90ae794edec66112a5ed6dd9f9fc7c2fcf00599adfcd7aa17f958c6b4917d46",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -809,8 +809,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Si hay una alarma activa, el variador no debe habilitarse aunque llegue la orden de marcha; sin alarma, habilítalo con esa orden.",
-        "variant_hash": "5c6cb7fac850ec9d8a66f61ed8c505a3cac5a7643f2cc7f80583e1a34526ee9b",
+        "command": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden.",
+        "variant_hash": "2bd27f6fe3cefec9da6ee08e6a7cab390c6f721e3d7910b6d4bd541664dde463",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -892,7 +892,7 @@
     },
     {
       "case_id": "D15",
-      "canonical_command": "Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.",
+      "canonical_command": "El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto.",
       "canonical_signature": {
         "actors": [
           "motor"
@@ -919,8 +919,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Implementa modo Manual y Automático para el motor: en Manual obedece la orden manual y en Automático la orden automática.",
-        "variant_hash": "35b5bfd5189f09d0fb79dab0265a09d125cd22e157aefb06d18487d3a28fd7e8",
+        "command": "Con un selector Manual/Automático: en Automático, el motor obedece la orden automática; en Manual, la orden manual; la otra orden se ignora.",
+        "variant_hash": "cfcc68be1989fa5d416c77e9ea47b184399d3c7cca499a2bba79993847250add",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -928,8 +928,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que en modo Manual el motor responda a la orden manual y en modo Automático a la orden automática.",
-        "variant_hash": "492971d3c0ffbdf132149ce7baf3f77251baaa014b8076b8af1b384bd16c2707",
+        "command": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.",
+        "variant_hash": "6ed02cd6db72ecd68f5579449290545023002563c9c7de3538bf58d33ac1d288",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -937,8 +937,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Según el modo seleccionado, Manual o Automático, el motor debe atender la orden manual o la orden automática respectivamente.",
-        "variant_hash": "d8d5cc7cbc8739e5370528a96948890889a4bc98ecf4f24f0c5494a293f3a02c",
+        "command": "Según la posición del selector, Manual o Automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+        "variant_hash": "cf0212ac21ec59efda14476b2fba6f9327bf4829b17cd7fe91fd4aaae210804f",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1022,7 +1022,7 @@
     },
     {
       "case_id": "D17",
-      "canonical_command": "Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.",
+      "canonical_command": "Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos.",
       "canonical_signature": {
         "actors": [
           "alarma"
@@ -1050,8 +1050,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Al activar Start, vigila el sensor y activa una alarma si no cambia de estado durante 5 segundos.",
-        "variant_hash": "c622973c24be7bc42fab9616e017f5cb1d3cd63ba645f45847580038573e856e",
+        "command": "Tras activar Start, vigila el sensor y activa una alarma si transcurren 5 segundos sin ningún cambio; cada cambio reinicia la cuenta.",
+        "variant_hash": "c7fd3495aa2712d6b81913617ca4c2c7e9ddd3f155f9f19217daf220965376a8",
         "missing_concepts": [],
         "numbers": [
           5
@@ -1061,8 +1061,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que, después de dar Start, se active una alarma si el sensor pasa cinco segundos sin cambiar de estado.",
-        "variant_hash": "d04276e1a4dd5015164060ad48848037156ac23f542cda6db75f8b2e6f1571fa",
+        "command": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+        "variant_hash": "10ff6d7362376c51dfc4595335657d083e723362bc240a38d0a99cb09c6eb6b1",
         "missing_concepts": [],
         "numbers": [
           5
@@ -1072,8 +1072,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Tras activar Start, si el sensor permanece sin cambios 5 segundos, activa la alarma.",
-        "variant_hash": "69b2b5176df17b63e2139bcc9180175339a5d96977dc75e4db90251e87c6e4ff",
+        "command": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma.",
+        "variant_hash": "1034b36b57f21a7ac6b5c3f1139fca2da1d22feb4294aaec31ef7e9167770c95",
         "missing_concepts": [],
         "numbers": [
           5
@@ -1151,7 +1151,7 @@
     },
     {
       "case_id": "D19",
-      "canonical_command": "Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.",
+      "canonical_command": "Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual.",
       "canonical_signature": {
         "actors": [
           "piloto detenido",
@@ -1176,8 +1176,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Controla tres pilotos de detenido, marcha y falla, dejando encendido solo el del estado actual.",
-        "variant_hash": "85a2570f532e9a08631ebc1dd34f4b606e53422c7084922c582b78661ceadcd0",
+        "command": "Con las señales de marcha y falla del sistema, controla tres pilotos (detenido, marcha y falla) y deja encendido solo el del estado actual.",
+        "variant_hash": "65bbec5f51427c4c9492aa59f94abf6e5931b96b2a53df490af97843034e70b5",
         "missing_concepts": [],
         "numbers": [
           3
@@ -1187,8 +1187,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero tres pilotos, detenido, marcha y falla, y que solo esté encendido el que corresponde al estado actual.",
-        "variant_hash": "c0ec37c1948840cad25bf3f06d5bdbf4073e900aff51b40c9af1d66b945b8bfe",
+        "command": "Quiero tres pilotos, detenido, marcha y falla, que según las señales de marcha y falla del sistema dejen encendido solo el que corresponde al estado actual.",
+        "variant_hash": "7b82b57f27e62e91beda9a209093f25b53db012880aabeabfcd0d264f3fffb6d",
         "missing_concepts": [],
         "numbers": [
           3
@@ -1198,8 +1198,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
-        "variant_hash": "930e6477b3360bbd3557ec5a28f36c929b9fadd2f0dc26b4a155a0f0c222005a",
+        "command": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+        "variant_hash": "d6588ba51e58bb58b47a5df281b6319c1469eafa4f41607960abd6c93dfb66bd",
         "missing_concepts": [],
         "numbers": [
           3
@@ -1288,7 +1288,7 @@
     },
     {
       "case_id": "P01",
-      "canonical_command": "Habilita el modo automático del sistema de nivel cuando se seleccione Automático.",
+      "canonical_command": "El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático.",
       "canonical_signature": {
         "actors": [
           "modo automatico"
@@ -1309,8 +1309,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Habilita el modo automático del sistema de nivel al seleccionar Automático.",
-        "variant_hash": "4f5bdd2eb9d18987503386e91602b8b83a02110931eb33121daa4512e0ba23e7",
+        "command": "Pasa el sistema de nivel a modo automático únicamente cuando el operador seleccione Automático.",
+        "variant_hash": "0ac8d504120d532ed56b5e2ec9cd2ba8e2b100fca7183247118499954e7507d8",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1318,8 +1318,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que el sistema de nivel pase a modo automático cuando se elija Automático.",
-        "variant_hash": "d58c3ff6ea816d49e4dafbbcd73c53f8bdbf1110b3ecf9a306bfafeca8d4009f",
+        "command": "Quiero que el control de nivel entre en automático solo si el operador elige Automático.",
+        "variant_hash": "70b1dfc967a960159ce124d6d660c5599852f02c09e9d3d248434383d33fb3a9",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1327,8 +1327,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Cuando se seleccione Automático, activa el modo automático del control de nivel.",
-        "variant_hash": "b3364002bc3dececb842add03de93cfd689168d2f93cfb1516b2064e37b986e7",
+        "command": "Solo al seleccionar el operador Automático debe el sistema de nivel ponerse en modo automático.",
+        "variant_hash": "5553d7a68251d8f5d6c187f8d73ee61025b3e108a4b41c641758547deda97b4d",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1417,8 +1417,7 @@
           "SOLICITUD DE SETPOINT"
         ],
         "functions": [
-          "validate_setpoint",
-          "keep_last_valid"
+          "reject_unsafe_setpoint"
         ],
         "thresholds": {
           "min_pct": 0,
@@ -1481,7 +1480,7 @@
     },
     {
       "case_id": "P04",
-      "canonical_command": "Activa una alarma de nivel alto cuando el nivel supere el 90 %.",
+      "canonical_command": "Activa la alarma de nivel alto mientras el nivel esté por encima del 90 % y desactívala cuando vuelva a 90 % o menos.",
       "canonical_signature": {
         "actors": [
           "alarma de nivel alto"
@@ -1507,8 +1506,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Activa la alarma de nivel alto cuando el nivel pase del 90 %.",
-        "variant_hash": "108b9cabc7b842c7cea59d5616421ab63dc6b7d357669a34a8cf322916a0b931",
+        "command": "Mantén activa la alarma de nivel alto mientras el nivel supere el 90 % y apágala cuando baje a 90 % o menos.",
+        "variant_hash": "c1d7ab4cddaa1edbfc9faee6ce165f3d2f498371e590edbbbab78ee6be8899b8",
         "missing_concepts": [],
         "numbers": [
           90
@@ -1518,8 +1517,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero una alarma de nivel alto si el nivel supera el noventa por ciento.",
-        "variant_hash": "f4fe889c34ae36a9a2560da124a11b341f53b57277c05a39ea8c383c0fc9cbed",
+        "command": "Quiero que la alarma de nivel alto suene mientras el nivel pase del noventa por ciento y se quite al volver a noventa o menos.",
+        "variant_hash": "6b757abf789794224f3f400abff2fe66ed777efee112bfc3bd26e38aba210562",
         "missing_concepts": [],
         "numbers": [
           90
@@ -1529,8 +1528,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Con el nivel por encima del 90 %, activa la alarma de nivel alto.",
-        "variant_hash": "48402539aa1211f98eceff4b46d1b1a35777abf727082025348b79621e8609dc",
+        "command": "Con el nivel por encima del 90 %, la alarma de nivel alto debe estar activa; a 90 % o menos, desactivada.",
+        "variant_hash": "ae6c2027f97bbbbd5bd869adeffa55c199c1df3048b07ff2fe2f7280c75abaa9",
         "missing_concepts": [],
         "numbers": [
           90
@@ -1548,7 +1547,7 @@
     },
     {
       "case_id": "P05",
-      "canonical_command": "Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %.",
+      "canonical_command": "Activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y desactívala cuando vuelva a 10 % o más.",
       "canonical_signature": {
         "actors": [
           "alarma de nivel bajo"
@@ -1574,8 +1573,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Activa la alarma de nivel bajo cuando el nivel baje del 10 %.",
-        "variant_hash": "3d2284c9a83f816f3aeec338304bfbc3977416f0b7e666c9fc14d2246a69825f",
+        "command": "Mantén activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y apágala cuando suba a 10 % o más.",
+        "variant_hash": "2e7163a73213f09a3d59a04b5ae5fb0e601a8fc8fb727692b95eb499d169282a",
         "missing_concepts": [],
         "numbers": [
           10
@@ -1585,8 +1584,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero una alarma de nivel bajo si el nivel es inferior al diez por ciento.",
-        "variant_hash": "8a50a6b5cb948ad619b57f798fe1db81517aa493aeab149bc09b29703309101e",
+        "command": "Quiero que la alarma de nivel bajo suene mientras el nivel sea inferior al diez por ciento y se quite al volver a diez o más.",
+        "variant_hash": "2a3d6e1ae753a392515cb65924d8a30e00066027c8c30941da603079969503e1",
         "missing_concepts": [],
         "numbers": [
           10
@@ -1596,8 +1595,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Con el nivel por debajo del 10 %, activa la alarma de nivel bajo.",
-        "variant_hash": "93ede9b0d195f4bfb409d974be0fa7966f1a4529803188d3d1ad66dc51ba038d",
+        "command": "Con el nivel por debajo del 10 %, la alarma de nivel bajo debe estar activa; a 10 % o más, desactivada.",
+        "variant_hash": "c06d225549e4653440cf3c7bd388267a36226e42ee7af28317c41ff43fdf7e5a",
         "missing_concepts": [],
         "numbers": [
           10
@@ -1615,7 +1614,7 @@
     },
     {
       "case_id": "P06",
-      "canonical_command": "Habilita el PID únicamente cuando el sistema esté en modo Automático.",
+      "canonical_command": "El PID solo debe estar habilitado mientras el sistema se encuentre en modo Automático, que selecciona el operador; en modo Manual debe permanecer deshabilitado.",
       "canonical_signature": {
         "actors": [
           "PID"
@@ -1636,8 +1635,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Habilita el PID solo cuando el sistema esté en modo Automático.",
-        "variant_hash": "45400da92e59ef738d7452bacfef0d90b2153ae43d7479fad1a7e540c19cfd4e",
+        "command": "Mantén el PID habilitado únicamente mientras el operador tenga el sistema en Automático; en Manual, deshabilitado.",
+        "variant_hash": "8bd6c6cf253c7e570076b7815e606c208cf03b2ee3608cf9af8dd471dc8fc2e1",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1645,8 +1644,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que el PID funcione únicamente en modo Automático.",
-        "variant_hash": "c217ba5398b0d094371f2b1b99e98eac38233f33a882c8509cc50d9af984412d",
+        "command": "Quiero que el PID solo funcione cuando el operador haya puesto el sistema en Automático, y que en Manual quede deshabilitado.",
+        "variant_hash": "ca0feda558dcb984543569c3af4d036994a3a064f45d139a773b6b71e7aca4e0",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1654,8 +1653,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "El PID debe estar habilitado solamente mientras el sistema esté en Automático.",
-        "variant_hash": "95cce5712ec7be720e5d9508aa47164a9e6d5a1634b3db4ccbe75b41b46e8540",
+        "command": "Solo con el sistema en el modo Automático elegido por el operador puede estar habilitado el PID; en Manual debe estar deshabilitado.",
+        "variant_hash": "f4ff84bea4c584543e5b6caa54a206ccc982ca06ffe8851ed3998f1f1041e1ea",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1671,7 +1670,7 @@
     },
     {
       "case_id": "P07",
-      "canonical_command": "Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.",
+      "canonical_command": "Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato.",
       "canonical_signature": {
         "actors": [
           "PID"
@@ -1680,7 +1679,7 @@
           "EMERGENCIA"
         ],
         "functions": [
-          "emergency_disables_pid"
+          "safety_trip_disables_pid"
         ]
       },
       "canonical_check": {
@@ -1692,8 +1691,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Si se activa una condición de emergencia con el PID funcionando, deshabilítalo de inmediato.",
-        "variant_hash": "d430943bc50783ed7cff7b59423d28b9530d7652b0cd804a105b4ed11842f1c3",
+        "command": "En Automático el PID funciona habilitado, pero si se activa una emergencia, deshabilítalo inmediatamente.",
+        "variant_hash": "c57361ed74acbb6ee0d882aeeb8b46433fc219a678eb7cb07fc3a258170139cb",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1701,8 +1700,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que, si hay una emergencia mientras el PID trabaja, el PID se deshabilite en el acto.",
-        "variant_hash": "69351f793f2d057a1296c2eb311b3e23b7c61402857182b5ff554f96f25a9b01",
+        "command": "Quiero que el PID esté habilitado en Automático y que, si hay una emergencia, se deshabilite en el acto.",
+        "variant_hash": "3766fb0eb033ef8736906ab22d0cb04b09cce6bd1e561938ec65a3027eb10e97",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1710,8 +1709,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Ante una condición de emergencia durante el funcionamiento del PID, deshabilítalo inmediatamente.",
-        "variant_hash": "af1cb758b7e7227b59eef949e45644305a13ab231b2b16f46c90c5225e320ddc",
+        "command": "Ante una condición de emergencia, el PID, que en Automático está habilitado, debe deshabilitarse de inmediato.",
+        "variant_hash": "30df169cf42a4893f129407638b5d582b38a1eb37e04be7ff83d1d9a5e98ab11",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1727,7 +1726,7 @@
     },
     {
       "case_id": "P08",
-      "canonical_command": "En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne.",
+      "canonical_command": "Cuando el sistema esté en modo Manual, es decir, siempre que no esté en Automático, la bomba debe encenderse y apagarse solo con la orden manual del operador; el control automático no debe actuar sobre ella.",
       "canonical_signature": {
         "actors": [
           "bomba"
@@ -1752,8 +1751,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "En modo Manual, enciende y apaga la bomba con una orden manual, sin que el control automático intervenga.",
-        "variant_hash": "d0f426f32ce19a064fda3cb98cd2b34b2478718f990623aca2aadf116414cb7c",
+        "command": "Siempre que el sistema no esté en Automático, o sea en Manual, la orden manual del operador enciende y apaga la bomba, sin que actúe el control automático.",
+        "variant_hash": "d38dc7b8666c3b5928e8e963ea75d1ab8f6141c5ede13398516a802c7d4f4b20",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1761,8 +1760,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que en Manual la bomba se encienda y se apague solo con la orden manual, no con el control automático.",
-        "variant_hash": "6745b330da0aa71cd041452f83c8a3fad3581a34fd6b602a8b86ef48c0588958",
+        "command": "Quiero que, mientras el sistema no esté en Automático, la bomba solo se encienda y apague con la orden manual del operador.",
+        "variant_hash": "9709a281f0f0ac3b17f8a8ba76e38382860d8f6efc2561cd3cd03eb92a53dc0b",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1770,8 +1769,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Con el sistema en Manual, la orden manual decide si la bomba está encendida o apagada; el control automático no la gobierna.",
-        "variant_hash": "5606d4a981ac5d02797b5597ffe8415ee3817afb6d39354653fd1018fdd05c4a",
+        "command": "Fuera del modo Automático, en Manual, la bomba debe seguir únicamente la orden manual del operador para encenderse o apagarse.",
+        "variant_hash": "3009371e4396980f2df987fb1b9cab4076c5bf29243ed81446eae835b0669694",
         "missing_concepts": [],
         "numbers": [],
         "errors": [],
@@ -1787,7 +1786,7 @@
     },
     {
       "case_id": "P09",
-      "canonical_command": "Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %.",
+      "canonical_command": "Indica fallo del sensor mientras el nivel medido esté por debajo de 0 % o por encima de 100 %; cuando vuelva a estar entre 0 % y 100 %, el fallo debe desaparecer.",
       "canonical_signature": {
         "actors": [
           "fallo de sensor"
@@ -1815,8 +1814,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Detecta fallo de sensor cuando el nivel medido esté fuera del rango de 0 % a 100 %.",
-        "variant_hash": "9781a0eb0966a12197e8195c8217848babe40c69a598af0e6023ee4e453fe6f7",
+        "command": "Señala fallo de sensor mientras el nivel medido esté fuera de 0 % a 100 % y quítalo cuando vuelva a ese rango.",
+        "variant_hash": "3d77e934f6eddbb06dac15308fba1e7973a774ecb045baa62299ae8eb2905f4e",
         "missing_concepts": [],
         "numbers": [
           0,
@@ -1827,8 +1826,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que se marque un fallo del sensor si el nivel medido sale del rango de cero a cien por ciento.",
-        "variant_hash": "e392783149b168c899c6aeecb9136f4bbea90b3b43640258e3aab59f5f7d2861",
+        "command": "Quiero que se marque fallo del sensor mientras el nivel medido salga del rango de cero a cien por ciento, y que se quite al volver a él.",
+        "variant_hash": "b3eb43e9c73ea7aa0b3fcd4a7f28c5759ac963795e7172afefe7f669147948b2",
         "missing_concepts": [],
         "numbers": [
           0,
@@ -1839,8 +1838,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Si el nivel medido no está entre 0 % y 100 %, indica un fallo del sensor.",
-        "variant_hash": "5775529107b6fdbb0a557e75c1b50ac30446cf78819a91727198b465da211027",
+        "command": "Con el nivel medido por debajo de 0 % o por encima de 100 % debe haber fallo de sensor; dentro de ese rango, no.",
+        "variant_hash": "c4a64f9abd42435f8606338e22459e1f0bd2815632b7aa7fb3b798b06bebadd7",
         "missing_concepts": [],
         "numbers": [
           0,
@@ -1859,7 +1858,7 @@
     },
     {
       "case_id": "P10",
-      "canonical_command": "Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.",
+      "canonical_command": "Activa una alarma cuando el nivel medido salga del rango de 0 % a 100 % por fallo del sensor. Mientras la medición siga fuera de ese rango, el Reset no debe borrar la alarma; cuando vuelva al rango, el Reset sí debe borrarla.",
       "canonical_signature": {
         "actors": [
           "alarma"
@@ -1874,35 +1873,47 @@
       },
       "canonical_check": {
         "missing_concepts": [],
-        "numbers": [],
+        "numbers": [
+          0,
+          100
+        ],
         "errors": [],
         "warnings": []
       },
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Si hay una alarma por fallo del sensor, no permitas su Reset mientras la falla siga; permítelo cuando la medición vuelva al rango válido.",
-        "variant_hash": "40d37fa623521b6bf148330791d2c554efd92029194239609d16fdbea6da8d76",
+        "command": "Genera una alarma si el nivel medido sale de 0 % a 100 % por fallo del sensor; el Reset no la borra mientras siga fuera y sí cuando vuelva al rango.",
+        "variant_hash": "10e9477d5b4a0def8e3254b87e0d6c4c3c86b8e4daf4604794ae9f928e2d276f",
         "missing_concepts": [],
-        "numbers": [],
+        "numbers": [
+          0,
+          100
+        ],
         "errors": [],
         "warnings": [],
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que la alarma por fallo del sensor no se pueda resetear mientras dure la falla, y que sí se pueda cuando la medición vuelva a ser válida.",
-        "variant_hash": "e19b1ecff748d8beef582b271a59c5faa26e3716d66d33aeef4fbfc689c4e106",
+        "command": "Quiero una alarma por fallo del sensor cuando la medición salga de cero a cien por ciento, que no se pueda resetear mientras dure y sí al volver al rango.",
+        "variant_hash": "9dc4f23d2cba2b8236e74d22fc192f9c9b15ee5aedd057e9c3f110d4a4f740c6",
         "missing_concepts": [],
-        "numbers": [],
+        "numbers": [
+          0,
+          100
+        ],
         "errors": [],
         "warnings": [],
         "consistent": true
       },
       "V3": {
-        "command": "El Reset de la alarma por fallo del sensor solo debe funcionar cuando la medición haya vuelto al rango válido, no mientras continúe la falla.",
-        "variant_hash": "f03a57d5fcd5e16bba19dbabd79b10c65d38df0b672fc6553c8284f9b8b24dc2",
+        "command": "Un nivel medido fuera de 0 % a 100 % debe activar la alarma de fallo del sensor; el Reset solo la borra cuando la medición vuelve a ese rango.",
+        "variant_hash": "ecddc64afb2c68e5683b46c97e42edf010e4056407807eb149d4a1c440695072",
         "missing_concepts": [],
-        "numbers": [],
+        "numbers": [
+          0,
+          100
+        ],
         "errors": [],
         "warnings": [],
         "consistent": true
@@ -1916,7 +1927,7 @@
     },
     {
       "case_id": "P11",
-      "canonical_command": "Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa.",
+      "canonical_command": "En operación normal la bomba está en marcha; si el nivel alcanza o supera el 95 %, considéralo sobrellenado y mantén la bomba apagada mientras dure esa condición.",
       "canonical_signature": {
         "actors": [
           "bomba"
@@ -1925,7 +1936,7 @@
           "NIVEL"
         ],
         "functions": [
-          "overfill_pump_stop"
+          "safe_overfill_stop"
         ],
         "thresholds": {
           "overfill_pct": 95
@@ -1942,8 +1953,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "Si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure esa condición.",
-        "variant_hash": "3de441cd7a4ab6c75dbd5fa7470f9d08fa7b5e0353fd6f3c23eba6f02e2be650",
+        "command": "Con el nivel normal la bomba funciona; si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure.",
+        "variant_hash": "152715093176046558a223e0e33deaa8c8563871f17a34c4b469dcfa3066ac2e",
         "missing_concepts": [],
         "numbers": [
           95
@@ -1953,8 +1964,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que la bomba se apague mientras el nivel esté en el noventa y cinco por ciento o más, porque es sobrellenado.",
-        "variant_hash": "91c5b3e3405527163e9c48dde872f9f1830c11f20468e88fabc7b79cb9958a4c",
+        "command": "Quiero que la bomba trabaje normalmente y que se apague mientras el nivel esté en el noventa y cinco por ciento o más, por sobrellenado.",
+        "variant_hash": "947bed0a5989192560c1f74d25baf7969b08d684ea967ab7672042dd710efd7e",
         "missing_concepts": [],
         "numbers": [
           95
@@ -1964,8 +1975,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Considera sobrellenado un nivel igual o superior al 95 % y mantén la bomba apagada mientras siga así.",
-        "variant_hash": "53d21b245e2100e8af71283ea42a6e64f8ce0df0a40886e13422d892841b3a4f",
+        "command": "La bomba, en marcha en condiciones normales, debe quedar apagada mientras el nivel sea igual o superior al 95 % (sobrellenado).",
+        "variant_hash": "20557ca9a51efd13d8c57323bf1de735df0b97e8651460b9e860225b6ca15db7",
         "missing_concepts": [],
         "numbers": [
           95
@@ -1983,7 +1994,7 @@
     },
     {
       "case_id": "P12",
-      "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
+      "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura: PID deshabilitado y bomba apagada. Cuando el nivel vuelva a 90 % o menos, el PID debe volver a habilitarse por sí solo, sin intervención del operador.",
       "canonical_signature": {
         "actors": [
           "PID",
@@ -2021,8 +2032,8 @@
       "errors": [],
       "warnings": [],
       "V1": {
-        "command": "En modo Automático, habilita el PID con setpoint del 60 %; si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura, y cuando vuelva al rango permitido deja recuperar la operación automática.",
-        "variant_hash": "a2a26eeb6bada8ebe5271ad02223f9f6144354e88c858a65d6025fede1c052d1",
+        "command": "En Automático, PID habilitado con setpoint del 60 %; por encima del 90 %, alarma y condición segura (PID deshabilitado y bomba apagada); al volver a 90 % o menos, el PID se rehabilita solo, sin que intervenga el operador.",
+        "variant_hash": "7495913e2fdd2e23cc7fc48dc4a66f9844940f971c4f3e1f1e91db904a577cc2",
         "missing_concepts": [],
         "numbers": [
           60,
@@ -2033,8 +2044,8 @@
         "consistent": true
       },
       "V2": {
-        "command": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento, que por encima del noventa por ciento suene la alarma y el proceso pase a condición segura, y que al volver el nivel al rango permitido se pueda recuperar el automático.",
-        "variant_hash": "ca6e1736a8599c3962a0ec448b62c77bdc857834566f5d5d3eae3f6c1325f466",
+        "command": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento; que por encima del noventa por ciento suene la alarma y se pare el PID y la bomba; y que, al volver a noventa o menos, el PID se reactive solo.",
+        "variant_hash": "69a90cca42c037ff885584a7b6a3264ce9f21ac50c9c9224a81fbb50366781ce",
         "missing_concepts": [],
         "numbers": [
           60,
@@ -2045,8 +2056,8 @@
         "consistent": true
       },
       "V3": {
-        "command": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma y la condición segura, y el regreso del nivel al rango permitido permite recuperar la operación automática.",
-        "variant_hash": "12d65103f270ca2e44277f55bb8f0ecc772832757566397cf09b72391c16d8a6",
+        "command": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma, deshabilita el PID y apaga la bomba; al regresar a 90 % o menos, el PID vuelve a habilitarse automáticamente.",
+        "variant_hash": "ed4cf5aabf0fc59c935e80b471c39f8ca07baa6317771e1200a00d6b84f7c371",
         "missing_concepts": [],
         "numbers": [
           60,

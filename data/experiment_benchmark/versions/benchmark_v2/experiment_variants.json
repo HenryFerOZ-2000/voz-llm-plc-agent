@@ -1,0 +1,456 @@
+{
+  "schema_version": 2,
+  "benchmark_version": 2,
+  "generated_from": "data/experiment_cases/canonical_cases.json",
+  "note": "Archivo DERIVADO: no editar a mano; la fuente de verdad es el catalogo canonico.",
+  "variants": {
+    "D01": [
+      {
+        "variant": "V1",
+        "command": "Al presionar el pulsador, activa la salida digital durante 5 segundos."
+      },
+      {
+        "variant": "V2",
+        "command": "Cuando se presione el pulsador, quiero que la salida se encienda durante cinco segundos."
+      },
+      {
+        "variant": "V3",
+        "command": "Genera un pulso de salida de 5 segundos cada vez que se presione el pulsador."
+      }
+    ],
+    "D02": [
+      {
+        "variant": "V1",
+        "command": "Enciende la lámpara mientras la entrada digital esté activa."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que la lámpara esté encendida solo mientras la entrada esté activa."
+      },
+      {
+        "variant": "V3",
+        "command": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive."
+      }
+    ],
+    "D03": [
+      {
+        "variant": "V1",
+        "command": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero encender el motor con Start y que siga encendido aunque suelte el botón; con Stop se apaga."
+      },
+      {
+        "variant": "V3",
+        "command": "Con memoria de marcha: Start enciende el motor, que permanece encendido al soltar el pulsador, y Stop lo apaga."
+      }
+    ],
+    "D04": [
+      {
+        "variant": "V1",
+        "command": "Enclava el motor con Start para que siga encendido al soltar el pulsador y apágalo con Stop."
+      },
+      {
+        "variant": "V2",
+        "command": "Haz un enclavamiento: el motor arranca con Start, se queda encendido aunque se suelte el botón y se apaga con Stop."
+      },
+      {
+        "variant": "V3",
+        "command": "Con Stop se apaga el motor; con Start se enciende y queda enclavado aunque se suelte el pulsador."
+      }
+    ],
+    "D05": [
+      {
+        "variant": "V1",
+        "command": "Arranca el motor con Start solo si la condición de seguridad es normal; si se activa la emergencia, apágalo y bloquea el arranque mientras siga activa."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el motor arranque con Start únicamente con la seguridad normal, y que una emergencia lo apague y no deje arrancarlo mientras dure."
+      },
+      {
+        "variant": "V3",
+        "command": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; con la seguridad normal, Start enciende el motor."
+      }
+    ],
+    "D06": [
+      {
+        "variant": "V1",
+        "command": "Activa una alarma si se intenta arrancar sin que se cumpla la condición de seguridad."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que suene una alarma cuando alguien intente arrancar el sistema sin la condición de seguridad cumplida."
+      },
+      {
+        "variant": "V3",
+        "command": "Un intento de arranque sin la condición de seguridad debe activar la alarma."
+      }
+    ],
+    "D07": [
+      {
+        "variant": "V1",
+        "command": "Con Start activo, espera 3 segundos y luego enciende el motor."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el motor arranque tres segundos después de activar Start, siempre que Start siga activo."
+      },
+      {
+        "variant": "V3",
+        "command": "Retarda 3 segundos el encendido del motor mientras se mantenga activo Start."
+      }
+    ],
+    "D08": [
+      {
+        "variant": "V1",
+        "command": "Enciende el motor con Start y apágalo automáticamente después de 10 segundos de funcionamiento."
+      },
+      {
+        "variant": "V2",
+        "command": "Haz que el motor arranque con Start y se detenga solo tras funcionar durante 10 segundos."
+      },
+      {
+        "variant": "V3",
+        "command": "Cuando se active Start, mantén el motor funcionando 10 segundos y después apágalo."
+      }
+    ],
+    "D09": [
+      {
+        "variant": "V1",
+        "command": "Cuenta 5 pulsos de la entrada digital y activa una salida al llegar al quinto."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que se cuenten los pulsos de la entrada y que, cuando lleguen a cinco, se active la salida."
+      },
+      {
+        "variant": "V3",
+        "command": "Al recibir el quinto pulso de la entrada digital, activa la salida."
+      }
+    ],
+    "D10": [
+      {
+        "variant": "V1",
+        "command": "Cuenta 5 pulsos y activa una salida al llegar a cinco; con Reset, pon el contador a cero y apaga la salida."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero contar cinco pulsos para activar la salida, y que al pulsar Reset el contador vuelva a cero y la salida se apague."
+      },
+      {
+        "variant": "V3",
+        "command": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida."
+      }
+    ],
+    "D11": [
+      {
+        "variant": "V1",
+        "command": "Controla el contactor con Start y Stop con enclavamiento de marcha."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el contactor se active con Start, quede enclavado y se desactive con Stop."
+      },
+      {
+        "variant": "V3",
+        "command": "Usa un enclavamiento de marcha para que Start conecte el contactor y Stop lo desconecte."
+      }
+    ],
+    "D12": [
+      {
+        "variant": "V1",
+        "command": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez."
+      },
+      {
+        "variant": "V2",
+        "command": "Cada uno de los dos contactores tiene su propia orden, pero nunca pueden estar los dos encendidos al mismo tiempo."
+      },
+      {
+        "variant": "V3",
+        "command": "Con dos órdenes independientes maneja dos contactores, impidiendo que se activen simultáneamente."
+      }
+    ],
+    "D13": [
+      {
+        "variant": "V1",
+        "command": "Ante una orden de marcha, habilita el variador solo si no hay alarma activa."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el variador se habilite con la orden de marcha, pero nunca si existe una alarma activa."
+      },
+      {
+        "variant": "V3",
+        "command": "Si hay una alarma activa, el variador no debe habilitarse aunque llegue la orden de marcha; sin alarma, habilítalo con esa orden."
+      }
+    ],
+    "D14": [
+      {
+        "variant": "V1",
+        "command": "Selecciona velocidad baja, media o alta con tres entradas digitales y activa solo la velocidad seleccionada."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija."
+      },
+      {
+        "variant": "V3",
+        "command": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada."
+      }
+    ],
+    "D15": [
+      {
+        "variant": "V1",
+        "command": "Implementa modo Manual y Automático para el motor: en Manual obedece la orden manual y en Automático la orden automática."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que en modo Manual el motor responda a la orden manual y en modo Automático a la orden automática."
+      },
+      {
+        "variant": "V3",
+        "command": "Según el modo seleccionado, Manual o Automático, el motor debe atender la orden manual o la orden automática respectivamente."
+      }
+    ],
+    "D16": [
+      {
+        "variant": "V1",
+        "command": "Con Start activa la salida principal y, 3 segundos después, la salida auxiliar."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que al dar Start se encienda la salida principal y que tres segundos más tarde se encienda la auxiliar."
+      },
+      {
+        "variant": "V3",
+        "command": "Tras recibir Start, activa la salida principal, espera 3 segundos y luego activa la salida auxiliar."
+      }
+    ],
+    "D17": [
+      {
+        "variant": "V1",
+        "command": "Al activar Start, vigila el sensor y activa una alarma si no cambia de estado durante 5 segundos."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que, después de dar Start, se active una alarma si el sensor pasa cinco segundos sin cambiar de estado."
+      },
+      {
+        "variant": "V3",
+        "command": "Tras activar Start, si el sensor permanece sin cambios 5 segundos, activa la alarma."
+      }
+    ],
+    "D18": [
+      {
+        "variant": "V1",
+        "command": "Bloquea el arranque del motor mientras esté activo el modo mantenimiento."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el motor no pueda arrancar mientras el sistema esté en mantenimiento."
+      },
+      {
+        "variant": "V3",
+        "command": "En modo mantenimiento, impide que el motor arranque."
+      }
+    ],
+    "D19": [
+      {
+        "variant": "V1",
+        "command": "Controla tres pilotos de detenido, marcha y falla, dejando encendido solo el del estado actual."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero tres pilotos, detenido, marcha y falla, y que solo esté encendido el que corresponde al estado actual."
+      },
+      {
+        "variant": "V3",
+        "command": "Indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual."
+      }
+    ],
+    "D20": [
+      {
+        "variant": "V1",
+        "command": "Con Start inicia un ciclo automático de 3 segundos; al terminar, detén la ejecución y marca el ciclo como finalizado. Reset lo devuelve al estado inicial."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que Start arranque un ciclo de tres segundos que al acabar se detenga y quede marcado como finalizado, y que Reset lo deje en el estado inicial."
+      },
+      {
+        "variant": "V3",
+        "command": "Un ciclo automático de 3 segundos empieza al activar Start; cuando termina se detiene y se marca como finalizado, y Reset lo devuelve al estado inicial."
+      }
+    ],
+    "P01": [
+      {
+        "variant": "V1",
+        "command": "Habilita el modo automático del sistema de nivel al seleccionar Automático."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el sistema de nivel pase a modo automático cuando se elija Automático."
+      },
+      {
+        "variant": "V3",
+        "command": "Cuando se seleccione Automático, activa el modo automático del control de nivel."
+      }
+    ],
+    "P02": [
+      {
+        "variant": "V1",
+        "command": "Cambia el setpoint de nivel a 60 %."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el setpoint del nivel quede en el sesenta por ciento."
+      },
+      {
+        "variant": "V3",
+        "command": "Ajusta al 60 % la consigna de nivel."
+      }
+    ],
+    "P03": [
+      {
+        "variant": "V1",
+        "command": "Acepta setpoints de nivel de 0 % a 100 % y rechaza cualquier valor fuera de ese rango, conservando el último válido."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el setpoint de nivel solo admita valores entre cero y cien por ciento; si piden otro valor, se rechaza y se conserva el anterior válido."
+      },
+      {
+        "variant": "V3",
+        "command": "Si se solicita un setpoint de nivel fuera del rango de 0 % a 100 %, recházalo y conserva el último valor válido."
+      }
+    ],
+    "P04": [
+      {
+        "variant": "V1",
+        "command": "Activa la alarma de nivel alto cuando el nivel pase del 90 %."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero una alarma de nivel alto si el nivel supera el noventa por ciento."
+      },
+      {
+        "variant": "V3",
+        "command": "Con el nivel por encima del 90 %, activa la alarma de nivel alto."
+      }
+    ],
+    "P05": [
+      {
+        "variant": "V1",
+        "command": "Activa la alarma de nivel bajo cuando el nivel baje del 10 %."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero una alarma de nivel bajo si el nivel es inferior al diez por ciento."
+      },
+      {
+        "variant": "V3",
+        "command": "Con el nivel por debajo del 10 %, activa la alarma de nivel bajo."
+      }
+    ],
+    "P06": [
+      {
+        "variant": "V1",
+        "command": "Habilita el PID solo cuando el sistema esté en modo Automático."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que el PID funcione únicamente en modo Automático."
+      },
+      {
+        "variant": "V3",
+        "command": "El PID debe estar habilitado solamente mientras el sistema esté en Automático."
+      }
+    ],
+    "P07": [
+      {
+        "variant": "V1",
+        "command": "Si se activa una condición de emergencia con el PID funcionando, deshabilítalo de inmediato."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que, si hay una emergencia mientras el PID trabaja, el PID se deshabilite en el acto."
+      },
+      {
+        "variant": "V3",
+        "command": "Ante una condición de emergencia durante el funcionamiento del PID, deshabilítalo inmediatamente."
+      }
+    ],
+    "P08": [
+      {
+        "variant": "V1",
+        "command": "En modo Manual, enciende y apaga la bomba con una orden manual, sin que el control automático intervenga."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que en Manual la bomba se encienda y se apague solo con la orden manual, no con el control automático."
+      },
+      {
+        "variant": "V3",
+        "command": "Con el sistema en Manual, la orden manual decide si la bomba está encendida o apagada; el control automático no la gobierna."
+      }
+    ],
+    "P09": [
+      {
+        "variant": "V1",
+        "command": "Detecta fallo de sensor cuando el nivel medido esté fuera del rango de 0 % a 100 %."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que se marque un fallo del sensor si el nivel medido sale del rango de cero a cien por ciento."
+      },
+      {
+        "variant": "V3",
+        "command": "Si el nivel medido no está entre 0 % y 100 %, indica un fallo del sensor."
+      }
+    ],
+    "P10": [
+      {
+        "variant": "V1",
+        "command": "Si hay una alarma por fallo del sensor, no permitas su Reset mientras la falla siga; permítelo cuando la medición vuelva al rango válido."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que la alarma por fallo del sensor no se pueda resetear mientras dure la falla, y que sí se pueda cuando la medición vuelva a ser válida."
+      },
+      {
+        "variant": "V3",
+        "command": "El Reset de la alarma por fallo del sensor solo debe funcionar cuando la medición haya vuelto al rango válido, no mientras continúe la falla."
+      }
+    ],
+    "P11": [
+      {
+        "variant": "V1",
+        "command": "Si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure esa condición."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que la bomba se apague mientras el nivel esté en el noventa y cinco por ciento o más, porque es sobrellenado."
+      },
+      {
+        "variant": "V3",
+        "command": "Considera sobrellenado un nivel igual o superior al 95 % y mantén la bomba apagada mientras siga así."
+      }
+    ],
+    "P12": [
+      {
+        "variant": "V1",
+        "command": "En modo Automático, habilita el PID con setpoint del 60 %; si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura, y cuando vuelva al rango permitido deja recuperar la operación automática."
+      },
+      {
+        "variant": "V2",
+        "command": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento, que por encima del noventa por ciento suene la alarma y el proceso pase a condición segura, y que al volver el nivel al rango permitido se pueda recuperar el automático."
+      },
+      {
+        "variant": "V3",
+        "command": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma y la condición segura, y el regreso del nivel al rango permitido permite recuperar la operación automática."
+      }
+    ]
+  }
+}

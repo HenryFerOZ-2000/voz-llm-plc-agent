@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:40:28",
-    "version": 1,
-    "hash": "bc3e29558b2b507d8ca5590b7597c8d19c1207f3a42365d79c54bb6abef073af",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D02 (INT_DIRECT_OUTPUT)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "76c046eaddc44153ee6ce419c7ea406d317cde4c27d81b38bd5effe001a25cf9",
+    "previous_hash": "bc3e29558b2b507d8ca5590b7597c8d19c1207f3a42365d79c54bb6abef073af",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -24,17 +28,21 @@
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
         "Barrido de programas triviales: solo 'piloto = sensor' pasa, que es el programa correcto.",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Lampara mientras la entrada este activa",
     "original_requirement": "Encender una lampara cuando una entrada digital este activa.",
     "canonical_command": "Enciende una lámpara mientras una entrada digital esté activa.",
-    "canonical_case_hash": "b6c6b0a496c2e3caf5c362dd599a9c8ba86f28b03f2b243e64eab8d39d1032e5",
+    "canonical_case_hash": "3b06b8e74a8648a83764ce23e00803459838480ecd2a0dc0744256efc0154846",
     "legacy_reference_intent": "INT_DIRECT_OUTPUT"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -90,7 +98,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Enciende una lámpara mientras una entrada digital esté activa."
+      "text": "COMANDO CANONICO (benchmark v3): Enciende una lámpara mientras una entrada digital esté activa."
     },
     {
       "id": "C-D02",

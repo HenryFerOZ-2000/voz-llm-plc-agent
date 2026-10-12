@@ -65,10 +65,15 @@ def test_32_schema_valid_and_zero_open_review_items():
 
 
 def test_hashes_valid_d03_untouched_and_no_ai_approval():
-    d03 = _oracle("D03")
-    assert d03["approval"]["status"] == "FROZEN" and d03["approval"]["approved_by"] == "Henry"
-    assert d03["approval"]["hash"] == oracle_schema.compute_oracle_hash(d03) == \
+    # D03 v1 (benchmark v2) se conserva intacto en versions/; la version vigente (v3) es metadata + semantica.
+    d03_v1 = json.loads((_ROOT / "data" / "experiment_oracles" / "versions" / "D03_v1.json").read_text(encoding="utf-8"))
+    assert d03_v1["approval"]["status"] == "FROZEN" and d03_v1["approval"]["approved_by"] == "Henry"
+    assert d03_v1["approval"]["hash"] == oracle_schema.compute_oracle_hash(d03_v1) == \
         "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
+    d03 = _oracle("D03")
+    assert d03["approval"]["status"] == "FROZEN" and d03["approval"]["approved_by"] == "Henry Ochoa"
+    assert d03["approval"]["hash"] == oracle_schema.compute_oracle_hash(d03)
+    assert d03["approval"]["previous_hash"] == d03_v1["approval"]["hash"]
     pending = set()
     for case_id in oracle_review.EXPECTED_ORACLE_IDS:
         oracle = _oracle(case_id)

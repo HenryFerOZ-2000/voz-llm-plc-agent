@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "design_version": 2,
-  "benchmark_version": 2,
-  "description": "Diseno experimental formal de la tesis: una arquitectura fija (comando -> LLM -> programa PLC -> TIA Portal -> PLCSIM Advanced -> Oracle) evaluada sobre el benchmark v2. Fuente de verdad para la GUI, el batch runner y los reportes.",
+  "benchmark_version": 3,
+  "description": "Diseno experimental formal de la tesis: una arquitectura fija (comando -> LLM -> programa PLC -> TIA Portal -> PLCSIM Advanced -> Oracle) evaluada sobre el benchmark v3. Fuente de verdad para la GUI, el batch runner y los reportes.",
   "architecture": {
     "pipeline": [
       "INPUT (texto o voz)",
@@ -212,7 +212,7 @@
   },
   "voice_protocol": {
     "protocol_version": 1,
-    "reference": "Texto EXACTO de la variante V1/V2/V3 del benchmark v2 (frase que se lee en voz alta).",
+    "reference": "Texto EXACTO de la variante V1/V2/V3 del benchmark vigente (v3) (frase que se lee en voz alta).",
     "speaker": {
       "speaker_id_pattern": "^S\\d{2,3}$",
       "is_factor": false,
@@ -259,5 +259,19 @@
       "note": "Perfil y SNR se eligen y CONGELAN aqui antes de FORMAL (status FROZEN + profile_sha256). En DEVELOPMENT pueden venir de config/voice_protocol_dev.json."
     },
     "pairing": "VOICE_NOISE reutiliza el clean_audio.wav del ensayo VOICE_CLEAN del mismo case/variant (diseno pareado). En FORMAL esta prohibido grabar de nuevo."
+  },
+  "benchmark_history": {
+    "DEVELOPMENT": {
+      "benchmark_version": 2,
+      "status": "HISTORICAL",
+      "archive": "data/experiment_benchmark/versions/benchmark_v2/",
+      "note": "Ensayos de desarrollo/validacion ejecutados con v2: se conservan y nunca se mezclan con FORMAL."
+    },
+    "FORMAL": {
+      "benchmark_version": 3,
+      "status": "CURRENT",
+      "changelog": "docs/benchmark_v3_changelog.md",
+      "note": "Refinado antes de cualquier ensayo FORMAL; comportamiento evaluado identico al de v2."
+    }
   }
 }

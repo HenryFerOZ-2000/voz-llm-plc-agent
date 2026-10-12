@@ -1,0 +1,245 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P12",
+  "case_id": "P12",
+  "title": "P12 - Automatico con SP 60 %, alarma > 90 % y recuperacion",
+  "description": "En Automatico el PID esta habilitado con setpoint 60 %. Con nivel > 90 % se activa la alarma y el proceso pasa a condicion segura (PID deshabilitado y bomba apagada); al volver el nivel al rango permitido se recupera la operacion automatica.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-09-30T12:41:31",
+    "version": 1,
+    "hash": "08877566a2105e89beea0c1d86981534bc8ddff64bcf41e2b5ad06657f9e92f4",
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P12 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+        "Benchmark v2: alineado con el comando canonico (Reescrito segun el comando canonico: alarma > 90 % con condicion segura y recuperacion automatica sin Reset.)."
+      ]
+    }
+  },
+  "source_definition": {
+    "benchmark_version": 2,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Automatico con SP 60 %, alarma > 90 % y recuperacion",
+    "original_requirement": "Secuencia completa: automatico -> setpoint -> alarma -> recuperacion.",
+    "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
+    "canonical_case_hash": "7f57f3010e0a3dfb5f696c0418a98abcbbcbb8a7e7badae0733bc1d0bae74767",
+    "legacy_reference_intent": "INT_PID_SUPERVISOR"
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "REAL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "required_functional_requirements": [
+      "set_level_setpoint",
+      "enable_pid",
+      "high_level_alarm"
+    ],
+    "required_functions": [
+      "enable_pid",
+      "set_level_setpoint",
+      "high_level_alarm",
+      "safe_condition",
+      "recovery"
+    ],
+    "required_roles": [
+      "AUTO_MODE",
+      "LEVEL_PV",
+      "LEVEL_SP",
+      "PID_ENABLE",
+      "ALARM",
+      "PUMP_ENABLE"
+    ]
+  },
+  "roles": {
+    "AUTO_MODE": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Modo Automatico (condicion fijada por el test harness).",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Auto_Mode"
+      ]
+    },
+    "LEVEL_PV": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Nivel medido (simulado, %).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_PV"
+      ]
+    },
+    "LEVEL_SP": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Setpoint de nivel (%).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_SP"
+      ]
+    },
+    "PID_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion del PID.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "PID_Enable"
+      ]
+    },
+    "ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Alarma.",
+      "semantic_paths": [
+        "alarm_output"
+      ]
+    },
+    "PUMP_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Bomba.",
+      "semantic_paths": [
+        "pump_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 0,
+    "expected_bound_outputs": 2,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Secuencia completa: automatico -> setpoint -> alarma -> recuperacion."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v2): En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática."
+    },
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Los limites son los del comando canonico de cada caso. Level_PV se inyecta como valor de proceso simulado (test harness)."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "C-P12-SAFE",
+      "text": "'Condicion segura' = PID deshabilitado y bomba apagada (aclaracion del catalogo, misma nocion que P07/P11)."
+    },
+    {
+      "id": "C-P12-RECOVERY",
+      "text": "'Rango permitido' = nivel <= 90 %; la recuperacion es automatica (el comando no pide Reset). La alarma tras la recuperacion no se evalua."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_auto",
+      "description": "Test harness: modo Automatico y nivel 50 %.",
+      "set": {
+        "AUTO_MODE": true,
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Automatico: PID habilitado con setpoint 60 %.",
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": true,
+        "LEVEL_SP": {
+          "approx": 60.0,
+          "tolerance": 0.01
+        }
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Nivel 92 %: alarma y condicion segura.",
+      "set": {
+        "LEVEL_PV": 92.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "ALARM": true,
+        "PID_ENABLE": false,
+        "PUMP_ENABLE": false
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Nivel de nuevo en rango (50 %): se recupera la operacion automatica.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 1000,
+      "expect": {
+        "PID_ENABLE": true
+      },
+      "unspecified": [
+        "ALARM",
+        "PUMP_ENABLE"
+      ]
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup",
+      "description": "Valores base.",
+      "set": {
+        "LEVEL_PV": 50.0,
+        "AUTO_MODE": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-P12",
+      "expected_capability": "Condicion segura a > 90 % y recuperacion automatica al volver al rango.",
+      "current_behavior": "INT_PID_SUPERVISOR solo lleva a condicion segura en sobrellenado (>= 95 %) y la recuperacion exige Reset (conditional_alarm_reset).",
+      "severity": "HIGH",
+      "recommended_future_fix": "Permitir condicion segura con umbral configurable y recuperacion sin Reset cuando el comando lo indica.",
+      "text": "INT_PID_SUPERVISOR solo lleva a condicion segura en sobrellenado (>= 95 %) y la recuperacion exige Reset (conditional_alarm_reset)."
+    }
+  ]
+}

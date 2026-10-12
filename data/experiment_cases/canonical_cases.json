@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "benchmark_version": 2,
-  "methodology_note": "Los comandos canonicos mantienen la formulacion original cuando esta es suficientemente inequivoca y anaden unicamente la informacion necesaria para definir un comportamiento PLC evaluable.",
+  "benchmark_version": 3,
+  "methodology_note": "Los comandos canonicos mantienen la formulacion original cuando esta es suficientemente inequivoca y anaden unicamente la informacion necesaria para definir un comportamiento PLC evaluable. Benchmark v3 (FORMAL): refinado ANTES de los ensayos formales para hacer explicito, sin cambiar el comportamiento evaluado, lo que los Oracles congelados ya exigian (criterio: alineacion especificacion-ground truth). El v2 queda archivado como historico DEVELOPMENT en data/experiment_benchmark/versions/benchmark_v2/.",
   "cases": [
     {
       "case_id": "D01",
       "title": "Salida temporizada de 5 s",
       "family": "DISCRETE",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Activar una salida digital durante 5 segundos al presionar un pulsador.",
       "canonical_command": "Activa una salida digital durante 5 segundos al presionar un pulsador.",
       "canonical_semantics": {
@@ -74,7 +74,7 @@
       "title": "Lampara mientras la entrada este activa",
       "family": "DISCRETE",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Encender una lampara cuando una entrada digital este activa.",
       "canonical_command": "Enciende una lámpara mientras una entrada digital esté activa.",
       "canonical_semantics": {
@@ -138,7 +138,7 @@
       "title": "Arranque y paro con memoria de marcha",
       "family": "DISCRETE",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Arranque y parada de motor con pulsadores independientes.",
       "canonical_command": "Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.",
       "canonical_semantics": {
@@ -212,7 +212,7 @@
       "title": "Motor enclavado con Start y Stop",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Arranque enclavado de motor con memoria de marcha.",
       "canonical_command": "Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop.",
       "canonical_semantics": {
@@ -289,9 +289,9 @@
       "title": "Prioridad de la condicion de emergencia sobre el arranque",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Paro de emergencia con prioridad sobre cualquier orden de arranque.",
-      "canonical_command": "Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+      "canonical_command": "Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -320,7 +320,7 @@
       "command_requirements": [
         {
           "id": "R1",
-          "text": "Con la seguridad normal, Start enciende el motor.",
+          "text": "Sin emergencia activa, Start enciende el motor.",
           "oracle_evidence": [
             "step_1"
           ]
@@ -346,9 +346,9 @@
         "Antes de la prueba se activa y retira la emergencia para garantizar el motor apagado."
       ],
       "variants": {
-        "V1": "Arranca el motor con Start solo si la condición de seguridad es normal; si se activa la emergencia, apágalo y bloquea el arranque mientras siga activa.",
-        "V2": "Quiero que el motor arranque con Start únicamente con la seguridad normal, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
-        "V3": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; con la seguridad normal, Start enciende el motor."
+        "V1": "Arranca el motor con Start únicamente si no hay emergencia activa; si se activa, apágalo y bloquea el arranque mientras siga activa.",
+        "V2": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+        "V3": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor."
       },
       "variant_check": {
         "required_concepts": [
@@ -367,7 +367,7 @@
       "title": "Alarma por arranque sin condicion de seguridad",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Activar alarma si se intenta arrancar sin condicion de seguridad.",
       "canonical_command": "Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.",
       "canonical_semantics": {
@@ -430,7 +430,7 @@
       "title": "Arranque retardado 3 s con Start mantenido",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Arranque retardado 3 s.",
       "canonical_command": "Mientras Start permanezca activo, espera 3 segundos antes de encender el motor.",
       "canonical_semantics": {
@@ -497,9 +497,9 @@
       "title": "Paro automatico tras 10 s de funcionamiento continuo",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Apagar motor despues de 10 segundos de operacion continua.",
-      "canonical_command": "Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
+      "canonical_command": "Al activar Start, enciende el motor, mantenlo en marcha aunque se suelte Start y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -533,7 +533,7 @@
         },
         {
           "id": "R2",
-          "text": "Tras 10 s de funcionamiento continuo el motor se apaga automaticamente.",
+          "text": "El motor sigue en marcha tras soltar Start y, a los 10 s de funcionamiento continuo, se apaga automaticamente.",
           "oracle_evidence": [
             "step_2"
           ]
@@ -543,9 +543,9 @@
         "Start en OFF durante 11 s antes de la prueba (cualquier operacion previa expira)."
       ],
       "variants": {
-        "V1": "Enciende el motor con Start y apágalo automáticamente después de 10 segundos de funcionamiento.",
-        "V2": "Haz que el motor arranque con Start y se detenga solo tras funcionar durante 10 segundos.",
-        "V3": "Cuando se active Start, mantén el motor funcionando 10 segundos y después apágalo."
+        "V1": "Enciende el motor con Start, que siga en marcha aunque se suelte el pulsador, y apágalo automáticamente tras 10 segundos de funcionamiento.",
+        "V2": "Haz que el motor arranque con Start, siga funcionando aunque se suelte y se detenga solo tras 10 segundos.",
+        "V3": "Cuando se active Start, mantén el motor funcionando 10 segundos, aunque se suelte el pulsador, y después apágalo."
       },
       "variant_check": {
         "required_concepts": [
@@ -565,7 +565,7 @@
       "title": "Contador de 5 pulsos",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Contar 5 pulsos y activar una salida.",
       "canonical_command": "Cuenta 5 pulsos de una entrada digital y, al llegar al quinto, activa una salida.",
       "canonical_semantics": {
@@ -638,7 +638,7 @@
       "title": "Contador de 5 pulsos con Reset",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Resetear contador mediante pulsador.",
       "canonical_command": "Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida.",
       "canonical_semantics": {
@@ -728,7 +728,7 @@
       "title": "Contactor con enclavamiento de marcha",
       "family": "DISCRETE",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Control de contactor con enclavamiento electrico/logico.",
       "canonical_command": "Controla un contactor con Start y Stop usando enclavamiento de marcha.",
       "canonical_semantics": {
@@ -802,7 +802,7 @@
       "title": "Dos contactores con ordenes independientes e interbloqueo",
       "family": "DISCRETE",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Interlock: evitar activacion simultanea de dos contactores.",
       "canonical_command": "Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo.",
       "canonical_semantics": {
@@ -873,9 +873,9 @@
       "title": "Variador habilitado solo sin alarma",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Activar variador solo si no existe alarma.",
-      "canonical_command": "Ante una orden de marcha, habilita el variador solo si no existe una alarma activa.",
+      "canonical_command": "Con una orden de marcha, habilita el variador solo mientras no exista una alarma activa; si la alarma aparece con el variador habilitado, deshabilítalo.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -907,7 +907,7 @@
         },
         {
           "id": "R2",
-          "text": "Con alarma activa el variador no se habilita.",
+          "text": "Si aparece una alarma con el variador habilitado, el variador se deshabilita; con alarma activa nunca esta habilitado.",
           "oracle_evidence": [
             "step_2",
             "INV_ALARM_VFD"
@@ -925,9 +925,9 @@
         "Sin orden ni alarma antes de la prueba."
       ],
       "variants": {
-        "V1": "Ante una orden de marcha, habilita el variador solo si no hay alarma activa.",
-        "V2": "Quiero que el variador se habilite con la orden de marcha, pero nunca si existe una alarma activa.",
-        "V3": "Si hay una alarma activa, el variador no debe habilitarse aunque llegue la orden de marcha; sin alarma, habilítalo con esa orden."
+        "V1": "Habilita el variador con la orden de marcha únicamente mientras no haya alarma activa; si aparece una alarma, deshabilítalo.",
+        "V2": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.",
+        "V3": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden."
       },
       "variant_check": {
         "required_concepts": [
@@ -944,7 +944,7 @@
       "title": "Seleccion de velocidad baja/media/alta",
       "family": "DISCRETE",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Seleccionar velocidad baja/media/alta mediante entradas digitales.",
       "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
       "canonical_semantics": {
@@ -1029,9 +1029,9 @@
       "title": "Modo Manual/Automatico con orden por modo",
       "family": "DISCRETE",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Modo manual/automatico para habilitacion del motor.",
-      "canonical_command": "Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.",
+      "canonical_command": "El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1093,9 +1093,9 @@
         "Modo Manual y ordenes en OFF antes de la prueba."
       ],
       "variants": {
-        "V1": "Implementa modo Manual y Automático para el motor: en Manual obedece la orden manual y en Automático la orden automática.",
-        "V2": "Quiero que en modo Manual el motor responda a la orden manual y en modo Automático a la orden automática.",
-        "V3": "Según el modo seleccionado, Manual o Automático, el motor debe atender la orden manual o la orden automática respectivamente."
+        "V1": "Con un selector Manual/Automático: en Automático, el motor obedece la orden automática; en Manual, la orden manual; la otra orden se ignora.",
+        "V2": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.",
+        "V3": "Según la posición del selector, Manual o Automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo."
       },
       "variant_check": {
         "required_concepts": [
@@ -1114,7 +1114,7 @@
       "title": "Secuencia: principal, espera 3 s, auxiliar",
       "family": "DISCRETE",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Secuencia: arranque -> espera -> salida auxiliar.",
       "canonical_command": "Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar.",
       "canonical_semantics": {
@@ -1185,9 +1185,9 @@
       "title": "Supervision de sensor 5 s tras Start",
       "family": "DISCRETE",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Alarma si el sensor no cambia de estado en 5 s.",
-      "canonical_command": "Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.",
+      "canonical_command": "Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1231,7 +1231,7 @@
         },
         {
           "id": "R3",
-          "text": "Si el sensor no cambia durante 5 s, se activa la alarma.",
+          "text": "Si el sensor no cambia durante 5 s contados desde su ultimo cambio, se activa la alarma.",
           "oracle_evidence": [
             "t4_timeout"
           ]
@@ -1241,9 +1241,9 @@
         "Start y sensor en OFF antes de la prueba."
       ],
       "variants": {
-        "V1": "Al activar Start, vigila el sensor y activa una alarma si no cambia de estado durante 5 segundos.",
-        "V2": "Quiero que, después de dar Start, se active una alarma si el sensor pasa cinco segundos sin cambiar de estado.",
-        "V3": "Tras activar Start, si el sensor permanece sin cambios 5 segundos, activa la alarma."
+        "V1": "Tras activar Start, vigila el sensor y activa una alarma si transcurren 5 segundos sin ningún cambio; cada cambio reinicia la cuenta.",
+        "V2": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+        "V3": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma."
       },
       "variant_check": {
         "required_concepts": [
@@ -1264,7 +1264,7 @@
       "title": "Bloqueo del arranque en mantenimiento",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Bloquear arranque en modo mantenimiento.",
       "canonical_command": "Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento.",
       "canonical_semantics": {
@@ -1334,9 +1334,9 @@
       "title": "Pilotos de estado: detenido, marcha y falla",
       "family": "DISCRETE",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Pilotos: detenido, marcha, falla.",
-      "canonical_command": "Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.",
+      "canonical_command": "Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1398,9 +1398,9 @@
         "Sin marcha ni falla antes de la prueba."
       ],
       "variants": {
-        "V1": "Controla tres pilotos de detenido, marcha y falla, dejando encendido solo el del estado actual.",
-        "V2": "Quiero tres pilotos, detenido, marcha y falla, y que solo esté encendido el que corresponde al estado actual.",
-        "V3": "Indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual."
+        "V1": "Con las señales de marcha y falla del sistema, controla tres pilotos (detenido, marcha y falla) y deja encendido solo el del estado actual.",
+        "V2": "Quiero tres pilotos, detenido, marcha y falla, que según las señales de marcha y falla del sistema dejen encendido solo el que corresponde al estado actual.",
+        "V3": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual."
       },
       "variant_check": {
         "required_concepts": [
@@ -1421,7 +1421,7 @@
       "title": "Ciclo automatico de 3 s con Reset",
       "family": "DISCRETE",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Ciclo automatico: inicio -> ejecucion -> parada -> reset.",
       "canonical_command": "Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.",
       "canonical_semantics": {
@@ -1505,9 +1505,9 @@
       "title": "Modo automatico al seleccionar Automatico",
       "family": "PID",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Habilitar modo automatico.",
-      "canonical_command": "Habilita el modo automático del sistema de nivel cuando se seleccione Automático.",
+      "canonical_command": "El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1532,14 +1532,14 @@
       "command_requirements": [
         {
           "id": "R1",
-          "text": "Al seleccionar Automatico, el modo automatico queda habilitado.",
+          "text": "Al seleccionar Automatico, el sistema de nivel pasa a modo automatico.",
           "oracle_evidence": [
             "step_1"
           ]
         },
         {
           "id": "R2",
-          "text": "Sin seleccionar Automatico, el modo automatico no se habilita (condicional 'cuando').",
+          "text": "Sin seleccionar Automatico, el sistema no pasa a modo automatico ('solo cuando').",
           "oracle_evidence": [
             "step_0"
           ]
@@ -1549,15 +1549,15 @@
         "Seleccion de Automatico en OFF antes de la prueba."
       ],
       "variants": {
-        "V1": "Habilita el modo automático del sistema de nivel al seleccionar Automático.",
-        "V2": "Quiero que el sistema de nivel pase a modo automático cuando se elija Automático.",
-        "V3": "Cuando se seleccione Automático, activa el modo automático del control de nivel."
+        "V1": "Pasa el sistema de nivel a modo automático únicamente cuando el operador seleccione Automático.",
+        "V2": "Quiero que el control de nivel entre en automático solo si el operador elige Automático.",
+        "V3": "Solo al seleccionar el operador Automático debe el sistema de nivel ponerse en modo automático."
       },
       "variant_check": {
         "required_concepts": [
           "automatic",
           "nivel",
-          "seleccion|elija"
+          "seleccion|elij|elig"
         ],
         "numbers": []
       },
@@ -1568,7 +1568,7 @@
       "title": "Setpoint de nivel al 60 %",
       "family": "PID",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Cambiar setpoint a 60 %.",
       "canonical_command": "Cambia el setpoint del nivel al 60 %.",
       "canonical_semantics": {
@@ -1622,7 +1622,7 @@
       "title": "Setpoint validado en el rango 0-100 %",
       "family": "PID",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Rechazar setpoint fuera de rango seguro.",
       "canonical_command": "Acepta setpoints de nivel entre 0 % y 100 %. Si se solicita un valor fuera de ese rango, recházalo y conserva el último valor válido.",
       "canonical_semantics": {
@@ -1634,8 +1634,7 @@
             "SOLICITUD DE SETPOINT"
           ],
           "functions": [
-            "validate_setpoint",
-            "keep_last_valid"
+            "reject_unsafe_setpoint"
           ],
           "thresholds": {
             "min_pct": 0,
@@ -1696,9 +1695,9 @@
       "title": "Alarma de nivel alto > 90 %",
       "family": "PID",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Alarma si nivel > 90 %.",
-      "canonical_command": "Activa una alarma de nivel alto cuando el nivel supere el 90 %.",
+      "canonical_command": "Activa la alarma de nivel alto mientras el nivel esté por encima del 90 % y desactívala cuando vuelva a 90 % o menos.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1734,7 +1733,7 @@
         },
         {
           "id": "R2",
-          "text": "Por debajo de 90 % no hay alarma de nivel alto (condicional 'cuando').",
+          "text": "Con el nivel en 90 % o menos no hay alarma de nivel alto (se desactiva al volver).",
           "oracle_evidence": [
             "pre_normal",
             "step_2"
@@ -1745,9 +1744,9 @@
         "Nivel simulado en 50 % antes de la prueba y al final."
       ],
       "variants": {
-        "V1": "Activa la alarma de nivel alto cuando el nivel pase del 90 %.",
-        "V2": "Quiero una alarma de nivel alto si el nivel supera el noventa por ciento.",
-        "V3": "Con el nivel por encima del 90 %, activa la alarma de nivel alto."
+        "V1": "Mantén activa la alarma de nivel alto mientras el nivel supere el 90 % y apágala cuando baje a 90 % o menos.",
+        "V2": "Quiero que la alarma de nivel alto suene mientras el nivel pase del noventa por ciento y se quite al volver a noventa o menos.",
+        "V3": "Con el nivel por encima del 90 %, la alarma de nivel alto debe estar activa; a 90 % o menos, desactivada."
       },
       "variant_check": {
         "required_concepts": [
@@ -1766,9 +1765,9 @@
       "title": "Alarma de nivel bajo < 10 %",
       "family": "PID",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Alarma si nivel < 10 %.",
-      "canonical_command": "Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %.",
+      "canonical_command": "Activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y desactívala cuando vuelva a 10 % o más.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1804,7 +1803,7 @@
         },
         {
           "id": "R2",
-          "text": "Por encima de 10 % no hay alarma de nivel bajo (condicional 'cuando').",
+          "text": "Con el nivel en 10 % o mas no hay alarma de nivel bajo (se desactiva al volver).",
           "oracle_evidence": [
             "pre_normal",
             "step_2"
@@ -1815,9 +1814,9 @@
         "Nivel simulado en 50 % antes de la prueba y al final."
       ],
       "variants": {
-        "V1": "Activa la alarma de nivel bajo cuando el nivel baje del 10 %.",
-        "V2": "Quiero una alarma de nivel bajo si el nivel es inferior al diez por ciento.",
-        "V3": "Con el nivel por debajo del 10 %, activa la alarma de nivel bajo."
+        "V1": "Mantén activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y apágala cuando suba a 10 % o más.",
+        "V2": "Quiero que la alarma de nivel bajo suene mientras el nivel sea inferior al diez por ciento y se quite al volver a diez o más.",
+        "V3": "Con el nivel por debajo del 10 %, la alarma de nivel bajo debe estar activa; a 10 % o más, desactivada."
       },
       "variant_check": {
         "required_concepts": [
@@ -1836,9 +1835,9 @@
       "title": "PID habilitado solo en Automatico",
       "family": "PID",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "PID habilitado solo en automatico.",
-      "canonical_command": "Habilita el PID únicamente cuando el sistema esté en modo Automático.",
+      "canonical_command": "El PID solo debe estar habilitado mientras el sistema se encuentre en modo Automático, que selecciona el operador; en modo Manual debe permanecer deshabilitado.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1870,7 +1869,7 @@
         },
         {
           "id": "R2",
-          "text": "Fuera de Automatico el PID no esta habilitado ('unicamente').",
+          "text": "En Manual (fuera de Automatico) el PID esta deshabilitado.",
           "oracle_evidence": [
             "pre_manual",
             "step_2",
@@ -1882,14 +1881,16 @@
         "Modo Automatico en OFF antes de la prueba."
       ],
       "variants": {
-        "V1": "Habilita el PID solo cuando el sistema esté en modo Automático.",
-        "V2": "Quiero que el PID funcione únicamente en modo Automático.",
-        "V3": "El PID debe estar habilitado solamente mientras el sistema esté en Automático."
+        "V1": "Mantén el PID habilitado únicamente mientras el operador tenga el sistema en Automático; en Manual, deshabilitado.",
+        "V2": "Quiero que el PID solo funcione cuando el operador haya puesto el sistema en Automático, y que en Manual quede deshabilitado.",
+        "V3": "Solo con el sistema en el modo Automático elegido por el operador puede estar habilitado el PID; en Manual debe estar deshabilitado."
       },
       "variant_check": {
         "required_concepts": [
           "\\bpid\\b",
           "automatic",
+          "manual",
+          "operador",
           "solo|unicamente|solamente"
         ],
         "numbers": []
@@ -1901,9 +1902,9 @@
       "title": "PID deshabilitado ante emergencia",
       "family": "PID",
       "complexity": "LOW",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Deshabilitar PID ante condicion de emergencia/seguridad autorizada.",
-      "canonical_command": "Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.",
+      "canonical_command": "Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -1913,7 +1914,7 @@
             "EMERGENCIA"
           ],
           "functions": [
-            "emergency_disables_pid"
+            "safety_trip_disables_pid"
           ]
         },
         "roles": {
@@ -1929,6 +1930,13 @@
       },
       "command_requirements": [
         {
+          "id": "R0",
+          "text": "En Automatico, sin emergencia, el PID esta habilitado.",
+          "oracle_evidence": [
+            "pre_enabled"
+          ]
+        },
+        {
           "id": "R1",
           "text": "La emergencia deshabilita el PID en funcionamiento.",
           "oracle_evidence": [
@@ -1941,15 +1949,16 @@
         "Automatico activo y sin emergencia para que el PID este funcionando antes de la prueba (estado previo que presupone el comando)."
       ],
       "variants": {
-        "V1": "Si se activa una condición de emergencia con el PID funcionando, deshabilítalo de inmediato.",
-        "V2": "Quiero que, si hay una emergencia mientras el PID trabaja, el PID se deshabilite en el acto.",
-        "V3": "Ante una condición de emergencia durante el funcionamiento del PID, deshabilítalo inmediatamente."
+        "V1": "En Automático el PID funciona habilitado, pero si se activa una emergencia, deshabilítalo inmediatamente.",
+        "V2": "Quiero que el PID esté habilitado en Automático y que, si hay una emergencia, se deshabilite en el acto.",
+        "V3": "Ante una condición de emergencia, el PID, que en Automático está habilitado, debe deshabilitarse de inmediato."
       },
       "variant_check": {
         "required_concepts": [
           "emergencia",
           "\\bpid\\b",
-          "deshabilit"
+          "deshabilit",
+          "automatic"
         ],
         "numbers": []
       },
@@ -1960,9 +1969,9 @@
       "title": "Bomba manual ON/OFF en modo Manual",
       "family": "PID",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Modo manual con operacion limitada de bomba.",
-      "canonical_command": "En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne.",
+      "canonical_command": "Cuando el sistema esté en modo Manual, es decir, siempre que no esté en Automático, la bomba debe encenderse y apagarse solo con la orden manual del operador; el control automático no debe actuar sobre ella.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -2009,9 +2018,9 @@
         "Modo Manual y orden en OFF antes de la prueba."
       ],
       "variants": {
-        "V1": "En modo Manual, enciende y apaga la bomba con una orden manual, sin que el control automático intervenga.",
-        "V2": "Quiero que en Manual la bomba se encienda y se apague solo con la orden manual, no con el control automático.",
-        "V3": "Con el sistema en Manual, la orden manual decide si la bomba está encendida o apagada; el control automático no la gobierna."
+        "V1": "Siempre que el sistema no esté en Automático, o sea en Manual, la orden manual del operador enciende y apaga la bomba, sin que actúe el control automático.",
+        "V2": "Quiero que, mientras el sistema no esté en Automático, la bomba solo se encienda y apague con la orden manual del operador.",
+        "V3": "Fuera del modo Automático, en Manual, la bomba debe seguir únicamente la orden manual del operador para encenderse o apagarse."
       },
       "variant_check": {
         "required_concepts": [
@@ -2030,9 +2039,9 @@
       "title": "Fallo de sensor fuera de 0-100 %",
       "family": "PID",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Fallo de sensor por valor fuera de rango.",
-      "canonical_command": "Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %.",
+      "canonical_command": "Indica fallo del sensor mientras el nivel medido esté por debajo de 0 % o por encima de 100 %; cuando vuelva a estar entre 0 % y 100 %, el fallo debe desaparecer.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -2075,7 +2084,7 @@
         },
         {
           "id": "R3",
-          "text": "Nivel dentro del rango: sin fallo (condicional 'si').",
+          "text": "Con el nivel de nuevo dentro de 0-100 % no hay fallo de sensor (desaparece al volver).",
           "oracle_evidence": [
             "pre_normal",
             "step_2"
@@ -2086,9 +2095,9 @@
         "Nivel simulado en 50 % antes de la prueba y al final."
       ],
       "variants": {
-        "V1": "Detecta fallo de sensor cuando el nivel medido esté fuera del rango de 0 % a 100 %.",
-        "V2": "Quiero que se marque un fallo del sensor si el nivel medido sale del rango de cero a cien por ciento.",
-        "V3": "Si el nivel medido no está entre 0 % y 100 %, indica un fallo del sensor."
+        "V1": "Señala fallo de sensor mientras el nivel medido esté fuera de 0 % a 100 % y quítalo cuando vuelva a ese rango.",
+        "V2": "Quiero que se marque fallo del sensor mientras el nivel medido salga del rango de cero a cien por ciento, y que se quite al volver a él.",
+        "V3": "Con el nivel medido por debajo de 0 % o por encima de 100 % debe haber fallo de sensor; dentro de ese rango, no."
       },
       "variant_check": {
         "required_concepts": [
@@ -2108,9 +2117,9 @@
       "title": "Reset de alarma de sensor solo sin falla",
       "family": "PID",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Reset de alarma solo si desaparecio la falla.",
-      "canonical_command": "Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.",
+      "canonical_command": "Activa una alarma cuando el nivel medido salga del rango de 0 % a 100 % por fallo del sensor. Mientras la medición siga fuera de ese rango, el Reset no debe borrar la alarma; cuando vuelva al rango, el Reset sí debe borrarla.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -2137,6 +2146,13 @@
       },
       "command_requirements": [
         {
+          "id": "R0",
+          "text": "Un nivel medido fuera de 0-100 % activa la alarma por fallo del sensor.",
+          "oracle_evidence": [
+            "pre_fault"
+          ]
+        },
+        {
           "id": "R1",
           "text": "Con la falla presente, Reset no borra la alarma.",
           "oracle_evidence": [
@@ -2158,9 +2174,9 @@
         "Nivel simulado fuera de rango (150 %) para provocar la falla y la alarma que el comando presupone."
       ],
       "variants": {
-        "V1": "Si hay una alarma por fallo del sensor, no permitas su Reset mientras la falla siga; permítelo cuando la medición vuelva al rango válido.",
-        "V2": "Quiero que la alarma por fallo del sensor no se pueda resetear mientras dure la falla, y que sí se pueda cuando la medición vuelva a ser válida.",
-        "V3": "El Reset de la alarma por fallo del sensor solo debe funcionar cuando la medición haya vuelto al rango válido, no mientras continúe la falla."
+        "V1": "Genera una alarma si el nivel medido sale de 0 % a 100 % por fallo del sensor; el Reset no la borra mientras siga fuera y sí cuando vuelva al rango.",
+        "V2": "Quiero una alarma por fallo del sensor cuando la medición salga de cero a cien por ciento, que no se pueda resetear mientras dure y sí al volver al rango.",
+        "V3": "Un nivel medido fuera de 0 % a 100 % debe activar la alarma de fallo del sensor; el Reset solo la borra cuando la medición vuelve a ese rango."
       },
       "variant_check": {
         "required_concepts": [
@@ -2170,7 +2186,10 @@
           "\\breset",
           "rango|valid"
         ],
-        "numbers": []
+        "numbers": [
+          0,
+          100
+        ]
       },
       "reference_intent": "INT_PID_SUPERVISOR"
     },
@@ -2179,9 +2198,9 @@
       "title": "Bomba apagada por sobrellenado >= 95 %",
       "family": "PID",
       "complexity": "MEDIUM",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Parada segura ante sobrellenado.",
-      "canonical_command": "Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa.",
+      "canonical_command": "En operación normal la bomba está en marcha; si el nivel alcanza o supera el 95 %, considéralo sobrellenado y mantén la bomba apagada mientras dure esa condición.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -2191,7 +2210,7 @@
             "NIVEL"
           ],
           "functions": [
-            "overfill_pump_stop"
+            "safe_overfill_stop"
           ],
           "thresholds": {
             "overfill_pct": 95
@@ -2208,6 +2227,13 @@
       },
       "command_requirements": [
         {
+          "id": "R0",
+          "text": "En operacion normal (nivel por debajo de 95 %) la bomba esta en marcha.",
+          "oracle_evidence": [
+            "pre_normal"
+          ]
+        },
+        {
           "id": "R1",
           "text": "Con nivel >= 95 % la bomba esta apagada mientras dure la condicion.",
           "oracle_evidence": [
@@ -2220,9 +2246,9 @@
         "Nivel simulado normal (50 %) con la bomba habilitada antes de la prueba (estado previo que presupone 'apaga la bomba')."
       ],
       "variants": {
-        "V1": "Si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure esa condición.",
-        "V2": "Quiero que la bomba se apague mientras el nivel esté en el noventa y cinco por ciento o más, porque es sobrellenado.",
-        "V3": "Considera sobrellenado un nivel igual o superior al 95 % y mantén la bomba apagada mientras siga así."
+        "V1": "Con el nivel normal la bomba funciona; si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure.",
+        "V2": "Quiero que la bomba trabaje normalmente y que se apague mientras el nivel esté en el noventa y cinco por ciento o más, por sobrellenado.",
+        "V3": "La bomba, en marcha en condiciones normales, debe quedar apagada mientras el nivel sea igual o superior al 95 % (sobrellenado)."
       },
       "variant_check": {
         "required_concepts": [
@@ -2242,9 +2268,9 @@
       "title": "Automatico con SP 60 %, alarma > 90 % y recuperacion",
       "family": "PID",
       "complexity": "HIGH",
-      "benchmark_version": 2,
+      "benchmark_version": 3,
       "original_requirement": "Secuencia completa: automatico -> setpoint -> alarma -> recuperacion.",
-      "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
+      "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura: PID deshabilitado y bomba apagada. Cuando el nivel vuelva a 90 % o menos, el PID debe volver a habilitarse por sí solo, sin intervención del operador.",
       "canonical_semantics": {
         "signature": {
           "actors": [
@@ -2303,7 +2329,7 @@
         },
         {
           "id": "R3",
-          "text": "Con el nivel de nuevo en rango, se recupera la operacion automatica (PID habilitado).",
+          "text": "Con el nivel en 90 % o menos, el PID vuelve a habilitarse por si solo (sin Reset ni intervencion).",
           "oracle_evidence": [
             "step_3"
           ]
@@ -2313,9 +2339,9 @@
         "Modo Automatico y nivel simulado 50 % antes de la prueba."
       ],
       "variants": {
-        "V1": "En modo Automático, habilita el PID con setpoint del 60 %; si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura, y cuando vuelva al rango permitido deja recuperar la operación automática.",
-        "V2": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento, que por encima del noventa por ciento suene la alarma y el proceso pase a condición segura, y que al volver el nivel al rango permitido se pueda recuperar el automático.",
-        "V3": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma y la condición segura, y el regreso del nivel al rango permitido permite recuperar la operación automática."
+        "V1": "En Automático, PID habilitado con setpoint del 60 %; por encima del 90 %, alarma y condición segura (PID deshabilitado y bomba apagada); al volver a 90 % o menos, el PID se rehabilita solo, sin que intervenga el operador.",
+        "V2": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento; que por encima del noventa por ciento suene la alarma y se pare el PID y la bomba; y que, al volver a noventa o menos, el PID se reactive solo.",
+        "V3": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma, deshabilita el PID y apaga la bomba; al regresar a 90 % o menos, el PID vuelve a habilitarse automáticamente."
       },
       "variant_check": {
         "required_concepts": [
@@ -2323,8 +2349,8 @@
           "\\bpid\\b",
           "setpoint",
           "alarma",
-          "condicion segura",
-          "recuper"
+          "bomba",
+          "habilit|reactiv"
         ],
         "numbers": [
           60,

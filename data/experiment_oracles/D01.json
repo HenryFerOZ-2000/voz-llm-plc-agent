@@ -7,12 +7,16 @@
   "complexity": "LOW",
   "approval": {
     "status": "FROZEN",
-    "approved_by": "Henry",
-    "approved_at": "2026-09-30T11:25:21",
-    "version": 1,
-    "hash": "a16544902b49a67d5158c2cdae0f176f6692548eedd69252b75739b89f2969be",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D01 (INT_TIMED_PULSE)",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "5eff52840e121774b04802a38aa78195a728bddbf4887a1d3be409f411a56522",
+    "previous_hash": "a16544902b49a67d5158c2cdae0f176f6692548eedd69252b75739b89f2969be",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -24,17 +28,21 @@
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
         "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Salida temporizada de 5 s",
     "original_requirement": "Activar una salida digital durante 5 segundos al presionar un pulsador.",
     "canonical_command": "Activa una salida digital durante 5 segundos al presionar un pulsador.",
-    "canonical_case_hash": "558f6e18e04fb71fadb01f6bd277071501c02f63a88fba8229ddc8b97ef539d6",
+    "canonical_case_hash": "7c365cfd519ab06e6a471df82ab7f2a9f849a37a814aa539e31f9cd38ccca52f",
     "legacy_reference_intent": "INT_TIMED_PULSE"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -98,7 +106,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Activa una salida digital durante 5 segundos al presionar un pulsador."
+      "text": "COMANDO CANONICO (benchmark v3): Activa una salida digital durante 5 segundos al presionar un pulsador."
     },
     {
       "id": "C-PULSE",

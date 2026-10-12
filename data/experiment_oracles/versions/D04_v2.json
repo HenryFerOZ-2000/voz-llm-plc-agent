@@ -1,0 +1,242 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D04",
+  "case_id": "D04",
+  "title": "D04 - Motor enclavado con memoria de marcha",
+  "description": "Un pulso de arranque mantiene el motor en marcha (memoria de enclavamiento) hasta que se presiona el paro.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "a299ff8d88e2a30733032466d461a12b32d9c66930448eb2710fcbcdd92d3ca3",
+    "previous_hash": "ecd6568dd2a0c493962b679802f3431ec945470f3aa067585c057c0237e27e51",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    }
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Motor enclavado con Start y Stop",
+    "original_requirement": "Arranque enclavado de motor con memoria de marcha.",
+    "canonical_command": "Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop.",
+    "canonical_case_hash": "8e8a4e33468385bb8ee6ee01622edfe75f250dac1437d9c4627ce02a273c6984",
+    "legacy_reference_intent": "INT_MOTOR_LATCH"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_MOTOR_LATCH",
+      "INT_MOTOR_START_STOP"
+    ],
+    "required_functions": [
+      "motor_latch"
+    ],
+    "notes": "INT_MOTOR_START_STOP es equivalente canonico (tambien implementa la memoria de marcha).",
+    "required_roles": [
+      "START",
+      "STOP",
+      "MOTOR_MAIN"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de marcha.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "STOP": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de paro.",
+      "semantic_paths": [
+        "stop_input"
+      ]
+    },
+    "MOTOR_MAIN": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida de marcha del motor.",
+      "semantic_paths": [
+        "motor_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Arranque enclavado de motor con memoria de marcha."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop."
+    },
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    },
+    {
+      "id": "C-D04",
+      "text": "El segundo ciclo detecta memorias que no se rearman tras el paro."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_stop",
+      "description": "STOP activo apaga cualquier marcha enclavada previa.",
+      "set": {
+        "START": false,
+        "STOP": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "description": "Soltar STOP: el motor sigue apagado.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "START pulsado: el motor arranca.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "START soltado: el motor sigue en marcha (memoria).",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "STOP pulsado: el motor se detiene.",
+      "set": {
+        "STOP": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "step_4",
+      "description": "STOP soltado: el motor sigue detenido.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "step_5",
+      "description": "Segundo ciclo: START vuelve a enclavar.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "step_6",
+      "description": "START soltado: la memoria se mantiene de nuevo.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_stop",
+      "description": "Dejar el motor detenido.",
+      "set": {
+        "START": false,
+        "STOP": true
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "cleanup_release",
+      "description": "Entradas a OFF.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

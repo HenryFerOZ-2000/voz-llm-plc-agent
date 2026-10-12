@@ -1,0 +1,128 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P02",
+  "case_id": "P02",
+  "title": "P02 - Cambiar el setpoint de nivel a 60 %",
+  "description": "El supervisor fija el setpoint de nivel en 60 %, dentro del rango seguro configurado.",
+  "complexity": "LOW",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "4bafcce6b0d44a63223d789897b6f4ccfadb2245a1292971231ee4c629a356ba",
+    "previous_hash": "31c9eaa5c27e83024d62df06857ec515680140fbeeffe895edaaa2e1f617def3",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+        "Benchmark v2: alineado con el comando canonico (Eliminada la invariante de rango 10-90 % (el comando solo pide fijar 60 %).).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    }
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Setpoint de nivel al 60 %",
+    "original_requirement": "Cambiar setpoint a 60 %.",
+    "canonical_command": "Cambia el setpoint del nivel al 60 %.",
+    "canonical_case_hash": "264702e3b17871395c58f10023d53e668213e61205ecbf55bfd57a8cacda34e7",
+    "legacy_reference_intent": "INT_PID_SUPERVISOR"
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "REAL",
+    "INTERNAL_TAG_READ"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "set_level_setpoint"
+    ],
+    "required_functions": [
+      "set_level_setpoint"
+    ],
+    "required_roles": [
+      "LEVEL_SP"
+    ]
+  },
+  "roles": {
+    "LEVEL_SP": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Setpoint de nivel (%).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_SP"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 0,
+    "expected_bound_outputs": 0,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Cambiar setpoint a 60 %."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Cambia el setpoint del nivel al 60 %."
+    },
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Los limites son los del comando canonico de cada caso. Level_PV se inyecta como valor de proceso simulado (test harness)."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    }
+  ],
+  "preconditions": [],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Setpoint en 60 %.",
+      "wait_ms": 500,
+      "expect": {
+        "LEVEL_SP": {
+          "approx": 60.0,
+          "tolerance": 0.01
+        }
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

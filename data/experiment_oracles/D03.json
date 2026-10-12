@@ -7,16 +7,21 @@
   "complexity": "LOW",
   "approval": {
     "status": "FROZEN",
-    "approved_by": "Henry",
-    "approved_at": "2026-09-29T17:27:21",
-    "version": 1,
-    "hash": "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion legacy D03",
-    "legacy_reference": "data/plc_maps/profiles.json D03 (INT_MOTOR_START_STOP)"
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "f1c5bf3ee7f708d3b54cb068543db935f4dfe2ca449628e6d3d16dad1eceef49",
+    "previous_hash": "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92",
+    "change_scope": "BENCHMARK_V3_METADATA + SEMANTIC_EXPECTATIONS",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos. D03: accepted_intents ampliado (simetria D04/D11).",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador"
   },
   "semantic_expectations": {
     "accepted_intents": [
-      "INT_MOTOR_START_STOP"
+      "INT_MOTOR_START_STOP",
+      "INT_MOTOR_LATCH"
     ],
     "required_functions": [
       "motor_start_stop",
@@ -32,7 +37,7 @@
       "INT_DELAYED_START",
       "INT_TIMED_PULSE"
     ],
-    "notes": "maintained_run se evidencia por el intent canonico INT_MOTOR_START_STOP (latch) y se verifica funcionalmente en step_2."
+    "notes": "Benchmark v3: se aceptan INT_MOTOR_START_STOP e INT_MOTOR_LATCH por simetria funcional con D04/D11 (misma memoria de marcha). Cambio SEMANTICO, no funcional: test_sequence identico."
   },
   "roles": {
     "START": {
@@ -158,5 +163,14 @@
     "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
     "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
   },
-  "review_items": []
+  "review_items": [],
+  "source_definition": {
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Arranque y paro con memoria de marcha",
+    "original_requirement": "Arranque y parada de motor con pulsadores independientes.",
+    "legacy_reference_intent": "INT_MOTOR_START_STOP",
+    "benchmark_version": 3,
+    "canonical_command": "Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.",
+    "canonical_case_hash": "0df06f0174eb8ef1e1fe0884dd3ecd7b90fb5cd50b0d45599ba3c84698de3166"
+  }
 }

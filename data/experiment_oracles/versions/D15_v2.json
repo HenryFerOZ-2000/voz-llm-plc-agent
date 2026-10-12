@@ -1,0 +1,239 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D15",
+  "case_id": "D15",
+  "title": "D15 - Modo manual/automatico para la habilitacion del motor",
+  "description": "MODE_AUTO elige que orden habilita el motor: en manual solo MANUAL_COMMAND, en automatico solo AUTO_COMMAND; la orden del modo no seleccionado se ignora.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "6cc504987db5c37e854bd2aa94ab26538986eae28f34a8922ab19cdfcf8998bd",
+    "previous_hash": "4c4d43dcb25f9eba649a462164b2f5e3aedc57bc544765e5b02e0ae84f806953",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Barrido de programas triviales tras el cierre: ninguno pasa (la debilidad de 3B queda eliminada).",
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    }
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Modo Manual/Automatico con orden por modo",
+    "original_requirement": "Modo manual/automatico para habilitacion del motor.",
+    "canonical_command": "El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto.",
+    "canonical_case_hash": "a0e142df907e6911bd38c986efb18ea9ffa95f06d0b34b7371455166587b7d95",
+    "legacy_reference_intent": "INT_MANUAL_AUTO_MODE"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_MANUAL_AUTO_MODE"
+    ],
+    "required_functions": [
+      "manual_auto_mode"
+    ],
+    "required_roles": [
+      "MODE_AUTO",
+      "MANUAL_COMMAND",
+      "AUTO_COMMAND",
+      "MOTOR_MAIN"
+    ]
+  },
+  "roles": {
+    "MODE_AUTO": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Modo automatico seleccionado (FALSE = manual).",
+      "semantic_paths": [
+        "mode_auto",
+        "auto_input",
+        "mode_auto_input"
+      ]
+    },
+    "MANUAL_COMMAND": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de marcha manual.",
+      "semantic_paths": [
+        "manual_command",
+        "manual_command_input",
+        "manual_start_input"
+      ]
+    },
+    "AUTO_COMMAND": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de marcha automatica.",
+      "semantic_paths": [
+        "auto_command",
+        "auto_command_input",
+        "auto_start_input"
+      ]
+    },
+    "MOTOR_MAIN": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion del motor.",
+      "semantic_paths": [
+        "motor_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 3,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Modo manual/automatico para habilitacion del motor."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto."
+    },
+    {
+      "id": "C-D15-MODES",
+      "text": "MODE_AUTO selecciona el modo; cada modo tiene su propia orden (mantenida). La orden del modo NO seleccionado se ignora. No se define ninguna secuencia automatica especifica."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Modo manual, sin ordenes.",
+      "set": {
+        "MODE_AUTO": false,
+        "MANUAL_COMMAND": false,
+        "AUTO_COMMAND": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "man_1",
+      "description": "Manual + orden manual: motor habilitado.",
+      "set": {
+        "MANUAL_COMMAND": true,
+        "AUTO_COMMAND": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "man_2",
+      "description": "Manual + orden automatica: se ignora.",
+      "set": {
+        "MANUAL_COMMAND": false,
+        "AUTO_COMMAND": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "description": "Cambio a automatico sin ordenes.",
+      "set": {
+        "MODE_AUTO": true,
+        "AUTO_COMMAND": false
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "aut_1",
+      "description": "Automatico + orden automatica: motor habilitado.",
+      "set": {
+        "AUTO_COMMAND": true,
+        "MANUAL_COMMAND": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": true
+      }
+    },
+    {
+      "id": "aut_2",
+      "description": "Automatico + orden manual: se ignora.",
+      "set": {
+        "AUTO_COMMAND": false,
+        "MANUAL_COMMAND": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "MOTOR_MAIN": false
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "MODE_AUTO": false,
+        "MANUAL_COMMAND": false,
+        "AUTO_COMMAND": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D15-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define que cambia entre modo manual y automatico, ni que ocurre sin modo o con ambos. El Oracle solo verifica que en cada modo el motor se habilita con START y se detiene con STOP; un programa que ignore el modo tambien pasaria. Ademas, como el caso no define memoria de marcha ni prioridad de STOP, la revision automatica comprobo que un programa trivial 'motor = START' (que ignora modos y STOP) tambien PASA. Definir la diferencia observable entre modos (y la memoria/prioridad de STOP) antes de aprobar.",
+      "resolution": "Cerrado con MODE_AUTO + ordenes por modo (C-D15-MODES): un programa trivial ya no pasa (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D15",
+      "expected_capability": "Ordenes de marcha separadas por modo (MANUAL_COMMAND / AUTO_COMMAND) seleccionadas por MODE_AUTO.",
+      "current_behavior": "INT_MANUAL_AUTO_MODE usa selectores de modo manual/auto y START/STOP comunes: MANUAL_COMMAND/AUTO_COMMAND no se resolveran -> REVIEW.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla con una orden por modo y un selector MODE_AUTO.",
+      "text": "INT_MANUAL_AUTO_MODE usa selectores de modo manual/auto y START/STOP comunes: MANUAL_COMMAND/AUTO_COMMAND no se resolveran -> REVIEW."
+    }
+  ]
+}

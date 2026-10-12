@@ -1,0 +1,247 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P10",
+  "case_id": "P10",
+  "title": "P10 - Reset de alarma solo cuando desaparece la falla",
+  "description": "Con una falla de sensor activa el reset no borra la alarma; al desaparecer la falla, el reset la borra.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-09-30T12:41:31",
+    "version": 1,
+    "hash": "932a229e3d4e6a0eb15988a7996b62591e6325625347d8d7b15e33a0e71847c2",
+    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
+    "legacy_reference": "data/plc_maps/profiles.json P10 (INT_PID_SUPERVISOR)",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
+      ]
+    }
+  },
+  "source_definition": {
+    "benchmark_version": 2,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Reset de alarma de sensor solo sin falla",
+    "original_requirement": "Reset de alarma solo si desaparecio la falla.",
+    "canonical_command": "Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.",
+    "canonical_case_hash": "d064134cd2b8fb644e67f7fb273034d0113d2091294cade1e7cdfd669bfb197a",
+    "legacy_reference_intent": "INT_PID_SUPERVISOR"
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "REAL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "conditional_alarm_reset"
+    ],
+    "required_functions": [
+      "conditional_alarm_reset"
+    ],
+    "required_roles": [
+      "LEVEL_PV",
+      "SENSOR_FAULT",
+      "RESET",
+      "ALARM"
+    ]
+  },
+  "roles": {
+    "LEVEL_PV": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Nivel medido (valor de proceso simulado, %).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_PV"
+      ]
+    },
+    "SENSOR_FAULT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Falla de sensor.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Sensor_Fault"
+      ]
+    },
+    "RESET": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Reset de alarma.",
+      "semantic_paths": [
+        "reset_input"
+      ]
+    },
+    "ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida de alarma.",
+      "semantic_paths": [
+        "alarm_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Reset de alarma solo si desaparecio la falla."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v2): Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido."
+    },
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Limites tomados de config/pid_supervisor_config.json (setpoint 10-90 %, alarma alta 90 %, baja 10 %, sobrellenado 95 %, rango valido del sensor 0-100 %). Level_PV se inyecta como valor de proceso simulado."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "C-P10",
+      "text": "La falla es la de P09 (sensor fuera de rango): Level_PV = 150 % provoca SENSOR_FAULT y ALARM."
+    },
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_fault",
+      "description": "Nivel fuera de rango: falla de sensor y alarma.",
+      "set": {
+        "LEVEL_PV": 150.0,
+        "RESET": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SENSOR_FAULT": true,
+        "ALARM": true
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "RESET con la falla presente: la alarma sigue activa.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "ALARM": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Soltar RESET.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "ALARM": true
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Nivel valido: la falla desaparece.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "SENSOR_FAULT": false
+      },
+      "unspecified": [
+        "ALARM"
+      ]
+    },
+    {
+      "id": "step_4",
+      "description": "RESET sin falla: la alarma se borra.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "ALARM": false
+      }
+    },
+    {
+      "id": "step_5",
+      "description": "Soltar RESET: la alarma sigue borrada.",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "ALARM": false
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup",
+      "description": "Valores base.",
+      "set": {
+        "LEVEL_PV": 50.0,
+        "RESET": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "P10-R1",
+      "status": "RESOLVED",
+      "text": "P10 no define que falla provoca la alarma. Convencion: nivel alto (> 90 %, como P04). Si el programa de P10 no incluye ninguna fuente de alarma, la prueba no puede provocarla (step_1 fallaria).",
+      "resolution": "La falla evaluada es la falla de sensor de P09 (C-P10) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-P10",
+      "expected_capability": "Alarma activada por la falla de sensor y reset condicionado a que desaparezca.",
+      "current_behavior": "En INT_PID_SUPERVISOR Q_Alarm la activan las alarmas de nivel/sobrellenado, no Sensor_Fault: la precondicion fallaria.",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Activar la alarma tambien por Sensor_Fault cuando el caso lo pida.",
+      "text": "En INT_PID_SUPERVISOR Q_Alarm la activan las alarmas de nivel/sobrellenado, no Sensor_Fault: la precondicion fallaria."
+    }
+  ]
+}

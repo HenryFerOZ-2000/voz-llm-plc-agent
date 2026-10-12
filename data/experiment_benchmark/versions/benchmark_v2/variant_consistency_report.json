@@ -1,0 +1,2067 @@
+{
+  "benchmark_version": 2,
+  "total_cases": 32,
+  "total_variants": 96,
+  "consistent_variants": 96,
+  "cases_with_errors": [],
+  "cases": [
+    {
+      "case_id": "D01",
+      "canonical_command": "Activa una salida digital durante 5 segundos al presionar un pulsador.",
+      "canonical_signature": {
+        "actors": [
+          "salida"
+        ],
+        "triggers": [
+          "PULSADOR"
+        ],
+        "functions": [
+          "timed_pulse"
+        ],
+        "times": {
+          "pulse_duration_s": 5
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Al presionar el pulsador, activa la salida digital durante 5 segundos.",
+        "variant_hash": "be6070cffa9cc68af44b2ca3623abcb1196106ac00805117a6e0f5722dbf4a36",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Cuando se presione el pulsador, quiero que la salida se encienda durante cinco segundos.",
+        "variant_hash": "c1d7a120d85dcc616c41b2d28ce9af757f7424b30cc0bd5a58669d6edfc28153",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Genera un pulso de salida de 5 segundos cada vez que se presione el pulsador.",
+        "variant_hash": "182319560adf135df23d6fa286155a29f8e78f87432f051415c41b1c162a6991",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D02",
+      "canonical_command": "Enciende una lámpara mientras una entrada digital esté activa.",
+      "canonical_signature": {
+        "actors": [
+          "lampara"
+        ],
+        "triggers": [
+          "ENTRADA"
+        ],
+        "functions": [
+          "follow_input"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Enciende la lámpara mientras la entrada digital esté activa.",
+        "variant_hash": "da668f707285a7ea2cab3cfaa74c38dcefe4995f66c4c1c803d92bd4c9b8901a",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que la lámpara esté encendida solo mientras la entrada esté activa.",
+        "variant_hash": "17f47f5cafc3216ddd4534177fdfdbc2888db5e981f1cba04ede6bcc2855eb80",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive.",
+        "variant_hash": "5373f2b7766b8d37e1412a1c64d023c705ce7dd2a73454850984dda7fc1c67eb",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D03",
+      "canonical_command": "Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.",
+      "canonical_signature": {
+        "actors": [
+          "motor"
+        ],
+        "triggers": [
+          "START",
+          "STOP"
+        ],
+        "functions": [
+          "start",
+          "maintained_run",
+          "stop"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop.",
+        "variant_hash": "4815bedad2696496bb2c31ca2fe96d537407eee58d86cb6283de2c79941c88db",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero encender el motor con Start y que siga encendido aunque suelte el botón; con Stop se apaga.",
+        "variant_hash": "f655382bf07c9c5845f602b217323d0bd942f800d679937457066a1fe7bf7700",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Con memoria de marcha: Start enciende el motor, que permanece encendido al soltar el pulsador, y Stop lo apaga.",
+        "variant_hash": "3971cd0b777b83cdd01c6a959714bd027bda43b0831c3154ad051df17c2115bb",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D04",
+      "canonical_command": "Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop.",
+      "canonical_signature": {
+        "actors": [
+          "motor"
+        ],
+        "triggers": [
+          "START",
+          "STOP"
+        ],
+        "functions": [
+          "start",
+          "latch",
+          "stop"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Enclava el motor con Start para que siga encendido al soltar el pulsador y apágalo con Stop.",
+        "variant_hash": "d48f4afcf2107cf8bb5bcbb0b2ad5d1644581f90b0bff265bc849d9fcea10429",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Haz un enclavamiento: el motor arranca con Start, se queda encendido aunque se suelte el botón y se apaga con Stop.",
+        "variant_hash": "a7171dcf2564d6c77a16592b038ecb5b9900e84924f5925d6204f7793c1747a4",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Con Stop se apaga el motor; con Start se enciende y queda enclavado aunque se suelte el pulsador.",
+        "variant_hash": "004fadba659c1bc7a9cc1ae3c90c0e12a5834a3f3b82bc4965d3465f72dc46a8",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D05",
+      "canonical_command": "Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+      "canonical_signature": {
+        "actors": [
+          "motor"
+        ],
+        "triggers": [
+          "START",
+          "EMERGENCIA"
+        ],
+        "functions": [
+          "start",
+          "safety_priority",
+          "start_block"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Arranca el motor con Start solo si la condición de seguridad es normal; si se activa la emergencia, apágalo y bloquea el arranque mientras siga activa.",
+        "variant_hash": "3d286f50361c093e3d81ad73fb838f56f6c62e2a279af7242c9a4d89dd923574",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el motor arranque con Start únicamente con la seguridad normal, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+        "variant_hash": "a396da186be3f3596761516cd224cf747738dadce5de4bd511bdc5c891b4bf02",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; con la seguridad normal, Start enciende el motor.",
+        "variant_hash": "5e4055ed242b33e6995cd34951d2f5194cfe745681caf6844129bb05e3965886",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D06",
+      "canonical_command": "Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.",
+      "canonical_signature": {
+        "actors": [
+          "alarma"
+        ],
+        "triggers": [
+          "START",
+          "SEGURIDAD"
+        ],
+        "functions": [
+          "unsafe_start_alarm"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Activa una alarma si se intenta arrancar sin que se cumpla la condición de seguridad.",
+        "variant_hash": "cc4857a9f9a814fbc26c21c88832cb2f88300233ee4bf155611e3dfb2f9b62a2",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que suene una alarma cuando alguien intente arrancar el sistema sin la condición de seguridad cumplida.",
+        "variant_hash": "f59a6a14425462c656b22b97e44da277766565d3336f5857ee10a8dcca533c87",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Un intento de arranque sin la condición de seguridad debe activar la alarma.",
+        "variant_hash": "c9cdd467197ac653f7050a9ad05ee604765bf6a90b412208d6606deb71c40b73",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D07",
+      "canonical_command": "Mientras Start permanezca activo, espera 3 segundos antes de encender el motor.",
+      "canonical_signature": {
+        "actors": [
+          "motor"
+        ],
+        "triggers": [
+          "START (mantenido)"
+        ],
+        "functions": [
+          "delayed_start"
+        ],
+        "times": {
+          "delay_s": 3
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Con Start activo, espera 3 segundos y luego enciende el motor.",
+        "variant_hash": "f952c3cbdebf5c24dc2c9213ddddf930a2bb70cc622b6c64193ca4f6719708ad",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el motor arranque tres segundos después de activar Start, siempre que Start siga activo.",
+        "variant_hash": "307587826343f32e7d261c600124271b157faa8d45403de6ea6c9266225d0016",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Retarda 3 segundos el encendido del motor mientras se mantenga activo Start.",
+        "variant_hash": "1141c71eeaa092ac1176d8a7e9d6d570cae9357dcc9ad5d7d196723470919598",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D08",
+      "canonical_command": "Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
+      "canonical_signature": {
+        "actors": [
+          "motor"
+        ],
+        "triggers": [
+          "START"
+        ],
+        "functions": [
+          "start",
+          "auto_stop"
+        ],
+        "times": {
+          "operation_duration_s": 10
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Enciende el motor con Start y apágalo automáticamente después de 10 segundos de funcionamiento.",
+        "variant_hash": "2ab58de1d15a91fc307d896a0ade14572424ae42cae062678f81208f37c5d1b9",
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Haz que el motor arranque con Start y se detenga solo tras funcionar durante 10 segundos.",
+        "variant_hash": "df56da9805d9b3ccda1cd50423bf584b165b4e2e4303f3c3166a6a6c94996e5d",
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Cuando se active Start, mantén el motor funcionando 10 segundos y después apágalo.",
+        "variant_hash": "226fb328c83df168f323ad9d900bfe7130abe397e17f007287a1f74b8faa4b8c",
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D09",
+      "canonical_command": "Cuenta 5 pulsos de una entrada digital y, al llegar al quinto, activa una salida.",
+      "canonical_signature": {
+        "actors": [
+          "salida"
+        ],
+        "triggers": [
+          "ENTRADA (pulsos)"
+        ],
+        "functions": [
+          "count",
+          "threshold_output"
+        ],
+        "counts": {
+          "preset": 5
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Cuenta 5 pulsos de la entrada digital y activa una salida al llegar al quinto.",
+        "variant_hash": "bb7139275efff01b0f8e02192a839c3e147ff87b97e6d99a4bb3c70ebcff33ae",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que se cuenten los pulsos de la entrada y que, cuando lleguen a cinco, se active la salida.",
+        "variant_hash": "a7b1b052bd312059c6fcd9b2615bc9072470c1521fd7c5a564ca4f092ce6c3b0",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Al recibir el quinto pulso de la entrada digital, activa la salida.",
+        "variant_hash": "4a0ccb9504756d24b729ce3aa73ebcd7dab7b357b2bf6ccd8b094752c782663a",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D10",
+      "canonical_command": "Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida.",
+      "canonical_signature": {
+        "actors": [
+          "salida",
+          "contador"
+        ],
+        "triggers": [
+          "PULSOS",
+          "RESET"
+        ],
+        "functions": [
+          "count",
+          "threshold_output",
+          "counter_reset"
+        ],
+        "counts": {
+          "preset": 5,
+          "reset_value": 0
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          5
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Cuenta 5 pulsos y activa una salida al llegar a cinco; con Reset, pon el contador a cero y apaga la salida.",
+        "variant_hash": "925b317169c0f6f2ca1c2425bc6a3bb8bd835664ce630f823b54c4427c0a3606",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero contar cinco pulsos para activar la salida, y que al pulsar Reset el contador vuelva a cero y la salida se apague.",
+        "variant_hash": "00398dac30195db892f8427356e0c660d263a662d3bebf4fddac80da23c2a29b",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida.",
+        "variant_hash": "390c3923efad3d9882e69fa0609750af958bb6fbaf97f58812b4c8a419fb6fe4",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D11",
+      "canonical_command": "Controla un contactor con Start y Stop usando enclavamiento de marcha.",
+      "canonical_signature": {
+        "actors": [
+          "contactor"
+        ],
+        "triggers": [
+          "START",
+          "STOP"
+        ],
+        "functions": [
+          "start",
+          "latch",
+          "stop"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Controla el contactor con Start y Stop con enclavamiento de marcha.",
+        "variant_hash": "ffb0fe2bd4330cbfea64c049b5d9b8eb4f9bd47d6dbe396087fb2397808d8574",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el contactor se active con Start, quede enclavado y se desactive con Stop.",
+        "variant_hash": "6255eaa26757dff67b9b2e0f95f3d5817437295304a3855d10b0b5ae2cb8d656",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Usa un enclavamiento de marcha para que Start conecte el contactor y Stop lo desconecte.",
+        "variant_hash": "c42e4067a81ee37cebd54108a19ba9c12be64344df40a7d7b059dd8cd68f009d",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D12",
+      "canonical_command": "Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo.",
+      "canonical_signature": {
+        "actors": [
+          "contactor A",
+          "contactor B"
+        ],
+        "triggers": [
+          "ORDEN A",
+          "ORDEN B"
+        ],
+        "functions": [
+          "follow_request",
+          "mutual_exclusion"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          2
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+        "variant_hash": "e82008e6ef6f90d2bf068d7608f35a9f5a75433a0e15a7232183d578f72d3c21",
+        "missing_concepts": [],
+        "numbers": [
+          2
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Cada uno de los dos contactores tiene su propia orden, pero nunca pueden estar los dos encendidos al mismo tiempo.",
+        "variant_hash": "d42a19c668524dad234350804e14d4b3f42f320b5483e798b38f6e2c4642bfda",
+        "missing_concepts": [],
+        "numbers": [
+          2
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Con dos órdenes independientes maneja dos contactores, impidiendo que se activen simultáneamente.",
+        "variant_hash": "dff78ed24f2defe44d58a3a1ce6c3a2b5a4c3a6735b5016f10e6352b4ee0bc7c",
+        "missing_concepts": [],
+        "numbers": [
+          2
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D13",
+      "canonical_command": "Ante una orden de marcha, habilita el variador solo si no existe una alarma activa.",
+      "canonical_signature": {
+        "actors": [
+          "variador"
+        ],
+        "triggers": [
+          "ORDEN DE MARCHA",
+          "ALARMA"
+        ],
+        "functions": [
+          "permissive_enable"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Ante una orden de marcha, habilita el variador solo si no hay alarma activa.",
+        "variant_hash": "2f8bef84baa742ce5ebc3ddae5c2a7e70775d8b102518011fe5d345f15c301ee",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el variador se habilite con la orden de marcha, pero nunca si existe una alarma activa.",
+        "variant_hash": "694586da1165e212390c2498a90bf10e9830b48f18906c34ead3bb1e59bdd2d8",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Si hay una alarma activa, el variador no debe habilitarse aunque llegue la orden de marcha; sin alarma, habilítalo con esa orden.",
+        "variant_hash": "5c6cb7fac850ec9d8a66f61ed8c505a3cac5a7643f2cc7f80583e1a34526ee9b",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D14",
+      "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+      "canonical_signature": {
+        "actors": [
+          "velocidad baja",
+          "velocidad media",
+          "velocidad alta"
+        ],
+        "triggers": [
+          "3 ENTRADAS"
+        ],
+        "functions": [
+          "one_hot_select"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Selecciona velocidad baja, media o alta con tres entradas digitales y activa solo la velocidad seleccionada.",
+        "variant_hash": "defe35a32272f9cc61c34756f19953d5184d1356109348cca8454fd2d29df15c",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+        "variant_hash": "c5f7be33854511d80b5ff42acb3675638bfd9c429bf843d249025413f447e950",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+        "variant_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D15",
+      "canonical_command": "Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.",
+      "canonical_signature": {
+        "actors": [
+          "motor"
+        ],
+        "triggers": [
+          "MODO",
+          "ORDEN MANUAL",
+          "ORDEN AUTOMATICA"
+        ],
+        "functions": [
+          "mode_select"
+        ],
+        "modes": [
+          "MANUAL",
+          "AUTOMATICO"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Implementa modo Manual y Automático para el motor: en Manual obedece la orden manual y en Automático la orden automática.",
+        "variant_hash": "35b5bfd5189f09d0fb79dab0265a09d125cd22e157aefb06d18487d3a28fd7e8",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que en modo Manual el motor responda a la orden manual y en modo Automático a la orden automática.",
+        "variant_hash": "492971d3c0ffbdf132149ce7baf3f77251baaa014b8076b8af1b384bd16c2707",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Según el modo seleccionado, Manual o Automático, el motor debe atender la orden manual o la orden automática respectivamente.",
+        "variant_hash": "d8d5cc7cbc8739e5370528a96948890889a4bc98ecf4f24f0c5494a293f3a02c",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D16",
+      "canonical_command": "Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar.",
+      "canonical_signature": {
+        "actors": [
+          "salida principal",
+          "salida auxiliar"
+        ],
+        "triggers": [
+          "START"
+        ],
+        "functions": [
+          "sequence"
+        ],
+        "times": {
+          "wait_s": 3
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Con Start activa la salida principal y, 3 segundos después, la salida auxiliar.",
+        "variant_hash": "bb6562acc1e6cfce43ab9a9b794c6c4b46d01aa5358bd28f668bf9701bb51cba",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que al dar Start se encienda la salida principal y que tres segundos más tarde se encienda la auxiliar.",
+        "variant_hash": "986ea2758af96a97f4a4a2afedd910152f55860188b27e600ce04cd5d49b70a8",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Tras recibir Start, activa la salida principal, espera 3 segundos y luego activa la salida auxiliar.",
+        "variant_hash": "d54379fe0b01c6e8c42683e89e493b9a0b17e461ea3835d0d56aa179641402dc",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D17",
+      "canonical_command": "Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.",
+      "canonical_signature": {
+        "actors": [
+          "alarma"
+        ],
+        "triggers": [
+          "START",
+          "SENSOR"
+        ],
+        "functions": [
+          "supervision_enable",
+          "timeout_alarm"
+        ],
+        "times": {
+          "timeout_s": 5
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Al activar Start, vigila el sensor y activa una alarma si no cambia de estado durante 5 segundos.",
+        "variant_hash": "c622973c24be7bc42fab9616e017f5cb1d3cd63ba645f45847580038573e856e",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que, después de dar Start, se active una alarma si el sensor pasa cinco segundos sin cambiar de estado.",
+        "variant_hash": "d04276e1a4dd5015164060ad48848037156ac23f542cda6db75f8b2e6f1571fa",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Tras activar Start, si el sensor permanece sin cambios 5 segundos, activa la alarma.",
+        "variant_hash": "69b2b5176df17b63e2139bcc9180175339a5d96977dc75e4db90251e87c6e4ff",
+        "missing_concepts": [],
+        "numbers": [
+          5
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D18",
+      "canonical_command": "Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento.",
+      "canonical_signature": {
+        "actors": [
+          "motor"
+        ],
+        "triggers": [
+          "ARRANQUE",
+          "MANTENIMIENTO"
+        ],
+        "functions": [
+          "start_inhibit"
+        ],
+        "modes": [
+          "MANTENIMIENTO"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Bloquea el arranque del motor mientras esté activo el modo mantenimiento.",
+        "variant_hash": "70f586b0f868e088cac50297a65afdaa4e593ea37d0eb344c710ed6cc120d287",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el motor no pueda arrancar mientras el sistema esté en mantenimiento.",
+        "variant_hash": "5d2af842a9e5a1cca3710fe91953b0cdf56b0105aa516f4567950610a7ca3c75",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "En modo mantenimiento, impide que el motor arranque.",
+        "variant_hash": "eb364a2bf97b8abb422d7622c3ddbcc265199ffd71ed139b213305d2d0ab5a39",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D19",
+      "canonical_command": "Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.",
+      "canonical_signature": {
+        "actors": [
+          "piloto detenido",
+          "piloto marcha",
+          "piloto falla"
+        ],
+        "triggers": [
+          "ESTADO"
+        ],
+        "functions": [
+          "state_indication"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Controla tres pilotos de detenido, marcha y falla, dejando encendido solo el del estado actual.",
+        "variant_hash": "85a2570f532e9a08631ebc1dd34f4b606e53422c7084922c582b78661ceadcd0",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero tres pilotos, detenido, marcha y falla, y que solo esté encendido el que corresponde al estado actual.",
+        "variant_hash": "c0ec37c1948840cad25bf3f06d5bdbf4073e900aff51b40c9af1d66b945b8bfe",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+        "variant_hash": "930e6477b3360bbd3557ec5a28f36c929b9fadd2f0dc26b4a155a0f0c222005a",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "D20",
+      "canonical_command": "Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.",
+      "canonical_signature": {
+        "actors": [
+          "ejecucion",
+          "ciclo finalizado"
+        ],
+        "triggers": [
+          "START",
+          "RESET"
+        ],
+        "functions": [
+          "timed_cycle",
+          "complete",
+          "reset"
+        ],
+        "times": {
+          "cycle_s": 3
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Con Start inicia un ciclo automático de 3 segundos; al terminar, detén la ejecución y marca el ciclo como finalizado. Reset lo devuelve al estado inicial.",
+        "variant_hash": "cca1451a1c6ff451084af6bbb7f18cd796728898e3d2082924dda5b1ac17e38b",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que Start arranque un ciclo de tres segundos que al acabar se detenga y quede marcado como finalizado, y que Reset lo deje en el estado inicial.",
+        "variant_hash": "0ffee1b2b617369c7150c50173b42faf089621635b27811f067f6f5afbf4f3d2",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Un ciclo automático de 3 segundos empieza al activar Start; cuando termina se detiene y se marca como finalizado, y Reset lo devuelve al estado inicial.",
+        "variant_hash": "f42cb844876a422192e45a23f2dadd28b7922513b4d44605380f794f8667b2b8",
+        "missing_concepts": [],
+        "numbers": [
+          3
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P01",
+      "canonical_command": "Habilita el modo automático del sistema de nivel cuando se seleccione Automático.",
+      "canonical_signature": {
+        "actors": [
+          "modo automatico"
+        ],
+        "triggers": [
+          "SELECCION AUTOMATICO"
+        ],
+        "functions": [
+          "set_auto_mode"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Habilita el modo automático del sistema de nivel al seleccionar Automático.",
+        "variant_hash": "4f5bdd2eb9d18987503386e91602b8b83a02110931eb33121daa4512e0ba23e7",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el sistema de nivel pase a modo automático cuando se elija Automático.",
+        "variant_hash": "d58c3ff6ea816d49e4dafbbcd73c53f8bdbf1110b3ecf9a306bfafeca8d4009f",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Cuando se seleccione Automático, activa el modo automático del control de nivel.",
+        "variant_hash": "b3364002bc3dececb842add03de93cfd689168d2f93cfb1516b2064e37b986e7",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P02",
+      "canonical_command": "Cambia el setpoint del nivel al 60 %.",
+      "canonical_signature": {
+        "actors": [
+          "setpoint de nivel"
+        ],
+        "functions": [
+          "set_level_setpoint"
+        ],
+        "values": {
+          "setpoint_pct": 60
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          60
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Cambia el setpoint de nivel a 60 %.",
+        "variant_hash": "6e5f742f5cc2c1447e45178b85388c467b226c230e85cee4f4391e52c86173fd",
+        "missing_concepts": [],
+        "numbers": [
+          60
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el setpoint del nivel quede en el sesenta por ciento.",
+        "variant_hash": "2db7630b1d8d895ed15505a25a7dba757277d8a57e06dfe842dd969197c45cf9",
+        "missing_concepts": [],
+        "numbers": [
+          60
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Ajusta al 60 % la consigna de nivel.",
+        "variant_hash": "538a9900a97e36524176b1a20172d2b5acaa1c4d435a5fa2d5f2ae85d1333b65",
+        "missing_concepts": [],
+        "numbers": [
+          60
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P03",
+      "canonical_command": "Acepta setpoints de nivel entre 0 % y 100 %. Si se solicita un valor fuera de ese rango, recházalo y conserva el último valor válido.",
+      "canonical_signature": {
+        "actors": [
+          "setpoint de nivel"
+        ],
+        "triggers": [
+          "SOLICITUD DE SETPOINT"
+        ],
+        "functions": [
+          "validate_setpoint",
+          "keep_last_valid"
+        ],
+        "thresholds": {
+          "min_pct": 0,
+          "max_pct": 100
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Acepta setpoints de nivel de 0 % a 100 % y rechaza cualquier valor fuera de ese rango, conservando el último válido.",
+        "variant_hash": "a658f4656c8d4077feaa75f6325b8c63193ee10540396a9f03848a7a5bc7eff0",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el setpoint de nivel solo admita valores entre cero y cien por ciento; si piden otro valor, se rechaza y se conserva el anterior válido.",
+        "variant_hash": "6536acf99f8ccf9575628e8dc7843c072443077ca5379d40e83a58e18fadf7fd",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Si se solicita un setpoint de nivel fuera del rango de 0 % a 100 %, recházalo y conserva el último valor válido.",
+        "variant_hash": "1c8269d76f1ec9a929dcc973e2ec497368bfe6195a7d26844d5cc77a0769fe7f",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P04",
+      "canonical_command": "Activa una alarma de nivel alto cuando el nivel supere el 90 %.",
+      "canonical_signature": {
+        "actors": [
+          "alarma de nivel alto"
+        ],
+        "triggers": [
+          "NIVEL"
+        ],
+        "functions": [
+          "high_level_alarm"
+        ],
+        "thresholds": {
+          "high_pct": 90
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          90
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Activa la alarma de nivel alto cuando el nivel pase del 90 %.",
+        "variant_hash": "108b9cabc7b842c7cea59d5616421ab63dc6b7d357669a34a8cf322916a0b931",
+        "missing_concepts": [],
+        "numbers": [
+          90
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero una alarma de nivel alto si el nivel supera el noventa por ciento.",
+        "variant_hash": "f4fe889c34ae36a9a2560da124a11b341f53b57277c05a39ea8c383c0fc9cbed",
+        "missing_concepts": [],
+        "numbers": [
+          90
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Con el nivel por encima del 90 %, activa la alarma de nivel alto.",
+        "variant_hash": "48402539aa1211f98eceff4b46d1b1a35777abf727082025348b79621e8609dc",
+        "missing_concepts": [],
+        "numbers": [
+          90
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P05",
+      "canonical_command": "Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %.",
+      "canonical_signature": {
+        "actors": [
+          "alarma de nivel bajo"
+        ],
+        "triggers": [
+          "NIVEL"
+        ],
+        "functions": [
+          "low_level_alarm"
+        ],
+        "thresholds": {
+          "low_pct": 10
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Activa la alarma de nivel bajo cuando el nivel baje del 10 %.",
+        "variant_hash": "3d2284c9a83f816f3aeec338304bfbc3977416f0b7e666c9fc14d2246a69825f",
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero una alarma de nivel bajo si el nivel es inferior al diez por ciento.",
+        "variant_hash": "8a50a6b5cb948ad619b57f798fe1db81517aa493aeab149bc09b29703309101e",
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Con el nivel por debajo del 10 %, activa la alarma de nivel bajo.",
+        "variant_hash": "93ede9b0d195f4bfb409d974be0fa7966f1a4529803188d3d1ad66dc51ba038d",
+        "missing_concepts": [],
+        "numbers": [
+          10
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P06",
+      "canonical_command": "Habilita el PID únicamente cuando el sistema esté en modo Automático.",
+      "canonical_signature": {
+        "actors": [
+          "PID"
+        ],
+        "triggers": [
+          "MODO AUTOMATICO"
+        ],
+        "functions": [
+          "enable_pid_in_auto"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Habilita el PID solo cuando el sistema esté en modo Automático.",
+        "variant_hash": "45400da92e59ef738d7452bacfef0d90b2153ae43d7479fad1a7e540c19cfd4e",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que el PID funcione únicamente en modo Automático.",
+        "variant_hash": "c217ba5398b0d094371f2b1b99e98eac38233f33a882c8509cc50d9af984412d",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "El PID debe estar habilitado solamente mientras el sistema esté en Automático.",
+        "variant_hash": "95cce5712ec7be720e5d9508aa47164a9e6d5a1634b3db4ccbe75b41b46e8540",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P07",
+      "canonical_command": "Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.",
+      "canonical_signature": {
+        "actors": [
+          "PID"
+        ],
+        "triggers": [
+          "EMERGENCIA"
+        ],
+        "functions": [
+          "emergency_disables_pid"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Si se activa una condición de emergencia con el PID funcionando, deshabilítalo de inmediato.",
+        "variant_hash": "d430943bc50783ed7cff7b59423d28b9530d7652b0cd804a105b4ed11842f1c3",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que, si hay una emergencia mientras el PID trabaja, el PID se deshabilite en el acto.",
+        "variant_hash": "69351f793f2d057a1296c2eb311b3e23b7c61402857182b5ff554f96f25a9b01",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Ante una condición de emergencia durante el funcionamiento del PID, deshabilítalo inmediatamente.",
+        "variant_hash": "af1cb758b7e7227b59eef949e45644305a13ab231b2b16f46c90c5225e320ddc",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P08",
+      "canonical_command": "En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne.",
+      "canonical_signature": {
+        "actors": [
+          "bomba"
+        ],
+        "triggers": [
+          "MODO MANUAL",
+          "ORDEN MANUAL"
+        ],
+        "functions": [
+          "manual_pump_enable"
+        ],
+        "modes": [
+          "MANUAL"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "En modo Manual, enciende y apaga la bomba con una orden manual, sin que el control automático intervenga.",
+        "variant_hash": "d0f426f32ce19a064fda3cb98cd2b34b2478718f990623aca2aadf116414cb7c",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que en Manual la bomba se encienda y se apague solo con la orden manual, no con el control automático.",
+        "variant_hash": "6745b330da0aa71cd041452f83c8a3fad3581a34fd6b602a8b86ef48c0588958",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Con el sistema en Manual, la orden manual decide si la bomba está encendida o apagada; el control automático no la gobierna.",
+        "variant_hash": "5606d4a981ac5d02797b5597ffe8415ee3817afb6d39354653fd1018fdd05c4a",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P09",
+      "canonical_command": "Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %.",
+      "canonical_signature": {
+        "actors": [
+          "fallo de sensor"
+        ],
+        "triggers": [
+          "NIVEL MEDIDO"
+        ],
+        "functions": [
+          "sensor_range_fault"
+        ],
+        "thresholds": {
+          "min_pct": 0,
+          "max_pct": 100
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Detecta fallo de sensor cuando el nivel medido esté fuera del rango de 0 % a 100 %.",
+        "variant_hash": "9781a0eb0966a12197e8195c8217848babe40c69a598af0e6023ee4e453fe6f7",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que se marque un fallo del sensor si el nivel medido sale del rango de cero a cien por ciento.",
+        "variant_hash": "e392783149b168c899c6aeecb9136f4bbea90b3b43640258e3aab59f5f7d2861",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Si el nivel medido no está entre 0 % y 100 %, indica un fallo del sensor.",
+        "variant_hash": "5775529107b6fdbb0a557e75c1b50ac30446cf78819a91727198b465da211027",
+        "missing_concepts": [],
+        "numbers": [
+          0,
+          100
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P10",
+      "canonical_command": "Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.",
+      "canonical_signature": {
+        "actors": [
+          "alarma"
+        ],
+        "triggers": [
+          "RESET",
+          "FALLO DE SENSOR"
+        ],
+        "functions": [
+          "conditional_alarm_reset"
+        ]
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Si hay una alarma por fallo del sensor, no permitas su Reset mientras la falla siga; permítelo cuando la medición vuelva al rango válido.",
+        "variant_hash": "40d37fa623521b6bf148330791d2c554efd92029194239609d16fdbea6da8d76",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que la alarma por fallo del sensor no se pueda resetear mientras dure la falla, y que sí se pueda cuando la medición vuelva a ser válida.",
+        "variant_hash": "e19b1ecff748d8beef582b271a59c5faa26e3716d66d33aeef4fbfc689c4e106",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "El Reset de la alarma por fallo del sensor solo debe funcionar cuando la medición haya vuelto al rango válido, no mientras continúe la falla.",
+        "variant_hash": "f03a57d5fcd5e16bba19dbabd79b10c65d38df0b672fc6553c8284f9b8b24dc2",
+        "missing_concepts": [],
+        "numbers": [],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P11",
+      "canonical_command": "Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa.",
+      "canonical_signature": {
+        "actors": [
+          "bomba"
+        ],
+        "triggers": [
+          "NIVEL"
+        ],
+        "functions": [
+          "overfill_pump_stop"
+        ],
+        "thresholds": {
+          "overfill_pct": 95
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          95
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "Si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure esa condición.",
+        "variant_hash": "3de441cd7a4ab6c75dbd5fa7470f9d08fa7b5e0353fd6f3c23eba6f02e2be650",
+        "missing_concepts": [],
+        "numbers": [
+          95
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que la bomba se apague mientras el nivel esté en el noventa y cinco por ciento o más, porque es sobrellenado.",
+        "variant_hash": "91c5b3e3405527163e9c48dde872f9f1830c11f20468e88fabc7b79cb9958a4c",
+        "missing_concepts": [],
+        "numbers": [
+          95
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Considera sobrellenado un nivel igual o superior al 95 % y mantén la bomba apagada mientras siga así.",
+        "variant_hash": "53d21b245e2100e8af71283ea42a6e64f8ce0df0a40886e13422d892841b3a4f",
+        "missing_concepts": [],
+        "numbers": [
+          95
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    },
+    {
+      "case_id": "P12",
+      "canonical_command": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
+      "canonical_signature": {
+        "actors": [
+          "PID",
+          "setpoint",
+          "alarma",
+          "bomba"
+        ],
+        "triggers": [
+          "MODO AUTOMATICO",
+          "NIVEL"
+        ],
+        "functions": [
+          "enable_pid",
+          "set_level_setpoint",
+          "high_level_alarm",
+          "safe_condition",
+          "recovery"
+        ],
+        "values": {
+          "setpoint_pct": 60
+        },
+        "thresholds": {
+          "high_pct": 90
+        }
+      },
+      "canonical_check": {
+        "missing_concepts": [],
+        "numbers": [
+          60,
+          90
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      "errors": [],
+      "warnings": [],
+      "V1": {
+        "command": "En modo Automático, habilita el PID con setpoint del 60 %; si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura, y cuando vuelva al rango permitido deja recuperar la operación automática.",
+        "variant_hash": "a2a26eeb6bada8ebe5271ad02223f9f6144354e88c858a65d6025fede1c052d1",
+        "missing_concepts": [],
+        "numbers": [
+          60,
+          90
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V2": {
+        "command": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento, que por encima del noventa por ciento suene la alarma y el proceso pase a condición segura, y que al volver el nivel al rango permitido se pueda recuperar el automático.",
+        "variant_hash": "ca6e1736a8599c3962a0ec448b62c77bdc857834566f5d5d3eae3f6c1325f466",
+        "missing_concepts": [],
+        "numbers": [
+          60,
+          90
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "V3": {
+        "command": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma y la condición segura, y el regreso del nivel al rango permitido permite recuperar la operación automática.",
+        "variant_hash": "12d65103f270ca2e44277f55bb8f0ecc772832757566397cf09b72391c16d8a6",
+        "missing_concepts": [],
+        "numbers": [
+          60,
+          90
+        ],
+        "errors": [],
+        "warnings": [],
+        "consistent": true
+      },
+      "same_required_roles": true,
+      "same_numeric_values": true,
+      "same_constraints": true,
+      "same_expected_behavior": true,
+      "consistent_variants": 3,
+      "method": "Comprobacion lexica: conceptos obligatorios (roles/restricciones) y valores numericos identicos al comando canonico; la equivalencia semantica fina la revisa el investigador."
+    }
+  ]
+}

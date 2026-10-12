@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "ef23fb253cf4dd2142280209d5864f6f07444765bcac1ced6fc718fa4784859c",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D19 (None)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "101f21568dc5d57c0fb92d042f41046e64c242a8f62a84a5b1bb9076502dc382",
+    "previous_hash": "ef23fb253cf4dd2142280209d5864f6f07444765bcac1ced6fc718fa4784859c",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -24,17 +28,21 @@
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
         "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
-        "Benchmark v2: alineado con el comando canonico (Eliminada la prioridad FALLA > MARCHA (no esta en el comando): t3 solo ejerce la invariante 'un unico piloto'.)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (Eliminada la prioridad FALLA > MARCHA (no esta en el comando): t3 solo ejerce la invariante 'un unico piloto'.).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Pilotos de estado: detenido, marcha y falla",
     "original_requirement": "Pilotos: detenido, marcha, falla.",
-    "canonical_command": "Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.",
-    "canonical_case_hash": "eed8e8d4925286402e5fc062ad8fc6e0fb5b1225ec1970c6a7c242601205c703",
+    "canonical_command": "Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual.",
+    "canonical_case_hash": "94afd861298aaf19b20e50b227f56620f736134facf3434191b5be42e2b54358",
     "legacy_reference_intent": null
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -121,7 +129,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual."
+      "text": "COMANDO CANONICO (benchmark v3): Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual."
     },
     {
       "id": "C-D19-INPUTS",

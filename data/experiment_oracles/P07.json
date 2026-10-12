@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "fe7c515b70d34002233f8ea2dc4704dbd74a223cd9e8b90936c6b0cb89ffe41b",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json P07 (INT_PID_SUPERVISOR)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "a3bcdea3164a8b8e7db8874fdb493181c2e129134eabaf61baffd9dada49a37e",
+    "previous_hash": "fe7c515b70d34002233f8ea2dc4704dbd74a223cd9e8b90936c6b0cb89ffe41b",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -23,17 +27,21 @@
         "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
         "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
         "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
-        "Benchmark v2: alineado con el comando canonico (AUTO_MODE marcado como rol del test harness (solo pone el PID en funcionamiento; no es requisito del comando).)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (AUTO_MODE marcado como rol del test harness (solo pone el PID en funcionamiento; no es requisito del comando).).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "PID deshabilitado ante emergencia",
     "original_requirement": "Deshabilitar PID ante condicion de emergencia/seguridad autorizada.",
-    "canonical_command": "Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.",
-    "canonical_case_hash": "2f410c179ec5a8d094a6af231ee8ea12698bb535cb1394645f1a410850cfa4d7",
+    "canonical_command": "Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato.",
+    "canonical_case_hash": "fbbcead89c93799da7ca8e2c7b0dfa95670cc2d5ef857529ef3b4f4e129122ae",
     "legacy_reference_intent": "INT_PID_SUPERVISOR"
   },
   "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
@@ -102,7 +110,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente."
+      "text": "COMANDO CANONICO (benchmark v3): Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato."
     },
     {
       "id": "C-PID",

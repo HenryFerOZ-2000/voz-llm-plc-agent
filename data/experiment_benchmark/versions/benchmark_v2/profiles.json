@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {
+      "profile_id": "D01",
+      "case_id": "D01",
+      "name": "D01 - Salida temporizada de 5 s",
+      "description": "Activa una salida digital durante 5 segundos al presionar un pulsador.",
+      "complexity": "baja",
+      "reference_intent": "INT_TIMED_PULSE",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "Q_Aux_Output"
+      ],
+      "notes": "Se agregaron ['I_Emergency'] porque la intencion de referencia INT_TIMED_PULSE las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D02",
+      "case_id": "D02",
+      "name": "D02 - Lampara mientras la entrada este activa",
+      "description": "Enciende una lámpara mientras una entrada digital esté activa.",
+      "complexity": "baja",
+      "reference_intent": "INT_DIRECT_OUTPUT",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Sensor1",
+        "Q_Pilot_Run"
+      ],
+      "notes": "I_Emergency agregado porque INT_DIRECT_OUTPUT lo exige siempre por defecto. Q_Pilot_Run como output requiere mencionar el tag explicitamente en el comando (ej. 'Enciende Q_Pilot_Run mientras el sensor este activo'): no existe una palabra clave que enrute automaticamente hacia Q_Pilot_Run (el default de INT_DIRECT_OUTPUT es Q_Aux_Output). Verificado estructuralmente construyendo el semantic_output directamente (is_valid=True); el parser por reglas actual no siempre detecta INT_DIRECT_OUTPUT con frases naturales que mencionan Q_Pilot_Run (puede confundirse con INT_STATUS_PILOTS) - limitacion preexistente del parser, no del perfil.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D03",
+      "case_id": "D03",
+      "name": "D03 - Arranque y paro con memoria de marcha",
+      "description": "Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.",
+      "complexity": "baja",
+      "reference_intent": "INT_MOTOR_START_STOP",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset",
+        "I_Start",
+        "I_Stop",
+        "Q_Alarm",
+        "Q_Motor_Enable",
+        "Q_Pilot_Fault",
+        "Q_Pilot_Run"
+      ],
+      "notes": "Se agregaron ['I_Emergency', 'I_Reset', 'Q_Alarm', 'Q_Pilot_Fault', 'Q_Pilot_Run'] porque la intencion de referencia INT_MOTOR_START_STOP las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D04",
+      "case_id": "D04",
+      "name": "D04 - Motor enclavado con Start y Stop",
+      "description": "Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop.",
+      "complexity": "media",
+      "reference_intent": "INT_MOTOR_LATCH",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "I_Stop",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency'] porque la intencion de referencia INT_MOTOR_LATCH las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D05",
+      "case_id": "D05",
+      "name": "D05 - Prioridad de la condicion de emergencia sobre el arranque",
+      "description": "Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+      "complexity": "media",
+      "reference_intent": "INT_EMERGENCY_PRIORITY",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "Q_Alarm",
+        "Q_Aux_Output",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Verificado estructuralmente (is_valid=True). El parser por reglas mapea 'apaga'/'para' genericamente al tag I_Stop incluso en frases sin boton de paro fisico (ambiguedad preexistente del vocabulario del parser); una frase natural limpia para D05 puede requerir evitar esos verbos o usar el parser LLM.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D06",
+      "case_id": "D06",
+      "name": "D06 - Alarma por arranque sin condicion de seguridad",
+      "description": "Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.",
+      "complexity": "media",
+      "reference_intent": "INT_SAFE_START_ALARM",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset",
+        "I_Sensor1",
+        "I_Start",
+        "Q_Alarm",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency', 'I_Reset'] porque la intencion de referencia INT_SAFE_START_ALARM las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D07",
+      "case_id": "D07",
+      "name": "D07 - Arranque retardado 3 s con Start mantenido",
+      "description": "Mientras Start permanezca activo, espera 3 segundos antes de encender el motor.",
+      "complexity": "media",
+      "reference_intent": "INT_DELAYED_START",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "I_Stop",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency'] porque la intencion de referencia INT_DELAYED_START las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D08",
+      "case_id": "D08",
+      "name": "D08 - Paro automatico tras 10 s de funcionamiento continuo",
+      "description": "Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo.",
+      "complexity": "media",
+      "reference_intent": "INT_AUTO_STOP_TIMER",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "I_Stop",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency'] porque la intencion de referencia INT_DELAYED_STOP las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D09",
+      "case_id": "D09",
+      "name": "D09 - Contador de 5 pulsos",
+      "description": "Cuenta 5 pulsos de una entrada digital y, al llegar al quinto, activa una salida.",
+      "complexity": "media",
+      "reference_intent": "INT_COUNTER_PULSES",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset",
+        "I_Sensor1",
+        "Q_Alarm",
+        "Q_Aux_Output"
+      ],
+      "notes": "Se agregaron ['I_Emergency', 'I_Reset', 'Q_Alarm'] porque la intencion de referencia INT_COUNTER_PULSES las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D10",
+      "case_id": "D10",
+      "name": "D10 - Contador de 5 pulsos con Reset",
+      "description": "Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida.",
+      "complexity": "media",
+      "reference_intent": "INT_COUNTER_RESET",
+      "allowed_variables": [
+        "I_Reset",
+        "I_Sensor1",
+        "Q_Aux_Output"
+      ],
+      "notes": "",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D11",
+      "case_id": "D11",
+      "name": "D11 - Contactor con enclavamiento de marcha",
+      "description": "Controla un contactor con Start y Stop usando enclavamiento de marcha.",
+      "complexity": "alta",
+      "reference_intent": "INT_MOTOR_START_STOP",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset",
+        "I_Start",
+        "I_Stop",
+        "Q_Alarm",
+        "Q_Contactor_A",
+        "Q_Pilot_Fault",
+        "Q_Pilot_Run"
+      ],
+      "notes": "I_Reset, Q_Alarm, Q_Pilot_Run, Q_Pilot_Fault agregados porque INT_MOTOR_START_STOP los exige siempre en su plantilla, independientemente de a donde se enrute motor_output. Requiere mencionar Q_Contactor_A explicitamente en el comando (no existe la palabra clave 'contactor' para enrutar motor_output automaticamente). Q_Motor_Enable NO se incluye: en este perfil ese rol lo cumple Q_Contactor_A. Verificado estructuralmente construyendo el semantic_output directamente (is_valid=True); el parser por reglas actual no reconoce naturalmente Q_Contactor_A como salida de motor (no existe la palabra clave contactor) y no siempre detecta la intencion via texto libre - limitacion preexistente del parser, no del perfil.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D12",
+      "case_id": "D12",
+      "name": "D12 - Dos contactores con ordenes independientes e interbloqueo",
+      "description": "Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo.",
+      "complexity": "alta",
+      "reference_intent": "INT_MUTUAL_INTERLOCK",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "I_Stop",
+        "Q_Contactor_A",
+        "Q_Contactor_B"
+      ],
+      "notes": "",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D13",
+      "case_id": "D13",
+      "name": "D13 - Variador habilitado solo sin alarma",
+      "description": "Ante una orden de marcha, habilita el variador solo si no existe una alarma activa.",
+      "complexity": "media",
+      "reference_intent": "INT_VFD_ENABLE_NO_ALARM",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "I_Stop",
+        "Q_Alarm",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency'] porque la intencion de referencia INT_VFD_ENABLE_NO_ALARM las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D14",
+      "case_id": "D14",
+      "name": "D14 - Seleccion de velocidad baja/media/alta",
+      "description": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+      "complexity": "alta",
+      "reference_intent": null,
+      "allowed_variables": [
+        "I_Start",
+        "I_Stop",
+        "I_Speed_Low",
+        "I_Speed_Medium",
+        "I_Speed_High",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Sin intencion de referencia implementada; allowed_variables queda tal como se definio (trabajo futuro).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D15",
+      "case_id": "D15",
+      "name": "D15 - Modo Manual/Automatico con orden por modo",
+      "description": "Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.",
+      "complexity": "alta",
+      "reference_intent": "INT_MANUAL_AUTO_MODE",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Mode_Auto",
+        "I_Mode_Manual",
+        "I_Start",
+        "I_Stop",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency'] porque la intencion de referencia INT_MANUAL_AUTO_MODE las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D16",
+      "case_id": "D16",
+      "name": "D16 - Secuencia: principal, espera 3 s, auxiliar",
+      "description": "Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar.",
+      "complexity": "alta",
+      "reference_intent": "INT_SEQUENCE_THREE_STEPS",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset",
+        "I_Start",
+        "I_Stop",
+        "Q_Aux_Output",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency', 'I_Reset'] porque la intencion de referencia INT_SEQUENCE_THREE_STEPS las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D17",
+      "case_id": "D17",
+      "name": "D17 - Supervision de sensor 5 s tras Start",
+      "description": "Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.",
+      "complexity": "alta",
+      "reference_intent": "INT_SENSOR_TIMEOUT_ALARM",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset",
+        "I_Sensor1",
+        "I_Start",
+        "Q_Alarm"
+      ],
+      "notes": "Se agregaron ['I_Emergency', 'I_Reset'] porque la intencion de referencia INT_SENSOR_TIMEOUT_ALARM las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D18",
+      "case_id": "D18",
+      "name": "D18 - Bloqueo del arranque en mantenimiento",
+      "description": "Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento.",
+      "complexity": "media",
+      "reference_intent": "INT_MAINTENANCE_BLOCK",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Maintenance",
+        "I_Start",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Emergency'] porque la intencion de referencia INT_MAINTENANCE_BLOCK las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D19",
+      "case_id": "D19",
+      "name": "D19 - Pilotos de estado: detenido, marcha y falla",
+      "description": "Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.",
+      "complexity": "media",
+      "reference_intent": null,
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Start",
+        "I_Stop",
+        "Q_Pilot_Fault",
+        "Q_Pilot_Run",
+        "Q_Pilot_Stop"
+      ],
+      "notes": "INT_STATUS_PILOTS no tiene un rol de salida para 'detenido' (Q_Pilot_Stop no es parametro de ninguna intencion actual). D19 queda definido y su hardware_ready es calculable, pero requiere una intencion nueva o plantilla explicita para generarse (trabajo futuro, igual que D14). No se fuerzan Q_Motor_Enable/Q_Alarm porque no corresponden al concepto real de este perfil.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "D20",
+      "case_id": "D20",
+      "name": "D20 - Ciclo automatico de 3 s con Reset",
+      "description": "Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.",
+      "complexity": "alta",
+      "reference_intent": "INT_AUTO_CYCLE",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Mode_Auto",
+        "I_Reset",
+        "I_Start",
+        "I_Stop",
+        "Q_Alarm",
+        "Q_Aux_Output",
+        "Q_Motor_Enable"
+      ],
+      "notes": "Se agregaron ['I_Mode_Auto'] porque la intencion de referencia INT_AUTO_CYCLE las exige por defecto en su plantilla (ver ir_builder.get_required_variables_for_intent).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P01",
+      "case_id": "P01",
+      "name": "P01 - Modo automatico al seleccionar Automatico",
+      "description": "Habilita el modo automático del sistema de nivel cuando se seleccione Automático.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency"
+      ],
+      "notes": "Auto_Mode/Manual_Mode son variables funcionales de software, no recursos fisicos: no aparecen en allowed_variables.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P02",
+      "case_id": "P02",
+      "name": "P02 - Setpoint de nivel al 60 %",
+      "description": "Cambia el setpoint del nivel al 60 %.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency"
+      ],
+      "notes": "Level_SP es variable funcional (REAL); el rango seguro se valida de forma deterministica via config/pid_supervisor_config.json, no por el perfil.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P03",
+      "case_id": "P03",
+      "name": "P03 - Setpoint validado en el rango 0-100 %",
+      "description": "Acepta setpoints de nivel entre 0 % y 100 %. Si se solicita un valor fuera de ese rango, recházalo y conserva el último valor válido.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency"
+      ],
+      "notes": "Mismo perfil de recursos que P02: la diferencia es puramente de validacion (semantic_validator), no de mapa.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P04",
+      "case_id": "P04",
+      "name": "P04 - Alarma de nivel alto > 90 %",
+      "description": "Activa una alarma de nivel alto cuando el nivel supere el 90 %.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency",
+        "Q_Alarm"
+      ],
+      "notes": "Level_PV/High_Level_Alarm son variables funcionales; Q_Alarm es el unico recurso fisico requerido.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P05",
+      "case_id": "P05",
+      "name": "P05 - Alarma de nivel bajo < 10 %",
+      "description": "Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency",
+        "Q_Alarm"
+      ],
+      "notes": "Analogo a P04 con el limite inferior.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P06",
+      "case_id": "P06",
+      "name": "P06 - PID habilitado solo en Automatico",
+      "description": "Habilita el PID únicamente cuando el sistema esté en modo Automático.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency"
+      ],
+      "notes": "PID_Enable/Auto_Mode/Sensor_Fault/Safe_Stop son funcionales; la formula de habilitacion vive en code_generator._generate_pid_supervisor_body.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P07",
+      "case_id": "P07",
+      "name": "P07 - PID deshabilitado ante emergencia",
+      "description": "Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.",
+      "complexity": "baja",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency"
+      ],
+      "notes": "Cubierto por el bloque de seguridad incondicional que siempre genera el supervisor PID (prioridad de emergencia).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P08",
+      "case_id": "P08",
+      "name": "P08 - Bomba manual ON/OFF en modo Manual",
+      "description": "En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency",
+        "Q_Pump_Enable"
+      ],
+      "notes": "El modo manual nunca elimina las condiciones de seguridad (ver seccion 19 del pedido PID).",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P09",
+      "case_id": "P09",
+      "name": "P09 - Fallo de sensor fuera de 0-100 %",
+      "description": "Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency"
+      ],
+      "notes": "Level_PV/Sensor_Fault son funcionales; el rango fisico valido es configurable via config/pid_supervisor_config.json.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P10",
+      "case_id": "P10",
+      "name": "P10 - Reset de alarma de sensor solo sin falla",
+      "description": "Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset"
+      ],
+      "notes": "El reset requiere I_Reset fisico; las condiciones que evalua (alarmas/fallo de sensor) son funcionales.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P11",
+      "case_id": "P11",
+      "name": "P11 - Bomba apagada por sobrellenado >= 95 %",
+      "description": "Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa.",
+      "complexity": "media",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency",
+        "Q_Pump_Enable",
+        "Q_Alarm"
+      ],
+      "notes": "Coincide con el ejemplo conceptual del pedido: Level_PV es funcional, Q_Pump_Enable/Q_Alarm son los recursos fisicos.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    },
+    {
+      "profile_id": "P12",
+      "case_id": "P12",
+      "name": "P12 - Automatico con SP 60 %, alarma > 90 % y recuperacion",
+      "description": "En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.",
+      "complexity": "alta",
+      "reference_intent": "INT_PID_SUPERVISOR",
+      "allowed_variables": [
+        "I_Emergency",
+        "I_Reset",
+        "Q_Pump_Enable",
+        "Q_Alarm"
+      ],
+      "notes": "Requiere el superconjunto de recursos fisicos de P01-P11 porque combina varios functional_requirements en un mismo comando.",
+      "benchmark_version": 2,
+      "canonical_source": "data/experiment_cases/canonical_cases.json"
+    }
+  ]
+}

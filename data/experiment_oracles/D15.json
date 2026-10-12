@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "4c4d43dcb25f9eba649a462164b2f5e3aedc57bc544765e5b02e0ae84f806953",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D15 (INT_MANUAL_AUTO_MODE)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "6cc504987db5c37e854bd2aa94ab26538986eae28f34a8922ab19cdfcf8998bd",
+    "previous_hash": "4c4d43dcb25f9eba649a462164b2f5e3aedc57bc544765e5b02e0ae84f806953",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -25,17 +29,21 @@
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
         "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
         "Barrido de programas triviales tras el cierre: ninguno pasa (la debilidad de 3B queda eliminada).",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Modo Manual/Automatico con orden por modo",
     "original_requirement": "Modo manual/automatico para habilitacion del motor.",
-    "canonical_command": "Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.",
-    "canonical_case_hash": "2d9e97becbf11fcc7df28ddaf6c148fe59160f43bdffb7fb92f0ef46e56e769b",
+    "canonical_command": "El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto.",
+    "canonical_case_hash": "a0e142df907e6911bd38c986efb18ea9ffa95f06d0b34b7371455166587b7d95",
     "legacy_reference_intent": "INT_MANUAL_AUTO_MODE"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -112,7 +120,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática."
+      "text": "COMANDO CANONICO (benchmark v3): El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto."
     },
     {
       "id": "C-D15-MODES",

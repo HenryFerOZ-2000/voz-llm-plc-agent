@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "benchmark_version": 2,
+  "benchmark_version": 3,
   "generated_from": "data/experiment_cases/canonical_cases.json",
   "note": "Archivo DERIVADO: no editar a mano; la fuente de verdad es el catalogo canonico.",
   "variants": {
@@ -63,15 +63,15 @@
     "D05": [
       {
         "variant": "V1",
-        "command": "Arranca el motor con Start solo si la condición de seguridad es normal; si se activa la emergencia, apágalo y bloquea el arranque mientras siga activa."
+        "command": "Arranca el motor con Start únicamente si no hay emergencia activa; si se activa, apágalo y bloquea el arranque mientras siga activa."
       },
       {
         "variant": "V2",
-        "command": "Quiero que el motor arranque con Start únicamente con la seguridad normal, y que una emergencia lo apague y no deje arrancarlo mientras dure."
+        "command": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure."
       },
       {
         "variant": "V3",
-        "command": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; con la seguridad normal, Start enciende el motor."
+        "command": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor."
       }
     ],
     "D06": [
@@ -105,15 +105,15 @@
     "D08": [
       {
         "variant": "V1",
-        "command": "Enciende el motor con Start y apágalo automáticamente después de 10 segundos de funcionamiento."
+        "command": "Enciende el motor con Start, que siga en marcha aunque se suelte el pulsador, y apágalo automáticamente tras 10 segundos de funcionamiento."
       },
       {
         "variant": "V2",
-        "command": "Haz que el motor arranque con Start y se detenga solo tras funcionar durante 10 segundos."
+        "command": "Haz que el motor arranque con Start, siga funcionando aunque se suelte y se detenga solo tras 10 segundos."
       },
       {
         "variant": "V3",
-        "command": "Cuando se active Start, mantén el motor funcionando 10 segundos y después apágalo."
+        "command": "Cuando se active Start, mantén el motor funcionando 10 segundos, aunque se suelte el pulsador, y después apágalo."
       }
     ],
     "D09": [
@@ -175,15 +175,15 @@
     "D13": [
       {
         "variant": "V1",
-        "command": "Ante una orden de marcha, habilita el variador solo si no hay alarma activa."
+        "command": "Habilita el variador con la orden de marcha únicamente mientras no haya alarma activa; si aparece una alarma, deshabilítalo."
       },
       {
         "variant": "V2",
-        "command": "Quiero que el variador se habilite con la orden de marcha, pero nunca si existe una alarma activa."
+        "command": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando."
       },
       {
         "variant": "V3",
-        "command": "Si hay una alarma activa, el variador no debe habilitarse aunque llegue la orden de marcha; sin alarma, habilítalo con esa orden."
+        "command": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden."
       }
     ],
     "D14": [
@@ -203,15 +203,15 @@
     "D15": [
       {
         "variant": "V1",
-        "command": "Implementa modo Manual y Automático para el motor: en Manual obedece la orden manual y en Automático la orden automática."
+        "command": "Con un selector Manual/Automático: en Automático, el motor obedece la orden automática; en Manual, la orden manual; la otra orden se ignora."
       },
       {
         "variant": "V2",
-        "command": "Quiero que en modo Manual el motor responda a la orden manual y en modo Automático a la orden automática."
+        "command": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada."
       },
       {
         "variant": "V3",
-        "command": "Según el modo seleccionado, Manual o Automático, el motor debe atender la orden manual o la orden automática respectivamente."
+        "command": "Según la posición del selector, Manual o Automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo."
       }
     ],
     "D16": [
@@ -231,15 +231,15 @@
     "D17": [
       {
         "variant": "V1",
-        "command": "Al activar Start, vigila el sensor y activa una alarma si no cambia de estado durante 5 segundos."
+        "command": "Tras activar Start, vigila el sensor y activa una alarma si transcurren 5 segundos sin ningún cambio; cada cambio reinicia la cuenta."
       },
       {
         "variant": "V2",
-        "command": "Quiero que, después de dar Start, se active una alarma si el sensor pasa cinco segundos sin cambiar de estado."
+        "command": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado."
       },
       {
         "variant": "V3",
-        "command": "Tras activar Start, si el sensor permanece sin cambios 5 segundos, activa la alarma."
+        "command": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma."
       }
     ],
     "D18": [
@@ -259,15 +259,15 @@
     "D19": [
       {
         "variant": "V1",
-        "command": "Controla tres pilotos de detenido, marcha y falla, dejando encendido solo el del estado actual."
+        "command": "Con las señales de marcha y falla del sistema, controla tres pilotos (detenido, marcha y falla) y deja encendido solo el del estado actual."
       },
       {
         "variant": "V2",
-        "command": "Quiero tres pilotos, detenido, marcha y falla, y que solo esté encendido el que corresponde al estado actual."
+        "command": "Quiero tres pilotos, detenido, marcha y falla, que según las señales de marcha y falla del sistema dejen encendido solo el que corresponde al estado actual."
       },
       {
         "variant": "V3",
-        "command": "Indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual."
+        "command": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual."
       }
     ],
     "D20": [
@@ -287,15 +287,15 @@
     "P01": [
       {
         "variant": "V1",
-        "command": "Habilita el modo automático del sistema de nivel al seleccionar Automático."
+        "command": "Pasa el sistema de nivel a modo automático únicamente cuando el operador seleccione Automático."
       },
       {
         "variant": "V2",
-        "command": "Quiero que el sistema de nivel pase a modo automático cuando se elija Automático."
+        "command": "Quiero que el control de nivel entre en automático solo si el operador elige Automático."
       },
       {
         "variant": "V3",
-        "command": "Cuando se seleccione Automático, activa el modo automático del control de nivel."
+        "command": "Solo al seleccionar el operador Automático debe el sistema de nivel ponerse en modo automático."
       }
     ],
     "P02": [
@@ -329,127 +329,127 @@
     "P04": [
       {
         "variant": "V1",
-        "command": "Activa la alarma de nivel alto cuando el nivel pase del 90 %."
+        "command": "Mantén activa la alarma de nivel alto mientras el nivel supere el 90 % y apágala cuando baje a 90 % o menos."
       },
       {
         "variant": "V2",
-        "command": "Quiero una alarma de nivel alto si el nivel supera el noventa por ciento."
+        "command": "Quiero que la alarma de nivel alto suene mientras el nivel pase del noventa por ciento y se quite al volver a noventa o menos."
       },
       {
         "variant": "V3",
-        "command": "Con el nivel por encima del 90 %, activa la alarma de nivel alto."
+        "command": "Con el nivel por encima del 90 %, la alarma de nivel alto debe estar activa; a 90 % o menos, desactivada."
       }
     ],
     "P05": [
       {
         "variant": "V1",
-        "command": "Activa la alarma de nivel bajo cuando el nivel baje del 10 %."
+        "command": "Mantén activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y apágala cuando suba a 10 % o más."
       },
       {
         "variant": "V2",
-        "command": "Quiero una alarma de nivel bajo si el nivel es inferior al diez por ciento."
+        "command": "Quiero que la alarma de nivel bajo suene mientras el nivel sea inferior al diez por ciento y se quite al volver a diez o más."
       },
       {
         "variant": "V3",
-        "command": "Con el nivel por debajo del 10 %, activa la alarma de nivel bajo."
+        "command": "Con el nivel por debajo del 10 %, la alarma de nivel bajo debe estar activa; a 10 % o más, desactivada."
       }
     ],
     "P06": [
       {
         "variant": "V1",
-        "command": "Habilita el PID solo cuando el sistema esté en modo Automático."
+        "command": "Mantén el PID habilitado únicamente mientras el operador tenga el sistema en Automático; en Manual, deshabilitado."
       },
       {
         "variant": "V2",
-        "command": "Quiero que el PID funcione únicamente en modo Automático."
+        "command": "Quiero que el PID solo funcione cuando el operador haya puesto el sistema en Automático, y que en Manual quede deshabilitado."
       },
       {
         "variant": "V3",
-        "command": "El PID debe estar habilitado solamente mientras el sistema esté en Automático."
+        "command": "Solo con el sistema en el modo Automático elegido por el operador puede estar habilitado el PID; en Manual debe estar deshabilitado."
       }
     ],
     "P07": [
       {
         "variant": "V1",
-        "command": "Si se activa una condición de emergencia con el PID funcionando, deshabilítalo de inmediato."
+        "command": "En Automático el PID funciona habilitado, pero si se activa una emergencia, deshabilítalo inmediatamente."
       },
       {
         "variant": "V2",
-        "command": "Quiero que, si hay una emergencia mientras el PID trabaja, el PID se deshabilite en el acto."
+        "command": "Quiero que el PID esté habilitado en Automático y que, si hay una emergencia, se deshabilite en el acto."
       },
       {
         "variant": "V3",
-        "command": "Ante una condición de emergencia durante el funcionamiento del PID, deshabilítalo inmediatamente."
+        "command": "Ante una condición de emergencia, el PID, que en Automático está habilitado, debe deshabilitarse de inmediato."
       }
     ],
     "P08": [
       {
         "variant": "V1",
-        "command": "En modo Manual, enciende y apaga la bomba con una orden manual, sin que el control automático intervenga."
+        "command": "Siempre que el sistema no esté en Automático, o sea en Manual, la orden manual del operador enciende y apaga la bomba, sin que actúe el control automático."
       },
       {
         "variant": "V2",
-        "command": "Quiero que en Manual la bomba se encienda y se apague solo con la orden manual, no con el control automático."
+        "command": "Quiero que, mientras el sistema no esté en Automático, la bomba solo se encienda y apague con la orden manual del operador."
       },
       {
         "variant": "V3",
-        "command": "Con el sistema en Manual, la orden manual decide si la bomba está encendida o apagada; el control automático no la gobierna."
+        "command": "Fuera del modo Automático, en Manual, la bomba debe seguir únicamente la orden manual del operador para encenderse o apagarse."
       }
     ],
     "P09": [
       {
         "variant": "V1",
-        "command": "Detecta fallo de sensor cuando el nivel medido esté fuera del rango de 0 % a 100 %."
+        "command": "Señala fallo de sensor mientras el nivel medido esté fuera de 0 % a 100 % y quítalo cuando vuelva a ese rango."
       },
       {
         "variant": "V2",
-        "command": "Quiero que se marque un fallo del sensor si el nivel medido sale del rango de cero a cien por ciento."
+        "command": "Quiero que se marque fallo del sensor mientras el nivel medido salga del rango de cero a cien por ciento, y que se quite al volver a él."
       },
       {
         "variant": "V3",
-        "command": "Si el nivel medido no está entre 0 % y 100 %, indica un fallo del sensor."
+        "command": "Con el nivel medido por debajo de 0 % o por encima de 100 % debe haber fallo de sensor; dentro de ese rango, no."
       }
     ],
     "P10": [
       {
         "variant": "V1",
-        "command": "Si hay una alarma por fallo del sensor, no permitas su Reset mientras la falla siga; permítelo cuando la medición vuelva al rango válido."
+        "command": "Genera una alarma si el nivel medido sale de 0 % a 100 % por fallo del sensor; el Reset no la borra mientras siga fuera y sí cuando vuelva al rango."
       },
       {
         "variant": "V2",
-        "command": "Quiero que la alarma por fallo del sensor no se pueda resetear mientras dure la falla, y que sí se pueda cuando la medición vuelva a ser válida."
+        "command": "Quiero una alarma por fallo del sensor cuando la medición salga de cero a cien por ciento, que no se pueda resetear mientras dure y sí al volver al rango."
       },
       {
         "variant": "V3",
-        "command": "El Reset de la alarma por fallo del sensor solo debe funcionar cuando la medición haya vuelto al rango válido, no mientras continúe la falla."
+        "command": "Un nivel medido fuera de 0 % a 100 % debe activar la alarma de fallo del sensor; el Reset solo la borra cuando la medición vuelve a ese rango."
       }
     ],
     "P11": [
       {
         "variant": "V1",
-        "command": "Si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure esa condición."
+        "command": "Con el nivel normal la bomba funciona; si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure."
       },
       {
         "variant": "V2",
-        "command": "Quiero que la bomba se apague mientras el nivel esté en el noventa y cinco por ciento o más, porque es sobrellenado."
+        "command": "Quiero que la bomba trabaje normalmente y que se apague mientras el nivel esté en el noventa y cinco por ciento o más, por sobrellenado."
       },
       {
         "variant": "V3",
-        "command": "Considera sobrellenado un nivel igual o superior al 95 % y mantén la bomba apagada mientras siga así."
+        "command": "La bomba, en marcha en condiciones normales, debe quedar apagada mientras el nivel sea igual o superior al 95 % (sobrellenado)."
       }
     ],
     "P12": [
       {
         "variant": "V1",
-        "command": "En modo Automático, habilita el PID con setpoint del 60 %; si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura, y cuando vuelva al rango permitido deja recuperar la operación automática."
+        "command": "En Automático, PID habilitado con setpoint del 60 %; por encima del 90 %, alarma y condición segura (PID deshabilitado y bomba apagada); al volver a 90 % o menos, el PID se rehabilita solo, sin que intervenga el operador."
       },
       {
         "variant": "V2",
-        "command": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento, que por encima del noventa por ciento suene la alarma y el proceso pase a condición segura, y que al volver el nivel al rango permitido se pueda recuperar el automático."
+        "command": "Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento; que por encima del noventa por ciento suene la alarma y se pare el PID y la bomba; y que, al volver a noventa o menos, el PID se reactive solo."
       },
       {
         "variant": "V3",
-        "command": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma y la condición segura, y el regreso del nivel al rango permitido permite recuperar la operación automática."
+        "command": "Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma, deshabilita el PID y apaga la bomba; al regresar a 90 % o menos, el PID vuelve a habilitarse automáticamente."
       }
     ]
   }

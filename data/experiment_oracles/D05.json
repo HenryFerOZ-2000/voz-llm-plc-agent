@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:40:52",
-    "version": 1,
-    "hash": "e5cc1a4d71c2e1bd7b5027df44c268ab6bd41dd9e189b8fc8029abd3cf1a9e08",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D05 (INT_EMERGENCY_PRIORITY)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "1928377b0e610748e735b3f7e516911666edf5486aeba9dd2b0b691d8ca4f3fb",
+    "previous_hash": "e5cc1a4d71c2e1bd7b5027df44c268ab6bd41dd9e189b8fc8029abd3cf1a9e08",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -24,17 +28,21 @@
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
         "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Prioridad de la condicion de emergencia sobre el arranque",
     "original_requirement": "Paro de emergencia con prioridad sobre cualquier orden de arranque.",
-    "canonical_command": "Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
-    "canonical_case_hash": "4bf93397603ffae4245fc1fe7bedb10a2a50b679779b2e58b200d9d4280fa9f1",
+    "canonical_command": "Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+    "canonical_case_hash": "25bf13f9ea095e7037abecb6e085ba3d3638194d6b1bdd0e035756a7223b42e1",
     "legacy_reference_intent": "INT_EMERGENCY_PRIORITY"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -101,7 +109,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa."
+      "text": "COMANDO CANONICO (benchmark v3): Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa."
     },
     {
       "id": "C-D05-TRIP",

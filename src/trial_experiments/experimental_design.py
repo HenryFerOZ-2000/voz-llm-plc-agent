@@ -238,7 +238,10 @@ def classify_trial(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def formal_statistics_records(records: list[dict[str, Any]], benchmark_version: int = 2) -> list[dict[str, Any]]:
+FORMAL_BENCHMARK_VERSION = 3  # benchmark v3 (FORMAL); el v2 es historico DEVELOPMENT y nunca entra en lo formal
+
+
+def formal_statistics_records(records: list[dict[str, Any]], benchmark_version: int = FORMAL_BENCHMARK_VERSION) -> list[dict[str, Any]]:
     """Solo FORMAL_TRIAL de la fase FORMAL del benchmark vigente entran en las estadisticas formales."""
     return [r for r in records if r.get("trial_kind") == TRIAL_KIND_FORMAL and r.get("experiment_phase") == PHASE_FORMAL
             and r.get("benchmark_version") == benchmark_version]

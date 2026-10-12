@@ -8,13 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:10",
-    "version": 2,
-    "hash": "e1aeae2999ce34d4764360181cb746f9aeea2a0b5528bf8f47602a4cd3047e7b",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D07 (INT_DELAYED_START)",
-    "previous_hash": "5a3bbd11fff5d9527911459f05c6b2a549ef2a4c044eb3aea29d1f91cc47c917",
-    "change_log": "v2: redefinicion del investigador (Fase 3B s3). Se elimina step_2 (retirar START, no solicitado); se cierran D07-R1/R2 con convenciones documentadas. Comportamiento evaluado sin cambios.",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 3,
+    "hash": "ef89ba4115fffbf55a85afda3c7164548993c436f568df8d418d733c2cc055ad",
+    "previous_hash": "e1aeae2999ce34d4764360181cb746f9aeea2a0b5528bf8f47602a4cd3047e7b",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -25,17 +27,21 @@
         "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 2,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Arranque retardado 3 s con Start mantenido",
     "original_requirement": "Arranque retardado 3 s.",
     "canonical_command": "Mientras Start permanezca activo, espera 3 segundos antes de encender el motor.",
-    "canonical_case_hash": "098638cb6b81c13c34182d1e84566a64daa56f2bcfa01c26129c9bc03519241f",
+    "canonical_case_hash": "9b2a8ed88ecd3a0884058da4e80437fb98d483a073161f72546fc0885a4b082d",
     "legacy_reference_intent": "INT_DELAYED_START"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -99,7 +105,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Mientras Start permanezca activo, espera 3 segundos antes de encender el motor."
+      "text": "COMANDO CANONICO (benchmark v3): Mientras Start permanezca activo, espera 3 segundos antes de encender el motor."
     },
     {
       "id": "C-D07-HELD",

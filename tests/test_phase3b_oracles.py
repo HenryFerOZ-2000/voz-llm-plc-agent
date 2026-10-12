@@ -101,9 +101,13 @@ def test_runtime_requirements_are_correctly_marked(case_id):
 
 
 def test_frozen_versions_are_preserved_and_d03_unchanged():
+    # D03 v1 (benchmark v2) intacto en versions/; la v2 vigente (benchmark v3) conserva su comportamiento funcional.
+    d03_v1 = json.loads((_ORACLES_DIR / "versions" / "D03_v1.json").read_text(encoding="utf-8"))
+    assert d03_v1["approval"]["hash"] == "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
     d03 = _oracle("D03")
-    assert d03["approval"]["status"] == "FROZEN" and d03["approval"]["version"] == 1
-    assert d03["approval"]["hash"] == "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
+    assert d03["approval"]["status"] == "FROZEN" and d03["approval"]["version"] == 2
+    for key in ("roles", "preconditions", "test_sequence", "invariants", "cleanup", "evaluation"):
+        assert d03.get(key) == d03_v1.get(key), key
     for case_id in ("D03", "D07", "D12"):
         v1 = json.loads((_ORACLES_DIR / "versions" / f"{case_id}_v1.json").read_text(encoding="utf-8"))
         assert v1["approval"]["status"] == "FROZEN" and v1["approval"]["version"] == 1
@@ -113,7 +117,11 @@ def test_frozen_versions_are_preserved_and_d03_unchanged():
 def test_d07_v2_redefinition():
     d07 = _oracle("D07")
     v1 = json.loads((_ORACLES_DIR / "versions" / "D07_v1.json").read_text(encoding="utf-8"))
-    assert d07["approval"]["version"] == 2 and d07["approval"]["previous_hash"] == v1["approval"]["hash"]
+    v2 = json.loads((_ORACLES_DIR / "versions" / "D07_v2.json").read_text(encoding="utf-8"))
+    assert v2["approval"]["version"] == 2 and v2["approval"]["previous_hash"] == v1["approval"]["hash"]
+    # v3 (benchmark v3): solo metadata; la redefinicion funcional de la v2 se conserva identica.
+    assert d07["approval"]["version"] == 3 and d07["approval"]["previous_hash"] == v2["approval"]["hash"]
+    assert d07["test_sequence"] == v2["test_sequence"] and d07["roles"] == v2["roles"]
     assert set(d07["roles"]) == {"START", "MOTOR_MAIN"}
     assert [s["id"] for s in d07["test_sequence"]] == ["step_1"]
     step = d07["test_sequence"][0]
@@ -128,7 +136,10 @@ def test_d07_v2_redefinition():
 def test_d12_v2_redefinition():
     d12 = _oracle("D12")
     v1 = json.loads((_ORACLES_DIR / "versions" / "D12_v1.json").read_text(encoding="utf-8"))
-    assert d12["approval"]["version"] == 2 and d12["approval"]["previous_hash"] == v1["approval"]["hash"]
+    v2 = json.loads((_ORACLES_DIR / "versions" / "D12_v2.json").read_text(encoding="utf-8"))
+    assert v2["approval"]["version"] == 2 and v2["approval"]["previous_hash"] == v1["approval"]["hash"]
+    assert d12["approval"]["version"] == 3 and d12["approval"]["previous_hash"] == v2["approval"]["hash"]
+    assert d12["test_sequence"] == v2["test_sequence"] and d12["invariants"] == v2["invariants"]
     assert set(d12["roles"]) == {"REQUEST_A", "REQUEST_B", "CONTACTOR_A", "CONTACTOR_B"}
     for role in ("REQUEST_A", "REQUEST_B"):
         assert "trigger_input" not in d12["roles"][role]["semantic_paths"] and "stop_input" not in d12["roles"][role]["semantic_paths"]
@@ -975,7 +986,7 @@ def test_gui_oracle_review_window_lists_32_and_mass_approval_is_guarded(app, tmp
     window = gui.OracleReviewWindow(app)
     try:
         assert len(window.tree.get_children()) == 32
-        assert window.tree.set("D03", "estado") == "FROZEN v1"
+        assert window.tree.set("D03", "estado") == "FROZEN v2"  # benchmark v3: D03 v2 (metadata + semantica)
         window.approve_all_clean()
         with_items = {e["case_id"] for e in window.report["oracles"] if e["review_items"]}
         for case_id in window.tree.get_children():

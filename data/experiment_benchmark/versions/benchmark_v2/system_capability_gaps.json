@@ -1,0 +1,294 @@
+{
+  "generated_at": "2026-09-30T14:19:44",
+  "note": "SYSTEM_CAPABILITY_GAP: el Oracle define la evaluacion; estos gaps describen lo que el generador actual no produce. No se corrigen en la fase de Oracles.",
+  "total_generator_gaps": 18,
+  "by_severity": {
+    "HIGH": 12,
+    "MEDIUM": 6,
+    "LOW": 0
+  },
+  "generator_gaps": [
+    {
+      "case_id": "D01",
+      "gap_id": "GAP-D01",
+      "expected_capability": "Pulso de 5 s al presionar (TP): salida activa DURANTE 5 s.",
+      "current_behavior": "INT_TIMED_PULSE usa TON: la salida se activa DESPUES de 5 s con la entrada mantenida; con un pulsador breve no se activa.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Usar TP (o equivalente) en la plantilla INT_TIMED_PULSE."
+    },
+    {
+      "case_id": "D05",
+      "gap_id": "GAP-D05",
+      "expected_capability": "Ruta de arranque (START_REQUEST) subordinada al disparo de seguridad.",
+      "current_behavior": "INT_EMERGENCY_PRIORITY no tiene logica de arranque: el motor nunca se activa y step_1 falla.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Componer la prioridad de seguridad con una logica de arranque/memoria (p.ej. INT_MOTOR_START_STOP) o anadir START_REQUEST a la plantilla."
+    },
+    {
+      "case_id": "D10",
+      "gap_id": "GAP-D10",
+      "expected_capability": "Contador de 5 pulsos con salida y Reset a cero.",
+      "current_behavior": "Con el comando v2 la plantilla INT_COUNTER_PULSES (con reset_input) cumple el caso; si el interprete elige INT_COUNTER_RESET (referencia legacy) no hay conteo ni salida.",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Asegurar que el interprete elija INT_COUNTER_PULSES para D10 (o componer ambos)."
+    },
+    {
+      "case_id": "D12",
+      "gap_id": "GAP-D12",
+      "expected_capability": "Cada contactor sigue su solicitud (REQUEST_A/B) con exclusion mutua.",
+      "current_behavior": "INT_MUTUAL_INTERLOCK usa trigger_input/stop_input como ordenes y enclava los contactores (nunca los desactiva).",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla con solicitudes request_a/request_b y contactores que siguen su solicitud."
+    },
+    {
+      "case_id": "D13",
+      "gap_id": "GAP-D13",
+      "expected_capability": "Habilitacion del variador bloqueada por una condicion de alarma de ENTRADA.",
+      "current_behavior": "INT_VFD_ENABLE_NO_ALARM lee alarm_output (una salida que nadie escribe): ALARM_ACTIVE no se resuelve -> REVIEW.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Aceptar alarm_input (condicion de entrada) en la plantilla INT_VFD_ENABLE_NO_ALARM."
+    },
+    {
+      "case_id": "D14",
+      "gap_id": "GAP-D14",
+      "expected_capability": "Seleccion de 3 velocidades discretas con salidas one-hot.",
+      "current_behavior": "No existe intent para D14 en el parser/IR (profiles.json: 'trabajo futuro').",
+      "severity": "HIGH",
+      "recommended_future_fix": "Anadir un intent de seleccion de velocidad (tres selectores -> tres salidas excluyentes)."
+    },
+    {
+      "case_id": "D15",
+      "gap_id": "GAP-D15",
+      "expected_capability": "Ordenes de marcha separadas por modo (MANUAL_COMMAND / AUTO_COMMAND) seleccionadas por MODE_AUTO.",
+      "current_behavior": "INT_MANUAL_AUTO_MODE usa selectores de modo manual/auto y START/STOP comunes: MANUAL_COMMAND/AUTO_COMMAND no se resolveran -> REVIEW.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla con una orden por modo y un selector MODE_AUTO."
+    },
+    {
+      "case_id": "D16",
+      "gap_id": "GAP-D16",
+      "expected_capability": "Salida principal al inicio y salida auxiliar tras una espera temporizada.",
+      "current_behavior": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla de secuencia con temporizador de espera y salida por paso."
+    },
+    {
+      "case_id": "D17",
+      "gap_id": "GAP-D17",
+      "expected_capability": "Supervision del sensor habilitada por Start.",
+      "current_behavior": "INT_SENSOR_TIMEOUT_ALARM supervisa desde el arranque del PLC sin Start: t0_idle generaria alarma.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Condicionar el temporizador de supervision a Start en la plantilla."
+    },
+    {
+      "case_id": "D19",
+      "gap_id": "GAP-D19",
+      "expected_capability": "Tres pilotos excluyentes (detenido, marcha, falla) que indican el estado actual.",
+      "current_behavior": "No hay intent de referencia para D19; INT_STATUS_PILOTS no genera el piloto de detenido y deriva la falla de la emergencia.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla de pilotos de estado con prioridad y tres salidas excluyentes."
+    },
+    {
+      "case_id": "D20",
+      "gap_id": "GAP-D20",
+      "expected_capability": "Ciclo con ejecucion temporizada (3 s), estado completo y reset.",
+      "current_behavior": "INT_AUTO_CYCLE avanza un estado por ciclo de PLC mientras AUTO y START estan activos y no tiene estado COMPLETE.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla de ciclo por estados con temporizador de ejecucion y salida de ciclo completo."
+    },
+    {
+      "case_id": "P01",
+      "gap_id": "GAP-P01",
+      "expected_capability": "Modo automatico condicionado a una seleccion de Automatico.",
+      "current_behavior": "set_auto_mode activa Auto_Mode incondicionalmente (sin entrada de seleccion): step_0 fallaria.",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Condicionar set_auto_mode a una entrada de seleccion cuando el comando la menciona."
+    },
+    {
+      "case_id": "P03",
+      "gap_id": "GAP-P03",
+      "expected_capability": "Variable de comando de setpoint validada contra el rango 0-100 % en el PLC, conservando el ultimo valor valido.",
+      "current_behavior": "INT_PID_SUPERVISOR escribe Level_SP con la constante del comando: no hay variable de comando ni validacion en PLC.",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Anadir Level_SP_Command al contrato PID y validar el rango en la logica supervisora."
+    },
+    {
+      "case_id": "P07",
+      "gap_id": "GAP-P07",
+      "expected_capability": "Programa P07 con el PID habilitado en automatico antes del disparo.",
+      "current_behavior": "Una orden solo de 'deshabilitar ante emergencia' puede no generar enable_pid: la precondicion fallaria (REVIEW).",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Componer enable_pid (P06) cuando el caso requiere observar la deshabilitacion."
+    },
+    {
+      "case_id": "P08",
+      "gap_id": "GAP-P08",
+      "expected_capability": "Orden manual de bomba que habilita/deshabilita Q_Pump_Enable en modo manual.",
+      "current_behavior": "set_manual_mode solo escribe Manual_Mode/Auto_Mode: no hay orden manual de bomba (MANUAL_PUMP_COMMAND no se resuelve).",
+      "severity": "HIGH",
+      "recommended_future_fix": "Anadir una entrada de orden manual de bomba al contrato y a la plantilla PID."
+    },
+    {
+      "case_id": "P10",
+      "gap_id": "GAP-P10",
+      "expected_capability": "Alarma activada por la falla de sensor y reset condicionado a que desaparezca.",
+      "current_behavior": "En INT_PID_SUPERVISOR Q_Alarm la activan las alarmas de nivel/sobrellenado, no Sensor_Fault: la precondicion fallaria.",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Activar la alarma tambien por Sensor_Fault cuando el caso lo pida."
+    },
+    {
+      "case_id": "P11",
+      "gap_id": "GAP-P11",
+      "expected_capability": "Bomba habilitada en condicion normal y deshabilitada ante sobrellenado.",
+      "current_behavior": "INT_PID_SUPERVISOR solo fuerza Q_Pump_Enable a FALSE: no la habilita en condicion normal (la precondicion fallaria).",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Definir en el contrato PID quien habilita la bomba en operacion normal."
+    },
+    {
+      "case_id": "P12",
+      "gap_id": "GAP-P12",
+      "expected_capability": "Condicion segura a > 90 % y recuperacion automatica al volver al rango.",
+      "current_behavior": "INT_PID_SUPERVISOR solo lleva a condicion segura en sobrellenado (>= 95 %) y la recuperacion exige Reset (conditional_alarm_reset).",
+      "severity": "HIGH",
+      "recommended_future_fix": "Permitir condicion segura con umbral configurable y recuperacion sin Reset cuando el comando lo indica."
+    }
+  ],
+  "runtime_gaps": [
+    {
+      "case_id": "P01",
+      "required": [
+        "BOOL",
+        "INTERNAL_TAG_READ"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P02",
+      "required": [
+        "REAL",
+        "INTERNAL_TAG_READ"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P03",
+      "required": [
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P04",
+      "required": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P05",
+      "required": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P06",
+      "required": [
+        "BOOL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P07",
+      "required": [
+        "BOOL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P08",
+      "required": [
+        "BOOL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P09",
+      "required": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P10",
+      "required": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P11",
+      "required": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    },
+    {
+      "case_id": "P12",
+      "required": [
+        "BOOL",
+        "REAL",
+        "INTERNAL_TAG_READ",
+        "INTERNAL_TAG_WRITE"
+      ],
+      "current_behavior": "El Runtime I/O solo ejecuta BOOL de entradas/salidas fisicas; no REAL ni variables internas.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Extender el bridge a REAL/INT y a lectura/escritura de variables internas bajo una politica de seguridad explicita (escribir Level_PV/Auto_Mode no es escribir una entrada fisica)."
+    }
+  ]
+}

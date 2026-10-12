@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "b319465d3d223a68ae704effab93b25723402d05671233886423a89763fc8cbf",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D18 (INT_MAINTENANCE_BLOCK)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "a11e0bbec7329ec6d1d5979bdfd70ac980caf572722f34210395e3d4f8ed0960",
+    "previous_hash": "b319465d3d223a68ae704effab93b25723402d05671233886423a89763fc8cbf",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -23,17 +27,21 @@
         "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Bloqueo del arranque en mantenimiento",
     "original_requirement": "Bloquear arranque en modo mantenimiento.",
     "canonical_command": "Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento.",
-    "canonical_case_hash": "c2bcfc93780cb016ede6aa137f902a2f156e272b93ae5e263b43a91778bbc9d1",
+    "canonical_case_hash": "8d8082066e9869cf8ab75ba5c453c2f03f0a31f5189ef89f75f87a9e14515e58",
     "legacy_reference_intent": "INT_MAINTENANCE_BLOCK"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -96,7 +104,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento."
+      "text": "COMANDO CANONICO (benchmark v3): Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento."
     },
     {
       "id": "C-D18",

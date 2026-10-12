@@ -203,7 +203,9 @@ def preflight(
     formal_errors = ED.validate_formal_matrix(ED.formal_design_matrix(project_root))
     _check(checks, "design_formal_288", not formal_errors, "; ".join(formal_errors) or "288")
     catalog = BC.load_catalog(project_root)
-    _check(checks, "benchmark_version_2", catalog.get("benchmark_version") == 2, str(catalog.get("benchmark_version")))
+    # El catalogo vivo debe ser la version que fija el diseno experimental (FORMAL: benchmark v3; el v2 es historico).
+    _check(checks, "benchmark_version_matches_design", catalog.get("benchmark_version") == design.get("benchmark_version"),
+           f"catalogo v{catalog.get('benchmark_version')} / diseno v{design.get('benchmark_version')}")
     _check(checks, "benchmark_32_cases", len(catalog["cases"]) == 32, str(len(catalog["cases"])))
     consistency = BC.build_variant_consistency_report(project_root)
     _check(checks, "variants_96_consistent",

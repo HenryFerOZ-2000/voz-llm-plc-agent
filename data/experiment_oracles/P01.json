@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "b461e15510b45a67a9fc054733dc885b3178c27e24e09a886435a1044a6bb710",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json P01 (INT_PID_SUPERVISOR)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "ad686822b466d75d7aa584a141791a9bb7d92c865e6ebe5c3a6e302b89db3d71",
+    "previous_hash": "b461e15510b45a67a9fc054733dc885b3178c27e24e09a886435a1044a6bb710",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -22,17 +26,21 @@
       "notes": [
         "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
         "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
-        "Benchmark v2: alineado con el comando canonico (Anadido el selector AUTO_SELECT ('cuando se seleccione Automatico'); eliminada la emergencia opcional.)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (Anadido el selector AUTO_SELECT ('cuando se seleccione Automatico'); eliminada la emergencia opcional.).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Modo automatico al seleccionar Automatico",
     "original_requirement": "Habilitar modo automatico.",
-    "canonical_command": "Habilita el modo automático del sistema de nivel cuando se seleccione Automático.",
-    "canonical_case_hash": "354a0a98ea994886c6a0852f09b0c0866f0ab005109020e111b44332c65a51ca",
+    "canonical_command": "El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático.",
+    "canonical_case_hash": "cda35bacc5edcd0b3782104e1cbd77a36679057a1eb03c56739289e95087448b",
     "legacy_reference_intent": "INT_PID_SUPERVISOR"
   },
   "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
@@ -93,7 +101,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Habilita el modo automático del sistema de nivel cuando se seleccione Automático."
+      "text": "COMANDO CANONICO (benchmark v3): El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático."
     },
     {
       "id": "C-PID",

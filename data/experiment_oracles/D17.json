@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "3c701f0d4bbc45c284993a465cfc08073bc5b4cf2a2b0f4ec0421ff25116532a",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D17 (INT_SENSOR_TIMEOUT_ALARM)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "f757df8d6f6c2f9c85a4d1f9f059138324e7c9bc3e816635ea56d754e0d36be1",
+    "previous_hash": "3c701f0d4bbc45c284993a465cfc08073bc5b4cf2a2b0f4ec0421ff25116532a",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -23,17 +27,21 @@
         "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
-        "Benchmark v2: alineado con el comando canonico (Anadido START (el comando canonico habilita la supervision con Start); eliminado RESET; nuevo gap.)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (Anadido START (el comando canonico habilita la supervision con Start); eliminado RESET; nuevo gap.).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Supervision de sensor 5 s tras Start",
     "original_requirement": "Alarma si el sensor no cambia de estado en 5 s.",
-    "canonical_command": "Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.",
-    "canonical_case_hash": "1ec4845b8797ed4673871bb2cf533db128aa868fec2a07a9c357e51d84fc7571",
+    "canonical_command": "Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos.",
+    "canonical_case_hash": "e28adc6244a07c72128c7387d0b403d6be32a7a0656774d999ab35e4ae5f7773",
     "legacy_reference_intent": "INT_SENSOR_TIMEOUT_ALARM"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -102,7 +110,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma."
+      "text": "COMANDO CANONICO (benchmark v3): Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos."
     },
     {
       "id": "C-D17-START",

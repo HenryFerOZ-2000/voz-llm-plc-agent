@@ -1,10 +1,11 @@
 """
-Benchmark experimental v2: comandos canonicos como fuente unica de verdad.
+Benchmark experimental v2 como HISTORICO DEVELOPMENT (archivo inmutable).
 
-Comprueba el catalogo (32 casos, 96 variantes equivalentes), la sincronizacion de profiles.json y
-experiment_variants.json, la alineacion Oracle <-> comando (sin requisitos ocultos ni omitidos), la
-consistencia completa de D08, la preservacion de los Oracles congelados y del benchmark v1, y que la
-GUI y los ensayos usan el catalogo nuevo. No toca PLCSIM ni los mapas reales.
+Desde el benchmark v3 (FORMAL), el v2 vive en data/experiment_benchmark/versions/benchmark_v2/, copiado byte a byte
+con manifest de hashes. Este modulo comprueba que ese archivo se conserva intacto y que, por si mismo, sigue siendo
+coherente (32 casos, 96 variantes equivalentes, Oracles alineados sin requisitos ocultos ni omitidos, D08 consistente,
+D03 v1 congelado), ademas de la preservacion del benchmark v1. El catalogo VIVO (v3) se prueba en test_benchmark_v3.py.
+No toca PLCSIM ni los mapas reales.
 """
 from __future__ import annotations
 
@@ -20,18 +21,12 @@ SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-import gui  # noqa: E402
 from trial_experiments import benchmark_catalog as BC  # noqa: E402
 from trial_experiments import oracle_schema as S  # noqa: E402
-from trial_experiments import trial_model  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
-from test_phase1_download_and_trials import _arm_experiment_trial, pipeline  # noqa: E402
-from test_execute_full_pipeline import temp_map, _tia_ready  # noqa: E402
-
-__all__ = ["pipeline", "temp_map", "_tia_ready"]
-
 _ROOT = get_project_root()
+_ARCHIVE = _ROOT / "data" / "experiment_benchmark" / "versions" / "benchmark_v2"
 _MAPS = [_ROOT / "data" / "plc_maps" / f"{n}.json" for n in
          ("mapa_banco_fisico_base", "mapa_simulacion_completo", "mapa_pid_simulacion", "mapa_pid_banco_fisico")]
 
@@ -40,13 +35,34 @@ def _hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _json(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 _MAP_HASHES = {str(p): _hash(p) for p in _MAPS}
-CATALOG = BC.load_catalog(_ROOT)
+MANIFEST = _json(_ARCHIVE / "manifest.json")
+CATALOG = _json(_ARCHIVE / "canonical_cases.json")
 CASES = {case["case_id"]: case for case in CATALOG["cases"]}
 
 
-def _oracles():
-    return {case_id: S.load_oracle(_ROOT, case_id) for case_id in BC.CASE_IDS}
+def _oracle(case_id: str) -> dict:
+    return _json(_ARCHIVE / "experiment_oracles" / f"{case_id}.json")
+
+
+# Archivo inmutable -----------------------------------------------------------------------------
+
+def test_v2_archive_bytes_are_intact():
+    assert MANIFEST["benchmark_version"] == 2 and MANIFEST["role"] == "HISTORICAL_DEVELOPMENT"
+    assert "DEVELOPMENT" in MANIFEST["note"] and "v3" in MANIFEST["note"]
+    assert set(MANIFEST["files"]) == set(MANIFEST["raw_sha256"]) == set(MANIFEST["source_paths"])
+    for relative, digest in MANIFEST["raw_sha256"].items():
+        assert _hash(_ARCHIVE / relative) == digest, relative  # bytes exactos
+        assert BC.normalized_file_hash(_ARCHIVE / relative) == MANIFEST["files"][relative], relative
+    for required in ("canonical_cases.json", "experiment_variants.json", "profiles.json", "experimental_design.json",
+                     "variant_consistency_report.json", "oracle_validation_report.json", "experiment_oracles/D03.json",
+                     "experiment_oracles/versions/D03_v1.json"):
+        assert required in MANIFEST["files"], required
+    assert len([r for r in MANIFEST["files"] if r.startswith("experiment_oracles/") and r.count("/") == 1]) == 32
 
 
 # 1-3 ------------------------------------------------------------------------------------------
@@ -58,6 +74,7 @@ def test_exactly_32_canonical_cases_d01_d20_p01_p12():
         for key in ("case_id", "title", "complexity", "original_requirement", "canonical_command", "canonical_semantics",
                     "benchmark_version", "command_requirements", "test_harness_setup"):
             assert key in case, (case["case_id"], key)
+        assert case["benchmark_version"] == 2
         assert case["canonical_semantics"]["signature"] and case["command_requirements"]
 
 
@@ -78,14 +95,12 @@ def test_no_variant_uses_physical_addresses_or_tag_names():
 
 
 def test_variant_numeric_values_and_concepts_match_canonical():
-    report = BC.build_variant_consistency_report(_ROOT)
-    assert report["total_variants"] == 96 and report["consistent_variants"] == 96, report["cases_with_errors"]
-    for entry in report["cases"]:
-        assert entry["same_numeric_values"] and entry["same_required_roles"] and entry["same_constraints"], entry["case_id"]
-        for vid in ("V1", "V2", "V3"):
-            assert entry[vid]["numbers"] == entry["canonical_check"]["numbers"], (entry["case_id"], vid)
-    written = json.loads((_ROOT / "data" / "variant_consistency_report.json").read_text(encoding="utf-8"))
-    assert written["consistent_variants"] == 96
+    for case in CASES.values():
+        entry = BC.variant_consistency(case)
+        assert not entry["errors"], (case["case_id"], entry["errors"])
+        assert entry["same_numeric_values"] and entry["same_required_roles"] and entry["same_constraints"], case["case_id"]
+    report = _json(_ARCHIVE / "variant_consistency_report.json")
+    assert report["benchmark_version"] == 2 and report["consistent_variants"] == 96
 
 
 def test_variant_checker_detects_a_changed_meaning():
@@ -99,10 +114,9 @@ def test_variant_checker_detects_a_changed_meaning():
 
 def test_d08_is_consistent_everywhere():
     case = CASES["D08"]
-    profile = next(p for p in json.loads((_ROOT / "data/plc_maps/profiles.json").read_text(encoding="utf-8"))["profiles"]
-                   if p["case_id"] == "D08")
-    variants = json.loads((_ROOT / "data/plc_maps/experiment_variants.json").read_text(encoding="utf-8"))["variants"]["D08"]
-    oracle = S.load_oracle(_ROOT, "D08")
+    profile = next(p for p in _json(_ARCHIVE / "profiles.json")["profiles"] if p["case_id"] == "D08")
+    variants = _json(_ARCHIVE / "experiment_variants.json")["variants"]["D08"]
+    oracle = _oracle("D08")
     texts = [case["canonical_command"], profile["description"], *[v["command"] for v in variants], *case["variants"].values(),
              oracle["source_definition"]["canonical_command"], oracle["description"]]
     for text in texts:
@@ -117,25 +131,28 @@ def test_d08_is_consistent_everywhere():
 
 # 10-12 ----------------------------------------------------------------------------------------
 
-def test_profiles_and_variants_file_match_catalog_and_zero_inconsistencies():
-    assert BC.benchmark_inconsistencies(_ROOT, _oracles()) == []
-    profiles = {p["case_id"]: p for p in json.loads((_ROOT / "data/plc_maps/profiles.json").read_text(encoding="utf-8"))["profiles"]}
+def test_archived_profiles_and_variants_match_archived_catalog():
+    profiles = {p["case_id"]: p for p in _json(_ARCHIVE / "profiles.json")["profiles"]}
+    variants = _json(_ARCHIVE / "experiment_variants.json")["variants"]
     for case_id, case in CASES.items():
         assert profiles[case_id]["description"] == case["canonical_command"]
         assert profiles[case_id]["name"] == f"{case_id} - {case['title']}"
-        assert "allowed_variables" in profiles[case_id]  # metadata historica conservada
+        assert {e["variant"]: e["command"] for e in variants[case_id]} == case["variants"]
+        oracle = _oracle(case_id)
+        if oracle.get("source_definition"):
+            assert oracle["source_definition"]["canonical_case_hash"] == BC.case_hash(case), case_id
 
 
 @pytest.mark.parametrize("case_id", BC.CASE_IDS)
 def test_oracle_has_no_hidden_or_missing_requirements(case_id):
-    alignment = BC.canonical_alignment(CASES[case_id], S.load_oracle(_ROOT, case_id))
+    alignment = BC.canonical_alignment(CASES[case_id], _oracle(case_id))
     assert alignment["extra_oracle_requirements"] == [], alignment["extra_oracle_requirements"]
     assert alignment["missing_oracle_requirements"] == [], alignment["missing_oracle_requirements"]
     assert len(alignment["command_requirements_covered"]) == len(CASES[case_id]["command_requirements"])
 
 
 def test_alignment_detects_hidden_and_missing_requirements():
-    oracle = json.loads(json.dumps(S.load_oracle(_ROOT, "D11")))
+    oracle = json.loads(json.dumps(_oracle("D11")))
     oracle["invariants"].append({"id": "INV_EXTRA", "type": "NEVER_TRUE", "roles": ["CONTACTOR"], "severity": "CRITICAL"})
     oracle["test_sequence"] = [s for s in oracle["test_sequence"] if s["id"] != "step_3"]
     alignment = BC.canonical_alignment(CASES["D11"], oracle)
@@ -144,8 +161,8 @@ def test_alignment_detects_hidden_and_missing_requirements():
 
 
 def test_harness_setup_is_not_a_semantic_requirement():
-    assert "RESET" not in S.load_oracle(_ROOT, "D09")["semantic_expectations"]["required_roles"]
-    p07 = S.load_oracle(_ROOT, "P07")
+    assert "RESET" not in _oracle("D09")["semantic_expectations"]["required_roles"]
+    p07 = _oracle("P07")
     assert p07["roles"]["AUTO_MODE"].get("harness_only") and "AUTO_MODE" not in p07["semantic_expectations"]["required_roles"]
     assert CASES["D03"]["test_harness_setup"] and "motor apagado" in CASES["D03"]["test_harness_setup"][0]
     assert "apagado" not in BC.normalize(CASES["D03"]["canonical_command"])
@@ -154,55 +171,29 @@ def test_harness_setup_is_not_a_semantic_requirement():
 # 13-14 ----------------------------------------------------------------------------------------
 
 def test_frozen_oracles_untouched():
-    d03 = S.load_oracle(_ROOT, "D03")
+    d03 = _oracle("D03")
     assert d03["approval"]["status"] == "FROZEN" and d03["approval"]["version"] == 1
     assert d03["approval"]["hash"] == S.compute_oracle_hash(d03) == "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
+    assert d03["semantic_expectations"]["accepted_intents"] == ["INT_MOTOR_START_STOP"]  # v2: solo START_STOP
     for case_id in ("D03", "D07", "D12"):
-        v1 = json.loads((_ROOT / "data/experiment_oracles/versions" / f"{case_id}_v1.json").read_text(encoding="utf-8"))
+        v1 = _json(_ROOT / "data/experiment_oracles/versions" / f"{case_id}_v1.json")
         assert v1["approval"]["status"] == "FROZEN" and v1["approval"]["hash"] == S.compute_oracle_hash(v1)
-    for case_id in ("D07", "D12"):  # v2 coincide con el comando canonico (borrador o ya aprobada por el investigador)
-        oracle = S.load_oracle(_ROOT, case_id)
+    for case_id in ("D07", "D12"):  # v2 del Oracle = la vigente en el benchmark v2
+        oracle = _oracle(case_id)
         assert oracle["approval"]["version"] == 2
         assert oracle["source_definition"]["canonical_case_hash"] == BC.case_hash(CASES[case_id])
-        if S.is_formal(oracle):
-            assert oracle["approval"]["hash"] == S.compute_oracle_hash(oracle)
-            assert (_ROOT / "data/experiment_oracles/versions" / f"{case_id}_v2.json").exists()
+        assert oracle["approval"]["hash"] == S.compute_oracle_hash(oracle)
+        assert (_ROOT / "data/experiment_oracles/versions" / f"{case_id}_v2.json").exists()
 
 
 def test_benchmark_v1_archived_with_hashes():
     base = _ROOT / "data" / "experiment_benchmark" / "versions" / "benchmark_v1"
-    manifest = json.loads((base / "manifest.json").read_text(encoding="utf-8"))
+    manifest = _json(base / "manifest.json")
     assert manifest["benchmark_version"] == 1 and "DEVELOPMENT_TRIAL" in manifest["note"]
     for relative, digest in manifest["files"].items():
         assert BC.normalized_file_hash(base / relative) == digest, relative
-    legacy = json.loads((base / "experiment_variants.json").read_text(encoding="utf-8"))["variants"]["D08"]
+    legacy = _json(base / "experiment_variants.json")["variants"]["D08"]
     assert any("paro" in BC.normalize(v["command"]) for v in legacy)  # el texto legacy queda como evidencia
-
-
-# 15-16 ----------------------------------------------------------------------------------------
-
-def test_gui_loads_variants_from_canonical_catalog(app):
-    app.experiment_group_var.set("Discreto D01-D20")
-    app._refresh_experiment_case_selector()
-    name = f"D08 - {CASES['D08']['title']}"
-    assert name in app._experiment_profiles_by_case
-    app.experiment_case_var.set(name)
-    app._on_experiment_case_changed()
-    app.experiment_variant_var.set("V2")
-    app._update_variant_command_preview()
-    assert app._active_variant_command_text == CASES["D08"]["variants"]["V2"]
-    app.active_profile_id = None
-
-
-def test_new_trial_records_benchmark_version_and_hashes(pipeline):
-    app = pipeline["app"]
-    directory = _arm_experiment_trial(app)  # caso D12, variante V2
-    record = trial_model.load_trial(directory)
-    assert record["benchmark_version"] == 2
-    assert record["canonical_case_hash"] == BC.case_hash(CASES["D12"])
-    assert record["variant_hash"] == BC.variant_hash(CASES["D12"]["variants"]["V2"])
-    legacy = trial_model.new_trial_record("D12", "V1", "TEXT", 1)
-    assert legacy["benchmark_version"] is None  # ensayos sin benchmark_version = benchmark legacy (desarrollo)
 
 
 # 17 -------------------------------------------------------------------------------------------

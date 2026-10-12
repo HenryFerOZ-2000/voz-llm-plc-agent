@@ -1,8 +1,8 @@
-# Catalogo de comandos experimentales (benchmark v2)
+# Catalogo de comandos experimentales (benchmark v3)
 
 Fuente de verdad: `data/experiment_cases/canonical_cases.json`. `profiles.json` y `experiment_variants.json` se generan desde este catalogo; los Oracles se validan contra el.
 
-> **Nota metodologica.** Los comandos canonicos mantienen la formulacion original cuando esta es suficientemente inequivoca y anaden unicamente la informacion necesaria para definir un comportamiento PLC evaluable.
+> **Nota metodologica.** Los comandos canonicos mantienen la formulacion original cuando esta es suficientemente inequivoca y anaden unicamente la informacion necesaria para definir un comportamiento PLC evaluable. Benchmark v3 (FORMAL): refinado ANTES de los ensayos formales para hacer explicito, sin cambiar el comportamiento evaluado, lo que los Oracles congelados ya exigian (criterio: alineacion especificacion-ground truth). El v2 queda archivado como historico DEVELOPMENT en data/experiment_benchmark/versions/benchmark_v2/.
 
 Separacion de responsabilidades: los **requisitos del comando** (lo que el usuario pide y el PLC debe cumplir) estan separados de la **preparacion del test harness** (acciones del runner para empezar la prueba en un estado reproducible, que no son requisito del comando).
 
@@ -12,34 +12,34 @@ Separacion de responsabilidades: los **requisitos del comando** (lo que el usuar
 | D02 | Encender una lampara cuando una entrada digital este activa. | Enciende una lámpara mientras una entrada digital esté activa. | LOW |
 | D03 | Arranque y parada de motor con pulsadores independientes. | Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop. | LOW |
 | D04 | Arranque enclavado de motor con memoria de marcha. | Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop. | MEDIUM |
-| D05 | Paro de emergencia con prioridad sobre cualquier orden de arranque. | Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa. | MEDIUM |
+| D05 | Paro de emergencia con prioridad sobre cualquier orden de arranque. | Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa. | MEDIUM |
 | D06 | Activar alarma si se intenta arrancar sin condicion de seguridad. | Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma. | MEDIUM |
 | D07 | Arranque retardado 3 s. | Mientras Start permanezca activo, espera 3 segundos antes de encender el motor. | MEDIUM |
-| D08 | Apagar motor despues de 10 segundos de operacion continua. | Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo. | MEDIUM |
+| D08 | Apagar motor despues de 10 segundos de operacion continua. | Al activar Start, enciende el motor, mantenlo en marcha aunque se suelte Start y apágalo automáticamente después de 10 segundos de funcionamiento continuo. | MEDIUM |
 | D09 | Contar 5 pulsos y activar una salida. | Cuenta 5 pulsos de una entrada digital y, al llegar al quinto, activa una salida. | MEDIUM |
 | D10 | Resetear contador mediante pulsador. | Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida. | MEDIUM |
 | D11 | Control de contactor con enclavamiento electrico/logico. | Controla un contactor con Start y Stop usando enclavamiento de marcha. | HIGH |
 | D12 | Interlock: evitar activacion simultanea de dos contactores. | Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo. | HIGH |
-| D13 | Activar variador solo si no existe alarma. | Ante una orden de marcha, habilita el variador solo si no existe una alarma activa. | MEDIUM |
+| D13 | Activar variador solo si no existe alarma. | Con una orden de marcha, habilita el variador solo mientras no exista una alarma activa; si la alarma aparece con el variador habilitado, deshabilítalo. | MEDIUM |
 | D14 | Seleccionar velocidad baja/media/alta mediante entradas digitales. | Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada. | HIGH |
-| D15 | Modo manual/automatico para habilitacion del motor. | Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática. | HIGH |
+| D15 | Modo manual/automatico para habilitacion del motor. | El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto. | HIGH |
 | D16 | Secuencia: arranque -> espera -> salida auxiliar. | Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar. | HIGH |
-| D17 | Alarma si el sensor no cambia de estado en 5 s. | Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma. | HIGH |
+| D17 | Alarma si el sensor no cambia de estado en 5 s. | Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos. | HIGH |
 | D18 | Bloquear arranque en modo mantenimiento. | Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento. | MEDIUM |
-| D19 | Pilotos: detenido, marcha, falla. | Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual. | MEDIUM |
+| D19 | Pilotos: detenido, marcha, falla. | Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual. | MEDIUM |
 | D20 | Ciclo automatico: inicio -> ejecucion -> parada -> reset. | Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial. | HIGH |
-| P01 | Habilitar modo automatico. | Habilita el modo automático del sistema de nivel cuando se seleccione Automático. | LOW |
+| P01 | Habilitar modo automatico. | El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático. | LOW |
 | P02 | Cambiar setpoint a 60 %. | Cambia el setpoint del nivel al 60 %. | LOW |
 | P03 | Rechazar setpoint fuera de rango seguro. | Acepta setpoints de nivel entre 0 % y 100 %. Si se solicita un valor fuera de ese rango, recházalo y conserva el último valor válido. | LOW |
-| P04 | Alarma si nivel > 90 %. | Activa una alarma de nivel alto cuando el nivel supere el 90 %. | LOW |
-| P05 | Alarma si nivel < 10 %. | Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %. | LOW |
-| P06 | PID habilitado solo en automatico. | Habilita el PID únicamente cuando el sistema esté en modo Automático. | MEDIUM |
-| P07 | Deshabilitar PID ante condicion de emergencia/seguridad autorizada. | Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente. | LOW |
-| P08 | Modo manual con operacion limitada de bomba. | En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne. | MEDIUM |
-| P09 | Fallo de sensor por valor fuera de rango. | Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %. | MEDIUM |
-| P10 | Reset de alarma solo si desaparecio la falla. | Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido. | MEDIUM |
-| P11 | Parada segura ante sobrellenado. | Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa. | MEDIUM |
-| P12 | Secuencia completa: automatico -> setpoint -> alarma -> recuperacion. | En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática. | HIGH |
+| P04 | Alarma si nivel > 90 %. | Activa la alarma de nivel alto mientras el nivel esté por encima del 90 % y desactívala cuando vuelva a 90 % o menos. | LOW |
+| P05 | Alarma si nivel < 10 %. | Activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y desactívala cuando vuelva a 10 % o más. | LOW |
+| P06 | PID habilitado solo en automatico. | El PID solo debe estar habilitado mientras el sistema se encuentre en modo Automático, que selecciona el operador; en modo Manual debe permanecer deshabilitado. | MEDIUM |
+| P07 | Deshabilitar PID ante condicion de emergencia/seguridad autorizada. | Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato. | LOW |
+| P08 | Modo manual con operacion limitada de bomba. | Cuando el sistema esté en modo Manual, es decir, siempre que no esté en Automático, la bomba debe encenderse y apagarse solo con la orden manual del operador; el control automático no debe actuar sobre ella. | MEDIUM |
+| P09 | Fallo de sensor por valor fuera de rango. | Indica fallo del sensor mientras el nivel medido esté por debajo de 0 % o por encima de 100 %; cuando vuelva a estar entre 0 % y 100 %, el fallo debe desaparecer. | MEDIUM |
+| P10 | Reset de alarma solo si desaparecio la falla. | Activa una alarma cuando el nivel medido salga del rango de 0 % a 100 % por fallo del sensor. Mientras la medición siga fuera de ese rango, el Reset no debe borrar la alarma; cuando vuelva al rango, el Reset sí debe borrarla. | MEDIUM |
+| P11 | Parada segura ante sobrellenado. | En operación normal la bomba está en marcha; si el nivel alcanza o supera el 95 %, considéralo sobrellenado y mantén la bomba apagada mientras dure esa condición. | MEDIUM |
+| P12 | Secuencia completa: automatico -> setpoint -> alarma -> recuperacion. | En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura: PID deshabilitado y bomba apagada. Cuando el nivel vuelva a 90 % o menos, el PID debe volver a habilitarse por sí solo, sin intervención del operador. | HIGH |
 
 ## D01 - Salida temporizada de 5 s
 
@@ -105,14 +105,14 @@ Preparacion del test harness (no es requisito del comando):
 
 ## D05 - Prioridad de la condicion de emergencia sobre el arranque
 
-**Comando canonico:** Enciende un motor con Start solo si la condición de seguridad está normal. Si se activa la condición de emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.
+**Comando canonico:** Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.
 
-- **V1:** Arranca el motor con Start solo si la condición de seguridad es normal; si se activa la emergencia, apágalo y bloquea el arranque mientras siga activa.
-- **V2:** Quiero que el motor arranque con Start únicamente con la seguridad normal, y que una emergencia lo apague y no deje arrancarlo mientras dure.
-- **V3:** Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; con la seguridad normal, Start enciende el motor.
+- **V1:** Arranca el motor con Start únicamente si no hay emergencia activa; si se activa, apágalo y bloquea el arranque mientras siga activa.
+- **V2:** Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.
+- **V3:** Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.
 
 Requisitos del comando:
-- R1: Con la seguridad normal, Start enciende el motor.
+- R1: Sin emergencia activa, Start enciende el motor.
 - R2: La emergencia apaga el motor.
 - R3: Mientras la emergencia esta activa, el arranque esta bloqueado.
 
@@ -154,15 +154,15 @@ Preparacion del test harness (no es requisito del comando):
 
 ## D08 - Paro automatico tras 10 s de funcionamiento continuo
 
-**Comando canonico:** Al activar Start, enciende el motor y apágalo automáticamente después de 10 segundos de funcionamiento continuo.
+**Comando canonico:** Al activar Start, enciende el motor, mantenlo en marcha aunque se suelte Start y apágalo automáticamente después de 10 segundos de funcionamiento continuo.
 
-- **V1:** Enciende el motor con Start y apágalo automáticamente después de 10 segundos de funcionamiento.
-- **V2:** Haz que el motor arranque con Start y se detenga solo tras funcionar durante 10 segundos.
-- **V3:** Cuando se active Start, mantén el motor funcionando 10 segundos y después apágalo.
+- **V1:** Enciende el motor con Start, que siga en marcha aunque se suelte el pulsador, y apágalo automáticamente tras 10 segundos de funcionamiento.
+- **V2:** Haz que el motor arranque con Start, siga funcionando aunque se suelte y se detenga solo tras 10 segundos.
+- **V3:** Cuando se active Start, mantén el motor funcionando 10 segundos, aunque se suelte el pulsador, y después apágalo.
 
 Requisitos del comando:
 - R1: Al activar Start el motor se enciende.
-- R2: Tras 10 s de funcionamiento continuo el motor se apaga automaticamente.
+- R2: El motor sigue en marcha tras soltar Start y, a los 10 s de funcionamiento continuo, se apaga automaticamente.
 
 Preparacion del test harness (no es requisito del comando):
 - Start en OFF durante 11 s antes de la prueba (cualquier operacion previa expira).
@@ -231,15 +231,15 @@ Preparacion del test harness (no es requisito del comando):
 
 ## D13 - Variador habilitado solo sin alarma
 
-**Comando canonico:** Ante una orden de marcha, habilita el variador solo si no existe una alarma activa.
+**Comando canonico:** Con una orden de marcha, habilita el variador solo mientras no exista una alarma activa; si la alarma aparece con el variador habilitado, deshabilítalo.
 
-- **V1:** Ante una orden de marcha, habilita el variador solo si no hay alarma activa.
-- **V2:** Quiero que el variador se habilite con la orden de marcha, pero nunca si existe una alarma activa.
-- **V3:** Si hay una alarma activa, el variador no debe habilitarse aunque llegue la orden de marcha; sin alarma, habilítalo con esa orden.
+- **V1:** Habilita el variador con la orden de marcha únicamente mientras no haya alarma activa; si aparece una alarma, deshabilítalo.
+- **V2:** Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.
+- **V3:** Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden.
 
 Requisitos del comando:
 - R1: Con orden de marcha y sin alarma, el variador se habilita.
-- R2: Con alarma activa el variador no se habilita.
+- R2: Si aparece una alarma con el variador habilitado, el variador se deshabilita; con alarma activa nunca esta habilitado.
 - R3: Sin orden de marcha el variador no se habilita ('ante una orden de marcha').
 
 Preparacion del test harness (no es requisito del comando):
@@ -264,11 +264,11 @@ Preparacion del test harness (no es requisito del comando):
 
 ## D15 - Modo Manual/Automatico con orden por modo
 
-**Comando canonico:** Implementa modo Manual y Automático para el motor: en Manual responde a una orden manual y en Automático a una orden automática.
+**Comando canonico:** El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto.
 
-- **V1:** Implementa modo Manual y Automático para el motor: en Manual obedece la orden manual y en Automático la orden automática.
-- **V2:** Quiero que en modo Manual el motor responda a la orden manual y en modo Automático a la orden automática.
-- **V3:** Según el modo seleccionado, Manual o Automático, el motor debe atender la orden manual o la orden automática respectivamente.
+- **V1:** Con un selector Manual/Automático: en Automático, el motor obedece la orden automática; en Manual, la orden manual; la otra orden se ignora.
+- **V2:** Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.
+- **V3:** Según la posición del selector, Manual o Automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.
 
 Requisitos del comando:
 - R1: En Manual el motor responde a la orden manual.
@@ -296,16 +296,16 @@ Preparacion del test harness (no es requisito del comando):
 
 ## D17 - Supervision de sensor 5 s tras Start
 
-**Comando canonico:** Al activar Start, supervisa un sensor; si no cambia de estado durante 5 segundos, activa una alarma.
+**Comando canonico:** Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos.
 
-- **V1:** Al activar Start, vigila el sensor y activa una alarma si no cambia de estado durante 5 segundos.
-- **V2:** Quiero que, después de dar Start, se active una alarma si el sensor pasa cinco segundos sin cambiar de estado.
-- **V3:** Tras activar Start, si el sensor permanece sin cambios 5 segundos, activa la alarma.
+- **V1:** Tras activar Start, vigila el sensor y activa una alarma si transcurren 5 segundos sin ningún cambio; cada cambio reinicia la cuenta.
+- **V2:** Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.
+- **V3:** Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma.
 
 Requisitos del comando:
 - R1: Antes de Start no hay supervision (no hay alarma).
 - R2: Con cambios del sensor en menos de 5 s no hay alarma.
-- R3: Si el sensor no cambia durante 5 s, se activa la alarma.
+- R3: Si el sensor no cambia durante 5 s contados desde su ultimo cambio, se activa la alarma.
 
 Preparacion del test harness (no es requisito del comando):
 - Start y sensor en OFF antes de la prueba.
@@ -327,11 +327,11 @@ Preparacion del test harness (no es requisito del comando):
 
 ## D19 - Pilotos de estado: detenido, marcha y falla
 
-**Comando canonico:** Controla tres pilotos para indicar detenido, marcha y falla, manteniendo activo únicamente el correspondiente al estado actual.
+**Comando canonico:** Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual.
 
-- **V1:** Controla tres pilotos de detenido, marcha y falla, dejando encendido solo el del estado actual.
-- **V2:** Quiero tres pilotos, detenido, marcha y falla, y que solo esté encendido el que corresponde al estado actual.
-- **V3:** Indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.
+- **V1:** Con las señales de marcha y falla del sistema, controla tres pilotos (detenido, marcha y falla) y deja encendido solo el del estado actual.
+- **V2:** Quiero tres pilotos, detenido, marcha y falla, que según las señales de marcha y falla del sistema dejen encendido solo el que corresponde al estado actual.
+- **V3:** A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.
 
 Requisitos del comando:
 - R1: Detenido: solo el piloto de detenido.
@@ -363,15 +363,15 @@ Preparacion del test harness (no es requisito del comando):
 
 ## P01 - Modo automatico al seleccionar Automatico
 
-**Comando canonico:** Habilita el modo automático del sistema de nivel cuando se seleccione Automático.
+**Comando canonico:** El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático.
 
-- **V1:** Habilita el modo automático del sistema de nivel al seleccionar Automático.
-- **V2:** Quiero que el sistema de nivel pase a modo automático cuando se elija Automático.
-- **V3:** Cuando se seleccione Automático, activa el modo automático del control de nivel.
+- **V1:** Pasa el sistema de nivel a modo automático únicamente cuando el operador seleccione Automático.
+- **V2:** Quiero que el control de nivel entre en automático solo si el operador elige Automático.
+- **V3:** Solo al seleccionar el operador Automático debe el sistema de nivel ponerse en modo automático.
 
 Requisitos del comando:
-- R1: Al seleccionar Automatico, el modo automatico queda habilitado.
-- R2: Sin seleccionar Automatico, el modo automatico no se habilita (condicional 'cuando').
+- R1: Al seleccionar Automatico, el sistema de nivel pasa a modo automatico.
+- R2: Sin seleccionar Automatico, el sistema no pasa a modo automatico ('solo cuando').
 
 Preparacion del test harness (no es requisito del comando):
 - Seleccion de Automatico en OFF antes de la prueba.
@@ -413,15 +413,15 @@ Aclaraciones:
 
 ## P04 - Alarma de nivel alto > 90 %
 
-**Comando canonico:** Activa una alarma de nivel alto cuando el nivel supere el 90 %.
+**Comando canonico:** Activa la alarma de nivel alto mientras el nivel esté por encima del 90 % y desactívala cuando vuelva a 90 % o menos.
 
-- **V1:** Activa la alarma de nivel alto cuando el nivel pase del 90 %.
-- **V2:** Quiero una alarma de nivel alto si el nivel supera el noventa por ciento.
-- **V3:** Con el nivel por encima del 90 %, activa la alarma de nivel alto.
+- **V1:** Mantén activa la alarma de nivel alto mientras el nivel supere el 90 % y apágala cuando baje a 90 % o menos.
+- **V2:** Quiero que la alarma de nivel alto suene mientras el nivel pase del noventa por ciento y se quite al volver a noventa o menos.
+- **V3:** Con el nivel por encima del 90 %, la alarma de nivel alto debe estar activa; a 90 % o menos, desactivada.
 
 Requisitos del comando:
 - R1: Con el nivel por encima de 90 % se activa la alarma de nivel alto.
-- R2: Por debajo de 90 % no hay alarma de nivel alto (condicional 'cuando').
+- R2: Con el nivel en 90 % o menos no hay alarma de nivel alto (se desactiva al volver).
 
 Preparacion del test harness (no es requisito del comando):
 - Nivel simulado en 50 % antes de la prueba y al final.
@@ -431,15 +431,15 @@ Aclaraciones:
 
 ## P05 - Alarma de nivel bajo < 10 %
 
-**Comando canonico:** Activa una alarma de nivel bajo cuando el nivel sea inferior al 10 %.
+**Comando canonico:** Activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y desactívala cuando vuelva a 10 % o más.
 
-- **V1:** Activa la alarma de nivel bajo cuando el nivel baje del 10 %.
-- **V2:** Quiero una alarma de nivel bajo si el nivel es inferior al diez por ciento.
-- **V3:** Con el nivel por debajo del 10 %, activa la alarma de nivel bajo.
+- **V1:** Mantén activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y apágala cuando suba a 10 % o más.
+- **V2:** Quiero que la alarma de nivel bajo suene mientras el nivel sea inferior al diez por ciento y se quite al volver a diez o más.
+- **V3:** Con el nivel por debajo del 10 %, la alarma de nivel bajo debe estar activa; a 10 % o más, desactivada.
 
 Requisitos del comando:
 - R1: Con el nivel por debajo de 10 % se activa la alarma de nivel bajo.
-- R2: Por encima de 10 % no hay alarma de nivel bajo (condicional 'cuando').
+- R2: Con el nivel en 10 % o mas no hay alarma de nivel bajo (se desactiva al volver).
 
 Preparacion del test harness (no es requisito del comando):
 - Nivel simulado en 50 % antes de la prueba y al final.
@@ -449,15 +449,15 @@ Aclaraciones:
 
 ## P06 - PID habilitado solo en Automatico
 
-**Comando canonico:** Habilita el PID únicamente cuando el sistema esté en modo Automático.
+**Comando canonico:** El PID solo debe estar habilitado mientras el sistema se encuentre en modo Automático, que selecciona el operador; en modo Manual debe permanecer deshabilitado.
 
-- **V1:** Habilita el PID solo cuando el sistema esté en modo Automático.
-- **V2:** Quiero que el PID funcione únicamente en modo Automático.
-- **V3:** El PID debe estar habilitado solamente mientras el sistema esté en Automático.
+- **V1:** Mantén el PID habilitado únicamente mientras el operador tenga el sistema en Automático; en Manual, deshabilitado.
+- **V2:** Quiero que el PID solo funcione cuando el operador haya puesto el sistema en Automático, y que en Manual quede deshabilitado.
+- **V3:** Solo con el sistema en el modo Automático elegido por el operador puede estar habilitado el PID; en Manual debe estar deshabilitado.
 
 Requisitos del comando:
 - R1: En modo Automatico el PID esta habilitado.
-- R2: Fuera de Automatico el PID no esta habilitado ('unicamente').
+- R2: En Manual (fuera de Automatico) el PID esta deshabilitado.
 
 Preparacion del test harness (no es requisito del comando):
 - Modo Automatico en OFF antes de la prueba.
@@ -467,13 +467,14 @@ Aclaraciones:
 
 ## P07 - PID deshabilitado ante emergencia
 
-**Comando canonico:** Si se activa una condición de emergencia mientras el PID está funcionando, deshabilítalo inmediatamente.
+**Comando canonico:** Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato.
 
-- **V1:** Si se activa una condición de emergencia con el PID funcionando, deshabilítalo de inmediato.
-- **V2:** Quiero que, si hay una emergencia mientras el PID trabaja, el PID se deshabilite en el acto.
-- **V3:** Ante una condición de emergencia durante el funcionamiento del PID, deshabilítalo inmediatamente.
+- **V1:** En Automático el PID funciona habilitado, pero si se activa una emergencia, deshabilítalo inmediatamente.
+- **V2:** Quiero que el PID esté habilitado en Automático y que, si hay una emergencia, se deshabilite en el acto.
+- **V3:** Ante una condición de emergencia, el PID, que en Automático está habilitado, debe deshabilitarse de inmediato.
 
 Requisitos del comando:
+- R0: En Automatico, sin emergencia, el PID esta habilitado.
 - R1: La emergencia deshabilita el PID en funcionamiento.
 
 Preparacion del test harness (no es requisito del comando):
@@ -484,11 +485,11 @@ Aclaraciones:
 
 ## P08 - Bomba manual ON/OFF en modo Manual
 
-**Comando canonico:** En modo Manual, permite encender y apagar la bomba mediante una orden manual, sin que el control automático la gobierne.
+**Comando canonico:** Cuando el sistema esté en modo Manual, es decir, siempre que no esté en Automático, la bomba debe encenderse y apagarse solo con la orden manual del operador; el control automático no debe actuar sobre ella.
 
-- **V1:** En modo Manual, enciende y apaga la bomba con una orden manual, sin que el control automático intervenga.
-- **V2:** Quiero que en Manual la bomba se encienda y se apague solo con la orden manual, no con el control automático.
-- **V3:** Con el sistema en Manual, la orden manual decide si la bomba está encendida o apagada; el control automático no la gobierna.
+- **V1:** Siempre que el sistema no esté en Automático, o sea en Manual, la orden manual del operador enciende y apaga la bomba, sin que actúe el control automático.
+- **V2:** Quiero que, mientras el sistema no esté en Automático, la bomba solo se encienda y apague con la orden manual del operador.
+- **V3:** Fuera del modo Automático, en Manual, la bomba debe seguir únicamente la orden manual del operador para encenderse o apagarse.
 
 Requisitos del comando:
 - R1: En Manual, la orden manual enciende la bomba.
@@ -502,16 +503,16 @@ Aclaraciones:
 
 ## P09 - Fallo de sensor fuera de 0-100 %
 
-**Comando canonico:** Detecta un fallo del sensor si el nivel medido está fuera del rango de 0 % a 100 %.
+**Comando canonico:** Indica fallo del sensor mientras el nivel medido esté por debajo de 0 % o por encima de 100 %; cuando vuelva a estar entre 0 % y 100 %, el fallo debe desaparecer.
 
-- **V1:** Detecta fallo de sensor cuando el nivel medido esté fuera del rango de 0 % a 100 %.
-- **V2:** Quiero que se marque un fallo del sensor si el nivel medido sale del rango de cero a cien por ciento.
-- **V3:** Si el nivel medido no está entre 0 % y 100 %, indica un fallo del sensor.
+- **V1:** Señala fallo de sensor mientras el nivel medido esté fuera de 0 % a 100 % y quítalo cuando vuelva a ese rango.
+- **V2:** Quiero que se marque fallo del sensor mientras el nivel medido salga del rango de cero a cien por ciento, y que se quite al volver a él.
+- **V3:** Con el nivel medido por debajo de 0 % o por encima de 100 % debe haber fallo de sensor; dentro de ese rango, no.
 
 Requisitos del comando:
 - R1: Nivel por encima de 100 %: fallo de sensor.
 - R2: Nivel por debajo de 0 %: fallo de sensor.
-- R3: Nivel dentro del rango: sin fallo (condicional 'si').
+- R3: Con el nivel de nuevo dentro de 0-100 % no hay fallo de sensor (desaparece al volver).
 
 Preparacion del test harness (no es requisito del comando):
 - Nivel simulado en 50 % antes de la prueba y al final.
@@ -521,13 +522,14 @@ Aclaraciones:
 
 ## P10 - Reset de alarma de sensor solo sin falla
 
-**Comando canonico:** Si existe una alarma por fallo del sensor, no permitas resetearla mientras la falla continúe; permite el Reset cuando la medición vuelva al rango válido.
+**Comando canonico:** Activa una alarma cuando el nivel medido salga del rango de 0 % a 100 % por fallo del sensor. Mientras la medición siga fuera de ese rango, el Reset no debe borrar la alarma; cuando vuelva al rango, el Reset sí debe borrarla.
 
-- **V1:** Si hay una alarma por fallo del sensor, no permitas su Reset mientras la falla siga; permítelo cuando la medición vuelva al rango válido.
-- **V2:** Quiero que la alarma por fallo del sensor no se pueda resetear mientras dure la falla, y que sí se pueda cuando la medición vuelva a ser válida.
-- **V3:** El Reset de la alarma por fallo del sensor solo debe funcionar cuando la medición haya vuelto al rango válido, no mientras continúe la falla.
+- **V1:** Genera una alarma si el nivel medido sale de 0 % a 100 % por fallo del sensor; el Reset no la borra mientras siga fuera y sí cuando vuelva al rango.
+- **V2:** Quiero una alarma por fallo del sensor cuando la medición salga de cero a cien por ciento, que no se pueda resetear mientras dure y sí al volver al rango.
+- **V3:** Un nivel medido fuera de 0 % a 100 % debe activar la alarma de fallo del sensor; el Reset solo la borra cuando la medición vuelve a ese rango.
 
 Requisitos del comando:
+- R0: Un nivel medido fuera de 0-100 % activa la alarma por fallo del sensor.
 - R1: Con la falla presente, Reset no borra la alarma.
 - R2: Con la medicion en rango, Reset borra la alarma.
 
@@ -539,13 +541,14 @@ Aclaraciones:
 
 ## P11 - Bomba apagada por sobrellenado >= 95 %
 
-**Comando canonico:** Si el nivel alcanza o supera el 95 %, considera sobrellenado y apaga la bomba mientras esa condición permanezca activa.
+**Comando canonico:** En operación normal la bomba está en marcha; si el nivel alcanza o supera el 95 %, considéralo sobrellenado y mantén la bomba apagada mientras dure esa condición.
 
-- **V1:** Si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure esa condición.
-- **V2:** Quiero que la bomba se apague mientras el nivel esté en el noventa y cinco por ciento o más, porque es sobrellenado.
-- **V3:** Considera sobrellenado un nivel igual o superior al 95 % y mantén la bomba apagada mientras siga así.
+- **V1:** Con el nivel normal la bomba funciona; si el nivel llega o supera el 95 %, trátalo como sobrellenado y apaga la bomba mientras dure.
+- **V2:** Quiero que la bomba trabaje normalmente y que se apague mientras el nivel esté en el noventa y cinco por ciento o más, por sobrellenado.
+- **V3:** La bomba, en marcha en condiciones normales, debe quedar apagada mientras el nivel sea igual o superior al 95 % (sobrellenado).
 
 Requisitos del comando:
+- R0: En operacion normal (nivel por debajo de 95 %) la bomba esta en marcha.
 - R1: Con nivel >= 95 % la bomba esta apagada mientras dure la condicion.
 
 Preparacion del test harness (no es requisito del comando):
@@ -556,16 +559,16 @@ Aclaraciones:
 
 ## P12 - Automatico con SP 60 %, alarma > 90 % y recuperacion
 
-**Comando canonico:** En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura. Cuando el nivel vuelva al rango permitido, permite recuperar la operación automática.
+**Comando canonico:** En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura: PID deshabilitado y bomba apagada. Cuando el nivel vuelva a 90 % o menos, el PID debe volver a habilitarse por sí solo, sin intervención del operador.
 
-- **V1:** En modo Automático, habilita el PID con setpoint del 60 %; si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura, y cuando vuelva al rango permitido deja recuperar la operación automática.
-- **V2:** Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento, que por encima del noventa por ciento suene la alarma y el proceso pase a condición segura, y que al volver el nivel al rango permitido se pueda recuperar el automático.
-- **V3:** Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma y la condición segura, y el regreso del nivel al rango permitido permite recuperar la operación automática.
+- **V1:** En Automático, PID habilitado con setpoint del 60 %; por encima del 90 %, alarma y condición segura (PID deshabilitado y bomba apagada); al volver a 90 % o menos, el PID se rehabilita solo, sin que intervenga el operador.
+- **V2:** Quiero que en Automático el PID trabaje con un setpoint del sesenta por ciento; que por encima del noventa por ciento suene la alarma y se pare el PID y la bomba; y que, al volver a noventa o menos, el PID se reactive solo.
+- **V3:** Con el sistema en Automático y setpoint del 60 %, habilita el PID; un nivel mayor del 90 % activa la alarma, deshabilita el PID y apaga la bomba; al regresar a 90 % o menos, el PID vuelve a habilitarse automáticamente.
 
 Requisitos del comando:
 - R1: En Automatico, PID habilitado con setpoint 60 %.
 - R2: Nivel > 90 %: alarma y condicion segura (PID deshabilitado y bomba apagada).
-- R3: Con el nivel de nuevo en rango, se recupera la operacion automatica (PID habilitado).
+- R3: Con el nivel en 90 % o menos, el PID vuelve a habilitarse por si solo (sin Reset ni intervencion).
 
 Preparacion del test harness (no es requisito del comando):
 - Modo Automatico y nivel simulado 50 % antes de la prueba.

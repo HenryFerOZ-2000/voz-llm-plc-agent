@@ -89,9 +89,17 @@ def _oracle(case_id: str) -> dict[str, Any]:
     return oracle_schema.load_oracle(_ROOT, case_id)
 
 
-def _run_oracle(case: dict[str, Any], logic, oracle_id: str = "D03") -> tuple[dict[str, Any], _Sim]:
+def _d03_v1_oracle() -> dict[str, Any]:
+    """D03 v1 (benchmark v2, archivado y congelado): solo aceptaba INT_MOTOR_START_STOP. Se usa para demostrar que una
+    discrepancia de intent no bloquea la evaluacion funcional; en v3 D03 acepta tambien INT_MOTOR_LATCH."""
+    oracle = json.loads((_ROOT / "data" / "experiment_oracles" / "versions" / "D03_v1.json").read_text(encoding="utf-8"))
+    oracle_schema.verify_integrity(oracle)
+    return oracle
+
+
+def _run_oracle(case: dict[str, Any], logic, oracle_id: str = "D03", oracle: dict[str, Any] | None = None) -> tuple[dict[str, Any], _Sim]:
     sim = _Sim(logic)
-    result = oracle_runner.run_oracle(_oracle(oracle_id), case["snapshot_path"], dict(_RUN), "PLCSIM_ADVANCED",
+    result = oracle_runner.run_oracle(oracle or _oracle(oracle_id), case["snapshot_path"], dict(_RUN), "PLCSIM_ADVANCED",
                                       case["semantic"], _ROOT, bridge=sim, runtime_config=_CONFIG)
     return result, sim
 
@@ -194,7 +202,7 @@ def test_generator_external_defaults_match_the_single_source_table(intent_id, mo
 # ---------------------------------------------------------------------------------------------
 
 def test_oracle_resolves_roles_and_runs_functional_despite_intent_mismatch(d03):
-    result, sim = _run_oracle(d03, latch("I_Start", "I_Stop", "Q_Motor_Enable"))
+    result, sim = _run_oracle(d03, latch("I_Start", "I_Stop", "Q_Motor_Enable"), oracle=_d03_v1_oracle())
     roles = result["roles"]["roles"]
     assert result["roles"]["status"] == "RESOLVED"
     assert {role: entry["functional_name"] for role, entry in roles.items()} == {
@@ -221,7 +229,7 @@ def test_incorrect_behavior_is_functional_fail_even_with_a_semantic_mismatch(d03
     def no_memory(io, st, dt):  # el motor sigue al pulsador: sin memoria de marcha
         io["Q_Motor_Enable"] = io.get("I_Start", False) and not io.get("I_Stop", False)
 
-    result, _ = _run_oracle(d03, no_memory)
+    result, _ = _run_oracle(d03, no_memory, oracle=_d03_v1_oracle())
     assert result["functional"]["success"] is False and result["semantic"]["success"] is False
     assert (result["verdict"], result["verdict_reason"]) == ("FAIL", "FUNCTIONAL_FAILURE")  # nunca REVIEW por el intent
 
@@ -252,6 +260,13 @@ def test_unresolvable_roles_still_produce_review_without_runtime(d03):
     result = oracle_runner.run_oracle(_oracle("D03"), path, dict(_RUN), "PLCSIM_ADVANCED", d03["semantic"], _ROOT,
                                       bridge=sim, runtime_config=_CONFIG)
     assert result["verdict"] == "REVIEW" and result["verdict_reason"] in (oracle_runner.ROLE_AMBIGUOUS, oracle_runner.ROLE_CONFLICT)
+
+
+def test_d03_v3_accepts_latch_by_functional_symmetry_with_d04_and_d11(d03):
+    # Benchmark v3 (decision aprobada): mismo programa enclavado -> semantic match en D03, igual que en D04/D11.
+    result, _ = _run_oracle(d03, latch("I_Start", "I_Stop", "Q_Motor_Enable"))
+    assert result["semantic"]["intent_match"] is True and result["functional"]["success"] is True
+    assert result["verdict"] == "PASS"
 
 
 def test_d04_accepts_latch_so_the_same_program_matches_there(d03):

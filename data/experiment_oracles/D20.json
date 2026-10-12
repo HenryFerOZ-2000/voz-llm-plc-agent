@@ -8,11 +8,15 @@
   "approval": {
     "status": "FROZEN",
     "approved_by": "Henry Ochoa",
-    "approved_at": "2026-09-30T12:41:31",
-    "version": 1,
-    "hash": "94bc6d4b64cc91672426a315f473bb7736cb08c0eeff0a8d71ee46f4b2a3151d",
-    "generated_by": "Claude (borrador asistido por IA) a partir de la definicion oficial del caso",
-    "legacy_reference": "data/plc_maps/profiles.json D20 (INT_AUTO_CYCLE)",
+    "approved_at": "2026-10-12T12:21:55",
+    "version": 2,
+    "hash": "9cbe97bddbb6a934dc3a4c38b8528f918bb7821116a0ba7296923f9293762d93",
+    "previous_hash": "94bc6d4b64cc91672426a315f473bb7736cb08c0eeff0a8d71ee46f4b2a3151d",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
       "generated": true,
       "schema_validated": true,
@@ -24,17 +28,21 @@
         "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
         "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
         "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
-        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata)."
-      ]
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
     }
   },
   "source_definition": {
-    "benchmark_version": 2,
+    "benchmark_version": 3,
     "catalog": "data/experiment_cases/canonical_cases.json",
     "case_title": "Ciclo automatico de 3 s con Reset",
     "original_requirement": "Ciclo automatico: inicio -> ejecucion -> parada -> reset.",
     "canonical_command": "Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.",
-    "canonical_case_hash": "b621cf538012ef40d423829b0144a9d1b9dea637d445a9580c87df04d1a7345c",
+    "canonical_case_hash": "c5ae458401098ce03dd08209fcdb88bb630d09f147435e2c6cacdfbe27c4569c",
     "legacy_reference_intent": "INT_AUTO_CYCLE"
   },
   "runtime_support": "EXECUTABLE_NOW",
@@ -109,7 +117,7 @@
     },
     {
       "id": "CMD-CANONICAL",
-      "text": "COMANDO CANONICO (benchmark v2): Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial."
+      "text": "COMANDO CANONICO (benchmark v3): Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial."
     },
     {
       "id": "C-D20-CYCLE",
@@ -117,7 +125,7 @@
     },
     {
       "id": "C-D20-DURATION",
-      "text": "Duracion de ejecucion de 3 s: CONVENCION experimental (la definicion no fija el tiempo)."
+      "text": "Duracion de ejecucion de 3 s, fijada por el comando canonico."
     },
     {
       "id": "C-PULSE",
