@@ -71,17 +71,18 @@ def test_hashes_valid_d03_untouched_and_no_ai_approval():
     assert d03_v1["approval"]["hash"] == oracle_schema.compute_oracle_hash(d03_v1) == \
         "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
     d03 = _oracle("D03")
-    # v3: validacion tecnica PASSED, aprobacion humana PENDIENTE (approved_by nunca se escribe automaticamente).
-    assert d03["approval"]["status"] == "DRAFT_REVIEWED" and d03["approval"]["approved_by"] is None
+    # v3: validacion tecnica PASSED; FROZEN solo con aprobacion humana explicita (approved_by nunca automatico).
+    assert oracle_schema.is_formal(d03) == bool(d03["approval"]["approved_by"])
     assert d03["approval"]["technical_validation"]["content_hash"] == oracle_schema.compute_oracle_hash(d03)
     assert d03["approval"]["previous_hash"] == d03_v1["approval"]["hash"]
     pending = set()
     for case_id in oracle_review.EXPECTED_ORACLE_IDS:
         oracle = _oracle(case_id)
         approval = oracle["approval"]
-        if case_id == "D03":  # piloto manual: sin ai_review; validacion tecnica v3 registrada y aprobacion pendiente
-            assert approval["technical_validation"]["status"] == "PASSED" and not oracle_schema.is_formal(oracle)
-            pending.add(case_id)
+        if case_id == "D03":  # piloto manual: sin ai_review; validacion tecnica v3 registrada
+            assert approval["technical_validation"]["status"] == "PASSED"
+            if not oracle_schema.is_formal(oracle):
+                pending.add(case_id)
             continue
         assert approval["ai_review"]["semantic_reviewed"] is True  # la revision asistida queda registrada
         if oracle_schema.is_formal(oracle):

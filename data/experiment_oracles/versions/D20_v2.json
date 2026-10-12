@@ -1,0 +1,306 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D20",
+  "case_id": "D20",
+  "title": "D20 - Ciclo automatico minimo: inicio, ejecucion, fin y reset",
+  "description": "START inicia la ejecucion (RUN_OUTPUT activa); al terminar la ejecucion el ciclo queda completo; RESET vuelve al reposo.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "9cbe97bddbb6a934dc3a4c38b8528f918bb7821116a0ba7296923f9293762d93",
+    "previous_hash": "94bc6d4b64cc91672426a315f473bb7736cb08c0eeff0a8d71ee46f4b2a3151d",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "9cbe97bddbb6a934dc3a4c38b8528f918bb7821116a0ba7296923f9293762d93",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Ciclo automatico de 3 s con Reset",
+    "original_requirement": "Ciclo automatico: inicio -> ejecucion -> parada -> reset.",
+    "canonical_command": "Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.",
+    "canonical_case_hash": "c5ae458401098ce03dd08209fcdb88bb630d09f147435e2c6cacdfbe27c4569c",
+    "legacy_reference_intent": "INT_AUTO_CYCLE"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_AUTO_CYCLE"
+    ],
+    "required_functions": [
+      "auto_cycle",
+      "cycle_reset"
+    ],
+    "required_roles": [
+      "START",
+      "RESET",
+      "RUN_OUTPUT",
+      "COMPLETE_STATE"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Inicio del ciclo.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "RESET": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Reinicio del ciclo.",
+      "semantic_paths": [
+        "reset_input"
+      ]
+    },
+    "RUN_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida activa durante la ejecucion.",
+      "semantic_paths": [
+        "run_output",
+        "motor_output"
+      ]
+    },
+    "COMPLETE_STATE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Indicacion de ciclo completo.",
+      "semantic_paths": [
+        "complete_state",
+        "complete_output",
+        "cycle_complete_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 2,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Ciclo automatico: inicio -> ejecucion -> parada -> reset."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial."
+    },
+    {
+      "id": "C-D20-CYCLE",
+      "text": "Ciclo minimo IDLE -> RUNNING (RUN_OUTPUT) -> COMPLETE (COMPLETE_STATE) -> RESET -> IDLE. La 'parada' es el fin automatico de la ejecucion. Sin alarmas (el caso no las solicita)."
+    },
+    {
+      "id": "C-D20-DURATION",
+      "text": "Duracion de ejecucion de 3 s, fijada por el comando canonico."
+    },
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    },
+    {
+      "id": "C-TIMING",
+      "text": "Temporizaciones: transicion nominal con tolerancia -300 ms / +700 ms medida en el bridge (reloj monotono); las ventanas de evaluacion dejan libre esa banda."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_reset_on",
+      "description": "Reset del ciclo.",
+      "set": {
+        "START": false,
+        "RESET": true
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "pre_reset_off",
+      "description": "Reposo (IDLE).",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "s1_start",
+      "description": "START: ejecucion (RUNNING).",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "RUN_OUTPUT": true,
+        "COMPLETE_STATE": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "description": "Ejecucion de ~3 s y paso a COMPLETE.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 4500,
+      "expect": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": true
+      },
+      "time_reference": "s1_start",
+      "expect_timeline": [
+        {
+          "from_ms": 300,
+          "to_ms": 2700,
+          "expect": {
+            "RUN_OUTPUT": true,
+            "COMPLETE_STATE": false
+          },
+          "note": "RUNNING."
+        },
+        {
+          "from_ms": 3700,
+          "to_ms": 4800,
+          "expect": {
+            "RUN_OUTPUT": false,
+            "COMPLETE_STATE": true
+          },
+          "note": "COMPLETE."
+        }
+      ],
+      "measure_transition": {
+        "role": "RUN_OUTPUT",
+        "to": false,
+        "nominal_ms": 3000,
+        "tolerance_ms": {
+          "early": 300,
+          "late": 700
+        }
+      }
+    },
+    {
+      "id": "s3_reset",
+      "description": "RESET: vuelve a IDLE.",
+      "set": {
+        "RESET": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "description": "RESET soltado: permanece en IDLE (no rearranca sin START).",
+      "set": {
+        "RESET": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_RUN_COMPLETE",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "RUN_OUTPUT",
+        "COMPLETE_STATE"
+      ],
+      "severity": "MAJOR",
+      "grace_ms": 100,
+      "description": "RUNNING y COMPLETE son estados excluyentes (invariante funcional)."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "START": false,
+        "RESET": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D20-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define las fases del ciclo, sus duraciones ni la causa de la alarma ('manejo de alarma'). El Oracle solo verifica: START en automatico pone en ejecucion, STOP detiene, RESET reinicia y (si existe) la emergencia detiene y genera alarma que RESET borra. Definir las fases para evaluar el ciclo completo.",
+      "resolution": "Ciclo minimo IDLE/RUNNING/COMPLETE con ejecucion de 3 s (C-D20-CYCLE, C-D20-DURATION) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D20",
+      "expected_capability": "Ciclo con ejecucion temporizada (3 s), estado completo y reset.",
+      "current_behavior": "INT_AUTO_CYCLE avanza un estado por ciclo de PLC mientras AUTO y START estan activos y no tiene estado COMPLETE.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla de ciclo por estados con temporizador de ejecucion y salida de ciclo completo.",
+      "text": "INT_AUTO_CYCLE avanza un estado por ciclo de PLC mientras AUTO y START estan activos y no tiene estado COMPLETE."
+    }
+  ]
+}

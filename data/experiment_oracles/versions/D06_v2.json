@@ -1,0 +1,219 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D06",
+  "case_id": "D06",
+  "title": "D06 - Alarma por intento de arranque sin condicion de seguridad",
+  "description": "Un intento de arranque sin la condicion de seguridad activa la alarma; con la condicion presente, el arranque no genera alarma.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "2f4540fb9185b97022443f7b719f356a81872dc530bc46066ce6a7659aa5818c",
+    "previous_hash": "ee564bbaf58f5f436c90d4f148346a00b133b687959f17e165037f9606def17f",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "2f4540fb9185b97022443f7b719f356a81872dc530bc46066ce6a7659aa5818c",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Alarma por arranque sin condicion de seguridad",
+    "original_requirement": "Activar alarma si se intenta arrancar sin condicion de seguridad.",
+    "canonical_command": "Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.",
+    "canonical_case_hash": "929bfabeb1e8f9b63246c668715a02b90772ffcaf21ecb908fed98ef1451b2ed",
+    "legacy_reference_intent": "INT_SAFE_START_ALARM"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_SAFE_START_ALARM"
+    ],
+    "required_functions": [
+      "unsafe_start_alarm"
+    ],
+    "required_roles": [
+      "START_REQUEST",
+      "SAFETY_OK",
+      "ALARM"
+    ]
+  },
+  "roles": {
+    "START_REQUEST": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Intento de arranque.",
+      "semantic_paths": [
+        "start_request",
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "SAFETY_OK": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Condicion de seguridad presente.",
+      "semantic_paths": [
+        "safety_input",
+        "safety_ok_input",
+        "sensor_input",
+        "permissive_input"
+      ]
+    },
+    "ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Alarma de arranque inseguro.",
+      "semantic_paths": [
+        "alarm_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Activar alarma si se intenta arrancar sin condicion de seguridad."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma."
+    },
+    {
+      "id": "C-D06-SCOPE",
+      "text": "Solo se evalua la ACTIVACION de la alarma. La politica de borrado de alarma y la habilitacion del motor estan fuera del alcance de D06."
+    },
+    {
+      "id": "C-D06-ORDER",
+      "text": "El arranque seguro se prueba primero (alarma apagada) y el inseguro despues, para no depender de como se borra la alarma."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Condicion de seguridad presente, sin intento de arranque.",
+      "set": {
+        "START_REQUEST": false,
+        "SAFETY_OK": true
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Arranque CON condicion de seguridad: sin alarma.",
+      "set": {
+        "START_REQUEST": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "ALARM": false
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Se retira la orden.",
+      "set": {
+        "START_REQUEST": false
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "step_3",
+      "description": "Se pierde la condicion de seguridad (sin intento de arranque).",
+      "set": {
+        "SAFETY_OK": false
+      },
+      "wait_ms": 300,
+      "unspecified": [
+        "ALARM"
+      ]
+    },
+    {
+      "id": "step_4",
+      "description": "Intento de arranque SIN condicion de seguridad: alarma activa.",
+      "set": {
+        "START_REQUEST": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "ALARM": true
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "START_REQUEST": false,
+        "SAFETY_OK": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D06-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define como se borra la alarma. Convencion: si el programa liga RESET, se pulsa antes del arranque valido; si no lo liga, se exige que el arranque valido funcione y la alarma este apagada sin reset. Un programa con alarma enclavada y sin RESET obtendria FAIL en step_6.",
+      "resolution": "La politica de borrado de alarma esta fuera del alcance de D06 (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": []
+}

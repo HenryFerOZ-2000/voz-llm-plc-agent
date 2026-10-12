@@ -501,6 +501,8 @@ def approve_oracle(
         "approved_at": approved_at,
         "hash": compute_oracle_hash(oracle),
     }
+    if "human_formal_approval" in oracle["approval"]:  # marcador de la validacion tecnica previa: ya no esta pendiente
+        oracle["approval"]["human_formal_approval"] = "APPROVED"
     assert_valid(oracle)
     _write(path, oracle)
     version = oracle["approval"]["version"]

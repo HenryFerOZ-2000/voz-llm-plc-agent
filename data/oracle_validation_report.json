@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-12T12:56:09",
+  "generated_at": "2026-10-12T15:13:14",
   "summary": {
     "total_oracles": 32,
     "schema_valid": 32,
@@ -15,41 +15,8 @@
     "benchmark_inconsistencies": 0,
     "oracles_aligned": 32,
     "hidden_oracle_requirements": 0,
-    "formal": 0,
-    "ready_for_human_approval": [
-      "D01",
-      "D02",
-      "D03",
-      "D04",
-      "D05",
-      "D06",
-      "D07",
-      "D08",
-      "D09",
-      "D10",
-      "D11",
-      "D12",
-      "D13",
-      "D14",
-      "D15",
-      "D16",
-      "D17",
-      "D18",
-      "D19",
-      "D20",
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11",
-      "P12"
-    ]
+    "formal": 32,
+    "ready_for_human_approval": []
   },
   "expected_ids": [
     "D01",
@@ -347,7 +314,7 @@
       "title": "D01 - Salida temporizada de 5 s",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "5eff52840e121774b04802a38aa78195a728bddbf4887a1d3be409f411a56522",
       "schema_valid": true,
       "hash_valid": true,
@@ -379,7 +346,8 @@
         "C-D01-SCOPE"
       ],
       "archived_versions": [
-        "D01_v1.json"
+        "D01_v1.json",
+        "D01_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -428,7 +396,7 @@
       "title": "D02 - Piloto que sigue al sensor",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "76c046eaddc44153ee6ce419c7ea406d317cde4c27d81b38bd5effe001a25cf9",
       "schema_valid": true,
       "hash_valid": true,
@@ -448,7 +416,8 @@
         "C-D02"
       ],
       "archived_versions": [
-        "D02_v1.json"
+        "D02_v1.json",
+        "D02_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -500,7 +469,7 @@
       "title": "D03 - Arranque/parada de motor con memoria de marcha",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "f1c5bf3ee7f708d3b54cb068543db935f4dfe2ca449628e6d3d16dad1eceef49",
       "schema_valid": true,
       "hash_valid": true,
@@ -516,7 +485,8 @@
       "system_capability_gaps": [],
       "experimental_conventions": [],
       "archived_versions": [
-        "D03_v1.json"
+        "D03_v1.json",
+        "D03_v2.json"
       ],
       "ai_review": null,
       "canonical_command": "Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.",
@@ -556,7 +526,7 @@
       "title": "D04 - Motor enclavado con memoria de marcha",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "a299ff8d88e2a30733032466d461a12b32d9c66930448eb2710fcbcdd92d3ca3",
       "schema_valid": true,
       "hash_valid": true,
@@ -577,7 +547,8 @@
         "C-D04"
       ],
       "archived_versions": [
-        "D04_v1.json"
+        "D04_v1.json",
+        "D04_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -635,7 +606,7 @@
       "title": "D05 - Prioridad del disparo de seguridad sobre el arranque",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "1928377b0e610748e735b3f7e516911666edf5486aeba9dd2b0b691d8ca4f3fb",
       "schema_valid": true,
       "hash_valid": true,
@@ -667,7 +638,8 @@
         "C-D05-START"
       ],
       "archived_versions": [
-        "D05_v1.json"
+        "D05_v1.json",
+        "D05_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -725,7 +697,7 @@
       "title": "D06 - Alarma por intento de arranque sin condicion de seguridad",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "2f4540fb9185b97022443f7b719f356a81872dc530bc46066ce6a7659aa5818c",
       "schema_valid": true,
       "hash_valid": true,
@@ -748,7 +720,8 @@
         "C-D06-ORDER"
       ],
       "archived_versions": [
-        "D06_v1.json"
+        "D06_v1.json",
+        "D06_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -797,7 +770,7 @@
       "title": "D07 - Arranque retardado de 3 segundos",
       "complexity": "MEDIUM",
       "version": 3,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "ef89ba4115fffbf55a85afda3c7164548993c436f568df8d418d733c2cc055ad",
       "schema_valid": true,
       "hash_valid": true,
@@ -822,7 +795,8 @@
       ],
       "archived_versions": [
         "D07_v1.json",
-        "D07_v2.json"
+        "D07_v2.json",
+        "D07_v3.json"
       ],
       "ai_review": {
         "generated": true,
@@ -870,7 +844,7 @@
       "title": "D08 - Apagar el motor tras 10 s de operacion continua",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "2a7463e479914c8f4f54840096ab5f305f1c3c62ff8bd295b8b1997211b3330c",
       "schema_valid": true,
       "hash_valid": true,
@@ -894,7 +868,8 @@
         "C-PULSE"
       ],
       "archived_versions": [
-        "D08_v1.json"
+        "D08_v1.json",
+        "D08_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -943,7 +918,7 @@
       "title": "D09 - Contar 5 pulsos y activar una salida",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "5c8f2bb3a0ad4b6db147e7163d0e77e4ed2c5678257770c8308dd108778dc524",
       "schema_valid": true,
       "hash_valid": true,
@@ -965,7 +940,8 @@
         "C-D09-INIT"
       ],
       "archived_versions": [
-        "D09_v1.json"
+        "D09_v1.json",
+        "D09_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1017,7 +993,7 @@
       "title": "D10 - Reinicio del contador mediante pulsador",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "db41ac94ab24b36b180b845990e7db0c781ba28a0c90d3f93abbe41180a1da88",
       "schema_valid": true,
       "hash_valid": true,
@@ -1051,7 +1027,8 @@
         "C-D09-PULSE"
       ],
       "archived_versions": [
-        "D10_v1.json"
+        "D10_v1.json",
+        "D10_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1116,7 +1093,7 @@
       "title": "D11 - Contactor con enclavamiento logico y proteccion de emergencia",
       "complexity": "HIGH",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "57c93841ac371edbf38e6042a13310e8c3185b8fa795aab20db7bc39b78a6160",
       "schema_valid": true,
       "hash_valid": true,
@@ -1136,7 +1113,8 @@
         "C-PULSE"
       ],
       "archived_versions": [
-        "D11_v1.json"
+        "D11_v1.json",
+        "D11_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1192,7 +1170,7 @@
       "title": "D12 - Evitar la activacion simultanea de dos contactores",
       "complexity": "HIGH",
       "version": 3,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "71cb20e92b7d8e613ec364bc5ac5b333d688b6b8f6b95d9466175ccaf603d6a3",
       "schema_valid": true,
       "hash_valid": true,
@@ -1226,7 +1204,8 @@
       ],
       "archived_versions": [
         "D12_v1.json",
-        "D12_v2.json"
+        "D12_v2.json",
+        "D12_v3.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1277,7 +1256,7 @@
       "title": "D13 - Variador habilitado solo sin alarma",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "e1e7ec3301bc247f34311881d11a01f5124f5fb3f631e22f25c78701f502d09e",
       "schema_valid": true,
       "hash_valid": true,
@@ -1309,7 +1288,8 @@
         "C-D13-REQUEST"
       ],
       "archived_versions": [
-        "D13_v1.json"
+        "D13_v1.json",
+        "D13_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1366,7 +1346,7 @@
       "title": "D14 - Seleccion de velocidad baja/media/alta",
       "complexity": "HIGH",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "1cefcbee200446e9b600678754d21cc13781b9e8cb083379b2ec6643663d98b1",
       "schema_valid": true,
       "hash_valid": true,
@@ -1397,7 +1377,8 @@
         "C-D14-ONEHOT"
       ],
       "archived_versions": [
-        "D14_v1.json"
+        "D14_v1.json",
+        "D14_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1460,7 +1441,7 @@
       "title": "D15 - Modo manual/automatico para la habilitacion del motor",
       "complexity": "HIGH",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "6cc504987db5c37e854bd2aa94ab26538986eae28f34a8922ab19cdfcf8998bd",
       "schema_valid": true,
       "hash_valid": true,
@@ -1491,7 +1472,8 @@
         "C-D15-MODES"
       ],
       "archived_versions": [
-        "D15_v1.json"
+        "D15_v1.json",
+        "D15_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1555,7 +1537,7 @@
       "title": "D16 - Secuencia: arranque, espera de 3 s y salida auxiliar",
       "complexity": "HIGH",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "47dd88ea9664afff8f8ff7bc63eea77d0a8f8dacc01f6c913169d0c9e7de5b1a",
       "schema_valid": true,
       "hash_valid": true,
@@ -1589,7 +1571,8 @@
         "C-PULSE"
       ],
       "archived_versions": [
-        "D16_v1.json"
+        "D16_v1.json",
+        "D16_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1640,7 +1623,7 @@
       "title": "D17 - Supervision de sensor 5 s tras Start",
       "complexity": "HIGH",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "f757df8d6f6c2f9c85a4d1f9f059138324e7c9bc3e816635ea56d754e0d36be1",
       "schema_valid": true,
       "hash_valid": true,
@@ -1671,7 +1654,8 @@
         "C-TIMING"
       ],
       "archived_versions": [
-        "D17_v1.json"
+        "D17_v1.json",
+        "D17_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1727,7 +1711,7 @@
       "title": "D18 - Bloqueo del arranque en mantenimiento",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "a11e0bbec7329ec6d1d5979bdfd70ac980caf572722f34210395e3d4f8ed0960",
       "schema_valid": true,
       "hash_valid": true,
@@ -1747,7 +1731,8 @@
         "C-D18"
       ],
       "archived_versions": [
-        "D18_v1.json"
+        "D18_v1.json",
+        "D18_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1798,7 +1783,7 @@
       "title": "D19 - Pilotos de estado: detenido, marcha y falla",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "101f21568dc5d57c0fb92d042f41046e64c242a8f62a84a5b1bb9076502dc382",
       "schema_valid": true,
       "hash_valid": true,
@@ -1829,7 +1814,8 @@
         "C-D19-INPUTS"
       ],
       "archived_versions": [
-        "D19_v1.json"
+        "D19_v1.json",
+        "D19_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1892,7 +1878,7 @@
       "title": "D20 - Ciclo automatico minimo: inicio, ejecucion, fin y reset",
       "complexity": "HIGH",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "9cbe97bddbb6a934dc3a4c38b8528f918bb7821116a0ba7296923f9293762d93",
       "schema_valid": true,
       "hash_valid": true,
@@ -1926,7 +1912,8 @@
         "C-TIMING"
       ],
       "archived_versions": [
-        "D20_v1.json"
+        "D20_v1.json",
+        "D20_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -1984,7 +1971,7 @@
       "title": "P01 - Modo automatico al seleccionar Automatico",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "ad686822b466d75d7aa584a141791a9bb7d92c865e6ebe5c3a6e302b89db3d71",
       "schema_valid": true,
       "hash_valid": true,
@@ -2015,7 +2002,8 @@
         "C-PID-RUNTIME"
       ],
       "archived_versions": [
-        "P01_v1.json"
+        "P01_v1.json",
+        "P01_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2062,7 +2050,7 @@
       "title": "P02 - Cambiar el setpoint de nivel a 60 %",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "4bafcce6b0d44a63223d789897b6f4ccfadb2245a1292971231ee4c629a356ba",
       "schema_valid": true,
       "hash_valid": true,
@@ -2084,7 +2072,8 @@
         "C-PID-RUNTIME"
       ],
       "archived_versions": [
-        "P02_v1.json"
+        "P02_v1.json",
+        "P02_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2126,7 +2115,7 @@
       "title": "P03 - Rechazo de un setpoint fuera del rango seguro",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "50fe20c9e9052060a6c6117765e0d412b62d07c1b89c38599ccf4b5b1db47d31",
       "schema_valid": true,
       "hash_valid": true,
@@ -2161,7 +2150,8 @@
         "C-P03"
       ],
       "archived_versions": [
-        "P03_v1.json"
+        "P03_v1.json",
+        "P03_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2210,7 +2200,7 @@
       "title": "P04 - Alarma de nivel alto (> 90 %)",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "396800b290ebc216a692e81b15bb85edaa68c0b3c59ab9f49816a4430fd80a49",
       "schema_valid": true,
       "hash_valid": true,
@@ -2235,7 +2225,8 @@
         "C-P04"
       ],
       "archived_versions": [
-        "P04_v1.json"
+        "P04_v1.json",
+        "P04_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2284,7 +2275,7 @@
       "title": "P05 - Alarma de nivel bajo (< 10 %)",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "c11fe837b397063021eeb7a07c5fa1b47dd22b78ecb3e347980c1b009bd3bea9",
       "schema_valid": true,
       "hash_valid": true,
@@ -2309,7 +2300,8 @@
         "C-P05"
       ],
       "archived_versions": [
-        "P05_v1.json"
+        "P05_v1.json",
+        "P05_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2358,7 +2350,7 @@
       "title": "P06 - PID habilitado solo en automatico",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "b1c474fcc6dbbdfceaf63396c2f3e306d0f7692eafa55d77c3afe9876b829c3b",
       "schema_valid": true,
       "hash_valid": true,
@@ -2382,7 +2374,8 @@
         "C-P06"
       ],
       "archived_versions": [
-        "P06_v1.json"
+        "P06_v1.json",
+        "P06_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2431,7 +2424,7 @@
       "title": "P07 - PID deshabilitado por disparo de seguridad",
       "complexity": "LOW",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "a3bcdea3164a8b8e7db8874fdb493181c2e129134eabaf61baffd9dada49a37e",
       "schema_valid": true,
       "hash_valid": true,
@@ -2467,7 +2460,8 @@
         "C-P07-PRE"
       ],
       "archived_versions": [
-        "P07_v1.json"
+        "P07_v1.json",
+        "P07_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2516,7 +2510,7 @@
       "title": "P08 - Modo manual: habilitacion ON/OFF de la bomba",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "77889a51f0da93694809dd0ee483fb80e36fa2590ca4cc819f95617646543a7b",
       "schema_valid": true,
       "hash_valid": true,
@@ -2551,7 +2545,8 @@
         "C-P08"
       ],
       "archived_versions": [
-        "P08_v1.json"
+        "P08_v1.json",
+        "P08_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2599,7 +2594,7 @@
       "title": "P09 - Fallo de sensor por valor fuera de rango",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "9b0a99e3a00655f7c0d10550d770a5b774dc427281e360b60b09c8a04f20c4f7",
       "schema_valid": true,
       "hash_valid": true,
@@ -2623,7 +2618,8 @@
         "C-PID-RUNTIME"
       ],
       "archived_versions": [
-        "P09_v1.json"
+        "P09_v1.json",
+        "P09_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2678,7 +2674,7 @@
       "title": "P10 - Reset de alarma solo cuando desaparece la falla",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "d700ca642636423f57eb88ebedc77c51a71d736e73ab29dbf8758ac16d6d5c45",
       "schema_valid": true,
       "hash_valid": true,
@@ -2715,7 +2711,8 @@
         "C-PULSE"
       ],
       "archived_versions": [
-        "P10_v1.json"
+        "P10_v1.json",
+        "P10_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2773,7 +2770,7 @@
       "title": "P11 - Parada segura por sobrellenado",
       "complexity": "MEDIUM",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "bc7b522fccd392005f249fa96245c0b577036afc7dc30f4823195ac01f8fc37e",
       "schema_valid": true,
       "hash_valid": true,
@@ -2809,7 +2806,8 @@
         "C-P11"
       ],
       "archived_versions": [
-        "P11_v1.json"
+        "P11_v1.json",
+        "P11_v2.json"
       ],
       "ai_review": {
         "generated": true,
@@ -2858,7 +2856,7 @@
       "title": "P12 - Automatico con SP 60 %, alarma > 90 % y recuperacion",
       "complexity": "HIGH",
       "version": 2,
-      "status": "DRAFT_REVIEWED",
+      "status": "FROZEN",
       "hash": "df683f9a4fdf8ad4b53118992b6b8afd92cb7566f182b6b25b496652e9f2bac1",
       "schema_valid": true,
       "hash_valid": true,
@@ -2893,7 +2891,8 @@
         "C-P12-RECOVERY"
       ],
       "archived_versions": [
-        "P12_v1.json"
+        "P12_v1.json",
+        "P12_v2.json"
       ],
       "ai_review": {
         "generated": true,

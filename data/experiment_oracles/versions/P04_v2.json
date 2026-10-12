@@ -1,0 +1,203 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P04",
+  "case_id": "P04",
+  "title": "P04 - Alarma de nivel alto (> 90 %)",
+  "description": "Cuando el nivel supera el 90 % se activa la alarma de nivel alto (y la salida de alarma).",
+  "complexity": "LOW",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "396800b290ebc216a692e81b15bb85edaa68c0b3c59ab9f49816a4430fd80a49",
+    "previous_hash": "4cb7eea2706be639ee5b6a26434b3fc4325d82259e82977253d66e1b0430e906",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+        "Benchmark v2: alineado con el comando canonico (Solo se evalua la alarma de nivel del comando (eliminada la salida fisica de alarma adicional).).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "396800b290ebc216a692e81b15bb85edaa68c0b3c59ab9f49816a4430fd80a49",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Alarma de nivel alto > 90 %",
+    "original_requirement": "Alarma si nivel > 90 %.",
+    "canonical_command": "Activa la alarma de nivel alto mientras el nivel esté por encima del 90 % y desactívala cuando vuelva a 90 % o menos.",
+    "canonical_case_hash": "f5c4493991fef5281faa1b26bda0e859195423541a8a620f0543b9ceb1b20d7e",
+    "legacy_reference_intent": "INT_PID_SUPERVISOR"
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "REAL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functional_requirements": [
+      "high_level_alarm"
+    ],
+    "required_functions": [
+      "high_level_alarm"
+    ],
+    "required_roles": [
+      "LEVEL_PV",
+      "HIGH_LEVEL_ALARM"
+    ]
+  },
+  "roles": {
+    "LEVEL_PV": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Nivel medido (valor de proceso simulado, %).",
+      "data_type": "REAL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Level_PV"
+      ]
+    },
+    "HIGH_LEVEL_ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Alarma de nivel alto.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "High_Level_Alarm"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 0,
+    "expected_bound_outputs": 0,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Alarma si nivel > 90 %."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Activa la alarma de nivel alto mientras el nivel esté por encima del 90 % y desactívala cuando vuelva a 90 % o menos."
+    },
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Los limites son los del comando canonico de cada caso. Level_PV se inyecta como valor de proceso simulado (test harness)."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "C-P04",
+      "text": "'Supere el 90 %' es estricto; se prueban 89/91/95 % para no depender del valor frontera."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_normal",
+      "description": "Nivel normal: sin alarma alta.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "HIGH_LEVEL_ALARM": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Nivel 95 %: alarma alta y salida de alarma.",
+      "set": {
+        "LEVEL_PV": 95.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "HIGH_LEVEL_ALARM": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Nivel 89 %: la alarma alta se desactiva (la salida puede quedar enclavada).",
+      "set": {
+        "LEVEL_PV": 89.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "HIGH_LEVEL_ALARM": false
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "Nivel 91 %: alarma alta de nuevo.",
+      "set": {
+        "LEVEL_PV": 91.0
+      },
+      "wait_ms": 500,
+      "expect": {
+        "HIGH_LEVEL_ALARM": true
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_level",
+      "description": "Nivel a valor base seguro.",
+      "set": {
+        "LEVEL_PV": 50.0
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

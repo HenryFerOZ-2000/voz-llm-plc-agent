@@ -1,0 +1,286 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D14",
+  "case_id": "D14",
+  "title": "D14 - Seleccion de velocidad baja/media/alta",
+  "description": "Tres entradas digitales seleccionan una velocidad discreta; solo la salida de la velocidad seleccionada se activa.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "1cefcbee200446e9b600678754d21cc13781b9e8cb083379b2ec6643663d98b1",
+    "previous_hash": "40c19b18cdc074a2af9eb58bcdecad11b0ea067b529574c9edbd45bb0e3a05d9",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "1cefcbee200446e9b600678754d21cc13781b9e8cb083379b2ec6643663d98b1",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Seleccion de velocidad baja/media/alta",
+    "original_requirement": "Seleccionar velocidad baja/media/alta mediante entradas digitales.",
+    "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+    "canonical_case_hash": "8d0538b64aa0d42d79079685a83d81685a274140e8e4e9ca9a2f2c68a68bebe2",
+    "legacy_reference_intent": null
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [],
+    "required_functions": [
+      "speed_selection"
+    ],
+    "notes": "Sin intent implementado (profiles.json): la semantica se evalua por roles.",
+    "required_roles": [
+      "SPEED_LOW_CMD",
+      "SPEED_MEDIUM_CMD",
+      "SPEED_HIGH_CMD",
+      "SPEED_LOW",
+      "SPEED_MEDIUM",
+      "SPEED_HIGH"
+    ]
+  },
+  "roles": {
+    "SPEED_LOW_CMD": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Seleccion de velocidad baja.",
+      "semantic_paths": [
+        "speed_low_cmd",
+        "speed_low_input",
+        "low_speed_input"
+      ]
+    },
+    "SPEED_MEDIUM_CMD": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Seleccion de velocidad media.",
+      "semantic_paths": [
+        "speed_medium_cmd",
+        "speed_medium_input",
+        "medium_speed_input"
+      ]
+    },
+    "SPEED_HIGH_CMD": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Seleccion de velocidad alta.",
+      "semantic_paths": [
+        "speed_high_cmd",
+        "speed_high_input",
+        "high_speed_input"
+      ]
+    },
+    "SPEED_LOW": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida de velocidad baja.",
+      "semantic_paths": [
+        "speed_low",
+        "speed_low_output",
+        "low_speed_output"
+      ]
+    },
+    "SPEED_MEDIUM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida de velocidad media.",
+      "semantic_paths": [
+        "speed_medium",
+        "speed_medium_output",
+        "medium_speed_output"
+      ]
+    },
+    "SPEED_HIGH": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida de velocidad alta.",
+      "semantic_paths": [
+        "speed_high",
+        "speed_high_output",
+        "high_speed_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 3,
+    "expected_bound_outputs": 3,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Seleccionar velocidad baja/media/alta mediante entradas digitales."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada."
+    },
+    {
+      "id": "C-D14-ONEHOT",
+      "text": "Seleccion discreta one-hot: tres salidas digitales SPEED_*; sin frecuencia en Hz ni arranque/paro. Sin ningun comando la salida no se evalua."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin seleccion.",
+      "set": {
+        "SPEED_LOW_CMD": false,
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_low",
+      "description": "Baja: solo SPEED_LOW.",
+      "set": {
+        "SPEED_LOW_CMD": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "SPEED_LOW": true,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "description": "Media: solo SPEED_MEDIUM.",
+      "set": {
+        "SPEED_LOW_CMD": false,
+        "SPEED_MEDIUM_CMD": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": true,
+        "SPEED_HIGH": false
+      }
+    },
+    {
+      "id": "step_high",
+      "description": "Alta: solo SPEED_HIGH.",
+      "set": {
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": true
+      }
+    },
+    {
+      "id": "step_double",
+      "description": "Dos comandos a la vez: sin ganador definido; solo el invariante one-hot.",
+      "set": {
+        "SPEED_LOW_CMD": true,
+        "SPEED_HIGH_CMD": true
+      },
+      "wait_ms": 300,
+      "unspecified": [
+        "SPEED_LOW",
+        "SPEED_MEDIUM",
+        "SPEED_HIGH"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_SPEED_ONE_HOT",
+      "type": "AT_MOST_ONE",
+      "roles": [
+        "SPEED_LOW",
+        "SPEED_MEDIUM",
+        "SPEED_HIGH"
+      ],
+      "severity": "MAJOR",
+      "grace_ms": 100,
+      "description": "Como maximo una salida SPEED_* activa (invariante funcional)."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Comandos a OFF.",
+      "set": {
+        "SPEED_LOW_CMD": false,
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D14-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define como se materializa la velocidad: el perfil legacy solo autoriza Q_Motor_Enable (sin salidas de velocidad). El Oracle asume tres salidas de comando de velocidad; tambien podria ser un valor analogico (requeriria Runtime INT/REAL). Tampoco define si hace falta START/STOP. Definir antes de aprobar.",
+      "resolution": "Salidas discretas SPEED_LOW/MEDIUM/HIGH con evaluacion one-hot (C-D14-ONEHOT) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D14",
+      "expected_capability": "Seleccion de 3 velocidades discretas con salidas one-hot.",
+      "current_behavior": "No existe intent para D14 en el parser/IR (profiles.json: 'trabajo futuro').",
+      "severity": "HIGH",
+      "recommended_future_fix": "Anadir un intent de seleccion de velocidad (tres selectores -> tres salidas excluyentes).",
+      "text": "No existe intent para D14 en el parser/IR (profiles.json: 'trabajo futuro')."
+    }
+  ]
+}

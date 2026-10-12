@@ -1,0 +1,237 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D01",
+  "case_id": "D01",
+  "title": "D01 - Salida temporizada de 5 s",
+  "description": "Al presionar el pulsador de disparo, la salida auxiliar se activa y permanece activa 5 s; despues se desactiva.",
+  "complexity": "LOW",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "5eff52840e121774b04802a38aa78195a728bddbf4887a1d3be409f411a56522",
+    "previous_hash": "a16544902b49a67d5158c2cdae0f176f6692548eedd69252b75739b89f2969be",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (sin cambios de comportamiento; solo metadata).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "5eff52840e121774b04802a38aa78195a728bddbf4887a1d3be409f411a56522",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Salida temporizada de 5 s",
+    "original_requirement": "Activar una salida digital durante 5 segundos al presionar un pulsador.",
+    "canonical_command": "Activa una salida digital durante 5 segundos al presionar un pulsador.",
+    "canonical_case_hash": "7c365cfd519ab06e6a471df82ab7f2a9f849a37a814aa539e31f9cd38ccca52f",
+    "legacy_reference_intent": "INT_TIMED_PULSE"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [
+      "INT_DELAYED_START"
+    ],
+    "required_parameters": {
+      "duration": {
+        "type": "DURATION",
+        "value_ms": 5000,
+        "tolerance_ms": 0,
+        "if_missing": "NOT_EVALUABLE"
+      }
+    },
+    "accepted_intents": [
+      "INT_TIMED_PULSE"
+    ],
+    "required_functions": [
+      "timed_pulse"
+    ],
+    "required_roles": [
+      "START",
+      "AUX_OUTPUT"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Pulsador de disparo.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "AUX_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida auxiliar temporizada.",
+      "semantic_paths": [
+        "output",
+        "aux_output",
+        "pulse_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Activar una salida digital durante 5 segundos al presionar un pulsador."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Activa una salida digital durante 5 segundos al presionar un pulsador."
+    },
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    },
+    {
+      "id": "C-TIMING",
+      "text": "Temporizaciones: transicion nominal con tolerancia -300 ms / +700 ms medida en el bridge (reloj monotono); las ventanas de evaluacion dejan libre esa banda."
+    },
+    {
+      "id": "C-D01-START",
+      "text": "'Activar durante 5 s cuando se presione' implica que la salida se activa al presionar (en <= 300 ms) y dura 5 s desde la pulsacion, aunque el pulsador se suelte antes."
+    },
+    {
+      "id": "C-D01-SCOPE",
+      "text": "No se evalua el redisparo ni mantener el pulsador mas de 5 s (no definidos por el caso)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin disparo la salida esta apagada.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "AUX_OUTPUT": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Pulsador presionado: la salida se activa de inmediato.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "AUX_OUTPUT": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Pulsador soltado: la salida sigue activa hasta 5 s desde la pulsacion y luego se apaga.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 6000,
+      "expect": {
+        "AUX_OUTPUT": false
+      },
+      "time_reference": "step_1",
+      "expect_timeline": [
+        {
+          "from_ms": 300,
+          "to_ms": 4700,
+          "expect": {
+            "AUX_OUTPUT": true
+          },
+          "note": "Durante los 5 s (-300 ms)."
+        },
+        {
+          "from_ms": 5700,
+          "to_ms": 6300,
+          "expect": {
+            "AUX_OUTPUT": false
+          },
+          "note": "Tras los 5 s (+700 ms)."
+        }
+      ],
+      "measure_transition": {
+        "role": "AUX_OUTPUT",
+        "to": false,
+        "nominal_ms": 5000,
+        "tolerance_ms": {
+          "early": 300,
+          "late": 700
+        }
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D01",
+      "expected_capability": "Pulso de 5 s al presionar (TP): salida activa DURANTE 5 s.",
+      "current_behavior": "INT_TIMED_PULSE usa TON: la salida se activa DESPUES de 5 s con la entrada mantenida; con un pulsador breve no se activa.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Usar TP (o equivalente) en la plantilla INT_TIMED_PULSE.",
+      "text": "INT_TIMED_PULSE usa TON: la salida se activa DESPUES de 5 s con la entrada mantenida; con un pulsador breve no se activa."
+    }
+  ]
+}

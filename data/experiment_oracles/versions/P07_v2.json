@@ -1,0 +1,234 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "P07",
+  "case_id": "P07",
+  "title": "P07 - PID deshabilitado por disparo de seguridad",
+  "description": "Con el PID habilitado en automatico, un disparo de seguridad deshabilita el PID.",
+  "complexity": "LOW",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "a3bcdea3164a8b8e7db8874fdb493181c2e129134eabaf61baffd9dada49a37e",
+    "previous_hash": "fe7c515b70d34002233f8ea2dc4704dbd74a223cd9e8b90936c6b0cb89ffe41b",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "No ejecutable hoy (REQUIRES_RUNTIME_EXTENSION): evaluacion validada con trazas simuladas.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (AUTO_MODE marcado como rol del test harness (solo pone el PID en funcionamiento; no es requisito del comando).).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "a3bcdea3164a8b8e7db8874fdb493181c2e129134eabaf61baffd9dada49a37e",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "PID deshabilitado ante emergencia",
+    "original_requirement": "Deshabilitar PID ante condicion de emergencia/seguridad autorizada.",
+    "canonical_command": "Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato.",
+    "canonical_case_hash": "fbbcead89c93799da7ca8e2c7b0dfa95670cc2d5ef857529ef3b4f4e129122ae",
+    "legacy_reference_intent": "INT_PID_SUPERVISOR"
+  },
+  "runtime_support": "REQUIRES_RUNTIME_EXTENSION",
+  "runtime_requirements": [
+    "BOOL",
+    "INTERNAL_TAG_READ",
+    "INTERNAL_TAG_WRITE"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_PID_SUPERVISOR"
+    ],
+    "required_functions": [
+      "safety_trip_disables_pid"
+    ],
+    "required_roles": [
+      "SAFETY_TRIP",
+      "PID_ENABLE"
+    ]
+  },
+  "roles": {
+    "AUTO_MODE": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Modo automatico (forzado por el Oracle).",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "Auto_Mode"
+      ],
+      "harness_only": true
+    },
+    "SAFETY_TRIP": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Condicion logica de seguridad simulada.",
+      "semantic_paths": [
+        "safety_trip",
+        "safety_trip_input",
+        "emergency_input"
+      ]
+    },
+    "PID_ENABLE": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Habilitacion del PID.",
+      "data_type": "BOOL",
+      "binding": "PROCESS_VARIABLE",
+      "process_variables": [
+        "PID_Enable"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 0,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Deshabilitar PID ante condicion de emergencia/seguridad autorizada."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato."
+    },
+    {
+      "id": "C-PID",
+      "text": "El PID es estandar y prevalidado: solo se evalua la logica SUPERVISORA. Los limites son los del comando canonico de cada caso. Level_PV se inyecta como valor de proceso simulado (test harness)."
+    },
+    {
+      "id": "C-PID-RUNTIME",
+      "text": "Requiere extension del Runtime (REAL + lectura/escritura de variables internas). Escribir Level_PV/Auto_Mode exige ademas ampliar explicitamente la politica de seguridad de la Fase 2B (hoy solo se escriben entradas). Hasta entonces el Runner devuelve REVIEW (ORACLE_RUNTIME_EXTENSION_REQUIRED), nunca PASS/FAIL."
+    },
+    {
+      "id": "C-P07-TRIP",
+      "text": "SAFETY_TRIP es una condicion logica simulada/autorizada (activa = TRUE), no el E-stop fisico."
+    },
+    {
+      "id": "C-P07-PRE",
+      "text": "Precondicion: AUTO_MODE=TRUE y sin disparo -> PID habilitado, para que 'deshabilitar' sea observable."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_enabled",
+      "description": "Automatico sin disparo: PID habilitado.",
+      "set": {
+        "AUTO_MODE": true,
+        "SAFETY_TRIP": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "PID_ENABLE": true
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Disparo de seguridad: PID deshabilitado.",
+      "set": {
+        "SAFETY_TRIP": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "PID_ENABLE": false
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Disparo retirado: rehabilitacion no definida.",
+      "set": {
+        "SAFETY_TRIP": false
+      },
+      "wait_ms": 500,
+      "unspecified": [
+        "PID_ENABLE"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_TRIP_PID",
+      "type": "NEVER_TRUE_TOGETHER",
+      "roles": [
+        "SAFETY_TRIP",
+        "PID_ENABLE"
+      ],
+      "severity": "CRITICAL",
+      "grace_ms": 100,
+      "description": "SAFETY_TRIP => NOT PID_ENABLE."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup",
+      "description": "Valores base.",
+      "set": {
+        "SAFETY_TRIP": false,
+        "AUTO_MODE": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "P07-R1",
+      "status": "RESOLVED",
+      "text": "Para demostrar que la emergencia DESHABILITA el PID, este deberia estar habilitado antes; P07 no define como se habilita (requiere logica tipo P06). Sin ella la prueba pasa trivialmente. La bomba (Q_Pump_Enable) aparece en la descripcion pero no en las senales autorizadas del perfil: se trata como opcional.",
+      "resolution": "Precondicion AUTO_MODE=TRUE -> PID habilitado y SAFETY_TRIP simulado (C-P07-PRE, C-P07-TRIP) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-P07",
+      "expected_capability": "Programa P07 con el PID habilitado en automatico antes del disparo.",
+      "current_behavior": "Una orden solo de 'deshabilitar ante emergencia' puede no generar enable_pid: la precondicion fallaria (REVIEW).",
+      "severity": "MEDIUM",
+      "recommended_future_fix": "Componer enable_pid (P06) cuando el caso requiere observar la deshabilitacion.",
+      "text": "Una orden solo de 'deshabilitar ante emergencia' puede no generar enable_pid: la precondicion fallaria (REVIEW)."
+    }
+  ]
+}

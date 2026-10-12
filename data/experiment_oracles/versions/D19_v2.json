@@ -1,0 +1,266 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D19",
+  "case_id": "D19",
+  "title": "D19 - Pilotos de estado: detenido, marcha y falla",
+  "description": "Exactamente un piloto indica el estado actual: detenido, marcha o falla.",
+  "complexity": "MEDIUM",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "101f21568dc5d57c0fb92d042f41046e64c242a8f62a84a5b1bb9076502dc382",
+    "previous_hash": "ef23fb253cf4dd2142280209d5864f6f07444765bcac1ced6fc718fa4784859c",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (Eliminada la prioridad FALLA > MARCHA (no esta en el comando): t3 solo ejerce la invariante 'un unico piloto'.).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "101f21568dc5d57c0fb92d042f41046e64c242a8f62a84a5b1bb9076502dc382",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Pilotos de estado: detenido, marcha y falla",
+    "original_requirement": "Pilotos: detenido, marcha, falla.",
+    "canonical_command": "Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual.",
+    "canonical_case_hash": "94afd861298aaf19b20e50b227f56620f736134facf3434191b5be42e2b54358",
+    "legacy_reference_intent": null
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [],
+    "required_functions": [
+      "status_pilots"
+    ],
+    "notes": "Sin intent de referencia en profiles.json.",
+    "required_roles": [
+      "RUN_STATE",
+      "FAULT_ACTIVE",
+      "PILOT_STOPPED",
+      "PILOT_RUN",
+      "PILOT_FAULT"
+    ]
+  },
+  "roles": {
+    "RUN_STATE": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Estado de marcha (condicion de entrada simulada).",
+      "semantic_paths": [
+        "run_state",
+        "run_state_input",
+        "running_input"
+      ]
+    },
+    "FAULT_ACTIVE": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Falla activa (condicion de entrada simulada).",
+      "semantic_paths": [
+        "fault_active",
+        "fault_input",
+        "fault_active_input"
+      ]
+    },
+    "PILOT_STOPPED": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Piloto de detenido.",
+      "semantic_paths": [
+        "stop_indicator",
+        "stopped_indicator",
+        "pilot_stop",
+        "pilot_stopped"
+      ]
+    },
+    "PILOT_RUN": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Piloto de marcha.",
+      "semantic_paths": [
+        "run_indicator",
+        "pilot_run"
+      ]
+    },
+    "PILOT_FAULT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Piloto de falla.",
+      "semantic_paths": [
+        "fault_indicator",
+        "pilot_fault"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 3,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Pilotos: detenido, marcha, falla."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual."
+    },
+    {
+      "id": "C-D19-INPUTS",
+      "text": "RUN_STATE y FAULT_ACTIVE son condiciones de entrada/logicas simuladas del ensayo; no se exige como se generan."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin marcha ni falla.",
+      "set": {
+        "RUN_STATE": false,
+        "FAULT_ACTIVE": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "t1_stopped",
+      "description": "Sin marcha ni falla: DETENIDO.",
+      "wait_ms": 300,
+      "expect": {
+        "PILOT_STOPPED": true,
+        "PILOT_RUN": false,
+        "PILOT_FAULT": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "description": "Marcha sin falla: MARCHA.",
+      "set": {
+        "RUN_STATE": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "PILOT_STOPPED": false,
+        "PILOT_RUN": true,
+        "PILOT_FAULT": false
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "description": "Marcha y falla a la vez: el 'estado actual' no esta definido; solo se exige un unico piloto.",
+      "set": {
+        "FAULT_ACTIVE": true
+      },
+      "wait_ms": 300,
+      "unspecified": [
+        "PILOT_STOPPED",
+        "PILOT_RUN",
+        "PILOT_FAULT"
+      ]
+    },
+    {
+      "id": "t4_fault_stopped",
+      "description": "Falla sin marcha: FALLA (prioridad sobre detenido).",
+      "set": {
+        "RUN_STATE": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "PILOT_STOPPED": false,
+        "PILOT_RUN": false,
+        "PILOT_FAULT": true
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV_ONE_PILOT",
+      "type": "EXACTLY_ONE",
+      "roles": [
+        "PILOT_STOPPED",
+        "PILOT_RUN",
+        "PILOT_FAULT"
+      ],
+      "severity": "MAJOR",
+      "grace_ms": 100,
+      "description": "Exactamente un piloto activo (invariante funcional)."
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Entradas a OFF.",
+      "set": {
+        "RUN_STATE": false,
+        "FAULT_ACTIVE": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D19-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define la fuente de la 'falla' ni si la marcha es mantenida. Convencion: una entrada de falla (o la emergencia, unica entrada autorizada que puede representarla) y marcha enclavada por START/STOP.",
+      "resolution": "FAULT_ACTIVE es una condicion de entrada/logica simulada (C-D19-INPUTS) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D19",
+      "expected_capability": "Tres pilotos excluyentes (detenido, marcha, falla) que indican el estado actual.",
+      "current_behavior": "No hay intent de referencia para D19; INT_STATUS_PILOTS no genera el piloto de detenido y deriva la falla de la emergencia.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla de pilotos de estado con prioridad y tres salidas excluyentes.",
+      "text": "No hay intent de referencia para D19; INT_STATUS_PILOTS no genera el piloto de detenido y deriva la falla de la emergencia."
+    }
+  ]
+}

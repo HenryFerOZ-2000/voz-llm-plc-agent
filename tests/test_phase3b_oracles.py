@@ -108,9 +108,9 @@ def test_frozen_versions_are_preserved_and_d03_unchanged():
     d03_v1 = json.loads((_ORACLES_DIR / "versions" / "D03_v1.json").read_text(encoding="utf-8"))
     assert d03_v1["approval"]["hash"] == "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
     d03 = _oracle("D03")
-    # v3: validada tecnicamente, aprobacion humana PENDIENTE (nunca se firma automaticamente).
-    assert d03["approval"]["status"] == "DRAFT_REVIEWED" and d03["approval"]["version"] == 2
-    assert d03["approval"]["approved_by"] is None and d03["approval"]["human_formal_approval"] == "PENDING"
+    # v3: validada tecnicamente; solo es FROZEN con aprobacion humana explicita (nunca firmada automaticamente).
+    assert d03["approval"]["version"] == 2 and d03["approval"]["technical_validation"]["status"] == "PASSED"
+    assert oracle_schema.is_formal(d03) == bool(d03["approval"]["approved_by"])
     for key in ("roles", "preconditions", "test_sequence", "invariants", "cleanup", "evaluation"):
         assert d03.get(key) == d03_v1.get(key), key
     for case_id in ("D03", "D07", "D12"):
