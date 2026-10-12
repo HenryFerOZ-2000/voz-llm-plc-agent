@@ -38,6 +38,9 @@ FUNCTIONAL_REQUIREMENT_TAGS: dict[str, list[str]] = {
     "set_auto_mode": [],
     "set_manual_mode": [],
     "set_level_setpoint": [],
+    # Validacion de setpoint en el PLC: la solicitud (Level_SP_Command) solo pasa a Level_SP si esta en
+    # [min, max]; fuera de rango se rechaza y Level_SP conserva el ultimo valor valido.
+    "reject_unsafe_setpoint": [],
     "enable_pid": ["I_Emergency"],
     "disable_pid": [],
     "high_level_alarm": ["Q_Alarm"],
@@ -45,7 +48,10 @@ FUNCTIONAL_REQUIREMENT_TAGS: dict[str, list[str]] = {
     "sensor_range_fault": [],
     "conditional_alarm_reset": ["I_Reset"],
     "safe_overfill_stop": ["Q_Pump_Enable", "Q_Alarm"],
-    "manual_pump_limit": ["Q_Pump_Enable"],
+    # Bomba en marcha en operacion normal (salvo emergencia / condicion segura activa).
+    "enable_pump": ["Q_Pump_Enable"],
+    # Manual (MODE_AUTO = FALSE): la bomba sigue solo la orden manual del operador (manual_pump_input).
+    "manual_pump_enable": ["I_Manual_Pump_Command", "Q_Pump_Enable"],
     # --- Primitivas COMPONIBLES genericas (Modo Normal): sus tags son dinamicos (vienen de la
     # propia instancia) - ver get_functional_requirement_tags. Lista vacia = "tipo de catalogo".
     "timed_sequence": [],
@@ -70,7 +76,8 @@ PID_PROCESS_VARIABLES: dict[str, str] = {
     "High_Level_Alarm": "BOOL",
     "Low_Level_Alarm": "BOOL",
     "Sensor_Fault": "BOOL",
-    "Safe_Stop": "BOOL"
+    "Safe_Stop": "BOOL",
+    "Level_SP_Command": "REAL"
 }
 
 # type -> which PID_PROCESS_VARIABLES names it touches (subset of PID_PROCESS_VARIABLES.keys()).
@@ -83,10 +90,57 @@ FUNCTIONAL_REQUIREMENT_PROCESS_VARIABLES: dict[str, list[str]] = {
     "high_level_alarm": ["Level_PV", "High_Level_Alarm"],
     "low_level_alarm": ["Level_PV", "Low_Level_Alarm"],
     "sensor_range_fault": ["Level_PV", "Sensor_Fault", "PID_Enable"],
+    "reject_unsafe_setpoint": ["Level_SP_Command", "Level_SP"],
     "conditional_alarm_reset": ["High_Level_Alarm", "Low_Level_Alarm", "Sensor_Fault"],
     "safe_overfill_stop": ["Level_PV", "Safe_Stop", "PID_Enable"],
-    "manual_pump_limit": ["Manual_Mode"]
+    "enable_pump": [],
+    "manual_pump_enable": ["Auto_Mode"]
 }
+
+# Nombres historicos / sinonimos de requisitos -> nombre CANONICO (una sola taxonomia interna). Se
+# normalizan al entrar al pipeline (llm_parser) y al comparar con las expectativas de un Oracle; el
+# significado nunca cambia: cada alias designa exactamente el mismo comportamiento que su canonico.
+FUNCTIONAL_REQUIREMENT_ALIASES: dict[str, str] = {
+    "manual_pump_limit": "manual_pump_enable",
+    "enable_pid_in_auto": "enable_pid",
+}
+
+
+def canonical_requirement_type(req_type: Any) -> str:
+    text = str(req_type or "").strip()
+    return FUNCTIONAL_REQUIREMENT_ALIASES.get(text, text)
+
+
+def canonicalize_functional_requirements(functional_requirements: Any) -> list[dict[str, Any]]:
+    """Copia con cada `type` en su nombre canonico (registra el alias original en `type_alias`)."""
+    canonical: list[dict[str, Any]] = []
+    for requirement in functional_requirements or []:
+        if not isinstance(requirement, dict):
+            canonical.append(requirement)
+            continue
+        req_type = str(requirement.get("type", "")).strip()
+        target = canonical_requirement_type(req_type)
+        if target != req_type:
+            requirement = {**requirement, "type": target, "type_alias": req_type}
+        canonical.append(requirement)
+    return canonical
+
+
+# Requisitos MUTUAMENTE INCOMPATIBLES dentro de UNA misma interpretacion (fuente declarativa). Cada regla:
+# types (todos presentes -> conflicto), unless_parameters (el conflicto desaparece si la semantica trae
+# alguno de esos parametros: una entrada de seleccion convierte las dos ordenes de modo en un selector
+# coherente) y reason. Pares revisados en todo el catalogo: solo las ordenes de modo opuestas son
+# incompatibles por si mismas; enable_pid/disable_pid componen (la deshabilitacion es la prioridad de
+# seguridad), automatic_mode/manual_mode describen un selector y los requisitos POR ACTOR se comparan por
+# `target` (_detect_same_type_conflicts).
+FUNCTIONAL_REQUIREMENT_CONFLICTS: tuple[dict[str, Any], ...] = (
+    {
+        "types": ("set_auto_mode", "set_manual_mode"),
+        "unless_parameters": ("auto_input",),
+        "reason": ("set_auto_mode y set_manual_mode son ORDENES opuestas de cambio de modo sin una entrada de "
+                   "seleccion que las condicione: escribirian Auto_Mode := TRUE y Auto_Mode := FALSE en el mismo ciclo."),
+    },
+)
 
 # type -> Spanish trigger phrases used ONLY to flag that the command probably needs this type
 # (semantic coverage check). This is a heuristic keyword catalog, not an NLU model: it exists to
@@ -98,17 +152,29 @@ FUNCTIONAL_REQUIREMENT_KEYWORDS: dict[str, list[str]] = {
     "run_pilot": ["piloto de marcha", "luz piloto", "indicador de marcha", "lampara de marcha"],
     "stop_pilot": ["piloto de paro", "luz de paro", "indicador de paro", "lampara de paro"],
     "fault_pilot": ["piloto de falla", "luz de falla", "indicador de falla"],
-    "alarm_output": ["alarma"],
+    # Salida de alarma como ACCION ("activa una alarma"); "alarma activa" como condicion de entrada no la sugiere.
+    "alarm_output": ["activa una alarma", "activa la alarma", "salida de alarma", "enciende la alarma", "enciende una alarma",
+                     "suene una alarma", "suene la alarma", "salte una alarma", "genera una alarma", "activa alarma"],
     "interlock": ["no permitas activar ambos", "enclavamiento mutuo", "nunca al mismo tiempo", "no simultaneamente"],
-    "maintenance_inhibit": ["en mantenimiento", "bloquea el arranque", "modo mantenimiento"],
+    # "bloquea el arranque" suelto no es especifico de mantenimiento (tambien lo hace una emergencia).
+    "maintenance_inhibit": ["en mantenimiento", "modo mantenimiento"],
     "automatic_mode": ["modo automatico"],
     "manual_mode": ["modo manual"],
-    "counter_requirement": ["cuenta", "pulsos"],
+    "counter_requirement": ["cuenta pulsos", "cuenta los pulsos", "contar pulsos", "contador de pulsos", "pulsos"],
     "reset_behavior": ["boton de reset", "reinicio de falla", "reinicia la falla"],
     # --- PID supervisory (P01-P12) ---
-    "set_auto_mode": ["modo automatico", "habilita el automatico", "activa el automatico"],
-    "set_manual_mode": ["modo manual"],
-    "set_level_setpoint": ["setpoint", "set point", "nivel del tanque en", "nivel en", "establece el nivel", "configura level_sp"],
+    # set_auto_mode / set_manual_mode son ACCIONES (orden de cambiar el modo): solo frases de accion. "en modo
+    # automatico", "mientras este en Manual" son CONDICIONES y no deben sugerir una orden de cambio de modo.
+    "set_auto_mode": ["pasa a modo automatico", "pasar a modo automatico", "cambia a modo automatico",
+                      "pon el sistema en automatico", "habilita el automatico", "activa el automatico",
+                      "entre en automatico", "entrar en automatico"],
+    "set_manual_mode": ["pasa a modo manual", "pasar a modo manual", "cambia a modo manual", "pon el sistema en manual"],
+    # Un valor de setpoint concreto; "setpoint" suelto tambien aparece al hablar de rangos o validacion.
+    "set_level_setpoint": ["setpoint de nivel a", "setpoint del nivel al", "setpoint del nivel a", "consigna de nivel a",
+                           "nivel del tanque en", "establece el nivel", "configura level_sp"],
+    "reject_unsafe_setpoint": ["setpoint fuera de rango", "setpoint fuera del rango", "rechazalo y conserva",
+                               "conserva el ultimo valor valido", "conservando el ultimo valido", "rechaza cualquier valor",
+                               "se rechaza y se conserva"],
     "enable_pid": ["habilita el pid", "activa el pid", "habilita el control", "activa el control"],
     "disable_pid": ["desactiva el pid", "deshabilita el pid", "desactiva el control pid"],
     "high_level_alarm": ["alarma si el nivel supera", "nivel alto", "supera el", "nivel > "],
@@ -116,8 +182,17 @@ FUNCTIONAL_REQUIREMENT_KEYWORDS: dict[str, list[str]] = {
     "sensor_range_fault": ["fallo de sensor", "sensor fuera de rango", "sensor invalido"],
     "conditional_alarm_reset": ["reinicia la alarma", "reset de alarma", "limpia la alarma"],
     "safe_overfill_stop": ["sobrellenado", "parada segura", "detente de forma segura", "detén de forma segura"],
-    "manual_pump_limit": ["operacion manual de la bomba", "bomba en manual", "controla la bomba manualmente"]
+    "manual_pump_enable": ["orden manual del operador", "operacion manual de la bomba", "bomba en manual",
+                           "controla la bomba manualmente"]
 }
+
+
+def fold_text(text: Any) -> str:
+    """Minusculas y sin tildes: las palabras clave del catalogo se escriben sin tildes ("automatico", "ultimo")."""
+    import unicodedata
+
+    decomposed = unicodedata.normalize("NFKD", str(text or "").lower())
+    return "".join(char for char in decomposed if not unicodedata.combining(char))
 
 
 def strip_external_prefix(tag: str) -> str:
@@ -196,6 +271,8 @@ def timed_sequence_missing_data(functional_requirements: list[dict[str, Any]]) -
 # Requisitos cuya ESENCIA es la emergencia (emergency_priority) siguen con su tag fijo.
 FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS: dict[str, dict[str, str]] = {
     "enable_pid": {"emergency_input": "I_Emergency"},
+    "enable_pump": {"pump_output": "Q_Pump_Enable"},
+    "manual_pump_enable": {"manual_pump_input": "I_Manual_Pump_Command", "pump_output": "Q_Pump_Enable"},
 }
 
 # Literales booleanos seguros (mismo criterio que effective_semantics.SAFE_FALSE / semantic_repair).
@@ -230,7 +307,7 @@ def resolve_parameter_resources(requirement: dict[str, Any], parameters: dict[st
     Nunca convierte un literal en tag ni inventa recursos; un valor invalido lanza ParameterResourceError.
     parameters=None (llamadas sin semantica efectiva) conserva el comportamiento del contrato.
     """
-    req_type = str(requirement.get("type", "")).strip()
+    req_type = canonical_requirement_type(requirement.get("type", ""))
     resolved: list[dict[str, Any]] = []
     for parameter, default in (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS.get(req_type) or {}).items():
         entry: dict[str, Any] = {"parameter": parameter, "contract_default": default,
@@ -256,7 +333,7 @@ def get_functional_requirement_tags(requirement: dict[str, Any], parameters: dic
     parametro (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS) se resuelven con los parametros EFECTIVOS: un literal
     seguro no exige variable PLC; otro tag valido sustituye al por defecto; sin parametros, el contrato.
     """
-    req_type = str(requirement.get("type", "")).strip()
+    req_type = canonical_requirement_type(requirement.get("type", ""))
     if req_type in FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS:
         parameter_defaults = set(FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS[req_type].values())
         fixed = [tag for tag in FUNCTIONAL_REQUIREMENT_TAGS.get(req_type, []) if tag not in parameter_defaults]
@@ -301,7 +378,7 @@ def get_functional_requirement_process_variables(requirement: dict[str, Any]) ->
     one functional_requirement entry implies, as {name: iec_type}. Empty for D01-D20 types, which
     never touch process variables.
     """
-    req_type = str(requirement.get("type", "")).strip()
+    req_type = canonical_requirement_type(requirement.get("type", ""))
     names = FUNCTIONAL_REQUIREMENT_PROCESS_VARIABLES.get(req_type, [])
     return {name: PID_PROCESS_VARIABLES[name] for name in names}
 
@@ -335,7 +412,7 @@ def detect_multi_actor_motor_targets(functional_requirements: list[dict[str, Any
 def is_catalog_functional_requirement(requirement: dict[str, Any]) -> bool:
     """True for the new composable {"type": "run_pilot", ...} shape (vs. the older ad-hoc
     named-variable shape {"name": "Level_SP", "type": "REAL", ...} already used by ir_builder)."""
-    req_type = str(requirement.get("type", "")).strip()
+    req_type = canonical_requirement_type(requirement.get("type", ""))
     return req_type in FUNCTIONAL_REQUIREMENT_TAGS or req_type == "interlock"
 
 
@@ -513,7 +590,7 @@ def compute_semantic_coverage(
     domain are considered, or a PID command would spuriously look "incomplete" for never
     mentioning a discrete-only type (and vice versa), wasting a retry on a false positive.
     """
-    normalized = command_text.lower()
+    normalized = fold_text(command_text)
     is_pid_context = intent_id == "INT_PID_SUPERVISOR"
     detected_types = {
         req_type
@@ -728,8 +805,30 @@ def merge_interlock_requirements(requirements: list[dict[str, Any]]) -> list[dic
     return merged
 
 
-def detect_functional_requirement_conflicts(functional_requirements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _detect_declared_incompatibilities(functional_requirements: list[dict[str, Any]],
+                                       parameters: dict[str, Any] | None) -> list[dict[str, Any]]:
+    present = {canonical_requirement_type(r.get("type")) for r in functional_requirements if isinstance(r, dict)}
+    parameters = parameters if isinstance(parameters, dict) else {}
+    conflicts: list[dict[str, Any]] = []
+    for rule in FUNCTIONAL_REQUIREMENT_CONFLICTS:
+        if not set(rule["types"]) <= present:
+            continue
+        if any(str(parameters.get(key) or "").strip() for key in rule.get("unless_parameters") or ()):
+            continue
+        conflicts.append({"type": "INCOMPATIBLE_REQUIREMENTS", "types": list(rule["types"]),
+                          "entries": [r for r in functional_requirements
+                                      if isinstance(r, dict) and canonical_requirement_type(r.get("type")) in rule["types"]],
+                          "reason": rule["reason"]})
+    return conflicts
+
+
+def detect_functional_requirement_conflicts(functional_requirements: list[dict[str, Any]],
+                                            parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """
+    Conflictos de UNA interpretacion: (1) pares de tipos declarados incompatibles en
+    FUNCTIONAL_REQUIREMENT_CONFLICTS (con `parameters` como contexto: una entrada de seleccion puede
+    hacerlos coherentes); (2) instancias del mismo tipo con parametros distintos (abajo).
+
     Bounded conflict detection: two entries of the SAME type with materially different
     parameters (e.g. two delayed_stop with different delay) are a real conflict - composition
     cannot silently pick one. Two entries with identical parameters are just a harmless
@@ -746,7 +845,7 @@ def detect_functional_requirement_conflicts(functional_requirements: list[dict[s
     for requirement in functional_requirements:
         by_type.setdefault(str(requirement.get("type", "")), []).append(requirement)
 
-    conflicts: list[dict[str, Any]] = []
+    conflicts: list[dict[str, Any]] = _detect_declared_incompatibilities(functional_requirements, parameters)
 
     interlock_entries: list[dict[str, Any]] = []
     for req_type in list(by_type):
@@ -819,6 +918,10 @@ def _detect_same_type_conflicts(req_type: str, entries: list[dict[str, Any]]) ->
 
 
 __all__ = [
+    "FUNCTIONAL_REQUIREMENT_ALIASES",
+    "FUNCTIONAL_REQUIREMENT_CONFLICTS",
+    "canonical_requirement_type",
+    "canonicalize_functional_requirements",
     "FUNCTIONAL_REQUIREMENT_TAGS",
     "FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS",
     "FUNCTIONAL_REQUIREMENT_KEYWORDS",

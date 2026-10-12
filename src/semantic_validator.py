@@ -39,9 +39,11 @@ def _detect_unsafe_level_setpoints(functional_requirements: list[dict[str, Any]]
     [min, max] from config/pid_supervisor_config.json.
     """
     config = _load_pid_supervisor_config().get("level_setpoint", {})
-    min_value = config.get("min", 10.0)
-    max_value = config.get("max", 90.0)
+    min_value = config.get("min")
+    max_value = config.get("max")
     messages: list[str] = []
+    if not isinstance(min_value, (int, float)) or not isinstance(max_value, (int, float)):
+        return messages  # sin rango configurado no se inventa uno: la fuente es solo la configuracion
     for requirement in functional_requirements:
         if requirement.get("type") != "set_level_setpoint":
             continue
@@ -81,6 +83,18 @@ INTENT_PARAMETER_RULES = {
             "timer"
         ],
         "time_keys": ["stop_delay_time"]
+    },
+    "INT_SEQUENCE_THREE_STEPS": {
+        "required": ["delay_time"],
+        "time_keys": ["delay_time"]
+    },
+    "INT_AUTO_CYCLE": {
+        "required": ["cycle_time"],
+        "time_keys": ["cycle_time"]
+    },
+    "INT_SENSOR_TIMEOUT_ALARM": {
+        "required": [],
+        "time_keys": ["timeout"]
     },
     "INT_COUNTER_PULSES": {
         "required": ["pulse_input", "reset_input", "emergency_input", "output", "counter", "preset"],
@@ -396,7 +410,7 @@ def validate_semantic_output(
         errors.append("La logica solicitada requiere incluir I_Emergency.")
 
     requirements_payload = payload.get("functional_requirements", []) or []
-    functional_requirement_conflicts = detect_functional_requirement_conflicts(requirements_payload)
+    functional_requirement_conflicts = detect_functional_requirement_conflicts(requirements_payload, parameters)
     unsafe_setpoints = _detect_unsafe_level_setpoints(requirements_payload)
 
     clarification_question = payload.get("clarification_question")

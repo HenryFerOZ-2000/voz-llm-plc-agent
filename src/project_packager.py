@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from code_generator import TemplateNotImplementedError, generate_implementation_from_ir
+from composition_check import analyze_composition
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, build_project_ir
 from logger import save_project_package
 from openplc_validator import (
@@ -383,6 +384,20 @@ def generate_project_package(
 
     package_dir = Path(saved_paths["package_dir"])
     package_verification = verify_generated_package(package_dir)
+    # Validacion de composicion (antes de compilar/descargar): escritores por variable y conflictos de
+    # escrituras incondicionales distintas en el mismo ciclo. Un conflicto invalida el paquete.
+    scl_source = package_dir / "siemens_source.scl"
+    if scl_source.is_file():
+        composition = analyze_composition(scl_source.read_text(encoding="utf-8"))
+        _write_json_file(package_dir / "composition_report.json", composition)
+        saved_paths["composition_report.json"] = str(package_dir / "composition_report.json")
+        package_verification = {
+            **package_verification,
+            "is_valid": bool(package_verification.get("is_valid", True)) and composition["valid"],
+            "errors": list(package_verification.get("errors", [])) + composition["errors"],
+            "warnings": list(package_verification.get("warnings", [])) + composition["warnings"],
+            "composition": {"valid": composition["valid"], "conflicts": composition["conflicts"]},
+        }
     verification_result = _combine_verification(
         generation_errors=generation_errors,
         semantic_validation=semantic_validation,

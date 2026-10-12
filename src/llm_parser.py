@@ -9,8 +9,10 @@ from alias_resolver import build_alias_index
 from io_allocator import extract_implicit_multi_resource_requests, extract_io_assignment_requests
 from functional_requirements import (
     FUNCTIONAL_REQUIREMENT_KEYWORDS,
-    PID_PROCESS_VARIABLES,
+    FUNCTIONAL_REQUIREMENT_PROCESS_VARIABLES,
+    canonicalize_functional_requirements,
     compute_intent_covered_types,
+    fold_text,
     compute_semantic_coverage,
     detect_compositional_complexity,
     detect_functional_requirement_conflicts
@@ -158,7 +160,7 @@ def _normalize_semantic_output(payload: dict[str, Any] | None, command_text: str
     normalized["unrecognized_terms"] = payload.get("unrecognized_terms", []) if isinstance(payload.get("unrecognized_terms", []), list) else []
     normalized["requires_clarification"] = bool(payload.get("requires_clarification", False))
     normalized["clarification_question"] = payload.get("clarification_question")
-    normalized["functional_requirements"] = (
+    normalized["functional_requirements"] = canonicalize_functional_requirements(
         payload.get("functional_requirements", []) if isinstance(payload.get("functional_requirements", []), list) else []
     )
 
@@ -183,12 +185,15 @@ def _attach_rule_based_functional_requirements(
     """
     if result.get("functional_requirements"):
         return result
-    normalized_command = str(result.get("normalized_command") or command_text).lower()
+    normalized_command = fold_text(result.get("normalized_command") or command_text)
     is_pid_context = result.get("intent_id") == "INT_PID_SUPERVISOR"
+    # Dominio del tipo = catalogo PID de TIPOS (FUNCTIONAL_REQUIREMENT_PROCESS_VARIABLES), igual que
+    # compute_semantic_coverage. (Comparar contra PID_PROCESS_VARIABLES, nombres de VARIABLES, nunca
+    # coincidia y adjuntaba tipos PID a interpretaciones discretas.)
     detected_types = {
         req_type
         for req_type, keywords in FUNCTIONAL_REQUIREMENT_KEYWORDS.items()
-        if (req_type in PID_PROCESS_VARIABLES) == is_pid_context
+        if _is_pid_requirement_type(req_type) == is_pid_context
         and any(keyword in normalized_command for keyword in keywords)
     }
     if not detected_types:
@@ -306,19 +311,43 @@ def _result_richness_score(result: dict[str, Any] | None, validation: dict[str, 
     return score
 
 
+def _is_pid_requirement_type(req_type: Any) -> bool:
+    return str(req_type or "") in FUNCTIONAL_REQUIREMENT_PROCESS_VARIABLES
+
+
 def _merge_functional_requirements(
-    primary: list[dict[str, Any]], secondary: list[dict[str, Any]]
+    primary: list[dict[str, Any]], secondary: list[dict[str, Any]], intent_id: str | None = None
 ) -> list[dict[str, Any]]:
     """
     Incorpora requisitos funcionales coherentes que SOLO la interpretacion secundaria detecto
-    (nunca sustituye los de la primaria, nunca duplica un `type` ya presente).
+    (nunca sustituye los de la primaria, nunca duplica un `type` ya presente). Con `intent_id`, solo
+    se incorporan tipos del MISMO dominio que la intencion final (PID vs discreto): un requisito de
+    otro dominio nunca se compone con ella.
     """
     primary_types = {str(requirement.get("type", "")) for requirement in primary}
     merged = list(primary)
+    pid_context = intent_id == "INT_PID_SUPERVISOR" if intent_id else None
     for requirement in secondary:
-        if str(requirement.get("type", "")) not in primary_types:
-            merged.append(requirement)
+        req_type = str(requirement.get("type", ""))
+        if req_type in primary_types:
+            continue
+        if pid_context is not None and _is_pid_requirement_type(req_type) != pid_context:
+            continue
+        merged.append(requirement)
     return merged
+
+
+def _revalidate_merged(merged_result: dict[str, Any], base_result: dict[str, Any], base_validation: dict[str, Any],
+                       io_map: dict[str, Any], intents_catalog: dict[str, Any], safety_rules: dict[str, Any]
+                       ) -> dict[str, Any]:
+    """
+    Si la fusion agrego requisitos que la interpretacion elegida no traia, el resultado FUSIONADO se valida
+    de nuevo (conflictos internos, recursos): nunca se genera un programa a partir de requisitos que no
+    pasaron la validacion.
+    """
+    if merged_result.get("functional_requirements") == base_result.get("functional_requirements"):
+        return base_validation
+    return _validate_result(merged_result, io_map, intents_catalog, safety_rules)
 
 
 def _detect_functional_contradiction(
@@ -613,7 +642,11 @@ def parse_with_mode(
         intents_catalog=runtime_intents_catalog
     )
 
-    if not coverage["complete"]:
+    if not coverage["complete"] and llm_response_text is not None:
+        # Respuesta inyectada (tests, auditoria de referencia): NUNCA se reintenta contra el LLM real.
+        reason_for_retry = "semantic_coverage_incomplete (sin segunda pasada: respuesta inyectada): " + ", ".join(
+            coverage["missing_types"])
+    elif not coverage["complete"]:
         # Segunda pasada, como maximo una: no hay reintento de un reintento, para no crear
         # un bucle. Si la segunda pasada tampoco mejora, se conserva la primera y sigue su curso
         # normal (llegara a clarification/fallback por las reglas ya existentes mas abajo).
@@ -718,8 +751,14 @@ def parse_with_mode(
     if llm_validation.get("is_valid", False) and (llm_score >= rule_score or not rule_validation.get("is_valid", False)):
         merged_result = dict(llm_result)
         merged_result["functional_requirements"] = _merge_functional_requirements(
-            llm_result.get("functional_requirements", []) or [], rule_result.get("functional_requirements", []) or []
+            llm_result.get("functional_requirements", []) or [], rule_result.get("functional_requirements", []) or [],
+            llm_result.get("intent_id")
         )
+        merged_validation = _revalidate_merged(merged_result, llm_result, llm_validation, runtime_io_map,
+                                               runtime_intents_catalog, runtime_safety_rules)
+        if not merged_validation.get("is_valid", False):
+            merged_result = _sync_clarification_from_validation(merged_result, merged_validation)
+        llm_validation = merged_validation
         return _annotate_result(
             merged_result,
             requested_mode=requested_mode,
@@ -743,8 +782,14 @@ def parse_with_mode(
     if allow_rule_fallback and rule_validation.get("is_valid", False):
         merged_result = dict(rule_result)
         merged_result["functional_requirements"] = _merge_functional_requirements(
-            rule_result.get("functional_requirements", []) or [], llm_result.get("functional_requirements", []) or []
+            rule_result.get("functional_requirements", []) or [], llm_result.get("functional_requirements", []) or [],
+            rule_result.get("intent_id")
         )
+        merged_validation = _revalidate_merged(merged_result, rule_result, rule_validation, runtime_io_map,
+                                               runtime_intents_catalog, runtime_safety_rules)
+        if not merged_validation.get("is_valid", False):
+            merged_result = _sync_clarification_from_validation(merged_result, merged_validation)
+        rule_validation = merged_validation
         return _annotate_result(
             merged_result,
             requested_mode=requested_mode,
