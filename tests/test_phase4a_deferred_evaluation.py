@@ -19,6 +19,7 @@ import gui  # noqa: E402
 from trial_experiments import batch_runner as B  # noqa: E402
 from trial_experiments import benchmark_catalog as BC  # noqa: E402
 from trial_experiments import deferred_evaluator as DE  # noqa: E402
+from trial_experiments import oracle_schema  # noqa: E402
 from trial_experiments import tia_classification as TC  # noqa: E402
 from trial_experiments import trial_io_map, trial_model  # noqa: E402
 
@@ -60,7 +61,16 @@ def _project(tmp_path: Path) -> Path:
         shutil.copyfile(_ROOT / relative, root / relative)
     # Cada proyecto temporal arranca SIN la seleccion real de proyectos TIA (Normal/MASTER) del usuario.
     (root / "config" / "tia_projects.json").unlink(missing_ok=True)
+    _freeze_oracles_for_tests(root)
     return root
+
+
+def _freeze_oracles_for_tests(root: Path) -> None:
+    """Solo en la COPIA temporal: congela con un aprobador de prueba los Oracles que en el repositorio esperan la
+    aprobacion humana formal (benchmark v3), para ejercitar el pipeline que exige Oracles FROZEN. Nunca toca data/."""
+    for path in sorted((root / "data" / "experiment_oracles").glob("*.json")):
+        if not oracle_schema.is_formal(json.loads(path.read_text(encoding="utf-8"))):
+            oracle_schema.approve_oracle(root, path.stem, "INV_TEST")
 
 
 def _generated_trial(root: Path, case_id: str = "D03", variant: str = "V1") -> Path:

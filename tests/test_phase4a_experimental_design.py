@@ -173,6 +173,9 @@ def _project_copy(tmp_path: Path) -> Path:
     for relative in ("data/experimental_design.json", "data/system_capability_gaps.json"):
         shutil.copyfile(_ROOT / relative, root / relative)
     (root / "config" / "tia_projects.json").unlink(missing_ok=True)  # sin la seleccion TIA real del usuario
+    from test_phase4a_deferred_evaluation import _freeze_oracles_for_tests
+
+    _freeze_oracles_for_tests(root)  # Oracles FROZEN solo en la copia (en el repositorio: aprobacion humana pendiente)
     return root
 
 

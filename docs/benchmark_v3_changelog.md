@@ -278,7 +278,16 @@ D01, D02, D04, D06, D07, D09, D10, D11, D12, D14, D16, D18, D20, P02
 
 ## Oracles re-versionados
 
-| Caso | Version | Alcance | Hash nuevo |
+Estado de las versiones v3: `DRAFT_REVIEWED` con `technical_validation = PASSED` y
+`human_formal_approval = PENDING` (`approved_by = null`). Este script nunca firma una aprobacion humana; la
+aprobacion formal la realiza el investigador de forma explicita (ventana REVISION DE ORACLES). Hasta entonces
+los guardas FORMAL (`oracles_32_frozen`, `oracles_frozen_hash`) bloquean los ensayos formales.
+
+Correccion de trazabilidad (2026-10-12): la primera generacion de v3 escribio automaticamente `approved_by` en los
+32 Oracles y las copias `versions/{id}_vN.json` de esa aprobacion. Se retiraron (aprobacion humana no otorgada);
+el contenido y el hash de contenido de cada Oracle no cambian.
+
+| Caso | Version | Alcance | Hash de contenido |
 |---|---|---|---|
 | D01 | v1 -> v2 | BENCHMARK_V3_METADATA | `5eff52840e121774` |
 | D02 | v1 -> v2 | BENCHMARK_V3_METADATA | `76c046eaddc44153` |

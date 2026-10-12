@@ -82,6 +82,9 @@ def test_every_oracle_is_schema_valid_without_physical_addresses(case_id):
     else:
         assert oracle["approval"]["approved_by"] is None and oracle["approval"]["hash"] is None
         assert oracle["approval"]["status"] == oracle_schema.STATUS_DRAFT_REVIEWED
+        if case_id == "D03":  # Oracle piloto escrito a mano (sin revision IA): su registro es la validacion tecnica v3
+            assert oracle["approval"]["technical_validation"]["status"] == "PASSED"
+            return
         review = oracle["approval"]["ai_review"]
         assert review["generated"] and review["schema_validated"] and review["semantic_reviewed"] and review["reviewed_at"]
 
@@ -105,7 +108,9 @@ def test_frozen_versions_are_preserved_and_d03_unchanged():
     d03_v1 = json.loads((_ORACLES_DIR / "versions" / "D03_v1.json").read_text(encoding="utf-8"))
     assert d03_v1["approval"]["hash"] == "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92"
     d03 = _oracle("D03")
-    assert d03["approval"]["status"] == "FROZEN" and d03["approval"]["version"] == 2
+    # v3: validada tecnicamente, aprobacion humana PENDIENTE (nunca se firma automaticamente).
+    assert d03["approval"]["status"] == "DRAFT_REVIEWED" and d03["approval"]["version"] == 2
+    assert d03["approval"]["approved_by"] is None and d03["approval"]["human_formal_approval"] == "PENDING"
     for key in ("roles", "preconditions", "test_sequence", "invariants", "cleanup", "evaluation"):
         assert d03.get(key) == d03_v1.get(key), key
     for case_id in ("D03", "D07", "D12"):
@@ -154,7 +159,8 @@ def test_d12_v2_redefinition():
 
 def _demote_to_draft(root: Path, keep: tuple[str, ...] = ("D03",)) -> None:
     """En una COPIA temporal, devuelve a DRAFT_REVIEWED los Oracles ya aprobados por el investigador
-    (salvo `keep`), para probar la aprobacion con independencia del estado del repositorio."""
+    (salvo `keep`, que quedan congelados por un aprobador de prueba si aun no lo estaban), para probar la
+    aprobacion con independencia del estado del repositorio."""
     directory = root / "data" / "experiment_oracles"
     for path in directory.glob("*.json"):
         oracle = json.loads(path.read_text(encoding="utf-8"))
@@ -167,6 +173,9 @@ def _demote_to_draft(root: Path, keep: tuple[str, ...] = ("D03",)) -> None:
         archived = directory / "versions" / f"{oracle['oracle_id']}_v{oracle['approval']['version']}.json"
         if archived.exists():
             archived.unlink()
+    for oracle_id in keep:
+        if not oracle_schema.is_formal(oracle_schema.load_oracle(root, oracle_id)):
+            oracle_schema.approve_oracle(root, oracle_id, "INV00")
 
 
 def test_frozen_oracle_is_immutable(tmp_path):
@@ -986,7 +995,7 @@ def test_gui_oracle_review_window_lists_32_and_mass_approval_is_guarded(app, tmp
     window = gui.OracleReviewWindow(app)
     try:
         assert len(window.tree.get_children()) == 32
-        assert window.tree.set("D03", "estado") == "FROZEN v2"  # benchmark v3: D03 v2 (metadata + semantica)
+        assert window.tree.set("D03", "estado") == "FROZEN v2"  # congelado en la COPIA por _demote_to_draft (INV00)
         window.approve_all_clean()
         with_items = {e["case_id"] for e in window.report["oracles"] if e["review_items"]}
         for case_id in window.tree.get_children():

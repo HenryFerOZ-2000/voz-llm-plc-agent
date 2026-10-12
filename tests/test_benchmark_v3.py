@@ -134,13 +134,19 @@ def test_functional_names_unified_with_oracles_in_metadata_only():
 # Hashes, Oracles y alineacion ------------------------------------------------------------------
 
 @pytest.mark.parametrize("case_id", BC.CASE_IDS)
-def test_oracle_is_a_new_frozen_version_referencing_the_v3_hash(case_id):
+def test_oracle_is_a_new_version_technically_validated_pending_human_approval(case_id):
     oracle, previous = S.load_oracle(_ROOT, case_id), _v2_oracle(case_id)
     approval = oracle["approval"]
-    assert approval["status"] == "FROZEN" and approval["hash"] == S.compute_oracle_hash(oracle)
+    # Validacion TECNICA registrada; aprobacion HUMANA pendiente: nadie firma automaticamente.
+    assert approval["status"] == S.STATUS_DRAFT_REVIEWED and not S.is_formal(oracle)
+    assert approval["approved_by"] is None and approval["approved_at"] is None and approval["hash"] is None
+    assert approval["human_formal_approval"] == "PENDING"
+    validation = approval["technical_validation"]
+    assert validation["status"] == "PASSED" and validation["content_hash"] == S.compute_oracle_hash(oracle)
+    assert "no es una aprobacion humana" in validation["validated_by"]
     assert approval["version"] == previous["approval"]["version"] + 1
-    assert approval["previous_hash"] == previous["approval"]["hash"]
-    assert approval["approved_by"] == "Henry Ochoa" and approval["benchmark_version"] == 3
+    assert approval["previous_hash"] == previous["approval"]["hash"] and approval["benchmark_version"] == 3
+    assert not (_ROOT / "data" / "experiment_oracles" / "versions" / f"{case_id}_v{approval['version']}.json").exists()
     archived = _json(_ROOT / "data" / "experiment_oracles" / "versions" / f"{case_id}_v{previous['approval']['version']}.json")
     assert S.compute_oracle_hash(archived) == previous["approval"]["hash"]  # la version previa sigue intacta
     source = oracle["source_definition"]
@@ -183,6 +189,27 @@ def test_v3_validation_32_aligned_no_hidden_requirements_no_inconsistencies():
     assert summary["benchmark_version"] == 3
     assert BC.benchmark_inconsistencies(_ROOT, {c: S.load_oracle(_ROOT, c) for c in BC.CASE_IDS}) == []
     assert _json(_ROOT / "data" / "oracle_validation_report.json")["summary"]["oracles_aligned"] == 32
+
+
+def test_build_script_never_signs_a_human_approval():
+    # La aprobacion formal es una accion explicita del investigador: el script no llama a approve_oracle ni fija nombres.
+    source = (_ROOT / "scripts" / "build_benchmark_v3.py").read_text(encoding="utf-8")
+    assert "approve_oracle(" not in source and "APPROVED_BY" not in source and "Henry" not in source
+    previous = _v2_oracle("D01")
+    draft = S.new_version(previous)
+    draft["approval"]["approved_by"] = "Alguien"  # aunque viniera relleno, el bloque resultante no atribuye aprobacion
+    approval = BUILD.pending_human_approval("D01", previous, draft, "2026-10-12T00:00:00")
+    assert approval["status"] == S.STATUS_DRAFT_REVIEWED and approval["approved_by"] is None
+    assert approval["approved_at"] is None and approval["hash"] is None and approval["human_formal_approval"] == "PENDING"
+    assert approval["technical_validation"]["status"] == "PASSED"
+    S.assert_valid({**draft, "approval": approval})
+
+
+def test_formal_blocked_until_explicit_human_approval():
+    summary = OR.build_validation_report(_ROOT)["summary"]
+    assert summary["formal"] == 0 and len(summary["ready_for_human_approval"]) == 32
+    for case_id in BC.CASE_IDS:
+        assert S.load_oracle(_ROOT, case_id)["approval"]["approved_by"] is None, case_id
 
 
 def test_obsolete_convention_text_cleaned():

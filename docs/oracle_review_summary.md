@@ -1,9 +1,9 @@
 # Revision de Oracles (D01-D20, P01-P12)
 
-Generado: 2026-10-12T12:21:55. Fuente: `data/experiment_oracles/*.json` (la especificacion formal es el JSON; este resumen solo facilita la revision).
+Generado: 2026-10-12T12:56:09. Fuente: `data/experiment_oracles/*.json` (la especificacion formal es el JSON; este resumen solo facilita la revision).
 
 - Oracles: 32 · schema valid 32/32 · review items abiertos 0 · discretos ejecutables 20/20 · PID ejecutables 0/12 · capability gaps 18
-- Listos para aprobacion humana: ninguno
+- Listos para aprobacion humana: D01, D02, D03, D04, D05, D06, D07, D08, D09, D10, D11, D12, D13, D14, D15, D16, D17, D18, D19, D20, P01, P02, P03, P04, P05, P06, P07, P08, P09, P10, P11, P12
 - Sin review items abiertos: 32 - D01, D02, D03, D04, D05, D06, D07, D08, D09, D10, D11, D12, D13, D14, D15, D16, D17, D18, D19, D20, P01, P02, P03, P04, P05, P06, P07, P08, P09, P10, P11, P12
 - Con review items abiertos: 0 - 
 - Ejecutables hoy: D01, D02, D03, D04, D05, D06, D07, D08, D09, D10, D11, D12, D13, D14, D15, D16, D17, D18, D19, D20
@@ -13,7 +13,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D01 - Salida temporizada de 5 s
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `5eff52840e12`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `5eff52840e12`
 - **Objetivo original:** Activar una salida digital durante 5 segundos al presionar un pulsador.
 - **Comando canonico:** Activa una salida digital durante 5 segundos al presionar un pulsador.
 - **Comportamiento evaluado:** Al presionar el pulsador de disparo, la salida auxiliar se activa y permanece activa 5 s; despues se desactiva.
@@ -34,7 +34,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D02 - Piloto que sigue al sensor
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `76c046eaddc4`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `76c046eaddc4`
 - **Objetivo original:** Encender una lampara cuando una entrada digital este activa.
 - **Comando canonico:** Enciende una lámpara mientras una entrada digital esté activa.
 - **Comportamiento evaluado:** El piloto luminoso esta encendido mientras el sensor este activo y apagado en caso contrario.
@@ -54,7 +54,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D03 - Arranque/parada de motor con memoria de marcha
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `f1c5bf3ee7f7`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `f1c5bf3ee7f7`
 - **Objetivo original:** Arranque y paro de un motor con pulsadores independientes START y STOP. Un pulso de START enciende el motor y este permanece encendido al soltar START (memoria de marcha); STOP lo apaga y tiene prioridad.
 - **Comando canonico:** Enciende un motor con Start, mantenlo encendido al soltar el pulsador y apágalo con Stop.
 - **Comportamiento evaluado:** Arranque y paro de un motor con pulsadores independientes START y STOP. Un pulso de START enciende el motor y este permanece encendido al soltar START (memoria de marcha); STOP lo apaga y tiene prioridad.
@@ -72,7 +72,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D04 - Motor enclavado con memoria de marcha
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `a299ff8d88e2`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `a299ff8d88e2`
 - **Objetivo original:** Arranque enclavado de motor con memoria de marcha.
 - **Comando canonico:** Enclava un motor con Start para que permanezca encendido al soltar el pulsador, y apágalo con Stop.
 - **Comportamiento evaluado:** Un pulso de arranque mantiene el motor en marcha (memoria de enclavamiento) hasta que se presiona el paro.
@@ -94,7 +94,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D05 - Prioridad del disparo de seguridad sobre el arranque
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `1928377b0e61`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `1928377b0e61`
 - **Objetivo original:** Paro de emergencia con prioridad sobre cualquier orden de arranque.
 - **Comando canonico:** Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.
 - **Comportamiento evaluado:** Un disparo de seguridad apaga el motor y tiene prioridad sobre cualquier orden de arranque: mientras esta activo el motor nunca marcha.
@@ -116,7 +116,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D06 - Alarma por intento de arranque sin condicion de seguridad
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `2f4540fb9185`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `2f4540fb9185`
 - **Objetivo original:** Activar alarma si se intenta arrancar sin condicion de seguridad.
 - **Comando canonico:** Si se intenta arrancar el sistema sin cumplir la condición de seguridad, activa una alarma.
 - **Comportamiento evaluado:** Un intento de arranque sin la condicion de seguridad activa la alarma; con la condicion presente, el arranque no genera alarma.
@@ -136,7 +136,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D07 - Arranque retardado de 3 segundos
 
-- **Estado:** FROZEN v3 · complejidad MEDIUM · hash `ef89ba4115ff`
+- **Estado:** DRAFT_REVIEWED v3 · complejidad MEDIUM · hash `ef89ba4115ff`
 - **Objetivo original:** Arranque retardado 3 s.
 - **Comando canonico:** Mientras Start permanezca activo, espera 3 segundos antes de encender el motor.
 - **Comportamiento evaluado:** Con la orden de arranque activa, el motor permanece apagado durante 3 s y despues se enciende.
@@ -153,7 +153,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D08 - Apagar el motor tras 10 s de operacion continua
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `2a7463e47991`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `2a7463e47991`
 - **Objetivo original:** Apagar motor despues de 10 segundos de operacion continua.
 - **Comando canonico:** Al activar Start, enciende el motor, mantenlo en marcha aunque se suelte Start y apágalo automáticamente después de 10 segundos de funcionamiento continuo.
 - **Comportamiento evaluado:** Al activar Start (pulso) el motor se enciende y se apaga automaticamente tras 10 s de funcionamiento continuo.
@@ -172,7 +172,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D09 - Contar 5 pulsos y activar una salida
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `5c8f2bb3a0ad`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `5c8f2bb3a0ad`
 - **Objetivo original:** Contar 5 pulsos y activar una salida.
 - **Comando canonico:** Cuenta 5 pulsos de una entrada digital y, al llegar al quinto, activa una salida.
 - **Comportamiento evaluado:** Cada pulso del sensor incrementa un contador; al alcanzar 5 pulsos se activa la salida.
@@ -199,7 +199,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D10 - Reinicio del contador mediante pulsador
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `db41ac94ab24`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `db41ac94ab24`
 - **Objetivo original:** Resetear contador mediante pulsador.
 - **Comando canonico:** Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida.
 - **Comportamiento evaluado:** Tras contar hasta el umbral (salida activa), el pulsador de reinicio devuelve el contador a su estado inicial.
@@ -238,7 +238,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D11 - Contactor con enclavamiento logico y proteccion de emergencia
 
-- **Estado:** FROZEN v2 · complejidad HIGH · hash `57c93841ac37`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad HIGH · hash `57c93841ac37`
 - **Objetivo original:** Control de contactor con enclavamiento electrico/logico.
 - **Comando canonico:** Controla un contactor con Start y Stop usando enclavamiento de marcha.
 - **Comportamiento evaluado:** Start activa el contactor, que queda enclavado al soltar Start; Stop lo desactiva.
@@ -257,7 +257,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D12 - Evitar la activacion simultanea de dos contactores
 
-- **Estado:** FROZEN v3 · complejidad HIGH · hash `71cb20e92b7d`
+- **Estado:** DRAFT_REVIEWED v3 · complejidad HIGH · hash `71cb20e92b7d`
 - **Objetivo original:** Interlock: evitar activacion simultanea de dos contactores.
 - **Comando canonico:** Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo.
 - **Comportamiento evaluado:** Cada contactor sigue su propia solicitud; nunca pueden estar activos los dos a la vez. No se define prioridad ni transferencia.
@@ -277,7 +277,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D13 - Variador habilitado solo sin alarma
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `e1e7ec3301bc`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `e1e7ec3301bc`
 - **Objetivo original:** Activar variador solo si no existe alarma.
 - **Comando canonico:** Con una orden de marcha, habilita el variador solo mientras no exista una alarma activa; si la alarma aparece con el variador habilitado, deshabilítalo.
 - **Comportamiento evaluado:** Con solicitud de marcha, el variador se habilita solo si no existe alarma activa; con alarma activa nunca se habilita.
@@ -297,7 +297,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D14 - Seleccion de velocidad baja/media/alta
 
-- **Estado:** FROZEN v2 · complejidad HIGH · hash `1cefcbee2004`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad HIGH · hash `1cefcbee2004`
 - **Objetivo original:** Seleccionar velocidad baja/media/alta mediante entradas digitales.
 - **Comando canonico:** Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.
 - **Comportamiento evaluado:** Tres entradas digitales seleccionan una velocidad discreta; solo la salida de la velocidad seleccionada se activa.
@@ -317,7 +317,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D15 - Modo manual/automatico para la habilitacion del motor
 
-- **Estado:** FROZEN v2 · complejidad HIGH · hash `6cc504987db5`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad HIGH · hash `6cc504987db5`
 - **Objetivo original:** Modo manual/automatico para habilitacion del motor.
 - **Comando canonico:** El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto.
 - **Comportamiento evaluado:** MODE_AUTO elige que orden habilita el motor: en manual solo MANUAL_COMMAND, en automatico solo AUTO_COMMAND; la orden del modo no seleccionado se ignora.
@@ -338,7 +338,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D16 - Secuencia: arranque, espera de 3 s y salida auxiliar
 
-- **Estado:** FROZEN v2 · complejidad HIGH · hash `47dd88ea9664`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad HIGH · hash `47dd88ea9664`
 - **Objetivo original:** Secuencia: arranque -> espera -> salida auxiliar.
 - **Comando canonico:** Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar.
 - **Comportamiento evaluado:** Al recibir Start (pulso) se activa la salida principal y, 3 s despues, la salida auxiliar.
@@ -359,7 +359,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D17 - Supervision de sensor 5 s tras Start
 
-- **Estado:** FROZEN v2 · complejidad HIGH · hash `f757df8d6f6c`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad HIGH · hash `f757df8d6f6c`
 - **Objetivo original:** Alarma si el sensor no cambia de estado en 5 s.
 - **Comando canonico:** Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos.
 - **Comportamiento evaluado:** Tras activar Start se supervisa el sensor: si no cambia de estado durante 5 s se activa la alarma; antes de Start no hay supervision.
@@ -382,7 +382,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D18 - Bloqueo del arranque en mantenimiento
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `a11e0bbec732`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `a11e0bbec732`
 - **Objetivo original:** Bloquear arranque en modo mantenimiento.
 - **Comando canonico:** Bloquea el arranque del motor mientras el sistema esté en modo mantenimiento.
 - **Comportamiento evaluado:** Mientras el modo mantenimiento esta activo, la orden de arranque no pone en marcha el motor; fuera de mantenimiento si.
@@ -403,7 +403,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D19 - Pilotos de estado: detenido, marcha y falla
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `101f21568dc5`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `101f21568dc5`
 - **Objetivo original:** Pilotos: detenido, marcha, falla.
 - **Comando canonico:** Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual.
 - **Comportamiento evaluado:** Exactamente un piloto indica el estado actual: detenido, marcha o falla.
@@ -423,7 +423,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## D20 - Ciclo automatico minimo: inicio, ejecucion, fin y reset
 
-- **Estado:** FROZEN v2 · complejidad HIGH · hash `9cbe97bddbb6`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad HIGH · hash `9cbe97bddbb6`
 - **Objetivo original:** Ciclo automatico: inicio -> ejecucion -> parada -> reset.
 - **Comando canonico:** Al activar Start, inicia un ciclo automático de 3 segundos. Al terminar, detén la ejecución y marca el ciclo como finalizado. Reset debe devolverlo al estado inicial.
 - **Comportamiento evaluado:** START inicia la ejecucion (RUN_OUTPUT activa); al terminar la ejecucion el ciclo queda completo; RESET vuelve al reposo.
@@ -446,7 +446,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P01 - Modo automatico al seleccionar Automatico
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `ad686822b466`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `ad686822b466`
 - **Objetivo original:** Habilitar modo automatico.
 - **Comando canonico:** El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático.
 - **Comportamiento evaluado:** El modo automatico del sistema de nivel se habilita cuando se selecciona Automatico.
@@ -465,7 +465,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P02 - Cambiar el setpoint de nivel a 60 %
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `4bafcce6b0d4`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `4bafcce6b0d4`
 - **Objetivo original:** Cambiar setpoint a 60 %.
 - **Comando canonico:** Cambia el setpoint del nivel al 60 %.
 - **Comportamiento evaluado:** El supervisor fija el setpoint de nivel en 60 %, dentro del rango seguro configurado.
@@ -482,7 +482,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P03 - Rechazo de un setpoint fuera del rango seguro
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `50fe20c9e905`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `50fe20c9e905`
 - **Objetivo original:** Rechazar setpoint fuera de rango seguro.
 - **Comando canonico:** Acepta setpoints de nivel entre 0 % y 100 %. Si se solicita un valor fuera de ese rango, recházalo y conserva el último valor válido.
 - **Comportamiento evaluado:** La logica supervisora acepta setpoints de 0 % a 100 %; una solicitud de 150 % se rechaza y el setpoint conserva el ultimo valor valido (60 %).
@@ -501,7 +501,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P04 - Alarma de nivel alto (> 90 %)
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `396800b290eb`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `396800b290eb`
 - **Objetivo original:** Alarma si nivel > 90 %.
 - **Comando canonico:** Activa la alarma de nivel alto mientras el nivel esté por encima del 90 % y desactívala cuando vuelva a 90 % o menos.
 - **Comportamiento evaluado:** Cuando el nivel supera el 90 % se activa la alarma de nivel alto (y la salida de alarma).
@@ -521,7 +521,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P05 - Alarma de nivel bajo (< 10 %)
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `c11fe837b397`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `c11fe837b397`
 - **Objetivo original:** Alarma si nivel < 10 %.
 - **Comando canonico:** Activa la alarma de nivel bajo mientras el nivel esté por debajo del 10 % y desactívala cuando vuelva a 10 % o más.
 - **Comportamiento evaluado:** Cuando el nivel cae por debajo del 10 % se activa la alarma de nivel bajo (y la salida de alarma).
@@ -541,7 +541,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P06 - PID habilitado solo en automatico
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `b1c474fcc6db`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `b1c474fcc6db`
 - **Objetivo original:** PID habilitado solo en automatico.
 - **Comando canonico:** El PID solo debe estar habilitado mientras el sistema se encuentre en modo Automático, que selecciona el operador; en modo Manual debe permanecer deshabilitado.
 - **Comportamiento evaluado:** PID_Enable solo esta activo con el modo Automatico activo.
@@ -560,7 +560,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P07 - PID deshabilitado por disparo de seguridad
 
-- **Estado:** FROZEN v2 · complejidad LOW · hash `a3bcdea3164a`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad LOW · hash `a3bcdea3164a`
 - **Objetivo original:** Deshabilitar PID ante condicion de emergencia/seguridad autorizada.
 - **Comando canonico:** Con el sistema en Automático el PID trabaja habilitado; si se activa una condición de emergencia, deshabilita el PID de inmediato.
 - **Comportamiento evaluado:** Con el PID habilitado en automatico, un disparo de seguridad deshabilita el PID.
@@ -581,7 +581,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P08 - Modo manual: habilitacion ON/OFF de la bomba
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `77889a51f0da`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `77889a51f0da`
 - **Objetivo original:** Modo manual con operacion limitada de bomba.
 - **Comando canonico:** Cuando el sistema esté en modo Manual, es decir, siempre que no esté en Automático, la bomba debe encenderse y apagarse solo con la orden manual del operador; el control automático no debe actuar sobre ella.
 - **Comportamiento evaluado:** En modo manual, la orden manual habilita y deshabilita la bomba (operacion limitada a ON/OFF).
@@ -601,7 +601,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P09 - Fallo de sensor por valor fuera de rango
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `9b0a99e3a006`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `9b0a99e3a006`
 - **Objetivo original:** Fallo de sensor por valor fuera de rango.
 - **Comando canonico:** Indica fallo del sensor mientras el nivel medido esté por debajo de 0 % o por encima de 100 %; cuando vuelva a estar entre 0 % y 100 %, el fallo debe desaparecer.
 - **Comportamiento evaluado:** Un nivel medido fuera de 0-100 % se detecta como fallo de sensor.
@@ -620,7 +620,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P10 - Reset de alarma solo cuando desaparece la falla
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `d700ca642636`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `d700ca642636`
 - **Objetivo original:** Reset de alarma solo si desaparecio la falla.
 - **Comando canonico:** Activa una alarma cuando el nivel medido salga del rango de 0 % a 100 % por fallo del sensor. Mientras la medición siga fuera de ese rango, el Reset no debe borrar la alarma; cuando vuelva al rango, el Reset sí debe borrarla.
 - **Comportamiento evaluado:** Con una falla de sensor activa el reset no borra la alarma; al desaparecer la falla, el reset la borra.
@@ -644,7 +644,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P11 - Parada segura por sobrellenado
 
-- **Estado:** FROZEN v2 · complejidad MEDIUM · hash `bc7b522fccd3`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad MEDIUM · hash `bc7b522fccd3`
 - **Objetivo original:** Parada segura ante sobrellenado.
 - **Comando canonico:** En operación normal la bomba está en marcha; si el nivel alcanza o supera el 95 %, considéralo sobrellenado y mantén la bomba apagada mientras dure esa condición.
 - **Comportamiento evaluado:** Con nivel >= 95 % (sobrellenado) la bomba se apaga mientras dure la condicion.
@@ -664,7 +664,7 @@ Estados: `DRAFT_REVIEWED` = revisado por IA (schema + revision semantica), SIN a
 
 ## P12 - Automatico con SP 60 %, alarma > 90 % y recuperacion
 
-- **Estado:** FROZEN v2 · complejidad HIGH · hash `df683f9a4fdf`
+- **Estado:** DRAFT_REVIEWED v2 · complejidad HIGH · hash `df683f9a4fdf`
 - **Objetivo original:** Secuencia completa: automatico -> setpoint -> alarma -> recuperacion.
 - **Comando canonico:** En modo Automático, habilita el PID con un setpoint del 60 %. Si el nivel supera el 90 %, activa la alarma y lleva el proceso a condición segura: PID deshabilitado y bomba apagada. Cuando el nivel vuelva a 90 % o menos, el PID debe volver a habilitarse por sí solo, sin intervención del operador.
 - **Comportamiento evaluado:** En Automatico el PID esta habilitado con setpoint 60 %. Con nivel > 90 % se activa la alarma y el proceso pasa a condicion segura (PID deshabilitado y bomba apagada); al volver el nivel al rango permitido se recupera la operacion automatica.

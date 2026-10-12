@@ -13,7 +13,10 @@ Pasos (se detiene ante cualquier discrepancia):
      benchmark_version = 3 en los 32 casos (el hash canonico cambia en todos: lo registra cada ensayo).
   3. Sincroniza profiles.json y experiment_variants.json desde el catalogo.
   4. Oracles: nueva version de los 32 (source_definition -> v3; D03 ademas semantic_expectations), archivando la
-     version previa en experiment_oracles/versions/ y re-congelando (aprobacion del investigador).
+     version previa en experiment_oracles/versions/. La nueva version queda DRAFT_REVIEWED con
+     approval.technical_validation = PASSED y approval.human_formal_approval = PENDING: el script NUNCA firma una
+     aprobacion humana (approved_by queda null). La aprobacion formal es una accion explicita del investigador
+     (ventana REVISION DE ORACLES / oracle_review.approve_all_without_review_items con frase de confirmacion).
   5. Regenera informes (consistencia de variantes, validacion de Oracles, resumen, catalogo de comandos).
   6. experimental_design.json -> benchmark_version 3 (el diseno v2 queda en el archivo historico).
   7. Escribe docs/benchmark_v3_changelog.md.
@@ -38,7 +41,7 @@ from trial_experiments import benchmark_catalog as BC  # noqa: E402
 from trial_experiments import oracle_review as OR  # noqa: E402
 from trial_experiments import oracle_schema as S  # noqa: E402
 
-APPROVED_BY = "Henry Ochoa"
+HUMAN_APPROVAL_PENDING = "PENDING"  # nunca se escribe el nombre de una persona desde este script
 DECISION_DATE = "2026-10-12"
 ARCHIVE_DIR = ROOT / "data" / "experiment_benchmark" / "versions" / "benchmark_v2"
 CATALOG = ROOT / "data" / "experiment_cases" / "canonical_cases.json"
@@ -379,26 +382,35 @@ _FUNCTIONAL_KEYS = ("roles", "preconditions", "test_sequence", "invariants", "cl
                     "runtime_requirements", "resource_expectations")
 
 
-def _carry_ai_review(case_id: str, previous: dict[str, Any], approved: dict[str, Any]) -> None:
-    """new_version() reinicia approval: se traslada la revision asistida de la version previa (contenido funcional
-    identico) marcando que la alineacion v3 se verifico aqui. approval no forma parte del hash."""
+def pending_human_approval(case_id: str, previous: dict[str, Any], draft: dict[str, Any], validated_at: str) -> dict[str, Any]:
+    """Bloque approval de la nueva version: validacion TECNICA registrada, aprobacion HUMANA pendiente.
+
+    Estado DRAFT_REVIEWED (el schema prohibe approved_by en borrador): approved_by/approved_at/hash = null. La revision
+    asistida de la version previa (contenido funcional identico) se traslada a ai_review. approval no forma parte del
+    hash, asi que el hash de contenido no cambia; se registra en technical_validation.content_hash.
+    """
+    approval = dict(draft["approval"])
+    approval.update({"status": S.STATUS_DRAFT_REVIEWED, "approved_by": None, "approved_at": None, "hash": None})
     review = (previous.get("approval") or {}).get("ai_review")
-    if not review:
-        return
-    carried = dict(review)
-    carried.update({"carried_from_version": previous["approval"]["version"], "v3_alignment_verified": True,
-                    "v3_verified_at": datetime.now().isoformat(timespec="seconds"),
-                    "notes": list(review.get("notes") or []) + [
-                        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de "
-                        "convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."]})
-    version = approved["approval"]["version"]
-    for path in (S.oracle_path(ROOT, case_id), S.get_oracles_dir(ROOT) / S.VERSIONS_DIRNAME / f"{case_id}_v{version}.json"):
-        data = json.loads(path.read_text(encoding="utf-8"))
-        before = S.compute_oracle_hash(data)
-        data["approval"]["ai_review"] = carried
-        if S.compute_oracle_hash(data) != before:
-            _fail(f"{case_id}: el traslado de ai_review alteraria el hash.")
-        _write_json(path, data)
+    if review:
+        carried = dict(review)
+        carried.update({"carried_from_version": previous["approval"]["version"], "v3_alignment_verified": True,
+                        "v3_verified_at": validated_at,
+                        "notes": list(review.get("notes") or []) + [
+                            "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de "
+                            "convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."]})
+        approval["ai_review"] = carried
+    approval["technical_validation"] = {
+        "status": "PASSED",
+        "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+        "validated_at": validated_at,
+        "content_hash": S.compute_oracle_hash(draft),
+        "checks": ["schema valido", "claves funcionales identicas a la version previa",
+                   "source_definition.canonical_case_hash = hash canonico v3", "alineacion 32/32 sin requisitos ocultos",
+                   "96/96 variantes consistentes"],
+    }
+    approval["human_formal_approval"] = HUMAN_APPROVAL_PENDING
+    return approval
 
 
 def new_oracle_versions(cases: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -436,18 +448,17 @@ def new_oracle_versions(cases: dict[str, dict[str, Any]]) -> list[dict[str, Any]
         draft["approval"].update({
             "change_scope": scope,
             "benchmark_version": 3,
-            "change_note": ("Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos "
+            "change_note": ("Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos "
                             "de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos."
                             + (" D03: accepted_intents ampliado (simetria D04/D11)." if case_id == "D03" else "")),
             "decision": f"Decisiones humanas aprobadas {DECISION_DATE} (auditorias de ambiguedad D01-D20 y P01-P12).",
             "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
         })
-        S.supersede_frozen(ROOT, draft)
-        approved = S.approve_oracle(ROOT, case_id, APPROVED_BY)
-        _carry_ai_review(case_id, current, approved)
+        draft["approval"] = pending_human_approval(case_id, current, draft, datetime.now().isoformat(timespec="seconds"))
+        S.supersede_frozen(ROOT, draft)  # la aprobacion formal NO se hace aqui: es una accion humana explicita
         report.append({"case_id": case_id, "previous_version": current["approval"]["version"],
-                       "new_version": approved["approval"]["version"], "previous_hash": current["approval"]["hash"],
-                       "new_hash": approved["approval"]["hash"], "scope": scope})
+                       "new_version": draft["approval"]["version"], "previous_hash": current["approval"]["hash"],
+                       "new_hash": draft["approval"]["technical_validation"]["content_hash"], "scope": scope})
     return report
 
 
@@ -541,7 +552,12 @@ def write_changelog(log: list[dict[str, Any]], oracles: list[dict[str, Any]], ma
         ]
     unchanged = [e["case_id"] for e in log if not e["text_changed"] and e["case_id"] not in FUNCTION_NAMES and e["case_id"] != "D03"]
     lines += ["## Casos sin cambios de texto (solo benchmark_version y Oracle metadata)", "", ", ".join(unchanged), "",
-              "## Oracles re-versionados", "", "| Caso | Version | Alcance | Hash nuevo |", "|---|---|---|---|"]
+              "## Oracles re-versionados", "",
+              "Estado de las versiones v3: `DRAFT_REVIEWED` con `technical_validation = PASSED` y",
+              "`human_formal_approval = PENDING` (`approved_by = null`). Este script nunca firma una aprobacion humana; la",
+              "aprobacion formal la realiza el investigador de forma explicita (ventana REVISION DE ORACLES). Hasta entonces",
+              "los guardas FORMAL (`oracles_32_frozen`, `oracles_frozen_hash`) bloquean los ensayos formales.", "",
+              "| Caso | Version | Alcance | Hash de contenido |", "|---|---|---|---|"]
     for entry in oracles:
         lines.append(f"| {entry['case_id']} | v{entry['previous_version']} -> v{entry['new_version']} | {entry['scope']} | "
                      f"`{entry['new_hash'][:16]}` |")

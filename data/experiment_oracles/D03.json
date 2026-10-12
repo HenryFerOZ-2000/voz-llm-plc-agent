@@ -6,17 +6,32 @@
   "description": "Arranque y paro de un motor con pulsadores independientes START y STOP. Un pulso de START enciende el motor y este permanece encendido al soltar START (memoria de marcha); STOP lo apaga y tiene prioridad.",
   "complexity": "LOW",
   "approval": {
-    "status": "FROZEN",
-    "approved_by": "Henry Ochoa",
-    "approved_at": "2026-10-12T12:21:55",
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
     "version": 2,
-    "hash": "f1c5bf3ee7f708d3b54cb068543db935f4dfe2ca449628e6d3d16dad1eceef49",
+    "hash": null,
     "previous_hash": "b444a550d900d61ca67053bfa17cdec706e2149d9d78c0a3790ecf131aa1dc92",
     "change_scope": "BENCHMARK_V3_METADATA + SEMANTIC_EXPECTATIONS",
     "benchmark_version": 3,
-    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos. D03: accepted_intents ampliado (simetria D04/D11).",
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos. D03: accepted_intents ampliado (simetria D04/D11).",
     "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
-    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador"
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "f1c5bf3ee7f708d3b54cb068543db935f4dfe2ca449628e6d3d16dad1eceef49",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
   },
   "semantic_expectations": {
     "accepted_intents": [

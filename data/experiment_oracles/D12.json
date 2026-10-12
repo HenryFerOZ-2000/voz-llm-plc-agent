@@ -6,15 +6,15 @@
   "description": "Cada contactor sigue su propia solicitud; nunca pueden estar activos los dos a la vez. No se define prioridad ni transferencia.",
   "complexity": "HIGH",
   "approval": {
-    "status": "FROZEN",
-    "approved_by": "Henry Ochoa",
-    "approved_at": "2026-10-12T12:21:55",
+    "status": "DRAFT_REVIEWED",
+    "approved_by": null,
+    "approved_at": null,
     "version": 3,
-    "hash": "71cb20e92b7d8e613ec364bc5ac5b333d688b6b8f6b95d9466175ccaf603d6a3",
+    "hash": null,
     "previous_hash": "ae4562d0acfb1d32a4648ad25189bbaba2281e725a6c9a93f22f2819700a61c8",
     "change_scope": "BENCHMARK_V3_METADATA",
     "benchmark_version": 3,
-    "change_note": "Re-congelado para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
     "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
     "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
     "ai_review": {
@@ -34,7 +34,22 @@
       "carried_from_version": 2,
       "v3_alignment_verified": true,
       "v3_verified_at": "2026-10-12T12:27:04"
-    }
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "71cb20e92b7d8e613ec364bc5ac5b333d688b6b8f6b95d9466175ccaf603d6a3",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "PENDING",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
   },
   "source_definition": {
     "benchmark_version": 3,
