@@ -42,6 +42,7 @@
         "INT_CYCLIC_MOTOR",
         "INT_AUTO_CYCLE",
         "INT_PID_SUPERVISOR",
+        "INT_SPEED_SELECTION",
         "INT_UNKNOWN"
       ]
     },
@@ -135,6 +136,9 @@
               "conditional_alarm_reset",
               "safe_overfill_stop",
               "manual_pump_limit",
+              "manual_pump_enable",
+              "enable_pump",
+              "reject_unsafe_setpoint",
               "timed_sequence",
               "never_together",
               "sensor_timeout_alarm"

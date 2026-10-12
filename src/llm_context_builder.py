@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from alias_resolver import filter_llm_allowed_entries
-from ir_builder import OPTIONAL_PARAMETER_KEYS
+from ir_builder import INTENT_RESOURCE_TABLE, INTENT_VALUE_DEFAULTS, OPTIONAL_PARAMETER_KEYS
 from utils import build_io_map_index
 
 
@@ -139,13 +139,31 @@ MINIMAL_FEW_SHOT_EXAMPLES = [
 ]
 
 
+def intent_parameter_hints(intent_id: str) -> list[str]:
+    """
+    Nombres de parametro que reconoce un intent, DERIVADOS de sus contratos (fuente unica): recursos de
+    ir_builder.INTENT_RESOURCE_TABLE, claves opcionales, valores funcionales (INTENT_VALUE_DEFAULTS) y las
+    claves que valida semantic_validator.INTENT_PARAMETER_RULES. Asi cada intent comunica al LLM su interfaz
+    real (los roles del arnes se resuelven por estos nombres) y nunca queda una lista manual desfasada.
+    """
+    from semantic_validator import INTENT_PARAMETER_RULES
+
+    keys: list[str] = [key for key, _default in INTENT_RESOURCE_TABLE.get(intent_id, ())]
+    keys += sorted(OPTIONAL_PARAMETER_KEYS.get(intent_id, set()))
+    keys += list((INTENT_VALUE_DEFAULTS.get(intent_id) or {}).keys())
+    rules = INTENT_PARAMETER_RULES.get(intent_id) or {}
+    keys += list(rules.get("required") or []) + list(rules.get("time_keys") or []) + list(rules.get("positive_int_keys") or [])
+    keys += INTENT_PARAMETER_HINTS.get(intent_id, []) if not INTENT_RESOURCE_TABLE.get(intent_id) else []
+    return list(dict.fromkeys(keys))
+
+
 def _summarize_intents(intents_catalog: dict[str, Any]) -> list[dict[str, Any]]:
     summaries: list[dict[str, Any]] = []
     for intent_id, payload in intents_catalog.items():
         if not isinstance(payload, dict):
             continue
         optional_keys = OPTIONAL_PARAMETER_KEYS.get(intent_id, set())
-        all_keys = INTENT_PARAMETER_HINTS.get(intent_id, [])
+        all_keys = intent_parameter_hints(intent_id)
         summaries.append(
             {
                 "intent_id": intent_id,

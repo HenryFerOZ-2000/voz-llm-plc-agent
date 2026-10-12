@@ -95,13 +95,21 @@ def test_p03_out_of_range_setpoint_is_rejected_deterministically(intents_catalog
     assert result["verification"]["is_valid"] is False
 
 
-def test_setpoint_range_is_config_driven_not_hardcoded() -> None:
+def test_setpoint_range_is_config_driven_not_hardcoded(monkeypatch) -> None:
+    import semantic_validator
     from semantic_validator import _detect_unsafe_level_setpoints
-    messages_low = _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 5.0}])
-    messages_high = _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 95.0}])
-    messages_ok = _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 50.0}])
-    assert messages_low and messages_high
-    assert not messages_ok
+    # Rango vigente (benchmark v3): 0-100 %, leido de config/pid_supervisor_config.json.
+    assert semantic_validator._load_pid_supervisor_config()["level_setpoint"]["min"] == 0.0
+    assert semantic_validator._load_pid_supervisor_config()["level_setpoint"]["max"] == 100.0
+    assert _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": -5.0}])
+    assert _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 150.0}])
+    assert not _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 95.0}])
+    assert not _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 5.0}])
+    # El limite viene SOLO de la configuracion: otro rango configurado cambia la decision; sin rango, no se inventa.
+    monkeypatch.setattr(semantic_validator, "_load_pid_supervisor_config", lambda: {"level_setpoint": {"min": 10.0, "max": 90.0}})
+    assert _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 95.0}])
+    monkeypatch.setattr(semantic_validator, "_load_pid_supervisor_config", lambda: {})
+    assert not _detect_unsafe_level_setpoints([{"type": "set_level_setpoint", "value": 150.0}])
 
 
 # P04 / P05 ----------------------------------------------------------------------------------------
@@ -155,13 +163,18 @@ def test_p07_emergency_disables_pid_and_pump() -> None:
 # P08 --------------------------------------------------------------------------------------------
 
 def test_p08_manual_mode_never_removes_safety_conditions() -> None:
-    _, project_ir = _build(
-        "P08", "Permite operar la bomba en modo manual de forma limitada.",
-        [{"type": "set_manual_mode"}, {"type": "manual_pump_limit"}]
-    )
+    # manual_pump_limit es el nombre historico (alias) de manual_pump_enable: en Manual (= no Automatico) la bomba
+    # sigue SOLO la orden manual del operador, siempre subordinada a la emergencia.
+    semantic_output = _semantic_output("P08", "Permite operar la bomba en modo manual de forma limitada.",
+                                       [{"type": "set_manual_mode"}, {"type": "manual_pump_limit"}])
+    semantic_output["parameters"] = {"manual_pump_input": "I_Manual_Pump_Command"}
+    pid_map = {"variables": PID_MAP["variables"] + [
+        {"name": "I_Manual_Pump_Command", "class": "input", "type": "BOOL", "location": "%IX1.2"}]}
+    project_ir = build_project_ir(semantic_output, pid_map, "SIEMENS_SCL_V18")
+    project_ir.pou.implementation_code = generate_implementation_from_ir(project_ir)
     code = project_ir.pou.implementation_code
-    assert "IF Manual_Mode AND NOT I_Emergency THEN" in code
-    assert "Q_Pump_Enable := TRUE;" in code
+    assert "IF NOT Auto_Mode THEN" in code
+    assert "Q_Pump_Enable := I_Manual_Pump_Command AND NOT I_Emergency" in code
     assert verify_project_ir(project_ir)["is_valid"] is True
 
 

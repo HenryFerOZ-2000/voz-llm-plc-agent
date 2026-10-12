@@ -36,17 +36,19 @@ Catálogo de tipos PID (`FUNCTIONAL_REQUIREMENT_TAGS` / `FUNCTIONAL_REQUIREMENT_
 
 | type | recursos físicos (I_/Q_) | variables funcionales (software) |
 |---|---|---|
-| `set_auto_mode` | — | `Auto_Mode`, `Manual_Mode` |
-| `set_manual_mode` | — | `Auto_Mode`, `Manual_Mode` |
+| `set_auto_mode` (ACCIÓN; con `auto_input` el modo sigue la selección del operador) | (`auto_input`) | `Auto_Mode`, `Manual_Mode` |
+| `set_manual_mode` (ACCIÓN; incompatible con `set_auto_mode` sin `auto_input`) | (`auto_input`) | `Auto_Mode`, `Manual_Mode` |
 | `set_level_setpoint` (`value`) | — | `Level_SP` |
+| `reject_unsafe_setpoint` (`min`, `max`) | — | `Level_SP_Command`, `Level_SP` |
 | `enable_pid` | `I_Emergency` | `PID_Enable`, `Auto_Mode`, `Sensor_Fault`, `Safe_Stop` |
 | `disable_pid` | — | `PID_Enable` |
 | `high_level_alarm` (`limit`) | `Q_Alarm` | `Level_PV`, `High_Level_Alarm` |
 | `low_level_alarm` (`limit`) | `Q_Alarm` | `Level_PV`, `Low_Level_Alarm` |
 | `sensor_range_fault` | — | `Level_PV`, `Sensor_Fault`, `PID_Enable` |
 | `conditional_alarm_reset` | `I_Reset` | `High_Level_Alarm`, `Low_Level_Alarm`, `Sensor_Fault` |
-| `safe_overfill_stop` (`limit`) | `Q_Pump_Enable`, `Q_Alarm` | `Level_PV`, `Safe_Stop`, `PID_Enable` |
-| `manual_pump_limit` | `Q_Pump_Enable` | `Manual_Mode` |
+| `safe_overfill_stop` (`limit`, `comparison` `>=`/`>`; sin enclavamiento) | `Q_Pump_Enable`, `Q_Alarm` | `Level_PV`, `Safe_Stop`, `PID_Enable` |
+| `enable_pump` | `pump_output` | — |
+| `manual_pump_enable` (alias histórico `manual_pump_limit`) | `manual_pump_input`, `pump_output` | `Auto_Mode` |
 
 ## Variables funcionales vs. recursos físicos
 
@@ -86,7 +88,8 @@ restringen por perfil.
 
 ## Validación de setpoint: determinística, no delegada al LLM
 
-`config/pid_supervisor_config.json` define `level_setpoint.min`/`max` (10-90% por defecto),
+`config/pid_supervisor_config.json` define `level_setpoint.min`/`max` (**0-100 %**, alineado con el benchmark v3; el
+rango legacy 10-90 % quedó sustituido),
 `high_level_alarm`/`low_level_alarm`/`safe_overfill_stop.default_limit`, y `sensor_valid_range`.
 `semantic_validator._detect_unsafe_level_setpoints()` rechaza cualquier `set_level_setpoint` fuera
 de rango **antes** de generar IR/SCL, forzando `requires_clarification=True` con un mensaje que

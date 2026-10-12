@@ -32,8 +32,8 @@
     "related_cases": ["D04", "Memoria de marcha"]
   },
   "INT_EMERGENCY_PRIORITY": {
-    "description": "Paro de emergencia con prioridad absoluta sobre salidas criticas.",
-    "required_inputs": ["I_Emergency"],
+    "description": "Prioridad absoluta de la condicion de emergencia: con emergencia activa las salidas criticas se apagan y el arranque queda bloqueado mientras dure. Opcionalmente incluye la ruta de arranque (trigger_input, y stop_input si hay paro) subordinada a la emergencia.",
+    "required_inputs": ["I_Emergency", "I_Start"],
     "required_outputs": ["Q_Motor_Enable", "Q_Aux_Output", "Q_Alarm"],
     "required_internal": [],
     "plc_blocks": ["IF"],
@@ -88,42 +88,42 @@
     "related_cases": ["D10", "Reset de contador"]
   },
   "INT_MUTUAL_INTERLOCK": {
-    "description": "Impide la activacion simultanea de dos contactores.",
-    "required_inputs": ["I_Start", "I_Stop", "I_Emergency"],
+    "description": "Dos contactores con ordenes independientes (request_a, request_b): cada contactor sigue su propia orden y nunca pueden estar activos los dos a la vez (exclusion mutua).",
+    "required_inputs": ["I_Request_A", "I_Request_B", "I_Emergency"],
     "required_outputs": ["Q_Contactor_A", "Q_Contactor_B"],
     "required_internal": [],
     "plc_blocks": ["IF", "NOT"],
     "related_cases": ["D11", "Interlock de contactores"]
   },
   "INT_VFD_ENABLE_NO_ALARM": {
-    "description": "Habilita el motor solo si no existe alarma.",
-    "required_inputs": ["I_Start", "I_Emergency"],
+    "description": "Habilita la salida (variador/motor) con la orden de marcha solo mientras no exista una alarma activa; la alarma es una condicion de ENTRADA (alarm_input) y deshabilita la salida aunque ya estuviera habilitada.",
+    "required_inputs": ["I_Start", "I_Alarm", "I_Emergency"],
     "required_outputs": ["Q_Motor_Enable"],
     "required_internal": [],
     "plc_blocks": ["Asignacion booleana"],
     "related_cases": ["D12", "Habilitacion sin alarma"]
   },
   "INT_MANUAL_AUTO_MODE": {
-    "description": "Diferencia los modos manual y automatico mediante memorias internas.",
-    "required_inputs": ["I_Mode_Manual", "I_Mode_Auto", "I_Start", "I_Emergency"],
+    "description": "Selector de modo Manual/Automatico con una sola senal de modo (auto_input: TRUE = Automatico, FALSE = Manual). Con ordenes propias por modo (manual_command_input, auto_command_input) la salida sigue la orden del modo seleccionado y la del otro modo no tiene efecto.",
+    "required_inputs": ["I_Mode_Auto", "I_Emergency"],
     "required_outputs": ["Q_Motor_Enable"],
     "required_internal": ["M_ManualMode", "M_AutoMode"],
     "plc_blocks": ["Asignacion booleana"],
     "related_cases": ["D13", "Modo manual y automatico"]
   },
   "INT_SEQUENCE_THREE_STEPS": {
-    "description": "Gestiona una secuencia simple de tres pasos.",
-    "required_inputs": ["I_Start", "I_Reset"],
-    "required_outputs": ["Q_Aux_Output"],
-    "required_internal": ["M_Step"],
-    "plc_blocks": ["CASE"],
+    "description": "Secuencia temporizada: con la orden de arranque se activa una salida principal (main_output) y, tras la espera indicada (delay_time), una salida auxiliar (aux_output).",
+    "required_inputs": ["I_Start", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable", "Q_Aux_Output"],
+    "required_internal": ["M_Step", "T_SeqDelay"],
+    "plc_blocks": ["TON", "IF"],
     "related_cases": ["D14", "Secuencia de tres pasos"]
   },
   "INT_SENSOR_TIMEOUT_ALARM": {
-    "description": "Genera alarma si el sensor no cambia dentro del tiempo esperado.",
+    "description": "Alarma si un sensor no cambia de estado durante el tiempo indicado; cada cambio reinicia la cuenta. Con trigger_input la supervision empieza al activarse la orden de arranque.",
     "required_inputs": ["I_Sensor1"],
     "required_outputs": ["Q_Alarm"],
-    "required_internal": ["M_SensorLastState", "T_SensorTimeout"],
+    "required_internal": ["M_SensorLastState", "T_SensorTimeout", "M_SupervisionActive"],
     "plc_blocks": ["TON"],
     "related_cases": ["D15", "Timeout de sensor"]
   },
@@ -136,9 +136,9 @@
     "related_cases": ["D16", "Bloqueo por mantenimiento"]
   },
   "INT_STATUS_PILOTS": {
-    "description": "Actualiza los pilotos de marcha y falla.",
-    "required_inputs": ["I_Emergency"],
-    "required_outputs": ["Q_Pilot_Run", "Q_Pilot_Fault", "Q_Alarm", "Q_Motor_Enable"],
+    "description": "Pilotos de estado del sistema. A partir de senales de estado (run_state_input = marcha, fault_input = falla) indica detenido (stop_indicator), marcha (run_indicator) o falla (fault_indicator), con un solo piloto encendido; la falla tiene prioridad.",
+    "required_inputs": ["I_Run_State", "I_Fault"],
+    "required_outputs": ["Q_Pilot_Stop", "Q_Pilot_Run", "Q_Pilot_Fault"],
     "required_internal": [],
     "plc_blocks": ["Asignacion booleana"],
     "related_cases": ["D17", "Pilotos de estado"]
@@ -152,19 +152,27 @@
     "related_cases": ["D19", "Motor ciclico temporizado", "Encendido y apagado en bucle"]
   },
   "INT_AUTO_CYCLE": {
-    "description": "Ejecuta un ciclo automatico basico por estados.",
-    "required_inputs": ["I_Mode_Auto", "I_Start", "I_Stop", "I_Reset", "I_Emergency"],
-    "required_outputs": ["Q_Motor_Enable"],
-    "required_internal": ["M_Step"],
-    "plc_blocks": ["CASE", "IF"],
+    "description": "Ciclo automatico temporizado: la orden de arranque inicia un ciclo de duracion cycle_time con la salida de ejecucion (run_output) activa; al terminar se detiene y marca el ciclo como finalizado (complete_output) hasta que Reset lo devuelve al estado inicial.",
+    "required_inputs": ["I_Start", "I_Reset", "I_Emergency"],
+    "required_outputs": ["Q_Motor_Enable", "Q_Cycle_Complete"],
+    "required_internal": ["M_Step", "T_Cycle"],
+    "plc_blocks": ["TON", "IF"],
     "related_cases": ["D18", "Ciclo automatico"]
   },
   "INT_PID_SUPERVISOR": {
-    "description": "Logica supervisora alrededor de un bloque PID estandar/prevalidado ya existente en TIA Portal (no redisena el PID): modo automatico/manual, setpoint, alarmas de nivel, fallo de sensor, reset condicionado y parada segura por sobrellenado. El comportamiento especifico lo aportan los functional_requirements (set_auto_mode, set_level_setpoint, enable_pid, high_level_alarm, etc.); este intent principal solo fija la base de seguridad comun a todos los casos P01-P12.",
+    "description": "Logica supervisora alrededor de un bloque PID estandar/prevalidado ya existente en TIA Portal (no redisena el PID): modo automatico/manual, setpoint, alarmas de nivel, fallo de sensor, reset condicionado, bomba y parada segura. El comportamiento especifico lo aportan los functional_requirements; parametros opcionales: auto_input (entrada con la que el operador selecciona Automatico) y manual_pump_input (orden manual de la bomba).",
     "required_inputs": ["I_Emergency", "I_Reset"],
     "required_outputs": ["Q_Alarm", "Q_Pump_Enable"],
     "required_internal": [],
     "plc_blocks": ["IF"],
     "related_cases": ["P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08", "P09", "P10", "P11", "P12", "Supervision PID"]
+  },
+  "INT_SPEED_SELECTION": {
+    "description": "Seleccion de velocidad baja/media/alta con tres entradas digitales: se activa unicamente la salida de la velocidad seleccionada y nunca dos velocidades a la vez.",
+    "required_inputs": ["I_Speed_Low", "I_Speed_Medium", "I_Speed_High", "I_Emergency"],
+    "required_outputs": ["Q_Speed_Low", "Q_Speed_Medium", "Q_Speed_High"],
+    "required_internal": [],
+    "plc_blocks": ["Asignacion booleana"],
+    "related_cases": ["Seleccion de velocidad"]
   }
 }

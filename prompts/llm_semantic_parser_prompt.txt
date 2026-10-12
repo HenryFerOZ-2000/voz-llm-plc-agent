@@ -107,33 +107,27 @@ específico que el comando claramente diferencia).
   el comando (qué debe pasar, en qué condición, con qué comportamiento) - nunca por no saber a qué
   canal físico mapear una función que sí entendiste.
 
-Ejemplo (enclavamiento mutuo con Start/Stop reutilizados, sin mencionar direcciones ni tags
-existentes por nombre): `INT_MUTUAL_INTERLOCK` representa un enclavamiento con UN botón de arranque
-compartido y UN botón de paro compartido (presionar arranque activa el contactor que estaba
-apagado; presionar paro hace lo simétrico con el otro) - no dos pulsadores independientes por
-motor; para "un pulsante por motor, cada uno enciende su propio motor" usa la guía de reutilización
-de arriba (Start/Stop general reutilizados si aplican) y describe cada pulsador/motor como un
-recurso nuevo distinto en `functional_requirements`, sin forzarlos dentro de
-`trigger_input`/`stop_input`.
+Ejemplo (enclavamiento mutuo entre dos salidas con órdenes independientes, sin mencionar direcciones
+ni tags existentes por nombre): `INT_MUTUAL_INTERLOCK` representa dos contactores, cada uno con su
+PROPIA orden (`request_a`, `request_b`): cada contactor sigue su orden y nunca pueden estar activos los
+dos a la vez. Si el comando describe además actores independientes por motor, usa la guía de
+reutilización de arriba y describe cada pulsador/motor como un recurso nuevo distinto en
+`functional_requirements`.
 
-Comando: "Quiero un enclavamiento mutuo entre dos contactores: el botón de inicio activa uno, el
-botón de paro activa el otro, y el paro de emergencia apaga ambos."
+Comando: "Dos bombas con su propio selector cada una; que nunca puedan funcionar juntas."
 
-Resultado esperado (`I_Start`/`I_Stop` se reutilizan tal cual porque ya representan exactamente esa
-función general - LOCKED o ASSIGNED -, y se proponen nombres funcionales nuevos y claros solo para
-las dos salidas de contactor, que sí son una función nueva):
+Resultado esperado (se proponen nombres funcionales nuevos y claros para las dos órdenes y las dos
+salidas, que son funciones nuevas):
 
 {
   "intent_id": "INT_MUTUAL_INTERLOCK",
   "parameters": {
-    "trigger_input": "I_Start", "stop_input": "I_Stop",
-    "contactor_a": "Q_Contactor_A", "contactor_b": "Q_Contactor_B", "emergency_input": "I_Emergency"
+    "request_a": "I_Pump_A_Select", "request_b": "I_Pump_B_Select",
+    "contactor_a": "Q_Pump_A", "contactor_b": "Q_Pump_B"
   },
-  "functional_requirements": [
-    {"type": "emergency_priority"}
-  ],
+  "functional_requirements": [],
   "requires_clarification": false,
-  "recognized_tags": ["I_Start", "I_Stop", "Q_Contactor_A", "Q_Contactor_B", "I_Emergency"]
+  "recognized_tags": ["I_Pump_A_Select", "I_Pump_B_Select", "Q_Pump_A", "Q_Pump_B"]
 }
 
 (Nota: si el banco activo no tiene una entrada de emergencia física, omite `emergency_priority` y
@@ -284,50 +278,83 @@ Ejemplos:
 11. Comando: "Activa eso después"
     Resultado esperado: `INT_UNKNOWN`, `requires_clarification=true`, pregunta concreta pidiendo salida, condición y tiempo.
 
-## Supervisión PID (proceso continuo de nivel/bomba, casos P01-P12)
+## Supervisión PID (proceso continuo de nivel/bomba)
 
 Para comandos sobre un proceso PID (nivel de tanque, setpoint, modo automático/manual, alarmas de
-nivel, fallo de sensor, sobrellenado) usa SIEMPRE la intención principal `INT_PID_SUPERVISOR` y
+nivel, fallo de sensor, bomba, sobrellenado) usa SIEMPRE la intención principal `INT_PID_SUPERVISOR` y
 describe el comportamiento específico mediante `functional_requirements`. NUNCA generes código ni
 parámetros de un algoritmo PID (Kp/Ki/Kd/autotuning): el bloque PID ya existe en TIA Portal y no se
 rediseña. Tampoco inventes un `intent_id` nuevo por cada variante - reutiliza `INT_PID_SUPERVISOR`.
 
-Catálogo cerrado de `type` permitidos para PID (usa solo estos):
-`set_auto_mode`, `set_manual_mode`, `set_level_setpoint` (agrega `"value": <número 0-100>`),
-`enable_pid`, `disable_pid`, `high_level_alarm` (opcional `"limit"`), `low_level_alarm` (opcional
-`"limit"`), `sensor_range_fault`, `conditional_alarm_reset`, `safe_overfill_stop` (opcional
-`"limit"`), `manual_pump_limit`.
+### ACCIÓN frente a CONDICIÓN
 
-No valides tú el rango del setpoint (la arquitectura ya lo hace de forma determinística): reporta
-el valor tal como lo pidió el usuario en `"value"`.
+Distingue siempre si el comando pide CAMBIAR algo (una acción) o describe la SITUACIÓN en la que algo
+debe ocurrir (una condición). Una frase como "en modo Automático...", "mientras el sistema esté en
+Manual...", "si el nivel supera...", "cuando el operador seleccione..." expresa una CONDICIÓN: no es
+una orden de cambiar el modo ni de fijar un valor. Un requisito de acción solo se incluye si el comando
+pide explícitamente esa acción.
+
+### Catálogo cerrado de `type` para PID (semántica de cada uno)
+
+- `set_auto_mode`: ACCIÓN - orden explícita de poner el sistema en Automático. Sin parámetros extra
+  escribe el modo Automático de forma permanente. Si el modo depende de una selección del operador,
+  agrega en `parameters` la entrada de selección como `auto_input` (convención: `auto_input` = TRUE ->
+  Automático, FALSE -> Manual); entonces el modo SIGUE a esa entrada.
+- `set_manual_mode`: ACCIÓN - orden explícita de poner el sistema en Manual (mismas reglas que
+  `set_auto_mode`). `set_auto_mode` y `set_manual_mode` juntos, sin `auto_input`, son órdenes opuestas
+  incompatibles.
+- `set_level_setpoint`: ACCIÓN - fija el setpoint de nivel a un valor concreto (agrega
+  `"value": <número>` tal como lo pidió el usuario; no lo valides tú, lo hace la arquitectura).
+- `reject_unsafe_setpoint`: validación en el PLC de un setpoint SOLICITADO: solo se acepta dentro del
+  rango indicado y, fuera de él, se rechaza y se conserva el último valor válido (agrega `"min"` y
+  `"max"` si el comando los da).
+- `enable_pid`: habilitación supervisora del PID bajo las condiciones del sistema: queda habilitado
+  mientras el modo sea Automático y no haya emergencia, fallo de sensor ni condición segura activa.
+  NO implica cambiar el modo de operación salvo que el usuario lo pida expresamente.
+- `disable_pid`: deshabilitación del PID ante una condición (p. ej. emergencia).
+- `high_level_alarm` / `low_level_alarm`: alarma mientras el nivel esté por encima / por debajo del
+  límite (agrega `"limit"`).
+- `sensor_range_fault`: indicación de fallo de sensor mientras el nivel medido esté fuera de rango.
+- `conditional_alarm_reset`: el Reset borra la alarma solo cuando ya no persiste la condición que la
+  provocó (alarmas de nivel, fallo de sensor o condición segura).
+- `safe_overfill_stop`: condición segura MIENTRAS el nivel esté en sobrellenado: PID deshabilitado y
+  bomba apagada, con alarma; al desaparecer la condición, lo que depende de ella se recupera solo.
+  Agrega `"limit"` y, si el comando dice "supera" (estrictamente mayor), `"comparison": ">"` (por
+  defecto `">="`, "alcanza o supera").
+- `enable_pump`: la bomba funciona en operación normal (salvo emergencia o condición segura).
+- `manual_pump_enable`: en Manual (= no Automático) la bomba sigue SOLO la orden manual del
+  operador; agrega la entrada de esa orden en `parameters` como `manual_pump_input`.
+
+Parámetros de `INT_PID_SUPERVISOR`: `emergency_input`, `reset_input`, `alarm_output`, `pump_output` y,
+solo si el comando describe esa función, `auto_input` (selección de Automático por el operador) y
+`manual_pump_input` (orden manual de la bomba).
 
 Variables funcionales típicas de este proceso (NO son tags I_/Q_/M_ - no las pongas en
 `recognized_tags`, solo pueden aparecer dentro de `parameters` si hace falta referenciarlas):
-`Level_PV`, `Level_SP`, `PID_Enable`, `Auto_Mode`, `Manual_Mode`, `High_Level_Alarm`,
-`Low_Level_Alarm`, `Sensor_Fault`, `Safe_Stop`. Los únicos tags físicos I_/Q_ de este proceso son
-`I_Emergency`, `I_Reset`, `Q_Pump_Enable`, `Q_Alarm`.
+`Level_PV`, `Level_SP`, `Level_SP_Command`, `PID_Enable`, `Auto_Mode`, `Manual_Mode`,
+`High_Level_Alarm`, `Low_Level_Alarm`, `Sensor_Fault`, `Safe_Stop`. Los tags físicos de este proceso
+(entradas/salidas digitales) se toman del mapa I/O autorizado como en cualquier otro comando.
 
-Ejemplo (P02, "Establece el nivel del tanque en 60 %."):
+Ejemplo (acción simple: "Fija la consigna del tanque en 45 %."):
 {
   "intent_id": "INT_PID_SUPERVISOR",
-  "parameters": {"emergency_input": "I_Emergency"},
-  "functional_requirements": [{"type": "set_level_setpoint", "value": 60.0}],
+  "parameters": {},
+  "functional_requirements": [{"type": "set_level_setpoint", "value": 45.0}],
   "requires_clarification": false,
-  "recognized_tags": ["I_Emergency"]
+  "recognized_tags": []
 }
 
-Ejemplo compuesto (similar a P12, combina varios comportamientos en un mismo comando):
+Ejemplo (condición, sin acción de modo: "Mientras el proceso esté en Automático y el nivel no pase
+del 80 %, el PID trabaja; por encima, alarma."):
 {
   "intent_id": "INT_PID_SUPERVISOR",
+  "parameters": {},
   "functional_requirements": [
-    {"type": "set_auto_mode"},
-    {"type": "set_level_setpoint", "value": 60.0},
     {"type": "enable_pid"},
-    {"type": "high_level_alarm", "limit": 90.0},
-    {"type": "safe_overfill_stop", "limit": 95.0},
-    {"type": "conditional_alarm_reset"}
+    {"type": "high_level_alarm", "limit": 80.0}
   ],
   "requires_clarification": false
 }
+("en Automático" es aquí una condición: no lleva `set_auto_mode`.)
 
 Devuelve solo el JSON estructurado.

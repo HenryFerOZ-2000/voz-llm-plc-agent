@@ -1,9 +1,10 @@
 {
   "description": "Limites de seguridad y referencia al bloque PID existente en el proyecto TIA plantilla. La arquitectura NUNCA redisena el algoritmo PID: esto es solo metadata de que variables funcionales debe leer/escribir el supervisor generado, y con que bloque coincide conceptualmente en TIA Portal.",
   "level_setpoint": {
-    "min": 10.0,
-    "max": 90.0,
-    "unit": "percent"
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "percent",
+    "note": "Rango aceptado del setpoint de nivel = 0-100 % (fuente: benchmark v3 congelado, caso de rechazo de setpoint fuera de rango; decision humana 2026-10-12). Sustituye la configuracion legacy 10-90 %."
   },
   "high_level_alarm": {
     "default_limit": 90.0,

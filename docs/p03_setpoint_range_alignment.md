@@ -1,4 +1,10 @@
-# P03: alineación pendiente del rango de setpoint (0-100 % frente a 10-90 %)
+# P03: alineación del rango de setpoint (0-100 % frente a 10-90 %) — RESUELTO
+
+> **Estado (2026-10-12, rama feat/preformal-readiness-v3):** resuelto. `config/pid_supervisor_config.json` usa
+> `level_setpoint` 0-100 %; `semantic_validator` lo lee de la configuración sin valores codificados y la capacidad
+> `reject_unsafe_setpoint` valida en el PLC la solicitud (`Level_SP_Command`) contra ese rango. El texto "setpoint
+> 10-90 %" que conservan las convenciones C-PID de los Oracles P congelados es informativo (no se evalúa) y no
+> se modifica. El resto de este documento es el análisis previo.
 
 **Fuente v3 (FORMAL):** el benchmark y el Oracle de P03 fijan el rango aceptado en **0 % - 100 %** (comando canónico sin
 cambios; invariante `INV_SP_RANGE` 0-100). La configuración legacy usa **10 % - 90 %**. Esta alineación queda
