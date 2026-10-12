@@ -921,8 +921,15 @@ def run_oracle(
 # evaluation_report.json (fuente de la futura ficha)
 # ---------------------------------------------------------------------------------------------
 
-def build_evaluation_report(trial_record: dict[str, Any], oracle_result: dict[str, Any], final_status: str) -> dict[str, Any]:
+def build_evaluation_report(trial_record: dict[str, Any], oracle_result: dict[str, Any], final_status: str,
+                            stage_summary: dict[str, Any] | None = None) -> dict[str, Any]:
+    """
+    stage_summary: resumen por etapa de la FUENTE UNICA (deferred_evaluator.trial_stage_summary) calculado sobre el
+    trial.json ya persistido; compile/download/runtime se leen del mismo registro (nunca de uno previo a la evaluacion).
+    """
     stages = trial_record.get("stages") or {}
+    summary = dict(stage_summary or {})
+    summary.pop("voice", None)
     return {
         "report_schema_version": 1,
         "trial_id": trial_record.get("trial_id"),
@@ -944,10 +951,14 @@ def build_evaluation_report(trial_record: dict[str, Any], oracle_result: dict[st
             "oracle_evaluation": oracle_result.get("semantic"),
             "intent_id": (trial_record.get("semantic") or {}).get("intent_id"),
         },
+        "stage_summary": summary,
+        "experiment_map": trial_record.get("experiment_map"),
+        "io_map": {key: (trial_record.get("io_map") or {}).get(key) for key in ("base_map_id", "base_map_hash", "base_source_hash")},
         "roles": oracle_result.get("roles"),
         "resources": oracle_result.get("resources"),
         "compile": {"success": stages.get("compile_success"), **{k: (trial_record.get("compile") or {}).get(k) for k in ("status", "error_count", "warning_count")}},
         "download": {"success": stages.get("download_success"), **{k: (trial_record.get("download") or {}).get(k) for k in ("status", "target_type", "start_module_success", "cpu_run_confirmed")}},
+        "tia_archive": {key: (trial_record.get("tia_archive") or {}).get(key) for key in ("status", "reason", "attempt_count", "recovered_after_retry")},
         "runtime": trial_record.get("runtime"),
         "preconditions": oracle_result.get("preconditions"),
         "functional": oracle_result.get("functional"),

@@ -1211,6 +1211,7 @@ def _evaluate_trial(
 
     context["phase"] = "oracle_artifacts"
     if oracle_result is not None:
+        # Provisional (evidencia si el proceso cae antes de persistir); se reescribe tras persistir trial.json.
         record_now = trial_model.load_trial(trial_dir)
         report = oracle_runner.build_evaluation_report(record_now, oracle_result, final_status)
         oracle_runner.write_oracle_artifacts(attempt_dir, oracle_result, report)
@@ -1309,6 +1310,13 @@ def _evaluate_trial(
                             "started_at": started_at, "completed_at": completed_at, "final_verdict": final_status,
                             "tia_workspace_id": workspace_id, "attempts": attempts + [attempt_summary]}
     trial_model.save_trial(trial_dir, record)
+    if oracle_result is not None:
+        # evaluation_report DEFINITIVO desde el trial.json ya persistido (compile/download/runtime/stages completos y
+        # el resumen por etapa de la fuente unica trial_stage_summary): nunca desde un registro previo a la evaluacion.
+        context["phase"] = "evaluation_report"
+        persisted = trial_model.load_trial(trial_dir)
+        oracle_runner.write_oracle_artifacts(attempt_dir, oracle_result, oracle_runner.build_evaluation_report(
+            persisted, oracle_result, final_status, stage_summary=trial_stage_summary(persisted)))
 
     # 2) Verificacion: sin un trial.json coherente no se hace ningun mantenimiento (el workspace se conserva).
     context["phase"] = "verify_persistence"
