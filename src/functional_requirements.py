@@ -187,9 +187,81 @@ def timed_sequence_missing_data(functional_requirements: list[dict[str, Any]]) -
     return missing
 
 
-def get_functional_requirement_tags(requirement: dict[str, Any]) -> list[str]:
-    """Resolve the concrete PLC tags one functional_requirement entry implies."""
+# Recursos de un requisito que NO son fijos sino que vienen de un PARAMETRO EFECTIVO del intent:
+# type -> {parametro: tag por defecto del contrato}. El tag por defecto es el MISMO que usa la plantilla
+# del generador cuando el parametro falta (code_generator: _param(parameters, key, default=...)), asi que
+# requisito, IR, generador y verificador resuelven el recurso igual. enable_pid: el interlock de seguridad
+# incidental "PID_Enable := NOT <emergency_input> AND ..." usa la emergencia del intent; en un banco sin
+# I_Emergency la semantica efectiva la deja en el literal seguro FALSE y no hay recurso fisico que exigir.
+# Requisitos cuya ESENCIA es la emergencia (emergency_priority) siguen con su tag fijo.
+FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS: dict[str, dict[str, str]] = {
+    "enable_pid": {"emergency_input": "I_Emergency"},
+}
+
+# Literales booleanos seguros (mismo criterio que effective_semantics.SAFE_FALSE / semantic_repair).
+SAFE_BOOL_LITERALS = ("FALSE", "TRUE")
+_PARAMETER_TAG_PATTERN = re.compile(r"^(I|Q|M|T|C|R|F|AI|AO)_[A-Za-z0-9_]+$")
+
+RESOURCE_TAG = "TAG"                        # el parametro efectivo es un tag PLC: se exige ese tag
+RESOURCE_SAFE_LITERAL = "SAFE_LITERAL"      # literal TRUE/FALSE: ninguna variable PLC que exigir
+RESOURCE_CONTRACT_DEFAULT = "CONTRACT_DEFAULT"  # parametro ausente: el tag por defecto del contrato
+ERROR_INVALID_PARAMETER_RESOURCE = "FUNCTIONAL_REQUIREMENT_INVALID_PARAMETER_RESOURCE"
+
+
+class ParameterResourceError(ValueError):
+    """Un recurso de requisito dependiente de parametro tiene un valor que no es tag PLC ni literal seguro."""
+
+    def __init__(self, requirement_type: str, parameter: str, value: Any) -> None:
+        super().__init__(
+            f"{ERROR_INVALID_PARAMETER_RESOURCE}: el requisito '{requirement_type}' toma su recurso del parametro "
+            f"'{parameter}', cuyo valor {value!r} no es un tag PLC valido ni un literal seguro TRUE/FALSE."
+        )
+        self.code = ERROR_INVALID_PARAMETER_RESOURCE
+        self.requirement_type = requirement_type
+        self.parameter = parameter
+        self.value = value
+
+
+def resolve_parameter_resources(requirement: dict[str, Any], parameters: dict[str, Any] | None = None,
+                                provenance: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """
+    Resolucion trazable de los recursos dependientes de parametros de UN requisito:
+    [{parameter, contract_default, value, resolution: TAG | SAFE_LITERAL | CONTRACT_DEFAULT, tag, provenance}].
+    Nunca convierte un literal en tag ni inventa recursos; un valor invalido lanza ParameterResourceError.
+    parameters=None (llamadas sin semantica efectiva) conserva el comportamiento del contrato.
+    """
     req_type = str(requirement.get("type", "")).strip()
+    resolved: list[dict[str, Any]] = []
+    for parameter, default in (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS.get(req_type) or {}).items():
+        entry: dict[str, Any] = {"parameter": parameter, "contract_default": default,
+                                 "provenance": (provenance or {}).get(parameter)}
+        if parameters is None or parameter not in parameters or parameters.get(parameter) in (None, ""):
+            entry.update({"value": None, "resolution": RESOURCE_CONTRACT_DEFAULT, "tag": default})
+        else:
+            value = str(parameters[parameter]).strip()
+            if value.upper() in SAFE_BOOL_LITERALS:
+                entry.update({"value": value.upper(), "resolution": RESOURCE_SAFE_LITERAL, "tag": None})
+            elif _PARAMETER_TAG_PATTERN.match(value):
+                entry.update({"value": value, "resolution": RESOURCE_TAG, "tag": value})
+            else:
+                raise ParameterResourceError(req_type, parameter, parameters[parameter])
+        resolved.append(entry)
+    return resolved
+
+
+def get_functional_requirement_tags(requirement: dict[str, Any], parameters: dict[str, Any] | None = None,
+                                    provenance: dict[str, Any] | None = None) -> list[str]:
+    """
+    Resolve the concrete PLC tags one functional_requirement entry implies. Tags que dependen de un
+    parametro (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS) se resuelven con los parametros EFECTIVOS: un literal
+    seguro no exige variable PLC; otro tag valido sustituye al por defecto; sin parametros, el contrato.
+    """
+    req_type = str(requirement.get("type", "")).strip()
+    if req_type in FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS:
+        parameter_defaults = set(FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS[req_type].values())
+        fixed = [tag for tag in FUNCTIONAL_REQUIREMENT_TAGS.get(req_type, []) if tag not in parameter_defaults]
+        resolved = [entry["tag"] for entry in resolve_parameter_resources(requirement, parameters, provenance) if entry["tag"]]
+        return list(dict.fromkeys(fixed + resolved))
     if req_type == "timed_sequence":
         tags = [str(requirement.get(key, "")).strip() for key in ("start_input", "stop_input")]
         for step in timed_sequence_steps(requirement):
@@ -748,8 +820,11 @@ def _detect_same_type_conflicts(req_type: str, entries: list[dict[str, Any]]) ->
 
 __all__ = [
     "FUNCTIONAL_REQUIREMENT_TAGS",
+    "FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS",
     "FUNCTIONAL_REQUIREMENT_KEYWORDS",
+    "ParameterResourceError",
     "get_functional_requirement_tags",
+    "resolve_parameter_resources",
     "is_catalog_functional_requirement",
     "compute_intent_covered_types",
     "compute_semantic_coverage",

@@ -36,6 +36,7 @@ from typing import Any, Callable
 from trial_experiments import benchmark_catalog as BC
 from trial_experiments import experimental_design as ED
 from trial_experiments import oracle_schema as S
+from trial_experiments import process_variables as PV
 from trial_experiments import tia_classification as TC
 from trial_experiments import system_resources as SR
 from trial_experiments import tia_workspace as TW
@@ -146,6 +147,11 @@ def _present_audio_artifacts(trial_dir: Path) -> tuple[str, ...]:
     return tuple(name for name in voice_protocol.AUDIO_ARTIFACTS if (Path(trial_dir) / name).is_file())
 
 
+def _present_process_variable_artifacts(trial_dir: Path) -> tuple[str, ...]:
+    name = PV.PROCESS_VARIABLE_BINDINGS_FILENAME
+    return (name,) if (Path(trial_dir) / name).is_file() else ()
+
+
 def build_integrity_manifest(project_root: Path, trial_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
     oracle = S.find_case_oracle(project_root, record["case_id"])
     oracle_ref = S.oracle_reference(oracle) if oracle else {"oracle_id": None, "oracle_version": None, "oracle_hash": None}
@@ -165,7 +171,9 @@ def build_integrity_manifest(project_root: Path, trial_dir: Path, record: dict[s
         "reference_text_hash": record.get("reference_text_hash"),
         "effective_input_text_hash": record.get("effective_input_text_hash"),
         # Audio (VOICE_CLEAN / VOICE_NOISE): evidencia experimental congelada junto al resto.
-        "files": {name: sha256_file(trial_dir / name) for name in FROZEN_ARTIFACTS + _present_audio_artifacts(trial_dir)},
+        # process_variable_bindings.json (P01-P12): variables internas congeladas para el Oracle.
+        "files": {name: sha256_file(trial_dir / name) for name in
+                  FROZEN_ARTIFACTS + _present_audio_artifacts(trial_dir) + _present_process_variable_artifacts(trial_dir)},
     }
 
 
@@ -200,6 +208,8 @@ def finalize_generation(project_root: Path, trial_dir: Path, package_dir: Path |
             "evaluation": {"status": EVALUATION_NOT_APPLICABLE, "attempts": []},
         })
     generated_code_id = Path(package_dir).name if package_dir else None
+    # Variables de proceso (estaticas del DB de instancia): congeladas aqui, desde variables.json + contrato.
+    PV.freeze_process_variable_bindings(trial_dir, trial_dir / VARIABLES_FILENAME)
     _write_json(trial_dir / GENERATION_REPORT_FILENAME, {
         "trial_id": record["trial_id"],
         "generated_at": _now(),
@@ -661,6 +671,7 @@ def precheck(project_root: Path, trial_dir: Path, retry_reason: str | None = Non
         errors.append(f"{ERROR_NOT_PENDING}: evaluacion en estado {evaluation.get('status')} (solo PENDING o reintento de INFRASTRUCTURE_ERROR).")
 
     # Benchmark / Oracle congelados
+    capabilities: dict[str, Any] | None = None
     case = BC.get_case(project_root, manifest["case_id"]) or {}
     if BC.load_catalog(project_root).get("benchmark_version") != manifest.get("benchmark_version"):
         errors.append("benchmark_version actual distinta de la del ensayo.")
@@ -676,8 +687,14 @@ def precheck(project_root: Path, trial_dir: Path, retry_reason: str | None = Non
             errors.append(f"El Oracle {manifest['case_id']} no esta FROZEN.")
         if reference["oracle_hash"] != (manifest.get("oracle") or {}).get("oracle_hash"):
             errors.append("El hash del Oracle no coincide con el congelado al generar el ensayo.")
-        if S.runtime_support(oracle) != S.RUNTIME_EXECUTABLE_NOW:
-            errors.append(f"El Oracle {manifest['case_id']} requiere extension del Runtime (no evaluable hoy).")
+        # Ejecucion por CAPACIDADES (la misma decision que oracle_runner.run_oracle): runtime_support del
+        # Oracle congelado se conserva como declared_runtime_support, pero no decide por si solo.
+        from trial_experiments import oracle_runner
+
+        capabilities = oracle_runner.runtime_capability_check(oracle)
+        if not capabilities["executable"]:
+            errors.append(f"El Oracle {manifest['case_id']} requiere extension del Runtime (no evaluable hoy): "
+                          f"faltan capacidades {capabilities['missing_capabilities']}.")
     except S.OracleError as error:
         errors.append(f"Oracle no disponible: {error}")
 
@@ -739,7 +756,8 @@ def precheck(project_root: Path, trial_dir: Path, retry_reason: str | None = Non
     if target.get("target_type") != "PLCSIM_ADVANCED" or architecture.get("physical_download") != "forbidden":
         errors.append("PHYSICAL_DOWNLOAD_FORBIDDEN: el destino experimental debe ser PLCSIM_ADVANCED.")
     return {"ok": not errors, "integrity_failed": False, "legacy": False, "errors": errors, "warnings": warnings,
-            "record": record, "manifest": manifest, "master": config, "path_validation": path_validation}
+            "record": record, "manifest": manifest, "master": config, "path_validation": path_validation,
+            "runtime_capability_check": capabilities}
 
 
 def check_plcsim(runtime_report: dict[str, Any], instance_name: str) -> list[str]:

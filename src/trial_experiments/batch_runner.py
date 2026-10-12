@@ -221,8 +221,11 @@ def preflight(
            str(summary.get("benchmark_inconsistencies")))
     _check(checks, "hidden_oracle_requirements_0", summary.get("hidden_oracle_requirements") == 0,
            str(summary.get("hidden_oracle_requirements")))
+    from trial_experiments import oracle_runner
+
+    # Ejecucion por CAPACIDADES (misma decision que el precheck y el Oracle Runner), no por runtime_support.
     not_executable = [c["case_id"] for c in matrix
-                      if S.runtime_support(S.load_oracle(project_root, c["case_id"])) != S.RUNTIME_EXECUTABLE_NOW]
+                      if not oracle_runner.runtime_capability_check(S.load_oracle(project_root, c["case_id"]))["executable"]]
     _check(checks, "d01_d20_runtime_executable", not not_executable, ", ".join(sorted(set(not_executable))) or "20/20")
 
     # -- mapas

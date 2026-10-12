@@ -782,7 +782,10 @@ def test_legacy_d12_template_roles_are_not_accepted_as_requests(tmp_path):
 # 3. PID: bloqueado en Runtime, evaluacion validada con trazas simuladas
 # =============================================================================================
 
-def test_pid_oracles_never_run_without_runtime_extension(tmp_path):
+def test_pid_oracles_never_run_without_runtime_extension(tmp_path, monkeypatch):
+    # Ejecucion por capacidades: con un Runtime SOLO BOOL (sin variables internas ni REAL) ningun PID corre.
+    monkeypatch.setattr(oracle_runner.rio, "RUNTIME_CAPABILITIES", ("BOOL",))
+
     def must_not_run(*args, **kwargs):
         raise AssertionError("el bridge no debe invocarse para un Oracle REQUIRES_RUNTIME_EXTENSION")
     for case_id in (f"P{i:02d}" for i in range(1, 13)):

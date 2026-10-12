@@ -403,9 +403,18 @@ def test_bridge_only_write_is_input_area_writebit():
     code = "\n".join(line for line in source.splitlines() if not line.strip().startswith("//") and "///" not in line)
     # Escrituras sobre objetos de la Runtime API (instancia o areas de I/O); Console/File no cuentan.
     write_calls = [line.strip() for line in code.splitlines() if re.search(r"(instance|Area)\.Write", line)]
-    assert write_calls and all("instance.InputArea.WriteBit(" in line for line in write_calls), write_calls
-    for forbidden in ("OutputArea.Write", "MarkerArea.Write", "WriteBool(", "WriteBytes(", "WriteByte(", "WriteSignals(", "SetIPSuite("):
+    # Entradas fisicas: InputArea.WriteBit. Variables internas (P01-P12): SOLO WriteBool/WriteFloat por nombre
+    # resuelto, dentro de WriteVariable.
+    internal = ("instance.WriteFloat(signal.ApiName,", "instance.WriteBool(signal.ApiName,")
+    assert write_calls and all("instance.InputArea.WriteBit(" in line or line.startswith(internal) for line in write_calls), write_calls
+    for forbidden in ("OutputArea.Write", "MarkerArea.Write", "WriteBytes(", "WriteByte(", "WriteSignals(", "SetIPSuite("):
         assert forbidden not in code
+    body = code[code.index("private static void WriteVariable("):]
+    body = body[:body.index("\n        }\n") + 10]
+    assert sum(line.strip().startswith(internal) for line in body.splitlines()) == 2  # solo dentro de WriteVariable
+    # WriteVariable solo se llama tras verificar la escritura (SetMany) o al restaurar lo ya escrito.
+    callers = [line.strip() for line in code.splitlines() if "WriteVariable(instance," in line]
+    assert callers == ["WriteVariable(instance, write.Key, write.Value);", "WriteVariable(instance, signal, target);"], callers
 
 
 def test_bridge_self_test_signal_rules():

@@ -5,7 +5,14 @@ import re
 from pathlib import Path
 from typing import Any
 
-from functional_requirements import get_functional_requirement_tags, is_catalog_functional_requirement
+from functional_requirements import (
+    RESOURCE_SAFE_LITERAL,
+    RESOURCE_TAG,
+    ParameterResourceError,
+    get_functional_requirement_tags,
+    is_catalog_functional_requirement,
+    resolve_parameter_resources,
+)
 from plc_ir import PLCProjectIR
 from utils import build_io_map_index, flatten_io_map
 
@@ -244,6 +251,17 @@ def verify_code(
     }
 
 
+def _effective_parameters(project_ir: PLCProjectIR) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Parametros efectivos congelados de la IR (la MISMA fuente que code_generator) y su procedencia."""
+    metadata = project_ir.metadata or {}
+    semantic_output = metadata.get("semantic_output") if isinstance(metadata.get("semantic_output"), dict) else {}
+    parameters = semantic_output.get("parameters")
+    if not isinstance(parameters, dict):
+        parameters = metadata.get("parameters") if isinstance(metadata.get("parameters"), dict) else {}
+    provenance = semantic_output.get("parameter_provenance")
+    return parameters, provenance if isinstance(provenance, dict) else None
+
+
 def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -283,16 +301,46 @@ def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
     # Ningun functional_requirement puede desaparecer en silencio entre el semantic_output y la
     # IR: si el catalogo dice que "run_pilot" implica Q_Pilot_Run, esa variable debe estar
     # declarada. Si falta, es un error de propagacion, no un exito silencioso (seccion 7).
+    # Los recursos que dependen de un parametro (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS) se resuelven con
+    # los MISMOS parametros efectivos congelados que uso el generador (semantic_output.parameters), nunca
+    # con una lista estatica ciega: un literal seguro (emergency_input = FALSE) no exige variable PLC.
+    effective_parameters, effective_provenance = _effective_parameters(project_ir)
+    tags_required_by_requirements: set[str] = set()
+    pending_resource_checks: list[tuple[str, dict[str, Any]]] = []
     for requirement in project_ir.metadata.get("functional_requirements", []) or []:
         if not is_catalog_functional_requirement(requirement):
             continue
         requirement_type = requirement.get("type", "")
-        for tag in get_functional_requirement_tags(requirement):
+        try:
+            required_tags = get_functional_requirement_tags(requirement, effective_parameters, effective_provenance)
+            parameter_resources = resolve_parameter_resources(requirement, effective_parameters, effective_provenance)
+        except ParameterResourceError as error:
+            errors.append(str(error))
+            continue
+        tags_required_by_requirements.update(required_tags)
+        pending_resource_checks.extend((requirement_type, resource) for resource in parameter_resources)
+        for tag in required_tags:
             if tag not in declared_names:
                 errors.append(
                     f"El requisito funcional '{requirement_type}' no se propago a la IR: "
                     f"falta la variable {tag}."
                 )
+    # Recursos realmente usados por IR/SCL == semantica efectiva: un recurso resuelto a literal no puede
+    # reaparecer como tag (ghost) salvo que OTRO requisito lo exija por si mismo, y un tag resuelto debe
+    # usarse en la logica generada.
+    for requirement_type, resource in pending_resource_checks:
+        default = resource["contract_default"]
+        ghost = default not in tags_required_by_requirements and (default in used_identifiers or default in declared_names)
+        if resource["resolution"] == RESOURCE_SAFE_LITERAL and ghost:
+            errors.append(
+                f"El requisito funcional '{requirement_type}' usa {default} aunque la semantica efectiva fijo "
+                f"{resource['parameter']} = {resource['value']} (literal seguro, sin recurso fisico)."
+            )
+        elif resource["resolution"] == RESOURCE_TAG and resource["tag"] not in used_identifiers:
+            errors.append(
+                f"El requisito funcional '{requirement_type}' resolvio {resource['parameter']} = {resource['tag']}, "
+                "pero la logica generada no lo usa."
+            )
 
     # Banco sin paro de emergencia cableado al PLC (regla definitiva - ver semantic_repair.py):
     # esta exigencia solo aplica si I_Emergency es un recurso fisico realmente disponible en el

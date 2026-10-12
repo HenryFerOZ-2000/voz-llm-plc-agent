@@ -53,7 +53,12 @@ ERROR_NO_PROGRAM = "PLCSIM_IO_NO_PROGRAM"
 
 REPORT_FILENAME = "plcsim_io_test_report.json"
 
-SUPPORTED_DATA_TYPES = ("BOOL",)  # Fase 2B. WORD/INT/REAL se anadiran en esta misma capa.
+SUPPORTED_DATA_TYPES = ("BOOL",)  # E/S fisicas: solo BOOL (Fase 2B). AI/AO/WORD/INT fuera de alcance.
+# Capacidades del Runtime ACTUAL (vocabulario oracle_schema.RUNTIME_REQUIREMENTS) para la ejecucion por
+# capacidades del Oracle Runner: E/S fisicas BOOL + variables internas (estaticas de DB) BOOL/REAL por
+# nombre, leidas y escritas (solo roles INPUT PROCESS_VARIABLE, solo PLCSIM, solo durante el Oracle).
+# INT/WORD no estan soportados: un Oracle que los requiera sigue en REVIEW (RUNTIME_EXTENSION_REQUIRED).
+RUNTIME_CAPABILITIES = ("BOOL", "REAL", "INTERNAL_TAG_READ", "INTERNAL_TAG_WRITE")
 
 _ADDRESS_PATTERN = re.compile(r"^%?\s*([IQ])\s*(X|B|W|D)?\s*(\d+)(?:\.(\d+))?$", re.IGNORECASE)
 

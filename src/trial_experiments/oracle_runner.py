@@ -37,6 +37,7 @@ import plcsim_runtime
 import plcsim_runtime_io as rio
 from effective_semantics import interpreted_parameters
 from trial_experiments import oracle_schema, trial_model
+from trial_experiments import process_variables as PV
 
 VERDICT_PASS = trial_model.FINAL_STATUS_PASS
 VERDICT_FAIL = trial_model.FINAL_STATUS_FAIL
@@ -58,6 +59,43 @@ SEMANTIC_NOT_EVALUABLE = "ORACLE_SEMANTIC_NOT_EVALUABLE"
 NO_SAMPLES = "ORACLE_NO_SAMPLES_IN_WINDOW"
 RUNTIME_EXTENSION_REQUIRED = "ORACLE_RUNTIME_EXTENSION_REQUIRED"
 ROLE_BINDING_UNSUPPORTED = "ORACLE_ROLE_BINDING_UNSUPPORTED"
+SEQUENCE_VALUE_TYPE_MISMATCH = "ORACLE_SEQUENCE_VALUE_TYPE_MISMATCH"
+# Proposito que el bridge exige para escribir variables internas (Program.InternalWritePurpose).
+PROCESS_VARIABLE_WRITE_PURPOSE = "EXPERIMENT_ORACLE"
+# Readback de una escritura REAL (float32 en PLCSIM): muy por debajo de las tolerancias del Oracle (0.01).
+REAL_WRITE_TOLERANCE = 0.001
+
+
+# El programa bajo prueba reescribe una variable de proceso que el Oracle controla como ENTRADA (estimulo del
+# arnes). La escritura de la infraestructura SI se completo (la API no fallo): es un fallo del DUT, nunca
+# INFRASTRUCTURE_ERROR ni REVIEW -> Functional FAIL.
+PROGRAM_OVERWRITES_HARNESS_INPUT = "PROGRAM_OVERWRITES_HARNESS_INPUT"
+
+
+class OracleSequenceError(ValueError):
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(f"{code}: {message}")
+        self.code = code
+
+
+def runtime_capability_check(oracle: dict[str, Any], capabilities: tuple[str, ...] | list[str] | None = None) -> dict[str, Any]:
+    """
+    Ejecucion por capacidades. required = runtime_requirements declarados en el Oracle (congelado) +
+    los derivados de sus roles; missing = los que el Runtime actual no soporta. runtime_support del
+    Oracle se conserva tal cual como dato (nunca se modifica ni decide por si solo).
+    """
+    available = list(capabilities if capabilities is not None else rio.RUNTIME_CAPABILITIES)
+    wanted = set(oracle.get("runtime_requirements") or []) | set(oracle_schema.derived_runtime_requirements(oracle))
+    required = [item for item in oracle_schema.RUNTIME_REQUIREMENTS if item in wanted] + sorted(
+        item for item in wanted if item not in oracle_schema.RUNTIME_REQUIREMENTS)
+    missing = [item for item in required if item not in available]
+    return {
+        "declared_runtime_support": oracle_schema.runtime_support(oracle),
+        "runtime_capabilities": available,
+        "required_capabilities": required,
+        "missing_capabilities": missing,
+        "executable": not missing,
+    }
 SKIPPED_OPTIONAL = "OPTIONAL_ROLE_NOT_BOUND"
 
 EVALUATION_REPORT_FILENAME = "evaluation_report.json"
@@ -79,19 +117,67 @@ def _path_matches(path: str, semantic_paths: list[str]) -> bool:
     return path in semantic_paths or _last_segment(path) in semantic_paths
 
 
-def resolve_roles(oracle: dict[str, Any], snapshot: dict[str, Any]) -> dict[str, Any]:
+def _resolve_process_variable_role(role_name: str, role: dict[str, Any], bindings: dict[str, dict[str, Any]],
+                                   resolved: dict[str, dict[str, Any]], issues: list[dict[str, Any]]) -> None:
+    """
+    Rol PROCESS_VARIABLE: SOLO contra process_variable_bindings congelados (nunca program.scl ni un nombre
+    adivinado). Candidatos = process_variables del rol presentes en los bindings. 0 -> NOT_FOUND,
+    >1 -> AMBIGUOUS, tipo distinto -> KIND_MISMATCH.
+    """
+    candidates = [name for name in role.get("process_variables") or [] if name in bindings]
+    expected_type = oracle_schema.role_data_type(role)
+    matching = [name for name in candidates if bindings[name].get("data_type") == expected_type]
+    if len(matching) == 1:
+        binding = bindings[matching[0]]
+        signal = PV.runtime_signal(binding)
+        resolved[role_name] = {
+            "role": role_name,
+            "kind": role["kind"],
+            "binding": PV.BINDING_PROCESS_VARIABLE,
+            # Nombre logico (db.member): clave de las muestras y de las escrituras en la traza del bridge.
+            "functional_name": signal["name"],
+            "process_variable": binding["name"],
+            "db": binding["db"],
+            "member": binding["member"],
+            "data_type": binding["data_type"],
+            "address": None,
+            # Solo los roles INPUT con binding PROCESS_VARIABLE son escribibles (test harness del Oracle).
+            "writable": role["kind"] == "INPUT",
+            "binding_source": binding.get("source"),
+            "matched_paths": [binding["name"]],
+        }
+    elif len(matching) > 1:
+        issues.append({"code": ROLE_AMBIGUOUS, "role": role_name, "candidates": sorted(matching),
+                       "detail": f"{role_name}: varias variables de proceso {sorted(matching)} para {role.get('process_variables')}."})
+    elif candidates:
+        issues.append({"code": ROLE_KIND_MISMATCH, "role": role_name, "candidates": sorted(candidates),
+                       "detail": f"{role_name} ({expected_type}) solo encontro variables de otro tipo: "
+                                 f"{ {name: bindings[name].get('data_type') for name in candidates} }."})
+    elif role.get("required", True):
+        issues.append({"code": ROLE_NOT_FOUND, "role": role_name, "candidates": [],
+                       "detail": f"{role_name}: ninguna variable de {role.get('process_variables')} esta en los "
+                                 "process_variable_bindings congelados del ensayo."})
+
+
+def resolve_roles(oracle: dict[str, Any], snapshot: dict[str, Any],
+                  process_variable_bindings: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Resuelve cada rol del Oracle contra los bindings CONGELADOS del ensayo. Nunca adivina:
     0 candidatos -> NOT_FOUND, >1 -> AMBIGUOUS, tipo equivocado -> KIND_MISMATCH, dos roles en la
     misma senal -> CONFLICT. Cualquier incidencia deja el resultado en REVIEW.
+    Roles IO -> parameter_bindings del snapshot; roles PROCESS_VARIABLE -> process_variable_bindings.
     """
     signal_by_name = {c.get("functional_name"): c.get("signal") for c in snapshot.get("channels", []) or []}
     address_by_name = {c.get("functional_name"): c.get("address") for c in snapshot.get("channels", []) or []}
     parameter_bindings = snapshot.get("parameter_bindings") or {}
+    pv_bindings = (process_variable_bindings or {}).get("bindings") or {}
     resolved: dict[str, dict[str, Any]] = {}
     issues: list[dict[str, Any]] = []
 
     for role_name, role in oracle["roles"].items():
+        if oracle_schema.role_binding(role) == PV.BINDING_PROCESS_VARIABLE:
+            _resolve_process_variable_role(role_name, role, pv_bindings, resolved, issues)
+            continue
         if oracle_schema.role_binding(role) != "IO":
             # Variables internas del contrato PID: requieren lectura/escritura de tags internos
             # (extension del Runtime). No se resuelven contra los bindings fisicos del ensayo.
@@ -258,9 +344,39 @@ def _bridge_signal(program: dict[str, Any], name: str) -> dict[str, Any]:
     return {key: signal[key] for key in ("name", "address", "area", "offset", "bit", "data_type")}
 
 
-def compile_sequence(oracle: dict[str, Any], roles: dict[str, dict[str, Any]], program: dict[str, Any]) -> dict[str, Any]:
+def _cleanup_restore_values(oracle: dict[str, Any]) -> dict[str, Any]:
+    """Valor de restauracion de cada rol = el ULTIMO que fija el cleanup del Oracle (nunca FALSE/0 por defecto)."""
+    restore: dict[str, Any] = {}
+    for step in oracle.get("cleanup") or []:
+        restore.update(step.get("set") or {})
+    return restore
+
+
+def _role_signal(entry: dict[str, Any], program: dict[str, Any], pv_bindings: dict[str, dict[str, Any]],
+                 restore: dict[str, Any]) -> dict[str, Any]:
+    if entry.get("binding") == PV.BINDING_PROCESS_VARIABLE:
+        binding = pv_bindings[entry["process_variable"]]
+        return PV.runtime_signal(binding, writable=entry.get("writable", False),
+                                 restore_value=restore.get(entry["role"]) if entry.get("writable") else None)
+    return _bridge_signal(program, entry["functional_name"])
+
+
+def _check_value_type(role: str, entry: dict[str, Any], signal: dict[str, Any], value: Any, step_id: str) -> None:
+    data_type = str(entry.get("data_type") or signal.get("data_type") or "BOOL").upper()
+    ok = isinstance(value, bool) if data_type == "BOOL" else (isinstance(value, (int, float)) and not isinstance(value, bool))
+    if not ok:
+        raise OracleSequenceError(SEQUENCE_VALUE_TYPE_MISMATCH, f"{step_id}: {role} es {data_type} y el Oracle fija {value!r}.")
+    if entry.get("binding") == PV.BINDING_PROCESS_VARIABLE and not entry.get("writable"):
+        raise OracleSequenceError(rio.ERROR_WRITE_NOT_ALLOWED, f"{step_id}: {role} es una variable de SALIDA; solo se leen.")
+
+
+def compile_sequence(oracle: dict[str, Any], roles: dict[str, dict[str, Any]], program: dict[str, Any],
+                     process_variable_bindings: dict[str, Any] | None = None) -> dict[str, Any]:
     period = int((oracle.get("evaluation") or {}).get("sample_period_ms", 50))
-    watched = [_bridge_signal(program, entry["functional_name"]) for entry in roles.values()]
+    pv_bindings = (process_variable_bindings or {}).get("bindings") or {}
+    restore = _cleanup_restore_values(oracle)
+    signals = {role: _role_signal(entry, program, pv_bindings, restore) for role, entry in roles.items()}
+    watched = list(signals.values())
     steps: list[dict[str, Any]] = []
     planned_ms = 0
     skipped: list[str] = []
@@ -270,12 +386,11 @@ def compile_sequence(oracle: dict[str, Any], roles: dict[str, dict[str, Any]], p
                 skipped.append(step["id"])
                 continue
             if step.get("set"):
+                for role, value in step["set"].items():
+                    _check_value_type(role, roles[role], signals[role], value, step["id"])
                 steps.append({
                     "op": "set", "id": step["id"], "phase": phase,
-                    "writes": [
-                        {"signal": _bridge_signal(program, roles[role]["functional_name"]), "value": value}
-                        for role, value in step["set"].items()
-                    ],
+                    "writes": [{"signal": signals[role], "value": value} for role, value in step["set"].items()],
                 })
             wait_ms = int(step.get("wait_ms", 0))
             sample: dict[str, Any] = {
@@ -287,7 +402,8 @@ def compile_sequence(oracle: dict[str, Any], roles: dict[str, dict[str, Any]], p
             steps.append(sample)
             planned_ms += wait_ms
     return {"steps": steps, "planned_ms": planned_ms, "sample_period_ms": period, "watched": [s["name"] for s in watched],
-            "skipped_steps": skipped}
+            "skipped_steps": skipped,
+            "process_variables": any(s.get("kind") == PV.BINDING_PROCESS_VARIABLE for s in watched)}
 
 
 # ---------------------------------------------------------------------------------------------
@@ -457,6 +573,72 @@ def evaluate_trace(oracle: dict[str, Any], roles: dict[str, dict[str, Any]], raw
     }
 
 
+def _harness_value_holds(written: Any, observed: Any, data_type: str) -> bool:
+    if observed is None:
+        return True  # sin observacion de esa senal no hay evidencia de sobrescritura
+    if str(data_type).upper() == "REAL":
+        return isinstance(observed, (int, float)) and not isinstance(observed, bool) and abs(float(observed) - float(written)) <= REAL_WRITE_TOLERANCE
+    return observed is written
+
+
+def detect_harness_input_overwrites(roles: dict[str, dict[str, Any]], raw: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    Sobrescrituras de ESTIMULOS del arnes (roles INPUT PROCESS_VARIABLE escribibles) por el programa bajo prueba.
+    Dos fuentes de evidencia, ambas con escritura de API completada (write_call_success):
+      - el bridge: readback distinto confirmado tras io_settle_ms (classification PROGRAM_OVERWRITES_HARNESS_INPUT);
+      - la traza: tras escribir v, una muestra posterior (antes de la siguiente escritura de esa variable)
+        observa otro valor -> el PLC lo cambio en un ciclo posterior al readback inmediato.
+    Una entrada por (variable, paso de escritura): la primera observacion discrepante. Solo para variables
+    internas: las E/S fisicas siguen la politica de infraestructura del bridge.
+    """
+    writable = {entry["functional_name"]: (role, entry) for role, entry in roles.items()
+                if entry.get("binding") == PV.BINDING_PROCESS_VARIABLE and entry.get("writable")}
+    found: dict[tuple[str, str], dict[str, Any]] = {}
+    for item in raw.get("harness_input_overwrites") or []:
+        name = item.get("name")
+        if name not in writable:
+            continue
+        role, entry = writable[name]
+        found[(name, str(item.get("step_id")))] = {
+            "role": role, "variable": entry.get("process_variable"), "name": name, "runtime_name": item.get("runtime_name"),
+            "data_type": entry.get("data_type"), "written_value": item.get("requested_value"),
+            "observed_value": item.get("observed_after_cycle"), "initial_readback": item.get("initial_readback"),
+            "step_id": item.get("step_id"), "write_timestamp": item.get("write_timestamp"),
+            "read_timestamp": item.get("observed_after_cycle_timestamp"), "evidence": "BRIDGE_READBACK_AFTER_CYCLE",
+            "observed_equals_original": item.get("observed_equals_original"),
+        }
+    timeline: list[tuple[float, int, dict[str, Any]]] = []
+    for event in raw.get("events", []) or []:
+        if event.get("type") == "set":
+            timeline.append((float(event.get("t_done_ms", event.get("t_ms", 0.0))), 0, event))
+    for sample in raw.get("samples", []) or []:
+        timeline.append((float(sample.get("t_ms", 0.0)), 1, sample))
+    timeline.sort(key=lambda item: (item[0], item[1]))
+    current: dict[str, tuple[Any, dict[str, Any], dict[str, Any]]] = {}
+    for t_ms, kind, item in timeline:
+        if kind == 0:
+            for write in item.get("writes", []) or []:
+                if write.get("name") in writable:
+                    current[write["name"]] = (write.get("requested_value"), item, write)
+            continue
+        for name, (value, event, write) in current.items():
+            key = (name, str(event.get("id")))
+            if key in found:
+                continue
+            role, entry = writable[name]
+            observed = (item.get("values") or {}).get(name)
+            if not _harness_value_holds(value, observed, entry.get("data_type") or "BOOL"):
+                found[key] = {
+                    "role": role, "variable": entry.get("process_variable"), "name": name,
+                    "runtime_name": write.get("runtime_name"), "data_type": entry.get("data_type"),
+                    "written_value": value, "observed_value": observed, "initial_readback": write.get("initial_readback"),
+                    "step_id": event.get("id"), "write_timestamp": write.get("write_timestamp") or event.get("timestamp"),
+                    "read_timestamp": _wall_clock(event, t_ms), "write_t_ms": event.get("t_done_ms"), "read_t_ms": round(t_ms, 1),
+                    "sample_step_id": item.get("id"), "evidence": "TRACE_SAMPLE_AFTER_WRITE",
+                }
+    return list(found.values())
+
+
 def evaluate_invariants(oracle: dict[str, Any], roles: dict[str, dict[str, Any]], raw: dict[str, Any]) -> dict[str, Any]:
     violations: list[dict[str, Any]] = []
     samples = raw.get("samples", []) or []
@@ -579,6 +761,7 @@ def run_oracle(
     project_root: Path | None = None,
     bridge: Any = None,
     runtime_config: dict[str, Any] | None = None,
+    process_variable_bindings: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     started_at = datetime.now().isoformat(timespec="milliseconds")
     started = time.perf_counter()
@@ -615,11 +798,14 @@ def run_oracle(
         result["errors"].extend(error.details)
         return _finish(VERDICT_REVIEW, error.code)
 
-    if oracle_schema.runtime_support(oracle) != oracle_schema.RUNTIME_EXECUTABLE_NOW:
-        requirements = oracle_schema.derived_runtime_requirements(oracle)
+    # Ejecucion por CAPACIDADES: runtime_support del Oracle congelado describe el Runtime de cuando se
+    # congelo; lo que decide es si el Runtime ACTUAL cubre todos sus requisitos (declarados + derivados).
+    capabilities = runtime_capability_check(oracle)
+    result["runtime_capability_check"] = capabilities
+    if not capabilities["executable"]:
         result["errors"].append(
-            f"{RUNTIME_EXTENSION_REQUIRED}: el Oracle necesita {requirements}; el Runtime actual solo ejecuta BOOL de E/S. "
-            "No se emite PASS/FAIL hasta que exista ese soporte."
+            f"{RUNTIME_EXTENSION_REQUIRED}: el Oracle necesita {capabilities['required_capabilities']}; "
+            f"el Runtime actual no soporta {capabilities['missing_capabilities']}. No se emite PASS/FAIL."
         )
         return _finish(VERDICT_REVIEW, RUNTIME_EXTENSION_REQUIRED)
 
@@ -628,8 +814,13 @@ def run_oracle(
         return _finish(VERDICT_REVIEW, SNAPSHOT_MISSING)
     snapshot = json.loads(Path(snapshot_path).read_text(encoding="utf-8"))
     program = rio.load_program_signals(Path(snapshot_path))
+    if process_variable_bindings is None:
+        process_variable_bindings = PV.load_process_variable_bindings(Path(snapshot_path).parent)
+    result["process_variable_bindings"] = {"source": process_variable_bindings.get("source"),
+                                           "instance_db": process_variable_bindings.get("instance_db"),
+                                           "names": sorted(process_variable_bindings.get("bindings") or {})}
 
-    resolution = resolve_roles(oracle, snapshot)
+    resolution = resolve_roles(oracle, snapshot, process_variable_bindings)
     result["roles"] = resolution
     result["semantic"] = evaluate_semantics(oracle, semantic_output, resolution)
     result["warnings"].extend(result["semantic"].get("warnings", []))
@@ -645,9 +836,17 @@ def run_oracle(
         result["errors"].append(f"{RUNTIME_NOT_READY}: {blocked[0]}: {blocked[1]}")
         return _finish(VERDICT_INFRA, RUNTIME_NOT_READY)
 
-    plan = compile_sequence(oracle, resolution["roles"], program)
+    try:
+        plan = compile_sequence(oracle, resolution["roles"], program, process_variable_bindings)
+    except OracleSequenceError as error:
+        result["errors"].append(str(error))
+        return _finish(VERDICT_REVIEW, error.code)
     result["sequence"] = {key: plan[key] for key in ("planned_ms", "sample_period_ms", "watched", "skipped_steps")}
     payload = {"target_type": target_type, "settle_ms": config["io_settle_ms"], "steps": plan["steps"]}
+    if plan["process_variables"]:
+        # Escritura interna: el bridge la acepta solo con este proposito, target PLCSIM y CPU en RUN.
+        payload.update({"process_variables": True, "purpose": PROCESS_VARIABLE_WRITE_PURPOSE,
+                        "real_tolerance": REAL_WRITE_TOLERANCE})
     timeout = int(plan["planned_ms"] / 1000) + _SEQUENCE_MARGIN_S
     if bridge is None:
         raw = plcsim_runtime.run_runtime_bridge("io_sequence", project_root, config, extra=payload, timeout_seconds=timeout)
@@ -661,7 +860,10 @@ def run_oracle(
     })
     cleanup = raw.get("cleanup") or {}
     result["cleanup"] = {"performed": bool(cleanup.get("performed")), "success": cleanup.get("success"),
-                         "inputs": cleanup.get("inputs", [])}
+                         "inputs": cleanup.get("inputs", []), "process_variables": cleanup.get("process_variables", [])}
+    if raw.get("resolved_process_variables"):
+        # Evidencia: nombre Runtime REAL usado en PLCSIM para cada variable interna (formato descubierto).
+        result["sequence"]["resolved_process_variables"] = raw["resolved_process_variables"]
     status = str(raw.get("status", ""))
 
     if status not in ("PLCSIM_IO_PASSED", "PLCSIM_SEQUENCE_REQUIREMENT_FAILED", "PLCSIM_IO_CLEANUP_FAILED"):
@@ -677,19 +879,37 @@ def run_oracle(
     result["preconditions"] = evaluation["preconditions"]
     result["functional"] = evaluation["functional"]
     result["safety"] = evaluation["safety"]
+    # Estimulo del arnes (variable interna INPUT) reescrito por el programa: fallo del DUT, no infraestructura.
+    overwrites = detect_harness_input_overwrites(resolution["roles"], raw)
+    result["harness_input_overwrites"] = overwrites
     review: list[str] = []
     if status == "PLCSIM_SEQUENCE_REQUIREMENT_FAILED":
         result["preconditions"]["success"] = False
         result["errors"].extend(str(item) for item in raw.get("errors", []) or [])
-        result["functional"] = {**result["functional"], "evaluated": False, "success": None}
-        review.append(PRECONDITION_FAILED)
+        if overwrites:
+            # La precondicion no se pudo mantener PORQUE el DUT reescribe su entrada: Functional FAIL, no REVIEW.
+            result["preconditions"]["failed_because"] = PROGRAM_OVERWRITES_HARNESS_INPUT
+        else:
+            result["functional"] = {**result["functional"], "evaluated": False, "success": None}
+            review.append(PRECONDITION_FAILED)
+    if overwrites:
+        checks = [{"type": "harness_input_overwrite", "code": PROGRAM_OVERWRITES_HARNESS_INPUT, "passed": False, **item}
+                  for item in overwrites]
+        result["functional"] = {**result["functional"], "evaluated": True, "success": False,
+                                "failed_checks": list(result["functional"].get("failed_checks") or []) + checks,
+                                "harness_input_overwrites": len(overwrites)}
+        result["errors"].extend(
+            f"{PROGRAM_OVERWRITES_HARNESS_INPUT}: {item['role']} ({item['name']}) escrito {item['written_value']!r}, "
+            f"observado {item['observed_value']!r} en {item['step_id']}." for item in overwrites)
     if status == "PLCSIM_IO_CLEANUP_FAILED" or cleanup.get("success") is False:
-        result["errors"].append("PLCSIM_IO_CLEANUP_FAILED: alguna entrada no volvio a OFF tras el Oracle.")
+        result["errors"].append("PLCSIM_IO_CLEANUP_FAILED: alguna entrada o variable interna no volvio a su valor de restauracion.")
     for step in result["steps"]:
         result["errors"].extend(step["errors"])
     if any(check.get("error") == NO_SAMPLES for check in result["functional"].get("failed_checks", [])):
         review.append(NO_SAMPLES)
     verdict, reason = decide_verdict(None, review, result["semantic"], result["functional"], result["safety"])
+    if overwrites and verdict == VERDICT_FAIL and reason == "FUNCTIONAL_FAILURE":
+        reason = PROGRAM_OVERWRITES_HARNESS_INPUT  # Safety (mayor severidad) conserva su propio motivo
     return _finish(verdict, reason)
 
 
@@ -728,6 +948,8 @@ def build_evaluation_report(trial_record: dict[str, Any], oracle_result: dict[st
         "preconditions": oracle_result.get("preconditions"),
         "functional": oracle_result.get("functional"),
         "safety": oracle_result.get("safety"),
+        # Evidencia de estimulos del arnes reescritos por el DUT (variable, valores, tiempos, nombre Runtime).
+        "harness_input_overwrites": oracle_result.get("harness_input_overwrites") or [],
         "oracle_verdict": oracle_result.get("verdict"),
         "oracle_verdict_reason": oracle_result.get("verdict_reason"),
         "final_status": final_status,

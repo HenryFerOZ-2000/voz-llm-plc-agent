@@ -10,7 +10,8 @@ from functional_requirements import (
     get_functional_requirement_process_variables,
     get_functional_requirement_tags,
     detect_timed_sequences,
-    has_composable_program
+    has_composable_program,
+    resolve_parameter_resources
 )
 from functional_resources import FunctionalResourceError, resolve_functional_resources
 from plc_ir import PLCFunctionBlockInstance, PLCPOU, PLCProjectIR, PLCTask, PLCVariable
@@ -761,6 +762,7 @@ def build_project_ir(
     else:
         required_variables = get_required_variables_for_intent(intent_id, parameters)
     functional_requirement_tags: list[str] = []
+    parameter_resources: list[dict[str, Any]] = []  # traza: recurso de requisito <- parametro efectivo
     if detect_timed_sequences(functional_requirements):
         # La emergencia del compositor llega por `parameters` (semantic_repair la deja en "FALSE" si
         # el banco no la tiene): declararla si es un tag real, sin plantilla de intent que la aporte.
@@ -774,8 +776,13 @@ def build_project_ir(
             if tag not in functional_requirement_tags:
                 functional_requirement_tags.append(tag)
     else:
+        # Mismos parametros EFECTIVOS que usa el generador: un recurso dependiente de parametro resuelto
+        # a literal seguro (p.ej. emergency_input = FALSE) no se declara ni se exige.
+        provenance = semantic_output.get("parameter_provenance") if isinstance(semantic_output.get("parameter_provenance"), dict) else None
         for requirement in catalog_requirements:
-            for tag in get_functional_requirement_tags(requirement):
+            for entry in resolve_parameter_resources(requirement, parameters, provenance):
+                parameter_resources.append({"type": requirement.get("type"), **entry})
+            for tag in get_functional_requirement_tags(requirement, parameters, provenance):
                 if tag not in functional_requirement_tags:
                     functional_requirement_tags.append(tag)
     required_variables = list(dict.fromkeys(required_variables + functional_requirement_tags))
@@ -855,7 +862,9 @@ def build_project_ir(
         "generated_internal_variables": [variable.to_dict() for variable in generated_internal],
         "generated_functional_variables": [variable.to_dict() for variable in generated_functional],
         "functional_requirements": list(functional_requirements),
-        "functional_requirement_tags": functional_requirement_tags
+        "functional_requirement_tags": functional_requirement_tags,
+        # Recursos de requisito dependientes de parametros: valor efectivo, resolucion y procedencia.
+        "functional_requirement_parameter_resources": parameter_resources
     }
 
     return PLCProjectIR(

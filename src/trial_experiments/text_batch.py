@@ -14,8 +14,9 @@ Reglas (docs/text_batch_execution.md):
   * FAIL experimental (Semantic/IR/Compilation/Functional/Safety -> FINAL FAIL) o REVIEW: se registra y
     el lote CONTINUA. Nunca se reintenta.
   * INFRASTRUCTURE_ERROR: se registra con toda su evidencia y el lote se PAUSA. Solo el usuario reintenta.
-  * Caso cuyo Oracle requiere extension del Runtime (P01-P12 hoy): se genera (Semantic/IR son datos
-    validos) y queda NOT_EVALUABLE (DEVELOPMENT); en FORMAL el lote no se permite.
+  * Caso cuyo Oracle requiere capacidades que el Runtime ACTUAL no tiene (runtime_capability_check, no el
+    runtime_support congelado): se genera (Semantic/IR son datos validos) y queda NOT_EVALUABLE
+    (DEVELOPMENT); en FORMAL el lote no se permite.
   * Estado inconsistente al reanudar (ensayo interrumpido): PAUSA y reporte; nunca se deduce progreso
     por la existencia de carpetas.
   * Los estados de etapa salen SIEMPRE de deferred_evaluator.trial_stage_summary (fuente unica).
@@ -117,7 +118,10 @@ def case_ids_in_benchmark_order(project_root: Path) -> list[str]:
 
 
 def case_is_evaluable(project_root: Path, case_id: str) -> bool:
-    return S.runtime_support(S.load_oracle(project_root, case_id)) == S.RUNTIME_EXECUTABLE_NOW
+    """Ejecucion por CAPACIDADES (misma decision que el precheck y el Oracle Runner), no por runtime_support."""
+    from trial_experiments import oracle_runner
+
+    return oracle_runner.runtime_capability_check(S.load_oracle(project_root, case_id))["executable"]
 
 
 def build_plan(project_root: Path, case_ids: list[str] | None = None, variants: list[str] | tuple[str, ...] = VARIANT_ORDER) -> list[dict[str, Any]]:

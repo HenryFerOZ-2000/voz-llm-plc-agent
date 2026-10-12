@@ -16,6 +16,7 @@ from typing import Any
 
 import pytest
 
+import plcsim_runtime_io as rio  # noqa: E402
 from trial_experiments import batch_runner as B  # noqa: E402
 from trial_experiments import benchmark_catalog as BC  # noqa: E402
 from trial_experiments import deferred_evaluator as DE  # noqa: E402
@@ -71,7 +72,10 @@ def test_subset_d01_d03_by_v1_v3_is_9_trials():
         TB.build_plan(_ROOT, ["D99"])
 
 
-def test_pid_cases_are_marked_not_evaluable_from_the_frozen_oracles():
+def test_pid_cases_are_marked_not_evaluable_only_when_runtime_capabilities_are_missing(monkeypatch):
+    # Ejecucion por capacidades: con el Runtime actual (BOOL + REAL + variables internas) P01-P12 son evaluables.
+    assert all(e["evaluable"] for e in TB.build_plan(_ROOT))
+    monkeypatch.setattr(rio, "RUNTIME_CAPABILITIES", ("BOOL",))  # Runtime solo BOOL (antes de la Fase 1 PID)
     plan = TB.build_plan(_ROOT)
     assert {e["case_id"] for e in plan if not e["evaluable"]} == {f"P{i:02d}" for i in range(1, 13)}
 
@@ -105,7 +109,7 @@ def test_development_and_formal_batches_are_separated(tmp_path):
         TB.create_batch(root, trial_model.PHASE_BASELINE, ["D01"], ["V1"], git=NO_GIT)
 
 
-def test_formal_is_blocked_when_any_guard_fails(tmp_path):
+def test_formal_is_blocked_when_any_guard_fails(tmp_path, monkeypatch):
     root = _project(tmp_path)
     plan = TB.build_plan(root, ["D01"], ["V1"])
     guards = TB.formal_guards(root, plan, git={"commit": "abc", "dirty": True, "dirty_files": ["src/gui.py"]})
@@ -113,6 +117,7 @@ def test_formal_is_blocked_when_any_guard_fails(tmp_path):
     failed = set(guards["failed"])
     assert {"software_frozen", "environment_master_plcsim_memory", "git_clean"} <= failed  # sin congelar, sin MASTER, arbol sucio
     assert "oracles_frozen_hash" not in failed and "benchmark_integrity" not in failed and "text_variants_from_benchmark" not in failed
+    monkeypatch.setattr(rio, "RUNTIME_CAPABILITIES", ("BOOL",))  # PID sin capacidades -> no evaluable
     pid = TB.formal_guards(root, TB.build_plan(root, ["P01"], ["V1"]), git=NO_GIT)
     assert "cases_evaluable" in pid["failed"]
 
@@ -445,7 +450,8 @@ def test_each_archive_pass_has_its_own_zap18_and_every_trial_starts_from_the_mas
     assert len(zap18) == 3 and len(set(starts_from)) == 1  # 3 archivos propios; todos parten del mismo MASTER
 
 
-def test_not_evaluable_pid_trial_is_generated_recorded_and_the_batch_continues(app, batch):
+def test_not_evaluable_pid_trial_is_generated_recorded_and_the_batch_continues(app, batch, monkeypatch):
+    monkeypatch.setattr(rio, "RUNTIME_CAPABILITIES", ("BOOL",))  # Runtime sin variables internas ni REAL
     manifest = _run_batch(app, ["P01"], ["V1"])
     [entry] = manifest["ordered_trial_plan"]
     assert manifest["status"] == TB.STATUS_COMPLETED and entry["status"] == TB.ENTRY_NOT_EVALUABLE
@@ -461,8 +467,9 @@ def test_single_trial_button_is_blocked_while_a_batch_runs(app, batch, monkeypat
     assert gui.VozLLMPLCGUI.run_complete_trial(app) is None and "LOTE TEXT" in shown[0]
 
 
-def test_batch_dialog_shows_the_total_and_an_incomplete_batch(app, batch):
+def test_batch_dialog_shows_the_total_and_an_incomplete_batch(app, batch, monkeypatch):
     import gui
+    monkeypatch.setattr(rio, "RUNTIME_CAPABILITIES", ("BOOL",))  # el aviso aparece solo si faltan capacidades
     dialog = gui.TextBatchDialog(app)
     try:
         dialog.range_var.set("D01-D03")

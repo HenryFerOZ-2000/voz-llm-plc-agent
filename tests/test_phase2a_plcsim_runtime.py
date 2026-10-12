@@ -295,7 +295,8 @@ def test_experiment_stays_prepared_never_pass_when_runtime_not_run(pipeline, mon
 _FORBIDDEN_CALLS = (
     "RegisterInstance(", "RegisterCustomInstance(", "PowerOn(", "PowerOff(", ".Run(", ".Stop(",
     "MemoryReset(", "SetIPSuite(", "SetNetInterfaceMapping(", "SetNetInterfaceBindings(",
-    "NetworkMode =", ".Write(", "WriteBool(", "WriteSignals(", "UnregisterInstance(", "OperatingMode =",
+    "NetworkMode =", ".Write(", "WriteSignals(", "UnregisterInstance(", "OperatingMode =",
+    "WriteInt", "WriteUInt", "WriteDouble(", "WriteString(", "WriteChar(", "WriteWChar(",
 )
 
 
@@ -303,7 +304,11 @@ def test_bridge_source_never_calls_write_or_control_apis():
     source = (get_project_root() / "plcsim_runtime_bridge" / "Program.cs").read_text(encoding="utf-8")
     code = "\n".join(line for line in source.splitlines() if not line.strip().startswith("//") and "///" not in line)
     offenders = [call for call in _FORBIDDEN_CALLS if call in code]
-    assert offenders == [], f"El bridge nunca controla la CPU ni escribe por nombre/salidas (Fase 2B: solo InputArea.WriteBit): {offenders}"
+    assert offenders == [], f"El bridge nunca controla la CPU ni escribe por nombre salvo variables internas BOOL/REAL: {offenders}"
+    # P01-P12: la UNICA escritura por nombre es WriteBool/WriteFloat de una variable interna ya resuelta.
+    by_name = [line.strip() for line in code.splitlines() if "WriteBool(" in line or "WriteFloat(" in line]
+    assert by_name == ["instance.WriteFloat(signal.ApiName, (float)Convert.ToDouble(value));",
+                       "instance.WriteBool(signal.ApiName, Convert.ToBoolean(value));"], by_name
 
 
 def test_bridge_self_test_pure_logic():

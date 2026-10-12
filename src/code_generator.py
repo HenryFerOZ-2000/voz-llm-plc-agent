@@ -9,6 +9,7 @@ from plc_ir import PLCProjectIR
 from functional_requirements import (
     AUTO_MODE_MEMORY,
     COMPOSABLE_TYPES,
+    FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS,
     MANUAL_BEHAVIORS,
     MANUAL_MODE_MEMORY,
     TIME_LITERAL_PATTERN,
@@ -818,7 +819,10 @@ def _generate_pid_supervisor_body(parameters: dict[str, Any], functional_require
         if is_catalog_functional_requirement(requirement):
             declared_process_vars.update(get_functional_requirement_process_variables(requirement).keys())
 
-    emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+    # Misma resolucion que el requisito/IR/verificador (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS): el
+    # parametro efectivo manda; el valor por defecto del contrato solo si el parametro falta.
+    emergency_input = _param(parameters, "emergency_input",
+                             default=FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS["enable_pid"]["emergency_input"])
     reset_input = _param(parameters, "reset_input", default="I_Reset")
     alarm_output = _param(parameters, "alarm_output", default="Q_Alarm")
     pump_output = _param(parameters, "pump_output", default="Q_Pump_Enable")

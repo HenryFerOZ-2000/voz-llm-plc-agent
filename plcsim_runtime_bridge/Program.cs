@@ -22,11 +22,17 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
     ///                       pedida + adaptador de Windows. No abre la instancia.
     ///   - runtime_status  : lo anterior + CreateInterface(instancia unica) y lectura de
     ///                       OperatingState, CPUType, nombre del controlador e IPs.
-    ///   - self_test       : logica pura (seleccion de instancia/adaptador), sin PLCSIM.
+    ///   - self_test       : logica pura (seleccion de instancia/adaptador, senales, variables
+    ///                       internas, resolucion de nombres Runtime), sin PLCSIM.
+    ///   - discover_tags   : (solo lectura) tags de DB del programa cargado con su nombre Runtime real.
+    ///   - read_signal / write_input / io_sequence / restore_inputs : ver RuntimeIO (Fase 2B/3A y
+    ///                       variables internas P01-P12).
     ///
     /// Nunca se invoca: RegisterInstance, PowerOn/PowerOff, Run/Stop, MemoryReset, SetIPSuite,
-    /// SetNetInterfaceMapping, NetworkMode (set), Write*/Read* de tags. Solo getters + Shutdown()
-    /// (que segun SimulationRuntimeApi.h solo "termina la comunicacion con el Runtime Manager").
+    /// SetNetInterfaceMapping, NetworkMode (set). Las unicas escrituras son las de RuntimeIO
+    /// (InputArea.WriteBit y WriteBool/WriteFloat de variables internas escribibles); el resto son
+    /// getters + Shutdown() (que segun SimulationRuntimeApi.h solo "termina la comunicacion con el
+    /// Runtime Manager").
     ///
     /// Este bridge solo reporta HECHOS; los codigos de decision (red, cpu_run_confirmed, ...)
     /// se calculan en src/plcsim_runtime.py.
@@ -65,7 +71,8 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 {
                     report = RuntimeReader.Execute(request, action == "runtime_status", apiDllPath);
                 }
-                else if (action == "read_signal" || action == "write_input" || action == "io_sequence" || action == "restore_inputs")
+                else if (action == "read_signal" || action == "write_input" || action == "io_sequence" || action == "restore_inputs"
+                    || action == "discover_tags")
                 {
                     report = RuntimeIO.Execute(request, action);
                 }
@@ -265,6 +272,11 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             public string Primitive;
         }
 
+        internal const string KindProcessVariable = "PROCESS_VARIABLE";
+        // Proposito obligatorio para escribir variables internas: solo el Oracle de Experimentacion.
+        internal const string InternalWritePurpose = "EXPERIMENT_ORACLE";
+        internal const double DefaultRealTolerance = 0.001;
+
         internal sealed class SignalRequest
         {
             public string Name;
@@ -273,14 +285,41 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             public uint Offset;
             public byte Bit;
             public string DataType;
+            // Variables internas (estaticas del DB de instancia): se acceden SOLO por nombre Runtime.
+            public string Kind;
+            public bool Writable;
+            public bool HasRestore;
+            public object RestoreValue;
+            // Variable interna: DB + miembro congelados por el ensayo; el nombre Runtime REAL se resuelve
+            // contra TagInfos del programa cargado (nunca se asume su formato).
+            public string Db;
+            public string Member;
+            public string RuntimeName;
+
+            public string ApiName
+            {
+                get { return String.IsNullOrEmpty(RuntimeName) ? Name : RuntimeName; }
+            }
+
+            public bool IsProcessVariable
+            {
+                get { return String.Equals(Kind, KindProcessVariable, StringComparison.Ordinal); }
+            }
+
+            public bool IsReal
+            {
+                get { return String.Equals(DataType, "REAL", StringComparison.OrdinalIgnoreCase); }
+            }
         }
 
         internal static SignalRequest ParseSignal(object raw)
         {
             Dictionary<string, object> payload = raw as Dictionary<string, object> ?? new Dictionary<string, object>();
-            object offset, bit;
+            object offset, bit, writable, restore;
             payload.TryGetValue("offset", out offset);
             payload.TryGetValue("bit", out bit);
+            payload.TryGetValue("writable", out writable);
+            bool hasRestore = payload.TryGetValue("restore_value", out restore) && restore != null;
             return new SignalRequest
             {
                 Name = GetString(payload, "name", ""),
@@ -288,8 +327,153 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 Area = GetString(payload, "area", ""),
                 Offset = offset == null ? UInt32.MaxValue : Convert.ToUInt32(offset),
                 Bit = bit == null ? (byte)255 : Convert.ToByte(bit),
-                DataType = GetString(payload, "data_type", "")
+                DataType = GetString(payload, "data_type", ""),
+                Kind = GetString(payload, "kind", ""),
+                Writable = writable is bool && (bool)writable,
+                HasRestore = hasRestore,
+                RestoreValue = restore,
+                Db = GetString(payload, "db", ""),
+                Member = GetString(payload, "member", "")
             };
+        }
+
+        private static string StripQuotes(string name)
+        {
+            return (name ?? "").Replace("\"", "");
+        }
+
+        /// <summary>
+        /// Resuelve el nombre Runtime de una variable interna: el UNICO tag de area DataBlock cuyo nombre,
+        /// sin comillas, es "&lt;db&gt;.&lt;miembro&gt;" (comparacion exacta). 0 -> no esta en el programa;
+        /// &gt;1 -> ambiguo. Sin db/miembro se usa el nombre tal cual (busqueda exacta).
+        /// </summary>
+        internal static string ResolveRuntimeName(Dictionary<string, TagMeta> tagsByName, SignalRequest signal, out TagMeta tag, out string detail)
+        {
+            detail = "";
+            tag = null;
+            if (String.IsNullOrEmpty(signal.Db) || String.IsNullOrEmpty(signal.Member))
+            {
+                if (!String.IsNullOrWhiteSpace(signal.Name) && tagsByName.TryGetValue(signal.Name, out tag))
+                {
+                    signal.RuntimeName = tag.Name;
+                    return null;
+                }
+                detail = "'" + signal.Name + "' no existe en el programa cargado en PLCSIM (TagInfos con DB).";
+                return "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM";
+            }
+            string wanted = StripQuotes(signal.Db) + "." + StripQuotes(signal.Member);
+            List<TagMeta> candidates = tagsByName.Values
+                .Where(t => String.Equals(t.Area, "DataBlock", StringComparison.Ordinal)
+                            && String.Equals(StripQuotes(t.Name), wanted, StringComparison.Ordinal))
+                .ToList();
+            if (candidates.Count == 0)
+            {
+                detail = "'" + wanted + "' no existe en el programa cargado en PLCSIM (TagInfos con DB).";
+                return "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM";
+            }
+            if (candidates.Count > 1)
+            {
+                detail = "'" + wanted + "' es ambiguo en PLCSIM: " + String.Join(", ", candidates.Select(t => t.Name)) + ".";
+                return "PLCSIM_SIGNAL_AMBIGUOUS";
+            }
+            tag = candidates[0];
+            signal.RuntimeName = tag.Name;
+            return null;
+        }
+
+        /// <summary>
+        /// null si la variable interna puede usarse; si no, el codigo de error. Reglas: kind
+        /// PROCESS_VARIABLE; el nombre Runtime debe existir en el programa CARGADO (TagInfos con DB)
+        /// en el area DataBlock; BOOL &lt;-&gt; Bool y REAL &lt;-&gt; Float; solo se escribe si el ensayo la
+        /// declaro escribible (rol INPUT con binding PROCESS_VARIABLE) y el proposito es el Oracle.
+        /// </summary>
+        internal static string VerifyProcessVariable(Dictionary<string, TagMeta> tagsByName, SignalRequest signal, bool forWrite,
+            string purpose, out string detail)
+        {
+            detail = "";
+            if (!signal.IsProcessVariable)
+            {
+                detail = signal.Name + ": no es una variable de proceso.";
+                return "PLCSIM_SIGNAL_TYPE_UNSUPPORTED";
+            }
+            string expectedPrimitive = String.Equals(signal.DataType, "BOOL", StringComparison.OrdinalIgnoreCase) ? "Bool"
+                : (signal.IsReal ? "Float" : null);
+            if (expectedPrimitive == null)
+            {
+                detail = signal.Name + ": tipo '" + signal.DataType + "' no soportado para variables internas (BOOL/REAL).";
+                return "PLCSIM_SIGNAL_TYPE_UNSUPPORTED";
+            }
+            if (forWrite && !signal.Writable)
+            {
+                detail = signal.Name + ": la variable interna no es escribible en este ensayo (solo roles INPUT PROCESS_VARIABLE).";
+                return "PLCSIM_IO_WRITE_NOT_ALLOWED";
+            }
+            if (forWrite && !String.Equals(purpose, InternalWritePurpose, StringComparison.Ordinal))
+            {
+                detail = signal.Name + ": escritura interna solo durante la ejecucion del Oracle (purpose=" + purpose + ").";
+                return "PLCSIM_IO_WRITE_NOT_ALLOWED";
+            }
+            TagMeta tag;
+            string resolution = ResolveRuntimeName(tagsByName, signal, out tag, out detail);
+            if (resolution != null)
+            {
+                return resolution;
+            }
+            if (!String.Equals(tag.Area, "DataBlock", StringComparison.Ordinal))
+            {
+                detail = "'" + signal.Name + "' esta en el area " + tag.Area + ", no en un DB.";
+                return "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM";
+            }
+            if (!String.Equals(tag.Primitive, expectedPrimitive, StringComparison.Ordinal))
+            {
+                detail = "'" + signal.Name + "' es " + tag.Primitive + " en PLCSIM; el ensayo espera " + signal.DataType + ".";
+                return "PLCSIM_SIGNAL_TYPE_UNSUPPORTED";
+            }
+            return null;
+        }
+
+        /// <summary>Readback de un valor pedido: BOOL exacto, REAL con tolerancia absoluta.</summary>
+        internal static bool ValueMatches(object requested, object actual, bool isReal, double tolerance)
+        {
+            if (requested == null || actual == null)
+            {
+                return false;
+            }
+            if (isReal)
+            {
+                return Math.Abs(Convert.ToDouble(requested) - Convert.ToDouble(actual)) <= tolerance;
+            }
+            return requested is bool && actual is bool && (bool)requested == (bool)actual;
+        }
+
+        /// <summary>
+        /// Requisito de una precondicion (como oracle_runner.value_matches): BOOL igualdad; numero exacto
+        /// (1e-6); {approx, tolerance}; {min, max}.
+        /// </summary>
+        internal static bool RequirementMatches(object expected, object actual)
+        {
+            if (actual == null)
+            {
+                return false;
+            }
+            if (expected is bool || actual is bool)
+            {
+                return expected is bool && actual is bool && (bool)expected == (bool)actual;
+            }
+            Dictionary<string, object> spec = expected as Dictionary<string, object>;
+            double value = Convert.ToDouble(actual);
+            if (spec != null)
+            {
+                if (spec.ContainsKey("approx"))
+                {
+                    double tolerance = spec.ContainsKey("tolerance") ? Convert.ToDouble(spec["tolerance"]) : 0.0;
+                    return Math.Abs(value - Convert.ToDouble(spec["approx"])) <= tolerance;
+                }
+                double low = spec.ContainsKey("min") ? Convert.ToDouble(spec["min"]) : Double.NegativeInfinity;
+                double high = spec.ContainsKey("max") ? Convert.ToDouble(spec["max"]) : Double.PositiveInfinity;
+                return low <= value && value <= high;
+            }
+            return Math.Abs(value - Convert.ToDouble(expected)) <= 1e-6;
         }
 
         /// <summary>
@@ -406,6 +590,55 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             verdict("signal.address_mismatch", "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM", VerifySignal(tags, sig("I_Start", "Input", 16, 3, "BOOL"), true, out ignored));
             verdict("signal.type_request_int", "PLCSIM_SIGNAL_TYPE_UNSUPPORTED", VerifySignal(tags, sig("I_Start", "Input", 16, 0, "INT"), true, out ignored));
             verdict("signal.type_runtime_int", "PLCSIM_SIGNAL_TYPE_UNSUPPORTED", VerifySignal(tags, sig("I_Level", "Input", 16, 2, "BOOL"), true, out ignored));
+
+            // Variables internas (PROCESS_VARIABLE): verificacion pura contra TagInfos con DB.
+            Dictionary<string, TagMeta> dbTags = new Dictionary<string, TagMeta>(StringComparer.Ordinal)
+            {
+                { "DB_PLC_PRG.Level_PV", new TagMeta { Name = "DB_PLC_PRG.Level_PV", Area = "DataBlock", Primitive = "Float" } },
+                { "DB_PLC_PRG.PID_Enable", new TagMeta { Name = "DB_PLC_PRG.PID_Enable", Area = "DataBlock", Primitive = "Bool" } },
+                { "I_Start", new TagMeta { Name = "I_Start", Area = "Input", Offset = 16, Bit = 0, Primitive = "Bool" } }
+            };
+            Func<string, string, bool, SignalRequest> pv = (name, type, writable) =>
+                new SignalRequest { Name = name, DataType = type, Kind = KindProcessVariable, Writable = writable };
+            verdict("pv.read_real_ok", null, VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_PV", "REAL", false), false, "", out ignored));
+            verdict("pv.read_bool_ok", null, VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.PID_Enable", "BOOL", false), false, "", out ignored));
+            verdict("pv.write_real_ok", null, VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_PV", "REAL", true), true, InternalWritePurpose, out ignored));
+            verdict("pv.write_not_writable", "PLCSIM_IO_WRITE_NOT_ALLOWED", VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.PID_Enable", "BOOL", false), true, InternalWritePurpose, out ignored));
+            verdict("pv.write_without_oracle_purpose", "PLCSIM_IO_WRITE_NOT_ALLOWED", VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_PV", "REAL", true), true, "", out ignored));
+            verdict("pv.type_mismatch", "PLCSIM_SIGNAL_TYPE_UNSUPPORTED", VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_PV", "BOOL", false), false, "", out ignored));
+            verdict("pv.unsupported_type", "PLCSIM_SIGNAL_TYPE_UNSUPPORTED", VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_PV", "INT", false), false, "", out ignored));
+            verdict("pv.not_in_program", "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM", VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_SP", "REAL", false), false, "", out ignored));
+            verdict("pv.not_a_db_tag", "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM", VerifyProcessVariable(dbTags, pv("I_Start", "BOOL", false), false, "", out ignored));
+            // Resolucion del nombre Runtime: formato descubierto en TagInfos (con o sin comillas), nunca asumido.
+            Func<string, string, SignalRequest> member = (db, name) =>
+                new SignalRequest { Name = db + "." + name, DataType = "REAL", Kind = KindProcessVariable, Db = db, Member = name };
+            Dictionary<string, TagMeta> quoted = new Dictionary<string, TagMeta>(StringComparer.Ordinal)
+            {
+                { "\"DB_PLC_PRG\".Level_PV", new TagMeta { Name = "\"DB_PLC_PRG\".Level_PV", Area = "DataBlock", Primitive = "Float" } },
+                { "DB_OTHER.Level_PV", new TagMeta { Name = "DB_OTHER.Level_PV", Area = "DataBlock", Primitive = "Float" } }
+            };
+            TagMeta resolvedTag;
+            SignalRequest quotedSignal = member("DB_PLC_PRG", "Level_PV");
+            verdict("pv.resolve_quoted_format", null, ResolveRuntimeName(quoted, quotedSignal, out resolvedTag, out ignored));
+            verdict("pv.resolve_quoted_runtime_name", "\"DB_PLC_PRG\".Level_PV", quotedSignal.RuntimeName);
+            SignalRequest plainSignal = member("DB_PLC_PRG", "Level_PV");
+            verdict("pv.resolve_plain_format", null, ResolveRuntimeName(dbTags, plainSignal, out resolvedTag, out ignored));
+            verdict("pv.resolve_plain_runtime_name", "DB_PLC_PRG.Level_PV", plainSignal.RuntimeName);
+            verdict("pv.resolve_missing_member", "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM", ResolveRuntimeName(quoted, member("DB_PLC_PRG", "Level_SP"), out resolvedTag, out ignored));
+            verdict("pv.resolve_never_other_db", "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM", ResolveRuntimeName(quoted, member("DB_X", "Level_PV"), out resolvedTag, out ignored));
+            Dictionary<string, TagMeta> both = new Dictionary<string, TagMeta>(quoted, StringComparer.Ordinal)
+            {
+                { "DB_PLC_PRG.Level_PV", new TagMeta { Name = "DB_PLC_PRG.Level_PV", Area = "DataBlock", Primitive = "Float" } }
+            };
+            verdict("pv.resolve_ambiguous", "PLCSIM_SIGNAL_AMBIGUOUS", ResolveRuntimeName(both, member("DB_PLC_PRG", "Level_PV"), out resolvedTag, out ignored));
+            Action<string, bool, bool> truth = (label, expected, actual) => verdict(label, expected ? "TRUE" : "FALSE", actual ? "TRUE" : "FALSE");
+            truth("pv.readback_real_within_tolerance", true, ValueMatches(60.0, 60.0004f, true, DefaultRealTolerance));
+            truth("pv.readback_real_outside_tolerance", false, ValueMatches(60.0, 60.01, true, DefaultRealTolerance));
+            truth("pv.readback_bool", true, ValueMatches(true, true, false, 0));
+            truth("require.approx", true, RequirementMatches(new Dictionary<string, object> { { "approx", 60.0 }, { "tolerance", 0.01 } }, 60.005));
+            truth("require.approx_out", false, RequirementMatches(new Dictionary<string, object> { { "approx", 60.0 }, { "tolerance", 0.01 } }, 60.02));
+            truth("require.range", true, RequirementMatches(new Dictionary<string, object> { { "min", 0.0 }, { "max", 100.0 } }, 50.0));
+            truth("require.bool", false, RequirementMatches(false, true));
             return report;
         }
     }
@@ -609,9 +842,14 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
     /// Fase 2B: Runtime I/O BOOL. Acceso PRINCIPAL por direccion (InputArea/OutputArea ReadBit y
     /// InputArea.WriteBit, con byte/bit tomados del snapshot del ensayo); el NOMBRE se usa como
     /// verificacion obligatoria (el tag debe existir en el programa cargado con la misma
-    /// direccion) y como segundo canal de readback (ReadBool). La UNICA escritura de este bridge es
-    /// InputArea.WriteBit: nunca salidas, marcas, DBs, timers, contadores, IP ni estado de CPU.
-    /// Toda escritura exige target PLCSIM_ADVANCED, la instancia pedida y OperatingState == Run.
+    /// direccion) y como segundo canal de readback (ReadBool).
+    /// P01-P12 (variables internas, kind PROCESS_VARIABLE): estaticas BOOL/REAL del DB de instancia,
+    /// SOLO por nombre Runtime resuelto contra TagInfos (UpdateTagList IODB): ReadBool/ReadFloat y
+    /// WriteBool/WriteFloat. Se escriben unicamente las marcadas writable (rol INPUT del Oracle) con
+    /// purpose EXPERIMENT_ORACLE, con readback (REAL con tolerancia) y restauracion final verificada.
+    /// discover_tags: listado de solo lectura de los tags de DB (formato real del nombre).
+    /// Nunca: salidas, marcas, timers, contadores, IP ni estado de CPU. Toda escritura exige target
+    /// PLCSIM_ADVANCED, la instancia pedida y OperatingState == Run.
     /// </summary>
     internal static class RuntimeIO
     {
@@ -621,7 +859,13 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             Dictionary<string, object> report = Program.NewReport("PLCSIM_RUNTIME_ERROR", action);
             string instanceName = Program.GetString(request, "instance_name", "");
             string targetType = Program.GetString(request, "target_type", "");
-            bool writes = action != "read_signal";
+            string purpose = Program.GetString(request, "purpose", "");
+            bool writes = action != "read_signal" && action != "discover_tags";
+            // Variables internas (estaticas de DB): la lista de tags debe incluir los DB (solo lectura de metadatos).
+            bool withDataBlocks = action == "discover_tags" || GetBool(request, "process_variables");
+            double realTolerance = GetDouble(request, "real_tolerance", Program.DefaultRealTolerance);
+            report["purpose"] = purpose;
+            report["real_tolerance"] = realTolerance;
             int settleMs = Math.Max(0, Math.Min(10000, GetInt(request, "settle_ms", 500)));
             report["instance_name"] = instanceName;
             report["target_type"] = targetType;
@@ -637,6 +881,9 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
 
             IInstance instance = null;
             List<Program.SignalRequest> writtenInputs = new List<Program.SignalRequest>();
+            // Variable interna escrita -> valor original leido ANTES de la primera escritura.
+            Dictionary<string, KeyValuePair<Program.SignalRequest, object>> writtenVariables =
+                new Dictionary<string, KeyValuePair<Program.SignalRequest, object>>(StringComparer.Ordinal);
             try
             {
                 if (!SimulationRuntimeManager.IsRuntimeManagerAvailable)
@@ -659,18 +906,25 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                     return Deny(report, "PLCSIM_IO_WRITE_NOT_ALLOWED", "CPU en " + state + ": solo se escribe con la CPU en RUN.");
                 }
 
-                instance.UpdateTagList(ETagListDetails.IO, false);
+                instance.UpdateTagList(withDataBlocks ? ETagListDetails.IODB : ETagListDetails.IO, false);
+                report["tag_list_details"] = withDataBlocks ? "IODB" : "IO";
                 Dictionary<string, Program.TagMeta> tags = new Dictionary<string, Program.TagMeta>(StringComparer.Ordinal);
-                foreach (STagInfo tag in instance.TagInfos ?? new STagInfo[0])
+                List<STagInfo> tagInfos = (instance.TagInfos ?? new STagInfo[0]).ToList();
+                foreach (STagInfo tag in tagInfos)
                 {
                     tags[tag.Name] = new Program.TagMeta
                     {
                         Name = tag.Name, Area = tag.Area.ToString(), Offset = tag.Offset, Bit = tag.Bit, Primitive = tag.PrimitiveDataType.ToString()
                     };
                 }
-                report["program_tags"] = tags.Values.Select(t => (object)(t.Name + "@" + t.Area + " " + t.Offset + "." + t.Bit)).ToList();
+                report["program_tags"] = tags.Values.Where(t => t.Area != "DataBlock")
+                    .Select(t => (object)(t.Name + "@" + t.Area + " " + t.Offset + "." + t.Bit)).ToList();
 
-                if (action == "read_signal")
+                if (action == "discover_tags")
+                {
+                    Discover(instance, tagInfos, Program.GetString(request, "db_name", ""), report);
+                }
+                else if (action == "read_signal")
                 {
                     foreach (object raw in AsList(request, "signals"))
                     {
@@ -726,11 +980,11 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                         }
                         else if (op == "set")
                         {
-                            ok = SetMany(instance, tags, step, clock, report, writtenInputs);
+                            ok = SetMany(instance, tags, step, clock, report, writtenInputs, writtenVariables, purpose, realTolerance, settleMs);
                         }
                         else if (op == "sample")
                         {
-                            ok = Sample(instance, tags, step, clock, report);
+                            ok = Sample(instance, tags, step, clock, report, purpose);
                         }
                         else
                         {
@@ -769,6 +1023,10 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 if (cleanupNeeded && instance != null && writtenInputs.Count > 0)
                 {
                     Cleanup(instance, writtenInputs, settleMs, report);
+                }
+                if (instance != null && writtenVariables.Count > 0)
+                {
+                    RestoreVariables(instance, writtenVariables, settleMs, realTolerance, report);
                 }
                 try
                 {
@@ -836,54 +1094,172 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
         }
 
         /// <summary>
-        /// op "set": escribe VARIAS entradas (solo InputArea.WriteBit, verificadas contra el
-        /// programa cargado) y hace readback inmediato de todas. t_ms = reloj de la secuencia.
+        /// Verificacion de cualquier senal de una secuencia: entradas/salidas fisicas (VerifySignal) o
+        /// variables internas PROCESS_VARIABLE (VerifyProcessVariable).
+        /// </summary>
+        private static string VerifyAny(Dictionary<string, Program.TagMeta> tags, Program.SignalRequest signal, bool forWrite,
+            string purpose, out string detail)
+        {
+            return signal.IsProcessVariable
+                ? Program.VerifyProcessVariable(tags, signal, forWrite, purpose, out detail)
+                : Program.VerifySignal(tags, signal, forWrite, out detail);
+        }
+
+        /// <summary>Evidencia: nombre logico del ensayo -> nombre Runtime realmente usado en PLCSIM.</summary>
+        private static void RecordResolution(Dictionary<string, object> report, Program.SignalRequest signal)
+        {
+            if (!signal.IsProcessVariable)
+            {
+                return;
+            }
+            object existing;
+            Dictionary<string, object> resolved = report.TryGetValue("resolved_process_variables", out existing) && existing is Dictionary<string, object>
+                ? (Dictionary<string, object>)existing : new Dictionary<string, object>();
+            resolved[signal.Name] = signal.ApiName;
+            report["resolved_process_variables"] = resolved;
+        }
+
+        /// <summary>Lectura tipada: fisica por direccion (ReadBit); interna por nombre (ReadBool / ReadFloat).</summary>
+        private static object ReadValue(IInstance instance, Program.SignalRequest signal)
+        {
+            if (signal.IsProcessVariable)
+            {
+                return signal.IsReal ? (object)(double)instance.ReadFloat(signal.ApiName) : instance.ReadBool(signal.ApiName);
+            }
+            IIOArea area = signal.Area == "Input" ? instance.InputArea : instance.OutputArea;
+            return area.ReadBit(signal.Offset, signal.Bit);
+        }
+
+        /// <summary>Escritura interna tipada por nombre (WriteBool / WriteFloat). Nunca por direccion.</summary>
+        private static void WriteVariable(IInstance instance, Program.SignalRequest signal, object value)
+        {
+            if (signal.IsReal)
+            {
+                instance.WriteFloat(signal.ApiName, (float)Convert.ToDouble(value));
+            }
+            else
+            {
+                instance.WriteBool(signal.ApiName, Convert.ToBoolean(value));
+            }
+        }
+
+        /// <summary>
+        /// op "set": escribe VARIAS senales (entradas fisicas con InputArea.WriteBit; variables internas
+        /// escribibles por nombre), todas verificadas contra el programa cargado, y hace readback
+        /// inmediato de todas (REAL con tolerancia). t_ms = reloj de la secuencia.
         /// </summary>
         private static bool SetMany(
             IInstance instance, Dictionary<string, Program.TagMeta> tags, Dictionary<string, object> step,
-            Stopwatch clock, Dictionary<string, object> report, List<Program.SignalRequest> writtenInputs)
+            Stopwatch clock, Dictionary<string, object> report, List<Program.SignalRequest> writtenInputs,
+            Dictionary<string, KeyValuePair<Program.SignalRequest, object>> writtenVariables, string purpose, double realTolerance,
+            int settleMs)
         {
-            List<KeyValuePair<Program.SignalRequest, bool>> writes = new List<KeyValuePair<Program.SignalRequest, bool>>();
+            List<KeyValuePair<Program.SignalRequest, object>> writes = new List<KeyValuePair<Program.SignalRequest, object>>();
             foreach (object raw in AsList(step, "writes"))
             {
                 Dictionary<string, object> item = raw as Dictionary<string, object> ?? new Dictionary<string, object>();
                 Program.SignalRequest signal = Program.ParseSignal(item.ContainsKey("signal") ? item["signal"] : null);
                 string detail;
-                string error = Program.VerifySignal(tags, signal, true, out detail);
+                string error = VerifyAny(tags, signal, true, purpose, out detail);
                 if (error != null)
                 {
                     report["status"] = error;
                     Program.AddError(report, detail);
                     return false;
                 }
-                writes.Add(new KeyValuePair<Program.SignalRequest, bool>(signal, GetBool(item, "value")));
+                RecordResolution(report, signal);
+                object requested = signal.IsProcessVariable && signal.IsReal
+                    ? (object)GetDouble(item, "value", Double.NaN) : GetBool(item, "value");
+                if (requested is double && Double.IsNaN((double)requested))
+                {
+                    report["status"] = "PLCSIM_SIGNAL_TYPE_UNSUPPORTED";
+                    Program.AddError(report, signal.Name + ": valor REAL invalido en el paso " + Program.GetString(step, "id", "") + ".");
+                    return false;
+                }
+                writes.Add(new KeyValuePair<Program.SignalRequest, object>(signal, requested));
             }
             double started = clock.Elapsed.TotalMilliseconds;
-            foreach (KeyValuePair<Program.SignalRequest, bool> write in writes)
+            string writeTimestamp = DateTime.Now.ToString("o");
+            foreach (KeyValuePair<Program.SignalRequest, object> write in writes)
             {
                 try
                 {
-                    instance.InputArea.WriteBit(write.Key.Offset, write.Key.Bit, write.Value);
+                    if (write.Key.IsProcessVariable)
+                    {
+                        if (!writtenVariables.ContainsKey(write.Key.Name))
+                        {
+                            writtenVariables[write.Key.Name] = new KeyValuePair<Program.SignalRequest, object>(write.Key, ReadValue(instance, write.Key));
+                        }
+                        WriteVariable(instance, write.Key, write.Value);
+                    }
+                    else
+                    {
+                        instance.InputArea.WriteBit(write.Key.Offset, write.Key.Bit, (bool)write.Value);
+                        if (!writtenInputs.Any(item => item.Name == write.Key.Name))
+                        {
+                            writtenInputs.Add(write.Key);
+                        }
+                    }
                 }
                 catch (SimulationRuntimeException exception)
                 {
                     report["status"] = "PLCSIM_INPUT_WRITE_FAILED";
-                    Program.AddError(report, write.Key.Name + ": WriteBit fallo (" + exception.RuntimeErrorCode + ").");
+                    Program.AddError(report, write.Key.Name + ": escritura fallo (" + exception.RuntimeErrorCode + ").");
                     return false;
-                }
-                if (!writtenInputs.Any(item => item.Name == write.Key.Name))
-                {
-                    writtenInputs.Add(write.Key);
                 }
             }
             double done = clock.Elapsed.TotalMilliseconds;
             List<object> entries = new List<object>();
             bool allMatch = true;
-            foreach (KeyValuePair<Program.SignalRequest, bool> write in writes)
+            foreach (KeyValuePair<Program.SignalRequest, object> write in writes)
             {
+                if (write.Key.IsProcessVariable)
+                {
+                    // La llamada de escritura YA termino sin excepcion (write_call_success): la infraestructura
+                    // escribio. Un readback distinto puede deberse a que el PROGRAMA bajo prueba reescribe la
+                    // variable en su ciclo; eso no es infraestructura. Solo ante discrepancia se observa de nuevo
+                    // tras io_settle_ms (el margen configurado para que corran ciclos del PLC) para separar un
+                    // transitorio de una sobrescritura sostenida. Nunca falla la secuencia por esto.
+                    object readback = ReadValue(instance, write.Key);
+                    string readbackAt = DateTime.Now.ToString("o");
+                    bool initialMatch = Program.ValueMatches(write.Value, readback, write.Key.IsReal, realTolerance);
+                    Dictionary<string, object> entry = new Dictionary<string, object>
+                    {
+                        { "name", write.Key.Name }, { "runtime_name", write.Key.ApiName }, { "kind", Program.KindProcessVariable },
+                        { "data_type", write.Key.DataType }, { "requested_value", write.Value }, { "write_call_success", true },
+                        { "write_timestamp", writeTimestamp }, { "initial_readback", readback }, { "initial_readback_timestamp", readbackAt },
+                        { "actual_readback", readback }, { "readback_tag", readback },
+                        { "tolerance", write.Key.IsReal ? (object)realTolerance : null }, { "match", initialMatch },
+                        { "classification", "CONFIRMED" }
+                    };
+                    if (!initialMatch)
+                    {
+                        Thread.Sleep(settleMs);
+                        object observed = ReadValue(instance, write.Key);
+                        bool observedMatch = Program.ValueMatches(write.Value, observed, write.Key.IsReal, realTolerance);
+                        object original = writtenVariables[write.Key.Name].Value;
+                        entry["observed_after_cycle"] = observed;
+                        entry["observed_after_cycle_timestamp"] = DateTime.Now.ToString("o");
+                        entry["observed_wait_ms"] = settleMs;
+                        // Si lo observado es el valor previo a la escritura, no se puede distinguir con certeza
+                        // entre "el programa lo restablece" y "la escritura no tuvo efecto": se registra.
+                        entry["observed_equals_original"] = Program.ValueMatches(original, observed, write.Key.IsReal, realTolerance);
+                        entry["classification"] = observedMatch ? "AMBIGUOUS_TRANSIENT" : "PROGRAM_OVERWRITES_HARNESS_INPUT";
+                        entry["match"] = observedMatch;
+                        if (!observedMatch)
+                        {
+                            List<object> overwrites = report.ContainsKey("harness_input_overwrites")
+                                ? (List<object>)report["harness_input_overwrites"] : new List<object>();
+                            overwrites.Add(new Dictionary<string, object>(entry) { { "step_id", Program.GetString(step, "id", "") } });
+                            report["harness_input_overwrites"] = overwrites;
+                        }
+                    }
+                    entries.Add(entry);
+                    continue;
+                }
                 bool byAddress = instance.InputArea.ReadBit(write.Key.Offset, write.Key.Bit);
                 bool byTag = instance.ReadBool(write.Key.Name);
-                bool match = byAddress == write.Value && byTag == write.Value;
+                bool match = byAddress == (bool)write.Value && byTag == (bool)write.Value;
                 allMatch &= match;
                 entries.Add(new Dictionary<string, object>
                 {
@@ -912,19 +1288,20 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
         /// </summary>
         private static bool Sample(
             IInstance instance, Dictionary<string, Program.TagMeta> tags, Dictionary<string, object> step,
-            Stopwatch clock, Dictionary<string, object> report)
+            Stopwatch clock, Dictionary<string, object> report, string purpose)
         {
             List<Program.SignalRequest> signals = AsList(step, "signals").Select(Program.ParseSignal).ToList();
             foreach (Program.SignalRequest signal in signals)
             {
                 string detail;
-                string error = Program.VerifySignal(tags, signal, false, out detail);
+                string error = VerifyAny(tags, signal, false, purpose, out detail);
                 if (error != null)
                 {
                     report["status"] = error;
                     Program.AddError(report, detail);
                     return false;
                 }
+                RecordResolution(report, signal);
             }
             int duration = Math.Max(0, Math.Min(120000, GetInt(step, "duration_ms", 0)));
             int period = Math.Max(10, Math.Min(1000, GetInt(step, "period_ms", 50)));
@@ -940,8 +1317,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 Dictionary<string, object> values = new Dictionary<string, object>();
                 foreach (Program.SignalRequest signal in signals)
                 {
-                    IIOArea area = signal.Area == "Input" ? instance.InputArea : instance.OutputArea;
-                    values[signal.Name] = area.ReadBit(signal.Offset, signal.Bit);
+                    values[signal.Name] = ReadValue(instance, signal);
                 }
                 last = values;
                 samples.Add(new Dictionary<string, object> { { "id", id }, { "phase", phase }, { "t_ms", now }, { "values", values } });
@@ -965,7 +1341,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 foreach (KeyValuePair<string, object> expected in require)
                 {
                     object actual;
-                    if (!last.TryGetValue(expected.Key, out actual) || !(actual is bool) || !(expected.Value is bool) || (bool)actual != (bool)expected.Value)
+                    if (!last.TryGetValue(expected.Key, out actual) || !Program.RequirementMatches(expected.Value, actual))
                     {
                         failed.Add(expected.Key + " esperado " + expected.Value + " observado " + (actual ?? "?"));
                     }
@@ -1062,6 +1438,153 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 }
                 report["cleanup_failed"] = true;
             }
+        }
+
+        /// <summary>
+        /// discover_tags (SOLO LECTURA): lista los tags de DB del programa cargado (opcionalmente solo los de
+        /// db_name) con el nombre Runtime REAL, area, tipo primitivo, offset/bit, indices y si la lectura
+        /// tipada funciona. Sirve para comprobar el formato del nombre antes de usarlo (nunca se asume).
+        /// </summary>
+        private static void Discover(IInstance instance, List<STagInfo> infos, string dbName, Dictionary<string, object> report)
+        {
+            List<object> found = new List<object>();
+            int total = 0;
+            foreach (STagInfo tag in infos)
+            {
+                if (tag.Area.ToString() != "DataBlock")
+                {
+                    continue;
+                }
+                total++;
+                if (!String.IsNullOrEmpty(dbName) && !tag.Name.StartsWith(dbName, StringComparison.Ordinal)
+                    && !tag.Name.StartsWith("\"" + dbName + "\"", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                string primitive = tag.PrimitiveDataType.ToString();
+                Dictionary<string, object> entry = new Dictionary<string, object>
+                {
+                    { "runtime_name", tag.Name }, { "area", tag.Area.ToString() }, { "primitive_type", primitive },
+                    { "data_type", tag.DataType.ToString() }, { "size", (int)tag.Size }, { "offset", (long)tag.Offset },
+                    { "bit", (int)tag.Bit }, { "index", (long)tag.Index }, { "parent_index", (long)tag.ParentIndex }
+                };
+                try
+                {
+                    if (primitive == "Bool")
+                    {
+                        entry["value"] = instance.ReadBool(tag.Name);
+                        entry["readable"] = true;
+                    }
+                    else if (primitive == "Float")
+                    {
+                        entry["value"] = (double)instance.ReadFloat(tag.Name);
+                        entry["readable"] = true;
+                    }
+                    else
+                    {
+                        entry["readable"] = null;  // tipo fuera de alcance (no se intenta leer)
+                    }
+                }
+                catch (SimulationRuntimeException exception)
+                {
+                    entry["readable"] = false;
+                    entry["read_error"] = exception.RuntimeErrorCode.ToString();
+                }
+                found.Add(entry);
+                if (found.Count >= 500)
+                {
+                    break;
+                }
+            }
+            report["db_name_filter"] = dbName;
+            report["data_block_tags_total"] = total;
+            report["data_block_tags"] = found;
+            report["tag_list_is_hmi_visible_only"] = false;
+        }
+
+        /// <summary>
+        /// Restauracion OBLIGATORIA de las variables internas escritas: el valor del cleanup del Oracle
+        /// (restore_value) o, si no lo hay, el valor original leido antes de la primera escritura. Nunca
+        /// BOOL->FALSE / REAL->0 por defecto. Se verifica por readback y queda como evidencia.
+        /// </summary>
+        private static void RestoreVariables(IInstance instance, Dictionary<string, KeyValuePair<Program.SignalRequest, object>> written,
+            int settleMs, double realTolerance, Dictionary<string, object> report)
+        {
+            List<object> entries = new List<object>();
+            bool allOk = true;
+            foreach (KeyValuePair<string, KeyValuePair<Program.SignalRequest, object>> item in written)
+            {
+                Program.SignalRequest signal = item.Value.Key;
+                object target = signal.HasRestore ? signal.RestoreValue : item.Value.Value;
+                Dictionary<string, object> entry = new Dictionary<string, object>
+                {
+                    { "name", signal.Name }, { "runtime_name", signal.ApiName }, { "data_type", signal.DataType },
+                    { "original_value", item.Value.Value },
+                    { "restore_value", target }, { "restore_source", signal.HasRestore ? "ORACLE_CLEANUP" : "ORIGINAL_VALUE" }
+                };
+                try
+                {
+                    WriteVariable(instance, signal, target);
+                }
+                catch (SimulationRuntimeException exception)
+                {
+                    entry["error"] = exception.RuntimeErrorCode.ToString();
+                }
+                entries.Add(entry);
+            }
+            Thread.Sleep(settleMs);
+            foreach (Dictionary<string, object> entry in entries.Cast<Dictionary<string, object>>())
+            {
+                Program.SignalRequest signal = written[(string)entry["name"]].Key;
+                bool ok;
+                try
+                {
+                    object readback = ReadValue(instance, signal);
+                    entry["readback"] = readback;
+                    ok = !entry.ContainsKey("error") && Program.ValueMatches(entry["restore_value"], readback, signal.IsReal, realTolerance);
+                }
+                catch (SimulationRuntimeException exception)
+                {
+                    entry["error"] = exception.RuntimeErrorCode.ToString();
+                    ok = false;
+                }
+                entry["restored"] = ok;
+                allOk &= ok;
+            }
+            object existing;
+            Dictionary<string, object> cleanup = report.TryGetValue("cleanup", out existing) && existing is Dictionary<string, object>
+                ? (Dictionary<string, object>)existing
+                : new Dictionary<string, object> { { "performed", true }, { "success", true }, { "inputs", new List<object>() } };
+            cleanup["process_variables"] = entries;
+            cleanup["success"] = (bool)cleanup["success"] && allOk;
+            cleanup["timestamp"] = DateTime.Now.ToString("o");
+            report["cleanup"] = cleanup;
+            if (!allOk)
+            {
+                Program.AddError(report, "PLCSIM_IO_CLEANUP_FAILED: alguna variable interna no volvio a su valor de restauracion.");
+                if (GetString(report, "status") == "PLCSIM_IO_PASSED")
+                {
+                    report["status"] = "PLCSIM_IO_CLEANUP_FAILED";
+                }
+                report["cleanup_failed"] = true;
+            }
+        }
+
+        private static double GetDouble(Dictionary<string, object> payload, string key, double fallback)
+        {
+            object value;
+            if (payload.TryGetValue(key, out value) && value != null && !(value is bool))
+            {
+                try
+                {
+                    return Convert.ToDouble(value, System.Globalization.CultureInfo.InvariantCulture);
+                }
+                catch (FormatException)
+                {
+                    return fallback;
+                }
+            }
+            return fallback;
         }
 
         private static Dictionary<string, object> Deny(Dictionary<string, object> report, string status, string message)
