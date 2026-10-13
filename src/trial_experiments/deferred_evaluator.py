@@ -500,6 +500,40 @@ def validate_master(project_root: Path, bridge: Callable[[dict[str, Any], Path],
     return config
 
 
+def declare_master_formal_ready(project_root: Path, approved_by: str, evidence: list[str] | None = None) -> dict[str, Any]:
+    """
+    FORMAL_READY: aprobacion EXPLICITA del investigador sobre un MASTER ya validado (VALIDAR MASTER nunca la otorga).
+    Solo cambia metadata (estado + registro de la aprobacion) y solo si: validacion VALID con los criterios formales
+    cumplidos, CPU S7-1500 con X1, 0 bloques residuales, snapshot .zap18 presente con el SHA-256 registrado y carpeta
+    del MASTER identica a la validada. No abre ni modifica el proyecto MASTER.
+    """
+    if not str(approved_by or "").strip():
+        raise ValueError("approved_by es obligatorio (aprobacion humana explicita).")
+    config = load_master_config(project_root)
+    validation = config.get("validation") or {}
+    snapshot = config.get("snapshot") or {}
+    problems = []
+    if validation.get("status") != "VALID" or not validation.get("formal_ready_criteria_met"):
+        problems.append("validacion no VALID o criterios formales no cumplidos")
+    if not _is_s71500(validation.get("cpu_type_identifier")) or not validation.get("x1_ip_address"):
+        problems.append("CPU S7-1500 con interfaz X1 no confirmada")
+    if validation.get("unmanaged_blocks") or [b for b in validation.get("blocks") or [] if b.get("name") != "Main"]:
+        problems.append("el MASTER contiene bloques residuales")
+    archive = Path(snapshot.get("archive_path") or "")
+    if not archive.is_file() or sha256_file(archive) != snapshot.get("archive_sha256") or snapshot.get("archive_sha256") != config.get("hash"):
+        problems.append("snapshot .zap18 ausente o con hash distinto")
+    if not config.get("path") or master_folder_fingerprint(config["path"]) != validation.get("master_folder_fingerprint_after"):
+        problems.append("la carpeta del MASTER cambio desde la validacion")
+    if problems:
+        raise ValueError(f"{ERROR_FORMAL}: el MASTER no puede declararse FORMAL_READY: " + "; ".join(problems))
+    validation["master_status"] = MASTER_FORMAL_READY
+    config["status"] = MASTER_FORMAL_READY
+    config["formal_ready"] = {"approved_by": approved_by.strip(), "approved_at": _now(), "master_hash": config.get("hash"),
+                              "validated_at": validation.get("validated_at"), "evidence": list(evidence or [])}
+    save_master_config(project_root, config)
+    return config
+
+
 def master_internal_project_name(config: dict[str, Any]) -> str | None:
     """Nombre interno real del proyecto MASTER, registrado por VALIDAR MASTER (no del nombre del snapshot)."""
     validation = config.get("validation") or {}

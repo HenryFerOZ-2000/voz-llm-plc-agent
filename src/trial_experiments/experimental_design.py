@@ -178,6 +178,11 @@ def check_formal_trial_allowed(project_root: Path) -> tuple[bool, list[str]]:
         frozen = (manifest.get("oracles") or {}).get(case_id) or {}
         if frozen.get("hash") != entry["hash"] or entry["status"] != "FROZEN":
             reasons.append(f"{ERROR_FORMAL_NOT_ALLOWED}: Oracle {case_id} no coincide con el manifiesto o no esta FROZEN.")
+    if int(manifest.get("schema_version") or 1) >= 2:
+        # Manifiesto de congelacion completo: codigo, prompt, mapas, configuracion de ejecucion, MASTER, entorno.
+        from trial_experiments import software_freeze
+
+        reasons.extend(f"{ERROR_FORMAL_NOT_ALLOWED}: {error}" for error in software_freeze.validate_freeze(project_root, manifest)["errors"])
     return not reasons, reasons
 
 
