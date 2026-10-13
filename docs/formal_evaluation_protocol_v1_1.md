@@ -5,8 +5,20 @@ preliminar). Lo único que cambia es **cómo se producen los estímulos de voz**
 prompt, los intents, el generador, el Runtime PLCSIM, el MASTER, los mapas y la lógica de evaluación funcional son
 los mismos de v1.
 
-> **Estado: PENDIENTE.** `formal-v1.1` no existe todavía. Falta el ruido maestro industrial aprobado
-> (`AUDIO_NOISE_MASTER_READY = NO`; ver §6). Hasta entonces el preflight bloquea VOICE_CLEAN y VOICE_NOISE FORMAL.
+> **Estado: CONGELADO (`formal-v1.1`).** Fuente de verdad: `data/software_freeze_manifest.json`
+> (`freeze_id = FORMAL_V1_1`, `parent_freeze = formal-v1.0`, motivo "paired reproducible voice stimuli").
+
+| Elemento | Valor |
+|---|---|
+| Commit del software congelado (`git_commit`) | `95cd530686d1738dfbcfbe5ce2c896464277077f` (rama `main`) |
+| Tag | `formal-v1.1`. Apunta al commit del freeze, que solo añade el manifiesto y esta documentación |
+| Alcance congelado | 342 archivos versionados, 32 Oracles FROZEN/APPROVED, benchmark v3, MASTER `4b2e5446…64fd` FORMAL_READY |
+| Suite al congelar | 1364 passed, 0 failed, 7 skipped |
+| Ruido maestro | `formal_assets/audio/industrial_noise_master.wav`, SHA-256 `965e43af9baa4372e7c7d6283452e6e2a673d08aea00467af8a0c1774ce73fb5`, WAV PCM s16 mono 16 kHz, 194.352 s, pico −1.94 dBFS, sin clipping |
+| Original | `formal_assets/audio/industrial_noise_original.mp3`, SHA-256 `36d9cc0f9e89bf284a25198d8c36a45183b1c4c7c08c5476d03ec69a05cdd704` (MP3 24 kHz estéreo 160 kb/s) |
+| Procedencia | Pixabay, con licencia **Pixabay Content License**. La URL exacta de descarga consta en el Zone.Identifier del archivo descargado: `https://cdn.pixabay.com/download/audio/2022/02/07/audio_2c27218869.mp3?filename=freesound_community-general-fusion-industrial-workshop-factory-ambience10-heavy-machine-hum-changes-in-middle-with-alarm-siren-bg-activity-17218.mp3`. Búsqueda: `https://pixabay.com/es/sound-effects/search/ruido%20industrial/`. Autor y título no verificados: solo aparecen en el nombre del archivo servido |
+| Conversión | FFmpeg 9.0.2 (Gyan.FFmpeg, winget): `ffmpeg -i industrial_noise_original.mp3 -map 0:a:0 -ac 1 -ar 16000 -c:a pcm_s16le -map_metadata -1 -fflags +bitexact -flags:a +bitexact industrial_noise_master.wav`. Solo decodifica, mezcla a mono, remuestrea y pasa a PCM16; sin recorte, normalización ni filtrado. Reproducible byte a byte |
+| Revisión humana | `no_intelligible_speech = CONFIRMED`, revisado por Henry Ochoa el 2026-10-13T11:54:52; master aprobado por Henry Ochoa |
 
 ## 1. Diseño
 
@@ -115,7 +127,7 @@ El panel **FORMAL AUDIO CORPUS** muestra:
 - el estado del master (READY / MISSING) y de la integridad;
 - la tabla de las 96 celdas, con opción de reproducir clean/noisy y ver los metadatos (solo lectura).
 
-## 6. Ruido maestro industrial (requisito pendiente)
+## 6. Ruido maestro industrial (aprobado; ver la tabla del inicio)
 
 - **Ubicación:** `formal_assets/audio/industrial_noise_master.wav`. Está fuera de Git; solo se versiona su SHA-256.
 - **Propiedades:**
@@ -131,7 +143,7 @@ El panel **FORMAL AUDIO CORPUS** muestra:
   El comando valida el formato y la duración, y registra el SHA-256, quién lo aprobó y cuándo en
   `config/formal_audio_config.json`. Después de aprobarlo, cualquier cambio en el archivo bloquea FORMAL.
 
-## 7. Congelamiento v1.1 (cuando el master esté aprobado)
+## 7. Congelamiento v1.1 (realizado)
 
 Requisitos previos:
 - suite en verde;
