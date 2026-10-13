@@ -262,10 +262,20 @@ def noise_master_status(project_root: Path, phase: str, config: dict[str, Any] |
             "error": f"{ERROR_MASTER_NOT_READY}: {reason}: {master['path']}. Requisitos: {'; '.join(master['requirements'])}."}
 
 
-def approve_noise_master(project_root: Path, approved_by: str, provenance: str, license_text: str) -> dict[str, Any]:
-    """Aprobacion HUMANA del ruido maestro: valida formato/duracion y registra su SHA-256 en la configuracion."""
+def approve_noise_master(project_root: Path, approved_by: str, provenance: str, license_text: str,
+                         speech_review: dict[str, Any] | None = None, source: dict[str, Any] | None = None,
+                         conversion: dict[str, Any] | None = None) -> dict[str, Any]:
+    """
+    Aprobacion HUMANA del ruido maestro: valida formato/duracion, exige la revision humana de ausencia de voz inteligible
+    (speech_review.no_intelligible_speech = CONFIRMED) y registra su SHA-256, procedencia y conversion en la configuracion.
+    source.original_path/original_sha256: si se indican, el archivo original debe existir con ese hash.
+    """
     if not str(approved_by or "").strip() or not str(provenance or "").strip():
         raise ValueError("approved_by y provenance son obligatorios.")
+    speech_review = dict(speech_review or {})
+    if speech_review.get("no_intelligible_speech") != "CONFIRMED" or not str(speech_review.get("reviewed_by") or "").strip():
+        raise ValueError("Se exige revision humana: no_intelligible_speech = CONFIRMED y reviewed_by.")
+    speech_review.setdefault("review_date", _now())
     project_root = Path(project_root)
     config = load_config(project_root)
     master = config["noise_master"]
@@ -278,9 +288,21 @@ def approve_noise_master(project_root: Path, approved_by: str, provenance: str, 
         raise FormalAudioError(ERROR_CAPTURE_FORMAT, f"el master debe ser mono {canonical['sample_rate']} Hz (es {fmt}).")
     if fmt["duration_seconds"] < master["min_duration_seconds"]:
         raise FormalAudioError(ERROR_MASTER_NOT_READY, f"el master dura {fmt['duration_seconds']} s (< {master['min_duration_seconds']} s).")
+    source = dict(source or {})
+    if source.get("original_path"):
+        original = project_root / source["original_path"]
+        if not original.is_file():
+            raise FormalAudioError(ERROR_MASTER_NOT_READY, f"no existe el original {original}.")
+        actual = sha256_file(original)
+        if source.get("original_sha256") and source["original_sha256"] != actual:
+            raise FormalAudioError(ERROR_INTEGRITY, "el SHA-256 del original no coincide con el declarado.")
+        source["original_sha256"] = actual
+    samples = read_wav(path)["samples"]
+    peak = max(abs(min(samples)), max(samples)) if len(samples) else 0
     master.update({"sha256": sha256_file(path), "approved_by": approved_by.strip(), "approved_at": _now(),
                    "provenance": provenance.strip(), "license": (license_text or "").strip() or None,
-                   "format": fmt})
+                   "format": fmt, "peak": peak, "full_scale_samples": sum(1 for v in samples if v in (32767, -32768)),
+                   "speech_review": speech_review, "source": source or None, "conversion": conversion or None})
     _write_json(project_root / CONFIG_RELATIVE, config)
     return master
 

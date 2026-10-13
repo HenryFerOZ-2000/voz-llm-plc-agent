@@ -1153,11 +1153,14 @@ class AudioCorpusDialog(ctk.CTkToplevel):
             f"SNR target:              {config['target_snr_db']} dB (tolerancia {config['snr_tolerance_db']} dB)",
             f"Noise master:            " + (f"READY {master['sha256'][:12]} [{master['source']}]" if master["ready"] else "MISSING"),
             f"Integrity:               {self.integrity}"]))
+        selected = self.tree.selection()
         self.tree.delete(*self.tree.get_children())
         for key, cell in formal_audio.load_corpus(root, self.phase)["cells"].items():
             uses = ", ".join(f"{u['condition'].replace('VOICE_', '')}:{u['trial_id']}" for u in cell["uses"])
             self.tree.insert("", "end", iid=key, values=(key, cell["state"], (cell.get("clean_sha256") or "-")[:12],
                                                          (cell.get("noisy_sha256") or "-")[:12], cell.get("measured_snr_db", "-"), uses))
+        if selected and self.tree.exists(selected[0]):
+            self.tree.selection_set(selected[0])  # refrescar (p.ej. tras VERIFICAR INTEGRIDAD) no pierde la celda elegida
 
     def _selected(self) -> tuple[str, str] | None:
         selection = self.tree.selection()

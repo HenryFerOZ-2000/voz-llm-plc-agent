@@ -232,11 +232,21 @@ def test_master_missing_blocks_formal_and_approval_validates_the_file(tmp_path, 
     assert not status["ready"] and FA.ERROR_MASTER_NOT_READY in status["error"] and "industrial_noise_master.wav" in status["error"]
     master = project / config["noise_master"]["path"]
     noise(master, seconds=2.0)
+    review = {"no_intelligible_speech": "CONFIRMED", "reviewed_by": "Henry Ochoa"}
     with pytest.raises(FA.FormalAudioError):  # < 60 s: no se aprueba
-        FA.approve_noise_master(project, "Henry Ochoa", "grabacion propia", "")
+        FA.approve_noise_master(project, "Henry Ochoa", "grabacion propia", "", speech_review=review)
     noise(master, seconds=61.0)
-    approved = FA.approve_noise_master(project, "Henry Ochoa", "grabacion propia del laboratorio", "propia")
-    assert approved["sha256"] == FA.sha256_file(master)
+    with pytest.raises(ValueError):  # sin revision humana de voz inteligible no hay aprobacion
+        FA.approve_noise_master(project, "Henry Ochoa", "grabacion propia", "")
+    original = project / "formal_assets" / "audio" / "original.mp3"
+    original.write_bytes(b"mp3")
+    with pytest.raises(FA.FormalAudioError):  # el original declarado debe coincidir
+        FA.approve_noise_master(project, "Henry Ochoa", "x", "", speech_review=review,
+                                source={"original_path": "formal_assets/audio/original.mp3", "original_sha256": "0" * 64})
+    approved = FA.approve_noise_master(project, "Henry Ochoa", "grabacion propia del laboratorio", "propia", speech_review=review,
+                                       source={"original_path": "formal_assets/audio/original.mp3"})
+    assert approved["sha256"] == FA.sha256_file(master) and approved["speech_review"]["review_date"]
+    assert approved["source"]["original_sha256"] == FA.sha256_file(original) and approved["full_scale_samples"] == 0
     assert FA.noise_master_status(project, FORMAL)["ready"]
     noise(master, seconds=61.0, seed=7)  # cambiar el master despues de aprobarlo lo invalida
     assert not FA.noise_master_status(project, FORMAL)["ready"]

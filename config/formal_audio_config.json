@@ -30,18 +30,66 @@
   },
   "noise_master": {
     "path": "formal_assets/audio/industrial_noise_master.wav",
-    "sha256": null,
-    "approved_by": null,
-    "approved_at": null,
-    "provenance": null,
-    "license": null,
+    "sha256": "965e43af9baa4372e7c7d6283452e6e2a673d08aea00467af8a0c1774ce73fb5",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-13T11:54:52",
+    "provenance": "Pixabay (efecto de sonido descargado; ver source)",
+    "license": "Pixabay Content License",
     "min_duration_seconds": 60,
     "requirements": [
       "WAV PCM 16 bits, mono, 16 kHz",
       "sin voz inteligible",
       "al menos 60 s",
       "origen/licencia documentable (preferible grabacion propia de ambiente industrial/laboratorio)"
-    ]
+    ],
+    "format": {
+      "container": "WAV",
+      "encoding": "PCM_S16LE",
+      "sample_rate": 16000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "frames": 3109632,
+      "duration_seconds": 194.352
+    },
+    "peak": 26211,
+    "full_scale_samples": 0,
+    "speech_review": {
+      "no_intelligible_speech": "CONFIRMED",
+      "reviewed_by": "Henry Ochoa",
+      "review_date": "2026-10-13T11:54:52"
+    },
+    "source": {
+      "platform": "Pixabay",
+      "search_url": "https://pixabay.com/es/sound-effects/search/ruido%20industrial/",
+      "download_host_url": "https://cdn.pixabay.com/download/audio/2022/02/07/audio_2c27218869.mp3?filename=freesound_community-general-fusion-industrial-workshop-factory-ambience10-heavy-machine-hum-changes-in-middle-with-alarm-siren-bg-activity-17218.mp3",
+      "download_referrer_url": "https://pixabay.com/",
+      "download_evidence": "Windows Zone.Identifier (Mark-of-the-Web) del archivo descargado C:/Users/DOCENTE/Downloads/industrial_noise_master.mp3 (HostUrl, ReferrerUrl, ZoneId=3)",
+      "download_filename_as_served": "freesound_community-general-fusion-industrial-workshop-factory-ambience10-heavy-machine-hum-changes-in-middle-with-alarm-siren-bg-activity-17218.mp3",
+      "author_title_note": "Autor, titulo y pagina exacta del efecto NO verificados: solo constan en el nombre de archivo servido por el CDN; no se infieren.",
+      "local_original_filename": "industrial_noise_master.mp3",
+      "original_path": "formal_assets/audio/industrial_noise_original.mp3",
+      "original_sha256": "36d9cc0f9e89bf284a25198d8c36a45183b1c4c7c08c5476d03ec69a05cdd704",
+      "original_format": "MP3, 24000 Hz, stereo, 160 kb/s, 194.352 s"
+    },
+    "conversion": {
+      "tool": "FFmpeg",
+      "package": "Gyan.FFmpeg (winget)",
+      "version": "ffmpeg version 9.0.2-full_build-www.gyan.dev",
+      "command": "ffmpeg -hide_banner -v error -n -i formal_assets/audio/industrial_noise_original.mp3 -map 0:a:0 -ac 1 -ar 16000 -c:a pcm_s16le -map_metadata -1 -fflags +bitexact -flags:a +bitexact formal_assets/audio/industrial_noise_master.wav",
+      "operations": [
+        "decode MP3",
+        "downmix stereo->mono (media de canales)",
+        "resample 24000->16000 Hz (swresample por defecto)",
+        "PCM s16le"
+      ],
+      "not_applied": [
+        "recorte",
+        "normalizacion",
+        "filtrado"
+      ],
+      "reproducibility": "segunda conversion independiente con el mismo SHA-256",
+      "wav_sha256": "965e43af9baa4372e7c7d6283452e6e2a673d08aea00467af8a0c1774ce73fb5"
+    }
   },
   "corpus_roots": {
     "FORMAL": "results/formal_audio",

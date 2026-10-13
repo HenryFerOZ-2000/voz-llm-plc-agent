@@ -2,13 +2,14 @@
 Corpus de audio pareado clean/noisy (FORMAL v1.1).
 
 Uso:
-  .venv/Scripts/python.exe scripts/formal_audio.py status [--phase FORMAL|DEVELOPMENT]
+  .venv/Scripts/python.exe scripts/formal_audio.py status [--phase FORMAL|DEVELOPMENT_VALIDATION]
       READ-ONLY: ruido maestro, conteos del corpus y preflight del lote VOICE_NOISE (PAIRS READY X / 96).
 
-  .venv/Scripts/python.exe scripts/formal_audio.py verify [--phase FORMAL|DEVELOPMENT]
+  .venv/Scripts/python.exe scripts/formal_audio.py verify [--phase FORMAL|DEVELOPMENT_VALIDATION]
       READ-ONLY: integridad de todas las celdas grabadas (hashes, manifiestos, SNR, clipping, regeneracion byte a byte).
 
   .venv/Scripts/python.exe scripts/formal_audio.py approve-master --approved-by "Nombre" --provenance "TEXTO" [--license "TEXTO"]
+      --speech-reviewed-by "Nombre" [--speech-review-date ISO] [--source-json f.json] [--conversion-json f.json]
       Aprobacion HUMANA del ruido maestro formal_assets/audio/industrial_noise_master.wav (WAV PCM16 mono 16 kHz, >= 60 s,
       sin voz inteligible). Registra su SHA-256 en config/formal_audio_config.json (versionado).
 """
@@ -29,14 +30,24 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("status", "verify"):
-        sub.add_parser(name).add_argument("--phase", default="FORMAL", choices=("FORMAL", "DEVELOPMENT"))
+        sub.add_parser(name).add_argument("--phase", default="FORMAL", choices=("FORMAL", "DEVELOPMENT_VALIDATION"))
     approve = sub.add_parser("approve-master")
     approve.add_argument("--approved-by", required=True)
     approve.add_argument("--provenance", required=True)
     approve.add_argument("--license", default="")
+    approve.add_argument("--speech-reviewed-by", required=True, help="revision humana: el master NO contiene voz inteligible")
+    approve.add_argument("--speech-review-date")
+    approve.add_argument("--source-json", help="JSON con la procedencia (urls, archivo y SHA-256 original)")
+    approve.add_argument("--conversion-json", help="JSON con herramienta, version y comando de conversion")
     args = parser.parse_args(argv)
     if args.command == "approve-master":
-        master = FA.approve_noise_master(ROOT, args.approved_by, args.provenance, args.license)
+        review = {"no_intelligible_speech": "CONFIRMED", "reviewed_by": args.speech_reviewed_by}
+        if args.speech_review_date:
+            review["review_date"] = args.speech_review_date
+        master = FA.approve_noise_master(
+            ROOT, args.approved_by, args.provenance, args.license, speech_review=review,
+            source=json.loads(Path(args.source_json).read_text(encoding="utf-8")) if args.source_json else None,
+            conversion=json.loads(Path(args.conversion_json).read_text(encoding="utf-8")) if args.conversion_json else None)
         print(json.dumps(master, indent=2, ensure_ascii=False))
         return 0
     if args.command == "status":
