@@ -72,3 +72,9 @@ audio/
 # --- Legacy local sin uso (entradas de menu del commit inicial) --------------
 menu_input_clear.txt
 menu_input_archive.txt
+
+# --- Audio FORMAL v1.1 (nunca en Git) ------------------------------------------
+# Corpus pareado clean/noisy (results/formal_audio, results/development_audio: ya bajo results/) y el ruido
+# maestro industrial (su SHA-256 aprobado SI se versiona en config/formal_audio_config.json).
+formal_assets/
+*.wav

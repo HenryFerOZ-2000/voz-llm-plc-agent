@@ -347,6 +347,76 @@ def find_paired_clean(project_root: Path, case_id: str, variant_id: str, phase: 
 # Orquestacion de la entrada de voz de un ensayo ya creado
 # ---------------------------------------------------------------------------------------------
 
+def _prepare_paired_stimulus(project_root: Path, trial_dir: Path, input_mode: str, reference_text: str,
+                             asr_fn: Callable[[Path], dict[str, Any]], stimulus: dict[str, Any]) -> dict[str, Any]:
+    from trial_experiments import formal_audio
+
+    audio_dir = trial_dir / AUDIO_DIRNAME
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    (audio_dir / REFERENCE_FILENAME).write_text(reference_text, encoding="utf-8")
+    voice: dict[str, Any] = {"protocol_version": 2, "reference_text": reference_text, "reference_text_hash": sha256_text(reference_text),
+                             "transcript_review": "NONE", "clean_source": "PAIRED_AUDIO_CORPUS",
+                             "audio_condition": input_mode, "audio_source_path": stimulus["path"],
+                             "audio_sha256": stimulus["audio_sha256"], "paired_audio_sha256": stimulus["paired_audio_sha256"],
+                             "audio_source_clean_sha256": stimulus["audio_source_clean_sha256"],
+                             "audio_manifest_sha256": stimulus["audio_manifest_sha256"], "audio_manifest_path": stimulus["audio_manifest_path"],
+                             "target_snr_db": stimulus["target_snr_db"], "measured_snr_db": stimulus["measured_snr_db"],
+                             "noise_master_sha256": stimulus["noise_master_sha256"], "formal_freeze_id": stimulus["formal_freeze_id"],
+                             "audio_speaker_id": stimulus.get("speaker_id"),
+                             "paired_clean_trial_id": (stimulus.get("clean_uses") or [{}])[0].get("trial_id")}
+    if input_mode != stimulus["condition"]:
+        return _asr_failure(voice, STAGE_AUDIO_CAPTURE, formal_audio.ERROR_INTEGRITY, "el estimulo no corresponde a la modalidad", True)
+    corpus_dir = Path(stimulus["path"]).parent
+    clean_target = audio_dir / CLEAN_AUDIO_FILENAME
+    shutil.copyfile(corpus_dir / formal_audio.CLEAN_FILENAME, clean_target)
+    if sha256_file(clean_target) != stimulus["audio_source_clean_sha256"]:
+        return _asr_failure(voice, STAGE_AUDIO_CAPTURE, formal_audio.ERROR_INTEGRITY, "la copia del clean no es identica", True)
+    asr_audio = clean_target
+    if input_mode == "VOICE_NOISE":
+        asr_audio = audio_dir / NOISE_AUDIO_FILENAME
+        shutil.copyfile(stimulus["path"], asr_audio)
+        if sha256_file(asr_audio) != stimulus["audio_sha256"]:
+            return _asr_failure(voice, STAGE_NOISE_MIX, formal_audio.ERROR_INTEGRITY, "la copia del noisy no es identica", True)
+        voice.update({"snr_db": stimulus["target_snr_db"], "mixed_audio_hash": stimulus["audio_sha256"]})
+    check = validate_capture(clean_target, capture_settings(project_root))
+    voice.update({"clean_audio_hash": sha256_file(clean_target), "audio_capture_success": check["valid"],
+                  "duration_ms": check["analysis"].get("duration_ms"), "sample_rate": check["analysis"].get("sample_rate"),
+                  "channels": check["analysis"].get("channels"), "audio_peak": check["analysis"].get("peak"),
+                  "audio_rms": check["analysis"].get("rms")})
+    if not check["valid"]:
+        return _asr_failure(voice, STAGE_AUDIO_CAPTURE, ERROR_AUDIO_CAPTURE_INVALID, "; ".join(check["errors"]), True)
+    # El estimulo entra al ensayo: a partir de aqui la pareja es inmutable (un reintento reutiliza el MISMO WAV).
+    formal_audio.mark_used(project_root, stimulus["phase"], stimulus["case_id"], stimulus["variant"], input_mode, trial_dir.name)
+    return _run_asr(audio_dir, asr_audio, reference_text, asr_fn, voice)
+
+
+def _run_asr(audio_dir: Path, asr_audio: Path, reference_text: str, asr_fn: Callable[[Path], dict[str, Any]],
+             voice: dict[str, Any]) -> dict[str, Any]:
+    started = time.perf_counter()
+    try:
+        result = asr_fn(asr_audio)
+    except Exception as error:  # red/API/configuracion: infraestructura
+        voice.update({"asr_success": False, "asr_latency_ms": int(round((time.perf_counter() - started) * 1000))})
+        return _asr_failure(voice, STAGE_ASR, ERROR_ASR_UNAVAILABLE, str(error), True)
+    latency = int(round((time.perf_counter() - started) * 1000))
+    transcript = str(result.get("transcript") or "").strip()
+    asr_record = {"audio_file": asr_audio.name, "audio_hash": sha256_file(asr_audio), "transcript_raw": transcript,
+                  "model": result.get("model"), "language": result.get("language"), "error": result.get("error"),
+                  "latency_ms": latency, "frozen_at": _now()}
+    (audio_dir / ASR_RESULT_FILENAME).write_text(json.dumps(asr_record, indent=2, ensure_ascii=False), encoding="utf-8")
+    metrics = wer_metrics(reference_text, transcript)
+    voice.update({"asr_audio": asr_audio.name, "asr_audio_sha256": asr_record["audio_hash"], "asr_success": bool(transcript),
+                  "asr_model": result.get("model"), "asr_language": result.get("language"), "asr_latency_ms": latency,
+                  "asr_transcript_raw": transcript, "asr_transcript_normalized": metrics["asr_transcript_normalized"],
+                  **{k: metrics[k] for k in ("reference_word_count", "substitutions", "deletions", "insertions", "wer",
+                                             "exact_transcript_match", "normalized_transcript_match")}})
+    if result.get("error") and "configur" in str(result.get("error")).lower():
+        return _asr_failure(voice, STAGE_ASR, ERROR_ASR_UNAVAILABLE, str(result["error"]), True)
+    if not transcript:
+        return _asr_failure(voice, STAGE_ASR, ERROR_ASR_EMPTY, "el ASR no devolvio texto", False)
+    return {"ok": True, "voice": voice, "effective_input_text": transcript, "failure": None}
+
+
 def _asr_failure(voice: dict[str, Any], stage: str, code: str, detail: str, infrastructure: bool) -> dict[str, Any]:
     return {"ok": False, "voice": voice, "effective_input_text": None,
             "failure": {"stage": stage, "code": code, "error": f"{code}: {detail}", "infrastructure": infrastructure}}
@@ -361,6 +431,7 @@ def prepare_voice_input(
     capture: dict[str, Any] | None = None,
     paired: dict[str, Any] | None = None,
     noise: dict[str, Any] | None = None,
+    stimulus: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Congela la entrada de voz del ensayo y devuelve el texto efectivo para el pipeline.
@@ -368,7 +439,12 @@ def prepare_voice_input(
       paired:  ensayo VOICE_CLEAN emparejado (VOICE_NOISE)
       noise:   resolve_noise_config(...) (VOICE_NOISE)
     El WAV RAW queda en audio/ ANTES del ASR. La transcripcion no se corrige ni se confirma.
+      stimulus: estimulo PAREADO del corpus (formal_audio.stimulus + "phase"): el ASR recibe EXACTAMENTE el WAV congelado
+                de la celda (clean para VOICE_CLEAN, noisy del MISMO clean para VOICE_NOISE); nunca se graba ni se mezcla
+                aqui. Se marca usado ANTES del ASR: desde ese momento la pareja es inmutable.
     """
+    if stimulus is not None:
+        return _prepare_paired_stimulus(project_root, Path(trial_dir), input_mode, reference_text, asr_fn, stimulus)
     audio_dir = Path(trial_dir) / AUDIO_DIRNAME
     audio_dir.mkdir(parents=True, exist_ok=True)
     (audio_dir / REFERENCE_FILENAME).write_text(reference_text, encoding="utf-8")

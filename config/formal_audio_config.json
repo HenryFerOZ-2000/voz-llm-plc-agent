@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "freeze_id": "FORMAL_V1_1",
+  "description": "Estimulos de voz PAREADOS para FORMAL: por celda (caso + variante) UNA locucion humana -> clean_stimulus.wav (VOICE_CLEAN) y noise_stimulus.wav derivado del MISMO clean (VOICE_NOISE). SNR y algoritmo congelados antes de cualquier resultado FORMAL; nunca se ajustan segun el desempeno del ASR.",
+  "target_snr_db": 10.0,
+  "snr_tolerance_db": 0.25,
+  "mixing_algorithm_version": "PAIRED_ACTIVE_RMS_SNR_V1",
+  "active_speech_method": {
+    "id": "ENERGY_FRAMES_TRIM_V1",
+    "frame_ms": 20,
+    "relative_threshold_db": -30.0,
+    "absolute_floor_rms": 50.0,
+    "description": "Tramas de 20 ms; activa si RMS >= max(pico de RMS de trama * 10^(-30/20), 50). Region activa = desde la primera hasta la ultima trama activa (recorta silencios inicial/final). speech_rms y noise_rms se miden en esa region."
+  },
+  "noise_offset": {
+    "rule": "SHA256(case_id|variant|salt) mod longitud_del_master",
+    "salt": "FORMAL_V1_1",
+    "loop": "ciclico determinista si el master es mas corto que el comando (registrado)"
+  },
+  "clipping": {
+    "post_mix_peak_limit": 32000,
+    "rule": "Si |mezcla| supera el limite, UN factor global (post_mix_gain) sobre la mezcla completa (voz + ruido): conserva el SNR. Si aun asi hay clipping, se aborta el estimulo."
+  },
+  "canonical_format": {
+    "container": "WAV",
+    "encoding": "PCM_S16LE",
+    "sample_rate": 16000,
+    "channels": 1,
+    "sample_width_bytes": 2
+  },
+  "noise_master": {
+    "path": "formal_assets/audio/industrial_noise_master.wav",
+    "sha256": null,
+    "approved_by": null,
+    "approved_at": null,
+    "provenance": null,
+    "license": null,
+    "min_duration_seconds": 60,
+    "requirements": [
+      "WAV PCM 16 bits, mono, 16 kHz",
+      "sin voz inteligible",
+      "al menos 60 s",
+      "origen/licencia documentable (preferible grabacion propia de ambiente industrial/laboratorio)"
+    ]
+  },
+  "corpus_roots": {
+    "FORMAL": "results/formal_audio",
+    "DEVELOPMENT_VALIDATION": "results/development_audio",
+    "BASELINE": "results/development_audio"
+  },
+  "development_noise": {
+    "path": null,
+    "note": "Solo DEVELOPMENT (piloto de infraestructura); nunca vale para FORMAL."
+  }
+}
