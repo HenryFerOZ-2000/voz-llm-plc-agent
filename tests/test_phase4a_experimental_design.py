@@ -112,7 +112,9 @@ def test_formal_trial_requires_software_freeze_manifest(tmp_path):
     root = _project_copy(tmp_path)
     allowed, reasons = ED.check_formal_trial_allowed(root)
     assert not allowed and "FORMAL_TRIAL_NOT_ALLOWED" in reasons[0]
-    assert not (_ROOT / "data" / "software_freeze_manifest.json").exists()  # no se activa en esta fase
+    # El repositorio ya tiene el freeze FORMAL v1 (manifiesto v2); la copia temporal parte sin manifiesto.
+    repo_manifest = json.loads((_ROOT / "data" / "software_freeze_manifest.json").read_text(encoding="utf-8"))
+    assert repo_manifest["status"] == "FROZEN" and repo_manifest["schema_version"] == 2
     manifest = {"status": "FROZEN", **ED.current_integrity_fingerprint(root)}
     (root / "data" / "software_freeze_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     assert ED.check_formal_trial_allowed(root) == (True, [])
@@ -395,6 +397,8 @@ def test_gui_uses_input_mode_and_phase_instead_of_legacy_conditions(app):
 def test_gui_blocks_formal_phase_without_freeze(app, monkeypatch, tmp_path):
     import gui
 
+    # Premisa del test: SIN manifiesto de congelacion (independiente del freeze real del repositorio).
+    monkeypatch.setattr(ED, "freeze_manifest_path", lambda root: tmp_path / "no_freeze_manifest.json")
     warnings: list[str] = []
     monkeypatch.setattr(gui.messagebox, "showwarning", lambda title, message, **k: warnings.append(message))
     monkeypatch.setattr(trial_model, "get_results_experiments_dir", lambda root: tmp_path / "results" / "experiments")
