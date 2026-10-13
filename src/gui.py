@@ -108,7 +108,7 @@ import tia_projects
 from plcsim_runtime import get_plcsim_runtime_status
 from trial_experiments import benchmark_catalog, oracle_review, oracle_runner, oracle_schema, trial_io_map, trial_model
 from trial_experiments import deferred_evaluator, experimental_design, resource_policy, tia_classification
-from trial_experiments import experiment_maps, text_batch, voice_protocol
+from trial_experiments import experiment_maps, formal_audio, text_batch, voice_protocol
 from host_local import load_host_id
 from trial_experiments.oracle_runner import run_oracle
 from trial_experiments.oracle_schema import find_case_oracle
@@ -847,14 +847,24 @@ class DeferredEvaluationDialog(ctk.CTkToplevel):
 
 
 class TextBatchDialog(ctk.CTkToplevel):
-    """EJECUTAR LOTE TEXT: seleccion (fase, casos, variantes) y progreso del lote abierto."""
+    """
+    EJECUTAR LOTE TEXT / VOICE_CLEAN / VOICE_NOISE: seleccion (fase, casos, variantes) y progreso del lote abierto.
+    Un solo motor de lotes (text_batch); la modalidad la fija el boton que abre el dialogo (o el lote abierto).
+    """
 
     PHASES = {"DEVELOPMENT": trial_model.PHASE_DEVELOPMENT, "FORMAL": trial_model.PHASE_FORMAL}
+    MODE_NOTES = {
+        trial_model.INPUT_MODE_TEXT: "Modalidad: TEXT (automatico)",
+        trial_model.INPUT_MODE_VOICE_CLEAN: "Modalidad: VOICE_CLEAN (asistido: una locucion humana por celda; el par noisy "
+                                            "se congela antes del ASR)",
+        trial_model.INPUT_MODE_VOICE_NOISE: "Modalidad: VOICE_NOISE (automatico: estimulos noisy congelados; nunca usa el microfono)",
+    }
 
-    def __init__(self, app: "VozLLMPLCGUI") -> None:
+    def __init__(self, app: "VozLLMPLCGUI", input_mode: str = trial_model.INPUT_MODE_TEXT) -> None:
         super().__init__(app)
         self.app = app
-        self.title("Lote TEXT")
+        self.input_mode = input_mode
+        self.title(f"Lote {input_mode}")
         self.geometry("760x760")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -883,7 +893,8 @@ class TextBatchDialog(ctk.CTkToplevel):
         for column, (variant, var) in enumerate(self.variant_vars.items()):
             ctk.CTkCheckBox(setup, text=variant, variable=var, command=self._update_total, font=app.body_font).grid(
                 row=7, column=column, padx=10, sticky="w")
-        ctk.CTkLabel(setup, text="Modalidad: TEXT (fija)", font=app.body_font).grid(row=8, column=0, columnspan=3, padx=10, pady=(8, 0), sticky="w")
+        ctk.CTkLabel(setup, text=self.MODE_NOTES[input_mode], font=app.body_font, wraplength=640, justify="left").grid(
+            row=8, column=0, columnspan=3, padx=10, pady=(8, 0), sticky="w")
         self.total_var = tk.StringVar(value="")
         ctk.CTkLabel(setup, textvariable=self.total_var, font=app.section_label_font, justify="left", wraplength=640).grid(
             row=9, column=0, columnspan=3, padx=10, pady=(4, 4), sticky="w")
@@ -921,7 +932,7 @@ class TextBatchDialog(ctk.CTkToplevel):
     def _update_total(self) -> None:
         try:
             phase, case_ids, variants = self.selection()
-            plan = text_batch.build_plan(self.app.project_root, case_ids, variants)
+            plan = text_batch.build_plan(self.app.project_root, case_ids, variants, self.input_mode)
         except ValueError as error:
             self.total_var.set(f"Seleccion invalida: {error}")
             return
@@ -930,20 +941,28 @@ class TextBatchDialog(ctk.CTkToplevel):
         if not_evaluable:
             text += (f"\n{len(not_evaluable)} caso(s) ({not_evaluable[0]}...{not_evaluable[-1]}): el Oracle requiere extension del "
                      "Runtime; se generan pero no se evaluan" + (" - FORMAL no lo permite." if phase == trial_model.PHASE_FORMAL else "."))
+        if self.input_mode != trial_model.INPUT_MODE_TEXT:
+            try:
+                summary = formal_audio.corpus_summary(self.app.project_root, phase)
+                text += (f"\nCorpus {phase}: clean grabados {summary['recorded_clean']}/{summary['total']} · pares listos "
+                         f"{summary['noise_pairs_ready']}/{summary['total']} · SNR {formal_audio.load_config(self.app.project_root)['target_snr_db']} dB")
+            except (OSError, ValueError, KeyError) as error:
+                text += f"\nCorpus de audio no legible: {error}"
         self.total_var.set(text)
 
     def start(self) -> None:
+        title = f"Lote {self.input_mode}"
         try:
             phase, case_ids, variants = self.selection()
         except ValueError as error:
-            messagebox.showwarning("Lote TEXT", str(error), parent=self)
+            messagebox.showwarning(title, str(error), parent=self)
             return
         if phase == trial_model.PHASE_FORMAL and not messagebox.askyesno(
-                "Lote TEXT FORMAL", "Los resultados FORMAL son oficiales. ¿Iniciar el lote FORMAL?", parent=self):
+                f"{title} FORMAL", "Los resultados FORMAL son oficiales. ¿Iniciar el lote FORMAL?", parent=self):
             return
-        result = self.app.start_text_batch(phase, case_ids, variants)
+        result = self.app.start_text_batch(phase, case_ids, variants, self.input_mode)
         if not result["ok"] and not result.get("paused"):
-            messagebox.showwarning("Lote TEXT", "No se inicia el lote:\n\n" + "\n".join(result["errors"][:10]), parent=self)
+            messagebox.showwarning(title, "No se inicia el lote:\n\n" + "\n".join(result["errors"][:10]), parent=self)
         self.refresh()
 
     def resume(self) -> None:
@@ -987,7 +1006,7 @@ class TextBatchDialog(ctk.CTkToplevel):
         self.stop_button.configure(state="normal" if open_batch else "disabled")
         lines = self.app.text_batch_progress_lines()
         if paused and not running and open_batch and status == text_batch.STATUS_PAUSED:
-            lines = (["LOTE TEXT INCOMPLETO"] if not attention else []) + lines
+            lines = ([f"LOTE {manifest.get('input_mode') or 'TEXT'} INCOMPLETO"] if not attention else []) + lines
         self.progress_box.configure(state="normal")
         self.progress_box.delete("1.0", "end")
         self.progress_box.insert("1.0", "\n".join(lines))
@@ -1005,6 +1024,189 @@ class TextBatchDialog(ctk.CTkToplevel):
     def _close(self) -> None:
         self.app._text_batch_dialog = None
         self.destroy()
+
+
+class CleanBatchCellDialog(ctk.CTkToplevel):
+    """
+    Lote VOICE_CLEAN asistido: una celda sin locucion. Muestra progreso X/N, caso, variante, el comando EXACTO y los
+    estados (audio clean, par noisy, ensayo). GRABAR Y EJECUTAR -> DETENER Y EJECUTAR: el WAV se congela (clean + noisy)
+    y el ensayo arranca solo. PAUSAR LOTE: no graba nada y el lote queda pausado (sin resultado experimental).
+    """
+
+    def __init__(self, app: "VozLLMPLCGUI", entry: dict[str, Any], manifest: dict[str, Any], audio_state: str,
+                 pair_state: str) -> None:
+        super().__init__(app)
+        self.app = app
+        self.result: dict[str, Any] | None = None
+        self._device: dict[str, Any] = app.speech_recognizer.get_input_device_info()
+        self.title(f"Lote VOICE_CLEAN · {entry['index'] + 1} / {manifest['total_trials']}")
+        self.geometry("720x420")
+        self.grid_columnconfigure((0, 1), weight=1)
+        ctk.CTkLabel(self, text=f"{entry['index'] + 1} / {manifest['total_trials']}  ·  {entry['case_id']}  ·  {entry['variant_id']}  "
+                                f"·  {manifest['phase']}", font=app.section_label_font).grid(
+            row=0, column=0, columnspan=2, padx=16, pady=(14, 4), sticky="w")
+        ctk.CTkLabel(self, text="Lea en voz alta exactamente este comando:", font=app.body_font).grid(
+            row=1, column=0, columnspan=2, padx=16, sticky="w")
+        ctk.CTkLabel(self, text=f'"{entry["reference_text"]}"', wraplength=660, justify="left",
+                     font=ctk.CTkFont(size=16, weight="bold")).grid(row=2, column=0, columnspan=2, padx=16, pady=10, sticky="w")
+        ctk.CTkLabel(self, text=f"AUDIO CLEAN: {audio_state}   ·   AUDIO NOISE PAIR: {pair_state}   ·   ENSAYO: {entry['status']}",
+                     font=app.body_font).grid(row=3, column=0, columnspan=2, padx=16, sticky="w")
+        self.status_var = tk.StringVar(value=f"Microfono: {self._device.get('name') or self._device.get('error') or '-'}")
+        ctk.CTkLabel(self, textvariable=self.status_var, font=app.body_font).grid(row=4, column=0, columnspan=2, padx=16, pady=(6, 0), sticky="w")
+        self.record_button = ctk.CTkButton(self, text="GRABAR Y EJECUTAR", height=40, fg_color="#0F766E", hover_color="#115E59",
+                                           command=self.toggle, font=ctk.CTkFont(size=14, weight="bold"))
+        self.record_button.grid(row=5, column=0, padx=(16, 4), pady=16, sticky="ew")
+        self.pause_button = ctk.CTkButton(self, text="PAUSAR LOTE", command=self.pause, font=app.button_font)
+        self.pause_button.grid(row=5, column=1, padx=(4, 16), pady=16, sticky="ew")
+        self.protocol("WM_DELETE_WINDOW", self.pause)
+
+    def toggle(self) -> None:
+        recognizer = self.app.speech_recognizer
+        if not recognizer.is_recording():
+            try:
+                recognizer.start_recording()
+            except RuntimeError as error:
+                self.status_var.set(f"No se pudo grabar: {error}")
+                return
+            self._recorded_at = datetime.now().isoformat(timespec="seconds")
+            self.record_button.configure(text="DETENER Y EJECUTAR")
+            self.pause_button.configure(state="disabled")
+            self._tick()
+            return
+        try:
+            path = recognizer.stop_recording()
+        except RuntimeError as error:
+            path = None
+            self.status_var.set(f"Grabacion sin audio: {error}")
+        if not path:
+            # Sin audio no hay ensayo: se puede volver a grabar (no se congelo nada).
+            self.record_button.configure(text="GRABAR Y EJECUTAR")
+            self.pause_button.configure(state="normal")
+            return
+        self.result = {"path": str(path), "device": self._device, "sample_rate": recognizer.sample_rate,
+                       "channels": recognizer.channels, "recorded_at": getattr(self, "_recorded_at", None)}
+        self.destroy()
+
+    def _tick(self) -> None:
+        recognizer = self.app.speech_recognizer
+        if not recognizer.is_recording():
+            return
+        self.status_var.set(f"Grabando... {recognizer.recording_elapsed_seconds()} s · nivel {recognizer.get_current_level().get('peak')}")
+        self.after(200, self._tick)
+
+    def pause(self) -> None:
+        if self.app.speech_recognizer.is_recording():
+            return  # iniciada la grabacion solo se puede DETENER Y EJECUTAR
+        self.result = None
+        self.destroy()
+
+
+class AudioCorpusDialog(ctk.CTkToplevel):
+    """FORMAL AUDIO CORPUS: estado de las 96 celdas, master de ruido, integridad, reproduccion y metadatos (solo lectura)."""
+
+    def __init__(self, app: "VozLLMPLCGUI", phase: str = trial_model.PHASE_FORMAL) -> None:
+        super().__init__(app)
+        self.app = app
+        self.phase = phase
+        self.title(f"Corpus de audio {phase}")
+        self.geometry("860x720")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.summary_var = tk.StringVar(value="")
+        ctk.CTkLabel(self, textvariable=self.summary_var, font=ctk.CTkFont(family="Consolas", size=13), justify="left", anchor="w").grid(
+            row=0, column=0, padx=16, pady=(14, 8), sticky="ew")
+        table = ctk.CTkFrame(self, fg_color="transparent")
+        table.grid(row=1, column=0, padx=16, sticky="nsew")
+        table.grid_columnconfigure(0, weight=1)
+        table.grid_rowconfigure(0, weight=1)
+        self.tree = ttk.Treeview(table, columns=("cell", "state", "clean", "noisy", "snr", "uses"), show="headings", selectmode="browse")
+        for column, heading, width in (("cell", "Celda", 90), ("state", "Estado", 170), ("clean", "Clean SHA", 120),
+                                       ("noisy", "Noisy SHA", 120), ("snr", "SNR medido", 90), ("uses", "Ensayos", 220)):
+            self.tree.heading(column, text=heading)
+            self.tree.column(column, width=width, anchor="w")
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        scroll = ttk.Scrollbar(table, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll.set)
+        scroll.grid(row=0, column=1, sticky="ns")
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.grid(row=2, column=0, padx=16, pady=12, sticky="ew")
+        buttons.grid_columnconfigure((0, 1, 2, 3), weight=1)
+        for column, (text, command) in enumerate((("REPRODUCIR CLEAN", lambda: self.play(formal_audio.CLEAN_FILENAME)),
+                                                  ("REPRODUCIR NOISY", lambda: self.play(formal_audio.NOISE_FILENAME)),
+                                                  ("VER METADATOS", self.show_metadata), ("VERIFICAR INTEGRIDAD", self.verify_all))):
+            ctk.CTkButton(buttons, text=text, command=command, font=app.button_font).grid(row=0, column=column, padx=4, sticky="ew")
+        self.integrity = "-"
+        self.refresh()
+
+    def refresh(self) -> None:
+        root = self.app.project_root
+        summary = formal_audio.corpus_summary(root, self.phase)
+        master = formal_audio.noise_master_status(root, self.phase)
+        config = formal_audio.load_config(root)
+        total = summary["total"]
+        self.summary_var.set("\n".join([
+            f"FORMAL AUDIO CORPUS ({self.phase})",
+            f"Recorded clean:          {summary['recorded_clean']} / {total}",
+            f"Noise pairs ready:       {summary['noise_pairs_ready']} / {total}",
+            f"Clean trials completed:  {summary['clean_trials']} / {total}",
+            f"Noise trials completed:  {summary['noise_trials']} / {total}",
+            f"SNR target:              {config['target_snr_db']} dB (tolerancia {config['snr_tolerance_db']} dB)",
+            f"Noise master:            " + (f"READY {master['sha256'][:12]} [{master['source']}]" if master["ready"] else "MISSING"),
+            f"Integrity:               {self.integrity}"]))
+        self.tree.delete(*self.tree.get_children())
+        for key, cell in formal_audio.load_corpus(root, self.phase)["cells"].items():
+            uses = ", ".join(f"{u['condition'].replace('VOICE_', '')}:{u['trial_id']}" for u in cell["uses"])
+            self.tree.insert("", "end", iid=key, values=(key, cell["state"], (cell.get("clean_sha256") or "-")[:12],
+                                                         (cell.get("noisy_sha256") or "-")[:12], cell.get("measured_snr_db", "-"), uses))
+
+    def _selected(self) -> tuple[str, str] | None:
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showinfo("Corpus de audio", "Seleccione una celda.", parent=self)
+            return None
+        case_id, variant = selection[0].split("_")
+        return case_id, variant
+
+    def play(self, filename: str) -> None:
+        cell = self._selected()
+        if cell is None:
+            return
+        path = formal_audio.cell_dir(self.app.project_root, self.phase, *cell) / filename
+        if not path.is_file():
+            messagebox.showinfo("Corpus de audio", f"No existe {filename} para {cell[0]} {cell[1]}.", parent=self)
+            return
+        try:  # reproduccion de solo lectura (stdlib de Windows); nunca modifica el WAV
+            import winsound
+
+            winsound.PlaySound(str(path), winsound.SND_FILENAME | winsound.SND_ASYNC)
+        except (ImportError, RuntimeError) as error:
+            messagebox.showwarning("Corpus de audio", f"No se pudo reproducir: {error}", parent=self)
+
+    def show_metadata(self) -> None:
+        cell = self._selected()
+        if cell is None:
+            return
+        path = formal_audio.cell_dir(self.app.project_root, self.phase, *cell) / formal_audio.CELL_MANIFEST
+        text = path.read_text(encoding="utf-8") if path.is_file() else "Celda sin grabar."
+        window = ctk.CTkToplevel(self)
+        window.title(f"{cell[0]} {cell[1]} · {formal_audio.CELL_MANIFEST}")
+        window.geometry("720x620")
+        box = ctk.CTkTextbox(window, font=ctk.CTkFont(family="Consolas", size=12))
+        box.pack(fill="both", expand=True, padx=10, pady=10)
+        box.insert("1.0", text)
+        box.configure(state="disabled")
+
+    def verify_all(self) -> None:
+        failures = []
+        for key, cell in formal_audio.load_corpus(self.app.project_root, self.phase)["cells"].items():
+            if cell["state"] != formal_audio.STATE_NOT_RECORDED:
+                check = formal_audio.verify_cell(self.app.project_root, self.phase, cell["case_id"], cell["variant"])
+                if not check["ok"]:
+                    failures.append(f"{key}: {'; '.join(check['errors'])}")
+        self.integrity = "PASS" if not failures else f"FAIL ({len(failures)})"
+        self.refresh()
+        if failures:
+            messagebox.showwarning("Integridad del corpus", "\n".join(failures[:15]), parent=self)
 
 
 class VoiceCaptureDialog(ctk.CTkToplevel):
@@ -2733,9 +2935,20 @@ class VozLLMPLCGUI(ctk.CTk):
                                                hover_color="#1E40AF", command=self.open_text_batch_dialog,
                                                font=ctk.CTkFont(size=13, weight="bold"))
         self.text_batch_button.grid(row=0, column=0, pady=(0, 6), sticky="ew")
+        self.voice_clean_batch_button = ctk.CTkButton(
+            batch_actions, text="EJECUTAR LOTE VOICE_CLEAN", height=36, fg_color="#7C3AED", hover_color="#6D28D9",
+            command=lambda: self.open_text_batch_dialog(trial_model.INPUT_MODE_VOICE_CLEAN), font=ctk.CTkFont(size=13, weight="bold"))
+        self.voice_clean_batch_button.grid(row=1, column=0, pady=(0, 6), sticky="ew")
+        self.voice_noise_batch_button = ctk.CTkButton(
+            batch_actions, text="EJECUTAR LOTE VOICE_NOISE", height=36, fg_color="#B45309", hover_color="#92400E",
+            command=lambda: self.open_text_batch_dialog(trial_model.INPUT_MODE_VOICE_NOISE), font=ctk.CTkFont(size=13, weight="bold"))
+        self.voice_noise_batch_button.grid(row=2, column=0, pady=(0, 6), sticky="ew")
+        self.audio_corpus_button = ctk.CTkButton(batch_actions, text="FORMAL AUDIO CORPUS", command=self.open_audio_corpus_dialog,
+                                                 font=self.button_font)
+        self.audio_corpus_button.grid(row=3, column=0, pady=(0, 6), sticky="ew")
         self.generate_only_button = ctk.CTkButton(batch_actions, text="GENERAR SOLO (DEVELOPMENT/DEBUG)", command=self.generate_experiment_trial,
                                                   font=self.button_font)
-        self.generate_only_button.grid(row=1, column=0, sticky="ew")
+        self.generate_only_button.grid(row=4, column=0, sticky="ew")
 
         ctk.CTkLabel(frame, text="Ensayos generados", font=self.section_label_font).grid(
             row=25, column=0, columnspan=2, padx=12, pady=(4, 2), sticky="w")
@@ -6789,16 +7002,29 @@ class VozLLMPLCGUI(ctk.CTk):
             self._text_batch = {"dir": text_batch.batch_dir_for(self.project_root, manifest), "manifest": manifest, "dialogs": []}
         return manifest
 
-    def start_text_batch(self, phase: str, case_ids: list[str] | None, variants: list[str]) -> dict[str, Any]:
-        """Crea y arranca un lote TEXT. FORMAL solo si TODAS las guardas pasan."""
+    def start_text_batch(self, phase: str, case_ids: list[str] | None, variants: list[str],
+                         input_mode: str = trial_model.INPUT_MODE_TEXT) -> dict[str, Any]:
+        """
+        Crea y arranca un lote (TEXT / VOICE_CLEAN / VOICE_NOISE). FORMAL solo si TODAS las guardas pasan.
+        VOICE_NOISE: si falta UNA pareja integra de las celdas planificadas (FORMAL: las 96) no se empieza (antes del ASR).
+        """
         if self._text_batch_running() or self._tia_busy() or self._voice_worker_active:
             return {"ok": False, "errors": ["Hay una operacion o un lote en curso."]}
         if self._load_open_text_batch() is not None:
             return {"ok": False, "errors": [f"{text_batch.ERROR_OPEN_BATCH}: reanude o cancele el lote abierto."]}
         try:
-            plan = text_batch.build_plan(self.project_root, case_ids, variants)
+            plan = text_batch.build_plan(self.project_root, case_ids, variants, input_mode)
         except ValueError as error:
             return {"ok": False, "errors": [str(error)]}
+        if input_mode == trial_model.INPUT_MODE_VOICE_NOISE:
+            pairs = formal_audio.noise_batch_preflight(self.project_root, phase, [(e["case_id"], e["variant_id"]) for e in plan])
+            if not pairs["ok"]:
+                return {"ok": False, "errors": [f"PAIRS READY: {pairs['pairs_ready']} / {pairs['total']}"] + pairs["errors"]
+                        + [f"{formal_audio.ERROR_PAIR_MISSING}: {m}" for m in pairs["missing"]], "pairs": pairs}
+        elif input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
+            master = formal_audio.noise_master_status(self.project_root, phase)
+            if not master["ready"]:
+                return {"ok": False, "errors": [master["error"]]}
         git = text_batch.git_info(self.project_root)
         if phase == trial_model.PHASE_FORMAL:
             guards = text_batch.formal_guards(self.project_root, plan, git=git,
@@ -6807,9 +7033,9 @@ class VozLLMPLCGUI(ctk.CTk):
                 return {"ok": False, "errors": [f"{text_batch.ERROR_FORMAL_GUARD}: {c['id']}: {c['detail']}" for c in guards["checks"] if not c["ok"]],
                         "guards": guards}
         batch_dir, manifest = text_batch.create_batch(self.project_root, phase, case_ids, variants,
-                                                      host_id=load_host_id(self.project_root), git=git)
+                                                      host_id=load_host_id(self.project_root), git=git, input_mode=input_mode)
         self._text_batch = {"dir": batch_dir, "manifest": manifest, "dialogs": []}
-        self._log(f"[BATCH] {manifest['batch_id']}: {manifest['total_trials']} ensayos TEXT ({phase}).")
+        self._log(f"[BATCH] {manifest['batch_id']}: {manifest['total_trials']} ensayos {input_mode} ({phase}).")
         return self.resume_text_batch()
 
     def resume_text_batch(self) -> dict[str, Any]:
@@ -6903,7 +7129,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self._on_experiment_case_changed()
         self.experiment_variant_var.set(entry["variant_id"])
         self._on_experiment_variant_changed()
-        self.experiment_input_mode_var.set(INPUT_MODE_LABELS[trial_model.INPUT_MODE_TEXT])
+        self.experiment_input_mode_var.set(INPUT_MODE_LABELS[entry.get("input_mode") or trial_model.INPUT_MODE_TEXT])
         self._on_experiment_input_mode_changed()
         self.experiment_phase_var.set(EXPERIMENT_PHASE_LABELS[phase])
         if not self.experiment_speaker_var.get().strip():
@@ -6992,7 +7218,14 @@ class VozLLMPLCGUI(ctk.CTk):
         repeat_reason = entry.get("retry_reason") or f"Lote {manifest['batch_id']}"
         batch_trial = {"batch_id": manifest["batch_id"], "index": entry["index"], "repeat_reason": repeat_reason,
                        "on_started": lambda directory: self._batch_on_started(entry, directory),
-                       "on_generated": lambda directory, generation: self._batch_on_generated(entry, directory, generation, dialogs)}
+                       "on_generated": lambda directory, generation: self._batch_on_generated(entry, directory, generation, dialogs),
+                       "notify": lambda title, text: dialogs.append({"kind": "precheck", "title": title, "message": text[:500]})}
+        if entry.get("input_mode") == trial_model.INPUT_MODE_VOICE_CLEAN:
+            capture = self._batch_clean_capture(entry, manifest)
+            if capture is False:
+                return  # pausado por el operador antes de grabar: sin resultado experimental
+            if capture is not None:
+                batch_trial["capture"] = capture
         self._log(f"[BATCH] {manifest['batch_id']} · {entry['index'] + 1}/{manifest['total_trials']} · {text_batch.entry_label(entry)}")
         self._refresh_text_batch_dialog()
         with self._unattended_interactions(dialogs):
@@ -7004,6 +7237,24 @@ class VozLLMPLCGUI(ctk.CTk):
             text_batch.pause(manifest, text_batch.PAUSE_ENVIRONMENT,
                              "; ".join(d["message"] for d in dialogs[:3]) or "el ensayo no pudo iniciarse")
             self._batch_save()
+
+    def _batch_clean_capture(self, entry: dict[str, Any], manifest: dict[str, Any]) -> dict[str, Any] | None | bool:
+        """
+        Celda VOICE_CLEAN: si ya tiene locucion congelada (p.ej. reintento por INFRASTRUCTURE_ERROR) se reutiliza el MISMO
+        WAV y no se pide nada (None). Si no, dialogo asistido: devuelve la captura, o False si el operador pausa el lote.
+        """
+        corpus = formal_audio.load_corpus(self.project_root, manifest["phase"])
+        cell = formal_audio.cell_entry(corpus, entry["case_id"], entry["variant_id"])
+        if cell["state"] != formal_audio.STATE_NOT_RECORDED:
+            return None
+        dialog = CleanBatchCellDialog(self, entry, manifest, "NOT RECORDED", "NOT READY")
+        self.wait_window(dialog)
+        if dialog.result is None:
+            text_batch.pause(manifest, text_batch.PAUSE_USER, f"{text_batch.entry_label(entry)}: pausado antes de grabar")
+            self._batch_save()
+            self._refresh_text_batch_dialog()
+            return False
+        return dialog.result
 
     def _batch_on_started(self, entry: dict[str, Any], trial_dir: Path) -> None:
         trial_id = Path(trial_dir).name
@@ -7066,18 +7317,25 @@ class VozLLMPLCGUI(ctk.CTk):
         if decision == text_batch.DECISION_CONTINUE and manifest["status"] == text_batch.STATUS_RUNNING:
             self.after(self.BATCH_STEP_DELAY_MS, self._batch_run_next)
 
-    def open_text_batch_dialog(self) -> "TextBatchDialog":
+    def open_text_batch_dialog(self, input_mode: str = trial_model.INPUT_MODE_TEXT) -> "TextBatchDialog":
         dialog = getattr(self, "_text_batch_dialog", None)
+        open_manifest = self._load_open_text_batch()
+        if open_manifest is not None:
+            input_mode = open_manifest.get("input_mode") or trial_model.INPUT_MODE_TEXT  # un solo lote abierto a la vez
         if dialog is not None:
             try:
-                dialog.lift()
-                dialog.refresh()
-                return dialog
+                if dialog.input_mode == input_mode:
+                    dialog.lift()
+                    dialog.refresh()
+                    return dialog
+                dialog.destroy()
             except tk.TclError:
                 pass
-        self._load_open_text_batch()
-        self._text_batch_dialog = TextBatchDialog(self)
+        self._text_batch_dialog = TextBatchDialog(self, input_mode)
         return self._text_batch_dialog
+
+    def open_audio_corpus_dialog(self) -> "AudioCorpusDialog":
+        return AudioCorpusDialog(self, self._selected_phase())
 
     def _announce_open_text_batch(self) -> None:
         """Al abrir la aplicacion: un lote incompleto se anuncia (nunca se reanuda solo)."""
@@ -7089,17 +7347,22 @@ class VozLLMPLCGUI(ctk.CTk):
         if manifest is not None:
             entry = text_batch.next_entry(manifest)
             self._log(f"[BATCH] LOTE TEXT INCOMPLETO {manifest['batch_id']}: {manifest.get('completed_trials', 0)} / "
-                      f"{manifest['total_trials']} completados; siguiente {text_batch.entry_label(entry)}. Use EJECUTAR LOTE TEXT.")
+                      f"{manifest['total_trials']} completados; siguiente {text_batch.entry_label(entry)}. "
+                      f"Use EJECUTAR LOTE {manifest.get('input_mode') or 'TEXT'}.")
 
     def _refresh_text_batch_button(self) -> None:
-        button = getattr(self, "text_batch_button", None)
         manifest = self._text_batch_manifest()
-        if button is None:
-            return
-        if manifest and manifest.get("status") in text_batch.OPEN_STATUSES:
-            button.configure(text=f"LOTE TEXT ({manifest.get('completed_trials', 0)}/{manifest['total_trials']}) · {manifest['status']}")
-        else:
-            button.configure(text="EJECUTAR LOTE TEXT")
+        open_mode = (manifest.get("input_mode") or trial_model.INPUT_MODE_TEXT) \
+            if manifest and manifest.get("status") in text_batch.OPEN_STATUSES else None
+        for mode, attribute in ((trial_model.INPUT_MODE_TEXT, "text_batch_button"), (trial_model.INPUT_MODE_VOICE_CLEAN, "voice_clean_batch_button"),
+                                (trial_model.INPUT_MODE_VOICE_NOISE, "voice_noise_batch_button")):
+            button = getattr(self, attribute, None)
+            if button is None:
+                continue
+            if open_mode == mode:
+                button.configure(text=f"LOTE {mode} ({manifest.get('completed_trials', 0)}/{manifest['total_trials']}) · {manifest['status']}")
+            else:
+                button.configure(text=f"EJECUTAR LOTE {mode}")
 
     def _refresh_text_batch_dialog(self) -> None:
         self._refresh_text_batch_button()
@@ -7114,13 +7377,14 @@ class VozLLMPLCGUI(ctk.CTk):
         """Progreso del lote; las etapas del ensayo actual salen de trial_stage_summary (fuente unica)."""
         manifest = self._text_batch_manifest()
         if not manifest:
-            return ["No hay lote TEXT abierto."]
+            return ["No hay lote abierto."]
         state = text_batch.progress(manifest)
         entry = text_batch.next_entry(manifest)
-        title = {text_batch.STATUS_RUNNING: "LOTE TEXT EN CURSO", text_batch.STATUS_CREATED: "LOTE TEXT CREADO"}.get(manifest["status"])
+        mode = manifest.get("input_mode") or trial_model.INPUT_MODE_TEXT
+        title = {text_batch.STATUS_RUNNING: f"LOTE {mode} EN CURSO", text_batch.STATUS_CREATED: f"LOTE {mode} CREADO"}.get(manifest["status"])
         if manifest["status"] == text_batch.STATUS_PAUSED:
             title = ("LOTE PAUSADO POR INFRASTRUCTURE_ERROR" if manifest.get("pause_reason") == text_batch.PAUSE_INFRASTRUCTURE
-                     else "LOTE TEXT PAUSADO")
+                     else f"LOTE {mode} PAUSADO")
         if manifest["status"] in (text_batch.STATUS_COMPLETED, text_batch.STATUS_CANCELLED):
             return text_batch.final_report_lines(manifest)
         lines = [title or manifest["status"], f"{manifest['batch_id']} · {manifest['phase']}", "",
@@ -7134,6 +7398,12 @@ class VozLLMPLCGUI(ctk.CTk):
         if entry is not None:
             lines += ["", f"Ensayo actual: {entry['index'] + 1} / {manifest['total_trials']}", f"{text_batch.entry_label(entry)}  [{entry['status']}]",
                       f"Trial: {entry.get('trial_id') or '-'}"]
+            if mode != trial_model.INPUT_MODE_TEXT:
+                try:
+                    lines += [f"Comando: {entry.get('reference_text') or '-'}"] + self._cell_audio_lines(
+                        manifest["phase"], entry["case_id"], entry["variant_id"], mode)
+                except (OSError, ValueError, KeyError) as error:
+                    lines.append(f"Corpus de audio no legible: {error}")
             if entry.get("started_at") and entry["status"] in (text_batch.ENTRY_GENERATING, text_batch.ENTRY_EVALUATING):
                 seconds = int((datetime.now() - datetime.fromisoformat(entry["started_at"])).total_seconds())
                 lines.append(f"Tiempo del ensayo: {seconds // 60:d}m {seconds % 60:02d}s")
@@ -7199,37 +7469,20 @@ class VozLLMPLCGUI(ctk.CTk):
             return None
         reference_text = benchmark_catalog.get_case(self.project_root, case_id)["variants"][variant_id]
         speaker_id = self.experiment_speaker_var.get().strip()
-        capture = paired = noise = None
+        capture = None
+        stimulus: dict[str, Any] | None = None
         if input_mode != trial_model.INPUT_MODE_TEXT:
             speaker_error = voice_protocol.validate_speaker_id(speaker_id)
             if speaker_error:
                 messagebox.showwarning("Ejecutar ensayo completo", speaker_error)
                 return None
-        if input_mode == trial_model.INPUT_MODE_VOICE_NOISE:
-            noise = voice_protocol.resolve_noise_config(self.project_root, phase)
-            if not noise["ok"]:
-                messagebox.showwarning("Ejecutar ensayo completo", "\n".join(noise["errors"]))
+            # Estimulo PAREADO del corpus de audio (una locucion por celda; VOICE_NOISE nunca graba).
+            stimulus = self._corpus_stimulus(phase, case_id, variant_id, input_mode, reference_text, speaker_id, batch_trial)
+            if stimulus is None:
                 return None
-            paired = voice_protocol.find_paired_clean(self.project_root, case_id, variant_id, phase)
-            if paired is None:
-                if phase == trial_model.PHASE_FORMAL:
-                    messagebox.showwarning("Ejecutar ensayo completo",
-                                           f"{voice_protocol.ERROR_CLEAN_AUDIO_REQUIRED}: ejecute antes VOICE_CLEAN FORMAL de {case_id} {variant_id}.")
-                    return None
-                if not messagebox.askyesno("VOICE_NOISE (DEVELOPMENT)", "No hay audio VOICE_CLEAN valido para este caso/variante.\n"
-                                           "¿Capturar ahora el audio base (solo DEVELOPMENT)?"):
-                    return None
-                capture = self._capture_voice(case_id, variant_id, reference_text)
-                if capture is None:
-                    return None
-        elif input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
-            capture = self._capture_voice(case_id, variant_id, reference_text)
-            if capture is None:
-                return None  # cancelado antes de grabar: no hay resultado experimental
         repeat = self._repeat_info(case_id, variant_id, input_mode, phase,
                                    batch_reason=(batch_trial or {}).get("repeat_reason"))
         if repeat is None:
-            self._discard_capture(capture)
             return None
 
         self.command_textbox.delete("1.0", "end")
@@ -7253,8 +7506,11 @@ class VozLLMPLCGUI(ctk.CTk):
             else:
                 self._log(f"[VOICE] {input_mode}: audio congelado -> ASR (sin correccion humana)")
                 result = voice_protocol.prepare_voice_input(self.project_root, new_dir, input_mode, reference_text,
-                                                            self._experiment_asr, capture=capture, paired=paired, noise=noise)
+                                                            self._experiment_asr, stimulus=stimulus)
                 voice = result["voice"]
+                patch.update({key: voice.get(key) for key in (
+                    "audio_condition", "audio_source_path", "audio_sha256", "paired_audio_sha256", "audio_source_clean_sha256",
+                    "audio_manifest_sha256", "target_snr_db", "measured_snr_db")})
                 patch.update({"voice": voice, "asr": {"audio_reference": voice.get("asr_audio") or voice_protocol.CLEAN_AUDIO_FILENAME,
                                                       "asr_transcript": voice.get("asr_transcript_raw"), "wer": voice.get("wer"),
                                                       "noise_profile": voice.get("noise_profile_id"), "snr_db": voice.get("snr_db")},
@@ -7304,6 +7560,36 @@ class VozLLMPLCGUI(ctk.CTk):
             self._refresh_generated_trials()
             self._refresh_voice_panel()
 
+    def _corpus_stimulus(self, phase: str, case_id: str, variant_id: str, input_mode: str, reference_text: str,
+                         speaker_id: str, batch_trial: dict[str, Any] | None) -> dict[str, Any] | None:
+        """
+        VOICE_CLEAN: si la celda no tiene locucion, se graba UNA vez y se congela clean + noisy (antes del ASR); si ya existe
+        (incluido un reintento) se reutiliza EXACTAMENTE el mismo WAV, nunca se regraba. VOICE_NOISE: nunca abre el
+        microfono; exige la pareja congelada e integra (si falta, se aborta antes del ASR/LLM).
+        """
+        notify = (batch_trial or {}).get("notify") or (lambda title, text: messagebox.showwarning(title, text))
+        try:
+            if input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
+                entry = formal_audio.cell_entry(formal_audio.load_corpus(self.project_root, phase), case_id, variant_id)
+                if entry["state"] == formal_audio.STATE_NOT_RECORDED:
+                    capture = (batch_trial or {}).get("capture") or self._capture_voice(case_id, variant_id, reference_text)
+                    if capture is None or not capture.get("path"):
+                        return None  # cancelado antes de grabar: no hay resultado experimental
+                    try:
+                        formal_audio.register_capture(self.project_root, phase, case_id, variant_id, Path(capture["path"]),
+                                                      speaker_id, capture)
+                    finally:
+                        self._discard_capture(capture)
+                    self._log(f"[AUDIO] {case_id} {variant_id}: clean y par noisy congelados (antes del ASR).")
+                condition = formal_audio.CONDITION_CLEAN
+            else:
+                condition = formal_audio.CONDITION_NOISE
+            return {**formal_audio.stimulus(self.project_root, phase, case_id, variant_id, condition), "phase": phase}
+        except formal_audio.FormalAudioError as error:
+            notify("Estimulo de voz", f"PRECHECK ABORT ({input_mode} {case_id} {variant_id}): {error}")
+            self._log(f"[AUDIO] PRECHECK ABORT: {error}")
+            return None
+
     def _discard_capture(self, capture: dict[str, Any] | None) -> None:
         """La grabacion temporal se descarta SOLO despues de copiarse a la evidencia del ensayo."""
         if capture and capture.get("path"):
@@ -7334,29 +7620,44 @@ class VozLLMPLCGUI(ctk.CTk):
             panel.grid_remove()  # TEXT: sin controles de audio
             return
         panel.grid()
-        device = self.speech_recognizer.get_input_device_info()
-        lines = [f"Microfono: {device.get('name') or device.get('error') or '-'}",
-                 f"Speaker (pseudonimo): {self.experiment_speaker_var.get().strip() or '-'}"]
+        profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get()) or {}
+        case_id, variant_id = profile.get("case_id", ""), self.experiment_variant_var.get()
+        lines = [f"Speaker (pseudonimo): {self.experiment_speaker_var.get().strip() or '-'}"]
         if input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
-            lines.append("Al ejecutar se abre la captura: el hablante lee la frase de referencia.")
+            device = self.speech_recognizer.get_input_device_info()
+            lines.insert(0, f"Microfono: {device.get('name') or device.get('error') or '-'}")
+        try:
+            lines += self._cell_audio_lines(phase, case_id, variant_id, input_mode) if case_id else []
+        except (OSError, ValueError, KeyError) as error:
+            lines.append(f"Corpus de audio no legible: {error}")
+        if input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
+            lines.append("Celda sin grabar: al ejecutar se graba UNA vez y se congela clean + noisy antes del ASR.")
             self.capture_voice_button.grid(row=1, column=0, columnspan=2, padx=8, pady=(0, 8), sticky="ew")
         else:
-            profile = self._experiment_profiles_by_case.get(self.experiment_case_var.get()) or {}
-            paired = voice_protocol.find_paired_clean(self.project_root, profile.get("case_id", ""), self.experiment_variant_var.get(), phase) \
-                if profile else None
-            noise = voice_protocol.resolve_noise_config(self.project_root, phase)
-            lines.append(f"Audio base: {paired['trial_id'] if paired else 'no disponible (' + voice_protocol.ERROR_CLEAN_AUDIO_REQUIRED + ')'}")
-            if noise["ok"]:
-                lines.append(f"Noise profile: {noise['noise_profile_id']} ({noise['noise_profile_hash'][:12]}) · SNR: {noise['snr_db']} dB "
-                             f"[{noise['source']}]")
-            else:
-                lines.append("Ruido: " + "; ".join(noise["errors"]))
-            if phase == trial_model.PHASE_FORMAL:
-                lines.append("FORMAL: perfil y SNR de experimental_design.json (solo lectura).")
-            else:
-                self.noise_profile_button.grid(row=1, column=0, padx=(8, 4), pady=(0, 8), sticky="ew")
-                self.snr_button.grid(row=1, column=1, padx=(4, 8), pady=(0, 8), sticky="ew")
+            # VOICE_NOISE nunca graba: usa el par noisy congelado del MISMO clean (sin boton de grabar).
+            lines.append("VOICE_NOISE: sin grabacion; estimulo noisy congelado de la celda.")
+            if phase != trial_model.PHASE_FORMAL:
+                self.noise_profile_button.grid(row=1, column=0, columnspan=2, padx=8, pady=(0, 8), sticky="ew")
         self.voice_panel_var.set("\n".join(lines))
+
+    def _cell_audio_lines(self, phase: str, case_id: str, variant_id: str, input_mode: str) -> list[str]:
+        """Estado del estimulo pareado de la celda (corpus de audio): fuente unica para panel de voz y lotes."""
+        corpus = formal_audio.load_corpus(self.project_root, phase)
+        cell = formal_audio.cell_entry(corpus, case_id, variant_id)
+        state = cell["state"]
+        snr = formal_audio.load_config(self.project_root)["target_snr_db"]
+        master = formal_audio.noise_master_status(self.project_root, phase)
+        clean = {formal_audio.STATE_NOT_RECORDED: "NOT RECORDED", formal_audio.STATE_CLEAN_READY: "READY",
+                 formal_audio.STATE_PAIR_READY: "READY"}.get(state, "USED")
+        pair = "READY" if state in (formal_audio.STATE_PAIR_READY, *formal_audio.USED_STATES) else "NOT READY"
+        lines = [f"AUDIO NOISE MASTER: {'READY' if master['ready'] else 'MISSING'}"]
+        if input_mode == trial_model.INPUT_MODE_VOICE_CLEAN:
+            lines += [f"AUDIO CLEAN: {clean}", f"AUDIO NOISE PAIR: {pair}", f"SNR: {snr} dB"]
+        else:
+            source = f"{case_id}_{variant_id} {cell['clean_sha256'][:12]}" if cell.get("clean_sha256") else "NO DISPONIBLE (AUDIO_PAIR_MISSING)"
+            lines += [f"SOURCE CLEAN: {source}", f"AUDIO NOISE PAIR: {pair}", f"SNR: {snr} dB"
+                      + (f" (medido {cell['measured_snr_db']} dB)" if cell.get("measured_snr_db") is not None else "")]
+        return lines
 
     def select_dev_noise_profile(self) -> None:
         if self._selected_phase() == trial_model.PHASE_FORMAL:

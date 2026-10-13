@@ -43,6 +43,11 @@ MANIFEST_FILENAME = "batch_manifest.json"
 SUMMARY_JSON = "batch_summary.json"
 SUMMARY_CSV = "batch_summary.csv"
 INPUT_MODE = trial_model.INPUT_MODE_TEXT
+# Lotes por modalidad: TEXT (automatico), VOICE_CLEAN (asistido: una locucion humana por celda), VOICE_NOISE
+# (automatico: solo estimulos noisy congelados del MISMO clean). Manifiestos independientes por lote.
+BATCH_INPUT_MODES = (trial_model.INPUT_MODE_TEXT, trial_model.INPUT_MODE_VOICE_CLEAN, trial_model.INPUT_MODE_VOICE_NOISE)
+BATCH_PREFIXES = {trial_model.INPUT_MODE_TEXT: "TEXT", trial_model.INPUT_MODE_VOICE_CLEAN: "VCLEAN",
+                  trial_model.INPUT_MODE_VOICE_NOISE: "VNOISE"}
 VARIANT_ORDER = ("V1", "V2", "V3")
 BATCH_PHASES = (trial_model.PHASE_DEVELOPMENT, trial_model.PHASE_FORMAL)
 PHASE_TAGS = {trial_model.PHASE_DEVELOPMENT: "DEV", trial_model.PHASE_FORMAL: "FORMAL"}
@@ -102,6 +107,12 @@ CSV_FIELDS = (
     # Reintentos internos de Project.Archive (al final: las columnas anteriores no cambian).
     "archive_attempt_count", "archive_recovered_after_retry",
 )
+# Lotes de voz: columnas adicionales del estimulo pareado y del ASR (TEXT conserva exactamente CSV_FIELDS).
+VOICE_CSV_FIELDS = (
+    "audio_condition", "audio_sha256", "paired_audio_sha256", "audio_source_clean_sha256", "audio_manifest_sha256",
+    "target_snr_db", "measured_snr_db", "noise_master_sha256", "paired_clean_trial_id", "asr_audio_sha256",
+    "asr_transcript_raw", "asr_latency_ms", "wer", "substitutions", "deletions", "insertions", "reference_word_count",
+)
 
 
 def _now() -> str:
@@ -124,7 +135,8 @@ def case_is_evaluable(project_root: Path, case_id: str) -> bool:
     return oracle_runner.runtime_capability_check(S.load_oracle(project_root, case_id))["executable"]
 
 
-def build_plan(project_root: Path, case_ids: list[str] | None = None, variants: list[str] | tuple[str, ...] = VARIANT_ORDER) -> list[dict[str, Any]]:
+def build_plan(project_root: Path, case_ids: list[str] | None = None, variants: list[str] | tuple[str, ...] = VARIANT_ORDER,
+               input_mode: str = INPUT_MODE) -> list[dict[str, Any]]:
     """
     Plan determinista caso-mayor: D01 V1, D01 V2, D01 V3, D02 V1, ... El orden de casos sale del benchmark
     oficial y el de variantes de VARIANT_ORDER, nunca del orden de la seleccion ni del sistema de archivos.
@@ -147,7 +159,7 @@ def build_plan(project_root: Path, case_ids: list[str] | None = None, variants: 
             if variant_id not in variants:
                 continue
             command = cases[case_id]["variants"][variant_id]
-            plan.append({"index": len(plan), "case_id": case_id, "variant_id": variant_id, "input_mode": INPUT_MODE,
+            plan.append({"index": len(plan), "case_id": case_id, "variant_id": variant_id, "input_mode": input_mode,
                          "reference_text": command, "variant_hash": BC.variant_hash(command), "evaluable": evaluable,
                          "status": ENTRY_PENDING, "trial_id": None, "trial_dir": None, "superseded": [],
                          "started_at": None, "completed_at": None, "result": None, "notes": []})
@@ -231,9 +243,9 @@ def find_open_batch(project_root: Path) -> dict[str, Any] | None:
     return open_batches[-1] if open_batches else None
 
 
-def new_batch_id(project_root: Path, phase: str, now: datetime | None = None) -> str:
+def new_batch_id(project_root: Path, phase: str, now: datetime | None = None, input_mode: str = INPUT_MODE) -> str:
     stamp = (now or datetime.now()).strftime("%Y%m%d")
-    prefix = f"TEXT_{PHASE_TAGS[phase]}_{stamp}_"
+    prefix = f"{BATCH_PREFIXES[input_mode]}_{PHASE_TAGS[phase]}_{stamp}_"
     existing = {path.name for path in batches_root(project_root).glob(prefix + "*")} if batches_root(project_root).exists() else set()
     number = 1
     while f"{prefix}{number:03d}" in existing:
@@ -264,13 +276,16 @@ def create_batch(
     host_id: str | None = None,
     git: dict[str, Any] | None = None,
     now: datetime | None = None,
+    input_mode: str = INPUT_MODE,
 ) -> tuple[Path, dict[str, Any]]:
+    if input_mode not in BATCH_INPUT_MODES:
+        raise ValueError(f"Modalidad de lote invalida: {input_mode!r} (esperado {BATCH_INPUT_MODES}).")
     if phase not in BATCH_PHASES:
         raise ValueError(f"Fase de lote invalida: {phase!r} (esperado {BATCH_PHASES}).")
     if find_open_batch(project_root) is not None:
         raise ValueError(f"{ERROR_OPEN_BATCH}: ya existe un lote abierto; reanudelo o cancelelo primero.")
-    plan = build_plan(project_root, case_ids, variants)
-    batch_id = new_batch_id(project_root, phase, now)
+    plan = build_plan(project_root, case_ids, variants, input_mode)
+    batch_id = new_batch_id(project_root, phase, now, input_mode)
     catalog = BC.load_catalog(project_root)
     git = git if git is not None else git_info(project_root)
     manifest = {
@@ -278,7 +293,9 @@ def create_batch(
         "batch_id": batch_id,
         "phase": phase,
         "trial_kind": trial_model.trial_kind_for_phase(phase),
-        "input_mode": INPUT_MODE,
+        "input_mode": input_mode,
+        "batch_kind": {trial_model.INPUT_MODE_TEXT: "AUTOMATIC", trial_model.INPUT_MODE_VOICE_CLEAN: "ASSISTED_HUMAN_VOICE",
+                       trial_model.INPUT_MODE_VOICE_NOISE: "AUTOMATIC_FROZEN_STIMULI"}[input_mode],
         "benchmark_version": catalog.get("benchmark_version"),
         "selection": {"case_ids": list(dict.fromkeys(e["case_id"] for e in plan)),
                       "variants": list(dict.fromkeys(e["variant_id"] for e in plan))},
@@ -547,6 +564,10 @@ def trial_row(project_root: Path, record: dict[str, Any], entry: dict[str, Any],
         # Traza de Project.Archive (reintento ante la carrera de TIA con IM/SearchIndex); None = bridge anterior.
         "archive_attempt_count": archive.get("attempt_count"),
         "archive_recovered_after_retry": archive.get("recovered_after_retry"),
+        # Voz: datos del estimulo y del ASR para WER clean/noise y delta WER (TEXT: sin estas claves).
+        **({key: (record.get("voice") or {}).get(key) for key in VOICE_CSV_FIELDS}
+           if {record.get("input_mode"), entry.get("input_mode")} & {trial_model.INPUT_MODE_VOICE_CLEAN,
+                                                                      trial_model.INPUT_MODE_VOICE_NOISE} else {}),
     }
 
 
@@ -594,12 +615,13 @@ def write_summaries(project_root: Path, batch_dir: Path, manifest: dict[str, Any
                "progress": progress(manifest), "totals": batch_totals(manifest), "trials": rows}
     _write_json_atomic(batch_dir / SUMMARY_JSON, payload)
     temporary = batch_dir / (SUMMARY_CSV + ".tmp")
+    fields = CSV_FIELDS + (VOICE_CSV_FIELDS if manifest.get("input_mode", INPUT_MODE) != INPUT_MODE else ())
     with temporary.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS, extrasaction="ignore")
+        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         for row in rows:
             writer.writerow({key: ("" if row.get(key) is None else ";".join(row[key]) if isinstance(row.get(key), list) else row.get(key))
-                             for key in CSV_FIELDS})
+                             for key in fields})
     os.replace(temporary, batch_dir / SUMMARY_CSV)
     return {"json": str(batch_dir / SUMMARY_JSON), "csv": str(batch_dir / SUMMARY_CSV)}
 
@@ -613,8 +635,9 @@ def final_report_lines(manifest: dict[str, Any]) -> list[str]:
     if started and completed:
         seconds = int((datetime.fromisoformat(completed) - datetime.fromisoformat(started)).total_seconds())
         duration = f"{seconds // 3600:d}h {seconds % 3600 // 60:02d}m {seconds % 60:02d}s"
-    title = {STATUS_COMPLETED: "LOTE TEXT COMPLETADO", STATUS_CANCELLED: "LOTE TEXT DETENIDO",
-             STATUS_PAUSED: "LOTE TEXT PAUSADO"}.get(manifest["status"], f"LOTE TEXT {manifest['status']}")
+    mode = manifest.get("input_mode") or INPUT_MODE
+    title = {STATUS_COMPLETED: f"LOTE {mode} COMPLETADO", STATUS_CANCELLED: f"LOTE {mode} DETENIDO",
+             STATUS_PAUSED: f"LOTE {mode} PAUSADO"}.get(manifest["status"], f"LOTE {mode} {manifest['status']}")
     return [
         title, f"{manifest['batch_id']} · {manifest['phase']}", "",
         f"{totals['trials_recorded']} / {totals['trials_planned']} registrados ({state['completed']} terminados)", "",
@@ -682,5 +705,17 @@ def formal_guards(
     not_evaluable = sorted({e["case_id"] for e in plan if not e["evaluable"]})
     _check("cases_evaluable", not not_evaluable,
            (f"{', '.join(not_evaluable)}: el Oracle requiere extension del Runtime" if not_evaluable else "todos evaluables"))
+    modes = {e.get("input_mode", INPUT_MODE) for e in plan}
+    if modes & {trial_model.INPUT_MODE_VOICE_CLEAN, trial_model.INPUT_MODE_VOICE_NOISE}:
+        from trial_experiments import formal_audio
+
+        master = formal_audio.noise_master_status(project_root, trial_model.PHASE_FORMAL)
+        _check("audio_noise_master_ready", master["ready"], master.get("error") or f"master {master['sha256']}")
+    if trial_model.INPUT_MODE_VOICE_NOISE in modes:
+        from trial_experiments import formal_audio
+
+        pairs = formal_audio.noise_batch_preflight(project_root, trial_model.PHASE_FORMAL)
+        _check("audio_pairs_ready", pairs["ok"], f"PAIRS READY: {pairs['pairs_ready']} / {pairs['total']}"
+               + (f"; faltan: {', '.join(m.split(':')[0] for m in pairs['missing'][:12])}" if pairs["missing"] else ""))
     return {"ok": all(c["ok"] for c in checks), "checks": checks, "failed": [c["id"] for c in checks if not c["ok"]],
             "git": git, "checked_at": _now()}
