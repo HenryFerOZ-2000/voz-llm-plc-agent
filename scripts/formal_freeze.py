@@ -10,6 +10,8 @@ Uso:
       Declara el TIA MASTER FORMAL_READY (aprobacion humana explicita; solo metadata local de config/tia_projects.json).
 
   .venv/Scripts/python.exe scripts/formal_freeze.py build --suite-passed N --suite-failed 0 --suite-skipped N --tag formal-v1.0
+  .venv/Scripts/python.exe scripts/formal_freeze.py build ... --tag formal-v1.1 --freeze-id FORMAL_V1_1 --parent-freeze formal-v1.0
+      --reason "paired reproducible voice stimuli" --with-audio
       Escribe el manifiesto (ruta del diseno experimental) con hashes reales del commit actual. Exige git limpio en el
       alcance congelado, suite sin fallos, auditoria pre-FORMAL 32/32 y MASTER FORMAL_READY.
 """
@@ -46,6 +48,11 @@ def main(argv: list[str]) -> int:
     build.add_argument("--suite-failed", type=int, required=True)
     build.add_argument("--suite-skipped", type=int, required=True)
     build.add_argument("--tag", default="formal-v1.0")
+    build.add_argument("--freeze-id", default=SF.FREEZE_ID)
+    build.add_argument("--parent-freeze")
+    build.add_argument("--reason")
+    build.add_argument("--with-audio", action="store_true",
+                       help="v1.1: congela los estimulos de voz pareados (exige el ruido maestro aprobado y presente)")
     args = parser.parse_args(argv)
 
     if args.command == "validate":
@@ -74,7 +81,13 @@ def main(argv: list[str]) -> int:
     readiness = {"evaluable": audit["evaluable"], "total": audit["total"], "blockers": len(audit["not_evaluable"]),
                  "simulation_map_cases": audit["simulation_map_cases"], "generated_at": audit["generated_at"]}
     suite = {"passed": args.suite_passed, "failed": args.suite_failed, "skipped": args.suite_skipped}
-    manifest = SF.build_manifest(ROOT, suite, readiness, args.tag, KNOWN_LIMITATIONS)
+    if args.with_audio:
+        audio = SF.audio_state(ROOT)
+        if not audio["industrial_noise_master_ready"]:
+            print("AUDIO_NOISE_MASTER_READY = NO: no se congela v1.1 (ver config/formal_audio_config.json -> noise_master).")
+            return 1
+    manifest = SF.build_manifest(ROOT, suite, readiness, args.tag, KNOWN_LIMITATIONS, freeze_id=args.freeze_id,
+                                 parent_freeze=args.parent_freeze, freeze_reason=args.reason, include_audio=args.with_audio)
     path = ROOT / SF.manifest_relative_path(ROOT)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

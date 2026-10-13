@@ -31,6 +31,9 @@ from typing import Any
 
 FREEZE_SCHEMA_VERSION = 2
 FREEZE_ID = "FORMAL_V1"
+# v1.1: estimulos de voz pareados clean/noisy. El manifiesto anade la seccion "audio" (config de audio, version de la
+# mezcla, SNR objetivo y SHA-256 del ruido maestro industrial aprobado) y validate_freeze exige ese mismo master.
+AUDIO_FILES = ("config/formal_audio_config.json", "src/trial_experiments/formal_audio.py", "src/trial_experiments/voice_protocol.py")
 FROZEN_DIRS = ("src", "prompts", "schemas", "knowledge_base", "config", "data", "plcsim_runtime_bridge",
                "tia_openness_bridge", "scripts")
 FROZEN_ROOT_FILES = ("requirements.txt", "requirements-transfer.txt", "Abrir_Voz_LLM_PLC_Agent.pyw",
@@ -193,8 +196,29 @@ def oracle_states(project_root: Path) -> dict[str, Any]:
     return states
 
 
+def audio_state(project_root: Path) -> dict[str, Any]:
+    """Estimulos de voz pareados: parametros congelados de la mezcla y el ruido maestro FORMAL (aprobado y presente)."""
+    from trial_experiments import formal_audio as FA
+
+    config = FA.load_config(project_root)
+    master = FA.noise_master_status(project_root, "FORMAL", config)
+    return {
+        "audio_freeze_id": config["freeze_id"],
+        "target_snr_db": config["target_snr_db"],
+        "snr_tolerance_db": config["snr_tolerance_db"],
+        "mixing_algorithm_version": config["mixing_algorithm_version"],
+        "active_speech_method": config["active_speech_method"]["id"],
+        "noise_offset_salt": config["noise_offset"]["salt"],
+        "audio_config_hashes": {path: normalized_sha256(Path(project_root) / path) for path in AUDIO_FILES},
+        "industrial_noise_master_sha256": master["sha256"] if master["ready"] else None,
+        "industrial_noise_master_approved_by": config["noise_master"].get("approved_by"),
+        "industrial_noise_master_ready": master["ready"],
+    }
+
+
 def build_manifest(project_root: Path, suite: dict[str, Any], readiness: dict[str, Any], git_tag: str,
-                   known_limitations: list[str]) -> dict[str, Any]:
+                   known_limitations: list[str], freeze_id: str = FREEZE_ID, parent_freeze: str | None = None,
+                   freeze_reason: str | None = None, include_audio: bool = False) -> dict[str, Any]:
     from trial_experiments import experimental_design as ED
 
     project_root = Path(project_root)
@@ -205,9 +229,15 @@ def build_manifest(project_root: Path, suite: dict[str, Any], readiness: dict[st
     if missing_group_files:
         raise ValueError(f"Archivos de grupo fuera del alcance congelado: {missing_group_files}")
     oracles = oracle_states(project_root)
+    audio = audio_state(project_root) if include_audio else None
+    if audio is not None and not audio["industrial_noise_master_ready"]:
+        raise ValueError("AUDIO_NOISE_MASTER_NOT_READY: no se congela v1.1 sin el ruido maestro aprobado y presente.")
     return {
         "schema_version": FREEZE_SCHEMA_VERSION,
-        "freeze_id": FREEZE_ID,
+        "freeze_id": freeze_id,
+        "parent_freeze": parent_freeze,
+        "freeze_reason": freeze_reason,
+        **({"audio": audio} if audio is not None else {}),
         "status": "FROZEN",
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "git_commit": _git(project_root, "rev-parse", "HEAD"),
@@ -286,6 +316,14 @@ def validate_freeze(project_root: Path, manifest: dict[str, Any] | None = None) 
         errors.append("MASTER_MISMATCH: el archivo .zap18 del snapshot falta o cambio.")
     if master_now["folder_fingerprint_now"] != master_frozen.get("folder_fingerprint"):
         errors.append("MASTER_MISMATCH: el proyecto MASTER cambio desde la congelacion.")
+    if manifest.get("audio"):
+        audio_now, audio_frozen = audio_state(project_root), manifest["audio"]
+        if not audio_now["industrial_noise_master_ready"] or                 audio_now["industrial_noise_master_sha256"] != audio_frozen.get("industrial_noise_master_sha256"):
+            errors.append("AUDIO_NOISE_MASTER_MISMATCH: el ruido maestro falta, no esta aprobado o difiere del congelado.")
+        for key in ("target_snr_db", "snr_tolerance_db", "mixing_algorithm_version", "active_speech_method", "noise_offset_salt",
+                    "audio_config_hashes"):
+            if audio_now.get(key) != audio_frozen.get(key):
+                errors.append(f"AUDIO_SETTINGS_MISMATCH: {key}")
     environment = environment_versions()
     frozen_environment = manifest.get("environment") or {}
     if environment["python"].rsplit(".", 1)[0] != str(frozen_environment.get("python", "")).rsplit(".", 1)[0]:
@@ -298,4 +336,4 @@ def validate_freeze(project_root: Path, manifest: dict[str, Any] | None = None) 
                         "git_commit": manifest.get("git_commit")}}
 
 
-__all__ = ["build_manifest", "validate_freeze", "load_manifest", "frozen_files", "normalized_sha256", "FREEZE_SCHEMA_VERSION"]
+__all__ = ["build_manifest", "validate_freeze", "audio_state", "load_manifest", "frozen_files", "normalized_sha256", "FREEZE_SCHEMA_VERSION"]
