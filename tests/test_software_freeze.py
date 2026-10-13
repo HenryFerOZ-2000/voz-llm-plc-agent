@@ -6,6 +6,7 @@ o de TIA. Los estados dependientes de la PC (MASTER, configuracion TIA local, mo
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -125,7 +126,29 @@ def test_repository_freeze_manifest_matches_the_frozen_content_when_present():
     if manifest is None:
         pytest.skip("todavia no hay manifiesto de congelacion")
     current = set(SF.frozen_files(_ROOT))
+    drift = current != set(manifest["files"]) or any(SF.normalized_sha256(_ROOT / p) != manifest["files"].get(p) for p in current)
+    if drift and subprocess.run(["git", "branch", "--show-current"], cwd=_ROOT, capture_output=True, text=True).stdout.strip()             not in ("main", "master"):
+        # Rama de desarrollo de un NUEVO freeze (p.ej. v1.1): el software cambio y FORMAL debe quedar bloqueado
+        # hasta construir el nuevo manifiesto. En la rama canonica la deriva sigue siendo un fallo.
+        assert not SF.validate_freeze(_ROOT)["ok"]
+        pytest.xfail(f"software modificado tras {manifest['freeze_id']}: FORMAL bloqueado hasta el nuevo freeze")
     assert current == set(manifest["files"])
     assert {path: SF.normalized_sha256(_ROOT / path) for path in current} == manifest["files"]
     assert all(entry["status"] == "FROZEN" and entry["human_formal_approval"] == "APPROVED"
                for entry in manifest["oracles"].values())
+
+
+def test_v1_1_audio_freeze_requires_the_approved_noise_master_and_validates_it():
+    """FORMAL v1.1: sin ruido maestro aprobado no hay manifiesto con audio; un master distinto invalida el freeze."""
+    audio = SF.audio_state(_ROOT)
+    assert audio["target_snr_db"] == 10.0 and audio["mixing_algorithm_version"] == "PAIRED_ACTIVE_RMS_SNR_V1"
+    assert set(audio["audio_config_hashes"]) == set(SF.AUDIO_FILES)
+    if not audio["industrial_noise_master_ready"]:
+        with pytest.raises(ValueError, match="AUDIO_NOISE_MASTER_NOT_READY"):
+            SF.build_manifest(_ROOT, {}, {}, "formal-v1.1", [], freeze_id="FORMAL_V1_1", parent_freeze="formal-v1.0",
+                              freeze_reason="paired reproducible voice stimuli", include_audio=True)
+    manifest = dict(SF.load_manifest(_ROOT) or {"files": {}, "oracles": {}})
+    manifest["audio"] = {**audio, "industrial_noise_master_sha256": "0" * 64, "target_snr_db": 5.0}
+    errors = SF.validate_freeze(_ROOT, manifest)["errors"]
+    assert any(e.startswith("AUDIO_NOISE_MASTER_MISMATCH") for e in errors)
+    assert "AUDIO_SETTINGS_MISMATCH: target_snr_db" in errors

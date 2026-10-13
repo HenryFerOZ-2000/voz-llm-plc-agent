@@ -26,8 +26,10 @@ from test_phase1_download_and_trials import pipeline  # noqa: E402
 from test_execute_full_pipeline import temp_map, _tia_ready  # noqa: E402
 from test_experiment_working_io_map import _use_bench_copy, bench_map  # noqa: E402
 from test_phase4a_deferred_evaluation import _project  # noqa: E402
+from audio_fixtures import audio_env  # noqa: E402
+from trial_experiments import formal_audio as FA  # noqa: E402
 
-__all__ = ["pipeline", "temp_map", "_tia_ready", "bench_map"]
+__all__ = ["pipeline", "temp_map", "_tia_ready", "bench_map", "audio_env"]
 
 _ROOT = Path(__file__).resolve().parents[1]
 _INTEGRITY_BEFORE = B.integrity_snapshot(_ROOT)
@@ -320,7 +322,7 @@ def test_text_complete_trial_uses_exact_variant_without_mic_and_one_click_one_tr
     assert complete_flow["pipeline"]["download_calls"] == []  # nunca el pipeline inmediato/proyecto Normal
 
 
-def test_voice_clean_complete_trial_feeds_frozen_asr_transcript_into_the_same_pipeline(complete_flow, monkeypatch):
+def test_voice_clean_complete_trial_feeds_frozen_asr_transcript_into_the_same_pipeline(complete_flow, audio_env, monkeypatch):
     app, seen, tmp_path = complete_flow["app"], complete_flow["seen"], complete_flow["tmp_path"]
     _set_mode(app, "TEXT")
     _no_mic(monkeypatch, app)
@@ -336,6 +338,10 @@ def test_voice_clean_complete_trial_feeds_frozen_asr_transcript_into_the_same_pi
     assert seen["commands"][-1] == transcript == record["effective_input_text"]  # ASR congelado -> pipeline
     assert seen["parse_kwargs"][-1] == text_kwargs  # mismas llamadas que TEXT: sin prompt especial por modalidad
     assert record["voice"]["wer"] > 0 and record["voice"]["substitutions"] >= 1 and record["speaker_id"] == "S01"
+    # v1.1: el ASR recibio EXACTAMENTE el clean congelado de la celda (y su par noisy ya existia).
+    cell = FA.cell_entry(FA.load_corpus(app.project_root, trial_model.PHASE_DEVELOPMENT), "D03", "V1")
+    assert record["audio_sha256"] == record["voice"]["asr_audio_sha256"] == cell["clean_sha256"]
+    assert record["paired_audio_sha256"] == cell["noisy_sha256"] and cell["state"] == FA.STATE_USED_CLEAN
     manifest = json.loads((trial_dir / DE.MANIFEST_FILENAME).read_text(encoding="utf-8"))
     assert {"audio/clean_audio.wav", "audio/reference.txt", "audio/asr_result.json"} <= set(manifest["files"])
     assert dict(DE.verdict_table(record))["Voice Capture"] == "PASS"
@@ -344,27 +350,27 @@ def test_voice_clean_complete_trial_feeds_frozen_asr_transcript_into_the_same_pi
     assert DE.verify_trial_integrity(trial_dir)["ok"] is False
 
 
-def test_cancel_before_recording_creates_no_trial(complete_flow, monkeypatch):
+def test_cancel_before_recording_creates_no_trial(complete_flow, audio_env, monkeypatch):
     app = complete_flow["app"]
     _set_mode(app, "VOICE_CLEAN")
     monkeypatch.setattr(app, "_capture_voice", lambda *a: None)
     assert app.run_complete_trial() is None
     assert DE.list_trials(app.project_root) == []
+    assert FA.cell_entry(FA.load_corpus(app.project_root, trial_model.PHASE_DEVELOPMENT), "D03", "V1")["state"] == FA.STATE_NOT_RECORDED
 
 
-def test_formal_voice_noise_requires_paired_clean_and_never_records_again(complete_flow, monkeypatch):
+def test_formal_voice_noise_requires_paired_clean_and_never_records_again(complete_flow, audio_env, monkeypatch):
     app = complete_flow["app"]
     _set_mode(app, "VOICE_NOISE")
     app.experiment_phase_var.set(gui.EXPERIMENT_PHASE_LABELS[trial_model.PHASE_FORMAL])
     warnings: list[str] = []
     monkeypatch.setattr(gui.messagebox, "showwarning", lambda title, message, **k: warnings.append(message))
-    monkeypatch.setattr(gui.voice_protocol, "resolve_noise_config", lambda root, phase: {"ok": True, "errors": []})
 
     def _forbidden(*a, **k):
         raise AssertionError("FORMAL VOICE_NOISE nunca graba una nueva locucion")
     monkeypatch.setattr(app, "_capture_voice", _forbidden)
     assert app.run_complete_trial() is None
-    assert warnings and VP.ERROR_CLEAN_AUDIO_REQUIRED in warnings[-1]
+    assert warnings and "PRECHECK ABORT" in warnings[-1] and FA.ERROR_PAIR_MISSING in warnings[-1]
     assert DE.list_trials(app.project_root) == []
 
 
