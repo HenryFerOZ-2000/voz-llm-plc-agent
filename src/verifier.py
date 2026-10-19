@@ -262,6 +262,35 @@ def _effective_parameters(project_ir: PLCProjectIR) -> tuple[dict[str, Any], dic
     return parameters, provenance if isinstance(provenance, dict) else None
 
 
+# Miembros de instancia IEC validos en TODAS las plataformas destino (TIA V18, OpenPLC, CODESYS). Un CTU no tiene
+# salida "alcanzado" portable (TIA: QU, IEC: Q): se usa la salida EXPLICITA de su llamada (Q => ...), nunca un miembro.
+PORTABLE_INSTANCE_MEMBERS = {"TON": {"Q", "ET"}, "TP": {"Q", "ET"}, "CTU": {"CV"}, "R_TRIG": {"Q"}, "F_TRIG": {"Q"}}
+INSTANCE_MEMBER_PATTERN = re.compile(r"(?<![A-Za-z0-9_#])#?([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)")
+INVALID_INSTANCE_MEMBER = "INVALID_INSTANCE_MEMBER"
+
+
+def instance_member_errors(project_ir: PLCProjectIR) -> list[str]:
+    """
+    Antes de TIA: todo acceso "<x>.<miembro>" debe ser sobre una INSTANCIA IEC declarada y a un miembro que esa
+    instancia expone en todas las plataformas. Un acceso a un miembro de una variable simple, o a "C_x.Q" de un CTU
+    ("Tag #C_x.Q not defined" en TIA V18), es un error de generacion nuestro, no algo que deba descubrir TIA.
+    """
+    types = {variable.name: variable.data_type for variable in project_ir.pou.variables}
+    errors = []
+    for owner, member in sorted(set(INSTANCE_MEMBER_PATTERN.findall(project_ir.pou.implementation_code or ""))):
+        if owner not in types:
+            continue  # identificadores no declarados ya se informan aparte
+        allowed = PORTABLE_INSTANCE_MEMBERS.get(types[owner])
+        if allowed is None:
+            errors.append(f"{INVALID_INSTANCE_MEMBER}: {owner}.{member} - {owner} es {types[owner]}, no una instancia IEC "
+                          "con miembros.")
+        elif member not in allowed:
+            errors.append(f"{INVALID_INSTANCE_MEMBER}: {owner}.{member} - una instancia {types[owner]} no expone '{member}' "
+                          f"en todas las plataformas (validos: {', '.join(sorted(allowed))}); use la salida explicita de "
+                          "la llamada (p.ej. Q => <variable BOOL>).")
+    return errors
+
+
 def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -280,7 +309,8 @@ def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
         errors.append("La tarea principal no esta asociada a la POU PLC_PRG.")
 
     variable_names = [variable.name for variable in project_ir.pou.variables]
-    duplicate_variables = sorted({name for name in variable_names if variable_names.count(name) > 1})
+    folded_names=[name.casefold() for name in variable_names]
+    duplicate_variables = sorted({name for name in variable_names if folded_names.count(name.casefold()) > 1})
     if duplicate_variables:
         errors.append("La POU contiene variables duplicadas: " + ", ".join(duplicate_variables))
 
@@ -361,7 +391,8 @@ def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
     for variable in project_ir.pou.variables:
         if variable.location and not LOCATION_PATTERN.match(variable.location):
             errors.append(f"La ubicacion de {variable.name} no tiene formato valido: {variable.location}")
-        if variable.data_type not in STANDARD_DECLARATION_TYPES:
+        if variable.data_type not in STANDARD_DECLARATION_TYPES and not (
+                project_ir.pid_loops and variable.source=='generated_pid' and variable.name in {'ErrorBits','CurrentErrorBits'} and variable.data_type=='DWORD'):
             errors.append(f"Tipo de variable no soportado en IR: {variable.name}:{variable.data_type}")
 
     timer_variables = [variable for variable in project_ir.pou.variables if variable.data_type in {"TON", "TP"}]
@@ -378,6 +409,9 @@ def verify_project_ir(project_ir: PLCProjectIR) -> dict[str, Any]:
 
     if {"Q_Contactor_A", "Q_Contactor_B"}.issubset(used_identifiers) and not _has_safe_contactor_logic(project_ir.pou.implementation_code):
         errors.append("La IR no garantiza enclavamiento mutuo seguro entre Q_Contactor_A y Q_Contactor_B.")
+
+    if ((project_ir.metadata or {}).get("semantic_output") or {}).get("interaction_profile") == "normal":
+        errors.extend(instance_member_errors(project_ir))
 
     if not project_ir.test_cases:
         errors.append("La representacion intermedia debe incluir test cases basicos.")

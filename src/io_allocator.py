@@ -37,11 +37,12 @@ DEFAULT_STATE = STATE_LOCKED
 IEC_NAME_PATTERN = re.compile(r"^(?:AI|AO|[IQMTCFR])_[A-Za-z0-9_]+$")
 
 _WORD_ADDRESS = re.compile(r"^%?\s*([IQ])\s*W\s*(\d+)$", re.IGNORECASE)
-_BIT_ADDRESS = re.compile(r"^%?\s*([IQ])\s*(\d+)\s*\.\s*(\d+)$", re.IGNORECASE)
+# "%QX8.1"/"QX8.1" (notacion Siemens con X, la que muestra el mapa) equivale a "%Q8.1".
+_BIT_ADDRESS = re.compile(r"^%?\s*([IQ])\s*X?\s*(\d+)\s*\.\s*(\d+)$", re.IGNORECASE)
 _SPANISH_BIT_ADDRESS = re.compile(r"^(entrada|salida)\s+(\d+)\s*\.\s*(\d+)$", re.IGNORECASE)
 
 _ADDRESS_TOKEN = (
-    r"%?\s*[IQ]\s*\d+\s*\.\s*\d+"
+    r"%?\s*[IQ]\s*X?\s*\d+\s*\.\s*\d+"
     r"|%?\s*[IQ]\s*W\s*\d+"
     r"|entrada\s+\d+\s*\.\s*\d+"
     r"|salida\s+\d+\s*\.\s*\d+"
@@ -229,6 +230,46 @@ def _find_role_match(
     if not candidates:
         return None
     return min(candidates, key=lambda variable: _address_sort_key(variable.get("location", "")))
+
+
+# Palabras que solo dicen "es una salida/orden" y no identifican la FUNCION (Q_Motor_Enable ~ Q_Motor).
+_GENERIC_ROLE_WORDS = {"enable", "enabled", "output", "out", "cmd", "command", "signal"}
+
+
+def functional_role_key(text: str | None) -> str | None:
+    """
+    Clave de ROL funcional de un nombre o rol ("Q_Motor_Enable" -> "motor", "I_Level_High_Tank_1" ->
+    "level high tank 1"): sin prefijo de direccion, sin acentos, sin palabras genericas. Los numeros se
+    conservan (motor 1 != motor 2). None si no queda nada que identifique una funcion.
+    """
+    import unicodedata
+
+    plain = unicodedata.normalize("NFKD", _strip_direction_prefix(str(text or ""))).encode("ascii", "ignore").decode("ascii")
+    words = [w for w in re.split(r"[^a-z0-9]+", plain.lower()) if w and w not in _GENERIC_ROLE_WORDS]
+    return " ".join(words) or None
+
+
+def _role_reuse_candidate(
+    io_map: dict[str, Any], requested_name: str, exclude_addresses: set[str]
+) -> dict[str, Any] | None:
+    """
+    Recurso EXISTENTE (ASSIGNED/LOCKED, misma clase y tipo) que ya cumple la funcion pedida con otro nombre:
+    por su nombre ("Q_Motor" para "Q_Motor_Enable") o por su semantic_role declarado. Solo si es UNICO: con
+    varios candidatos no se adivina. Los alias no cuentan (historicamente se escribieron automaticamente).
+    """
+    key = functional_role_key(requested_name)
+    if not key:
+        return None
+    direction, analog = _direction_of_name(requested_name), _is_analog_name(requested_name)
+    candidates = [
+        variable for variable in io_map.get("variables", [])
+        if variable.get("state", DEFAULT_STATE) in (STATE_ASSIGNED, STATE_LOCKED)
+        and variable.get("class") == direction
+        and _is_analog_address(str(variable.get("location", ""))) == analog
+        and variable.get("location") not in exclude_addresses
+        and key in {functional_role_key(variable.get("name")), functional_role_key(variable.get("semantic_role"))}
+    ]
+    return candidates[0] if len(candidates) == 1 else None
 
 
 def _is_analog_address(address: str) -> bool:
@@ -437,21 +478,41 @@ def _compatible_free_or_assigned(
     return min(candidates, key=lambda variable: _address_sort_key(variable.get("location", "")))
 
 
-def propose_assignment(io_map: dict[str, Any], requests: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def propose_assignment(
+    io_map: dict[str, Any], requests: list[dict[str, Any]], *, reserved_names: set[str] | None = None
+) -> list[dict[str, Any]]:
     """
     Core allocator (section 7/18): for each request, returns a proposal - it NEVER mutates the
     map. Priority when no explicit address is given: (1) reuse an existing variable that already
     has this exact name, (2) claim a compatible FREE channel, (3) offer to reassign a compatible
     ASSIGNED channel (conflict=True, still requires confirmation), (4) never touch LOCKED -
     if nothing else is available, the proposal comes back blocked.
+    reserved_names protects channels already referenced by this program, even when FREE.
     """
     proposals: list[dict[str, Any]] = []
+    reserved_by_address = {v["location"]: v["name"] for v in io_map.get("variables", [])
+                           if v.get("name") in (reserved_names or set()) and v.get("location")}
     # Direcciones ya reclamadas por una peticion ANTERIOR en este mismo lote (seccion 8/20/41: dos
     # roles distintos sin direccion explicita, p. ej. "dos motores", nunca deben terminar
     # apuntando al mismo canal FREE/ASSIGNED solo porque ambos consultan el mismo mapa estatico).
     claimed_in_batch: set[str] = set()
     for request in requests:
         proposed_name = request.get("functional_name_hint") or request.get("proposed_name")
+        if not proposed_name:
+            # Some structured replies describe the same digital request as a
+            # variable. Accept that spelling only with an explicit compatible
+            # direction/type; it still goes through the normal channel guards.
+            name=request.get('name')
+            expected_prefix={'input':'I_','output':'Q_'}.get(request.get('class'))
+            if (isinstance(name,str) and expected_prefix and name.startswith(expected_prefix)
+                    and request.get('type')=='BOOL'):
+                proposed_name=name
+        if not isinstance(proposed_name, str) or not proposed_name.strip():
+            proposals.append({'address': None, 'proposed_name': None, 'current_name': None,
+                'current_state': None, 'conflict': False, 'blocked': True,
+                'reason': 'IO_ASSIGNMENT_FORMAT: falta functional_name_hint o proposed_name con un nombre de variable valido.'})
+            continue
+        proposed_name = proposed_name.strip()
         address = request.get("address")
         if not address and request.get("address_text"):
             address = normalize_address(request["address_text"])
@@ -473,6 +534,15 @@ def propose_assignment(io_map: dict[str, Any], requests: list[dict[str, Any]]) -
                 continue
             variable = check["variable"]
             state = variable.get("state", DEFAULT_STATE)
+            if address in reserved_by_address and proposed_name != reserved_by_address[address]:
+                proposals.append({
+                    "address": address, "proposed_name": proposed_name,
+                    "current_name": variable.get("name"), "current_state": state,
+                    "conflict": True, "blocked": True,
+                    "reason": (f"El programa ya utiliza {reserved_by_address[address]} en {address}; "
+                               f"no se puede asignar ese mismo canal a {proposed_name}."),
+                })
+                continue
             if state == STATE_LOCKED:
                 proposals.append(
                     {
@@ -578,6 +648,27 @@ def propose_assignment(io_map: dict[str, Any], requests: list[dict[str, Any]]) -
                 continue
 
         existing = find_variable_by_name(io_map, proposed_name)
+        # reuse_by_role (necesidad implicita de Modo Normal): el rol ya cubierto por otro nombre se reutiliza
+        # tal cual (el programa se vincula a ESE simbolo; nunca se crea un recurso duplicado para la funcion).
+        role_match = (_role_reuse_candidate(io_map, proposed_name, claimed_in_batch)
+                      if request.get("reuse_by_role") and existing is None else None)
+        if role_match is not None:
+            proposals.append(
+                {
+                    "address": role_match.get("location"),
+                    "proposed_name": role_match.get("name"),
+                    "current_name": role_match.get("name"),
+                    "current_state": role_match.get("state", DEFAULT_STATE),
+                    "conflict": False,
+                    "blocked": False,
+                    "reason": (f"La funcion de {proposed_name} ya esta cubierta por {role_match.get('name')} "
+                               f"({role_match.get('location')}) - se reutiliza, sin crear un recurso nuevo."),
+                    "semantic_reuse": True,
+                    "requested_name": proposed_name
+                }
+            )
+            claimed_in_batch.add(role_match.get("location"))
+            continue
         if existing is not None and existing.get("location") not in claimed_in_batch:
             proposals.append(
                 {
@@ -593,7 +684,8 @@ def propose_assignment(io_map: dict[str, Any], requests: list[dict[str, Any]]) -
             claimed_in_batch.add(existing.get("location"))
             continue
 
-        free_candidate = _compatible_free_or_assigned(io_map, proposed_name, STATE_FREE, exclude_addresses=claimed_in_batch)
+        free_candidate = _compatible_free_or_assigned(
+            io_map, proposed_name, STATE_FREE, exclude_addresses=claimed_in_batch | set(reserved_by_address))
         if free_candidate is not None:
             proposals.append(
                 {
@@ -609,7 +701,10 @@ def propose_assignment(io_map: dict[str, Any], requests: list[dict[str, Any]]) -
             claimed_in_batch.add(free_candidate.get("location"))
             continue
 
-        assigned_candidate = _compatible_free_or_assigned(io_map, proposed_name, STATE_ASSIGNED, exclude_addresses=claimed_in_batch)
+        # allow_reassign=False (necesidad implicita de Modo Normal): un canal ASSIGNED a otra funcion no se toma.
+        assigned_candidate = (_compatible_free_or_assigned(io_map, proposed_name, STATE_ASSIGNED,
+                                                         exclude_addresses=claimed_in_batch | set(reserved_by_address))
+                              if request.get("allow_reassign", True) else None)
         if assigned_candidate is not None:
             proposals.append(
                 {
@@ -652,7 +747,12 @@ def propose_assignment(io_map: dict[str, Any], requests: list[dict[str, Any]]) -
     # reclamo via `claimed_in_batch` - eso es exactamente lo que producia el bug real
     # ("I_Start_Motor_2" duplicado en el mapa: %IX16.4 y %IX16.5 a la vez). Se colapsan en UNA
     # sola direccion (la primera resuelta en este lote), nunca se vuelve a consultar el allocator.
+    # Si el MISMO nombre llega tambien con una direccion dicha por el usuario ("usa %QX1.5 para la bomba"),
+    # esa direccion explicita es la que prevalece (nunca la del canal libre elegido para la mencion implicita).
     first_proposal_for_name: dict[str, dict[str, Any]] = {}
+    for proposal, request in zip(proposals, requests):
+        if not proposal["blocked"] and (request.get("address") or request.get("address_text")):
+            first_proposal_for_name.setdefault(proposal["proposed_name"], proposal)
     for index, proposal in enumerate(proposals):
         if proposal["blocked"]:
             continue
@@ -708,6 +808,50 @@ def propose_assignment(io_map: dict[str, Any], requests: list[dict[str, Any]]) -
     for proposal in proposals:
         proposal["requires_confirmation"] = proposal["conflict"] and not proposal["blocked"]
     return proposals
+
+
+_CHANNEL_CLASSES = {
+    ("input", False): ("DI", "entradas digitales"),
+    ("output", False): ("DO", "salidas digitales"),
+    ("input", True): ("AI", "entradas analogicas"),
+    ("output", True): ("AO", "salidas analogicas"),
+}
+
+
+def capacity_gap(io_map: dict[str, Any], proposals: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """
+    Falta de HARDWARE (no una ambiguedad): por clase de canal, cuantos recursos NUEVOS pide el programa y
+    cuantos canales FREE compatibles tiene el mapa. Solo cuenta lo que necesita un canal nuevo (las
+    reutilizaciones por nombre/funcion no consumen canal). None si ninguna propuesta quedo bloqueada.
+    """
+    if not any(proposal.get("blocked") for proposal in proposals):
+        return None
+    needed: dict[tuple[str, bool], list[str]] = {}
+    for proposal in proposals:
+        name = str(proposal.get("proposed_name") or "")
+        if proposal.get("blocked") or proposal.get("current_state") == STATE_FREE:
+            direction = _direction_of_name(name)
+            if direction:
+                needed.setdefault((direction, _is_analog_name(name)), []).append(name)
+    shortages = []
+    for (direction, analog), names in needed.items():
+        available = sum(1 for variable in io_map.get("variables", [])
+                        if variable.get("state", DEFAULT_STATE) == STATE_FREE and variable.get("class") == direction
+                        and _is_analog_address(str(variable.get("location", ""))) == analog)
+        if available < len(names):
+            code, label = _CHANNEL_CLASSES[(direction, analog)]
+            required = (f"Se requiere 1 {code} compatible" if len(names) == 1
+                        else f"Se requieren {len(names)} {code} compatibles")
+            roles = ", ".join(functional_role_key(name) or name for name in names)
+            shortages.append({"channel_class": code, "required": len(names), "available": available,
+                              "resources": names,
+                              "message": (f"No existen suficientes {label} disponibles para implementar el programa. "
+                                          f"{required} y actualmente hay {available} "
+                                          f"disponible{'s' if available != 1 else ''} (para: {roles}; {', '.join(names)}).")})
+    blocked = [proposal.get("proposed_name") for proposal in proposals if proposal.get("blocked")]
+    message = " ".join(item["message"] for item in shortages) or (
+        "No hay canales fisicos compatibles disponibles para: " + ", ".join(str(name) for name in blocked) + ".")
+    return {"code": "SYSTEM_CAPABILITY_GAP", "shortages": shortages, "blocked_resources": blocked, "message": message}
 
 
 SOURCE_AUTO_ALLOCATOR = "AUTO_ALLOCATOR"

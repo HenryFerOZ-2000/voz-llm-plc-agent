@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import copy
 import textwrap
 from typing import Any
 
@@ -25,11 +26,27 @@ from functional_requirements import (
     sensor_watchdogs,
     strip_external_prefix,
     detect_timed_sequences,
+    SEQUENCE_REPEAT_CONTINUOUS,
+    SEQUENCE_REPEAT_HOLD,
+    conditional_output_names,
+    conditional_outputs,
+    counter_output_names,
+    pulse_counters,
+    detect_composed_program,
+    force_offs,
+    latch_memory,
+    latches,
+    hysteresis_memory,
+    hysteresis_switches,
+    timed_sequence_aux_names,
+    timed_sequence_enable_condition,
     timed_sequence_internal_names,
+    timed_sequence_repeat,
+    timed_sequence_start_mode,
     timed_sequence_steps,
     watchdog_internal_names
 )
-from functional_resources import condition_identifiers
+from functional_resources import condition_identifiers, normalize_condition
 from utils import build_io_map_index, get_project_root, load_json_file
 
 
@@ -212,6 +229,16 @@ def _generate_motor_latch_body(parameters: dict[str, Any]) -> str:
     )
 
 
+def _generate_motor_latch_body_product(parameters: dict[str, Any]) -> str:
+    from functional_requirements import latch_start_edge_names
+    start = _param(parameters, 'trigger_input', default='I_Start')
+    names = latch_start_edge_names(_param(parameters, 'run_latch', default='M_RunLatch'))
+    prefix = '\n'.join([
+        f"{names['pulse']} := {names['initialized']} AND {start} AND NOT {names['previous']};",
+        f"{names['previous']} := {start};", f"{names['initialized']} := TRUE;", ''])
+    return prefix + _generate_motor_latch_body({**parameters, 'trigger_input': names['pulse']})
+
+
 def _generate_safe_start_alarm_body(parameters: dict[str, Any]) -> str:
     start_input = _param(parameters, "trigger_input", default="I_Start")
     # Opcional: sin la funcion en el comando, valor neutro seguro (nunca pulsado); no se inventa ningun tag.
@@ -368,6 +395,36 @@ def _generate_counter_pulses_body(parameters: dict[str, Any]) -> str:
     )
 
 
+def _generate_counter_pulses_body_explicit(parameters: dict[str, Any]) -> str:
+    """
+    Modo Normal: mismo comportamiento que _generate_counter_pulses_body, pero la instancia CTU publica sus salidas por
+    la LLAMADA (Q => alcanzado, CV => valor) y la logica usa esos simbolos. "<instancia>.Q" no existe en un CTU_INT de
+    TIA V18 (su salida se llama QU) -> "Tag #C_x.Q not defined"; la llamada con salidas es valida en todas las
+    plataformas. Experimentacion conserva la plantilla congelada.
+    """
+    pulse_input = _param(parameters, "pulse_input", default="I_Sensor1")
+    reset_input = _optional_tag(parameters, "reset_input") or "FALSE"
+    emergency_input = _param(parameters, "emergency_input", default="I_Emergency")
+    output_tag = _param(parameters, "output", default="Q_Alarm")
+    counter_tag = _param(parameters, "counter", default="C_PulseCount")
+    edge_detector = _param(parameters, "edge_detector", default="R_SensorPulse")
+    preset = _param(parameters, "preset", default=INTENT_VALUE_DEFAULTS["INT_COUNTER_PULSES"]["preset"])
+    outputs = counter_output_names(counter_tag)
+    return _dedented(
+        f"""\
+        (* Conteo de pulsos: CTU con salidas explicitas (alcanzado = {outputs['done']}, valor = {outputs['value']}) *)
+        {edge_detector}(CLK := {pulse_input});
+        {counter_tag}(CU := {edge_detector}.Q, R := {reset_input} OR {emergency_input}, PV := {preset}, Q => {outputs['done']}, CV => {outputs['value']});
+        {output_tag} := {outputs['done']} AND NOT {emergency_input};
+        """
+    )
+
+
+# Modo Normal: plantillas de catalogo que necesitan otra forma de generacion (las de Experimentacion no cambian).
+NORMAL_TEMPLATE_OVERRIDES = {"INT_COUNTER_PULSES": _generate_counter_pulses_body_explicit,
+                             'INT_MOTOR_LATCH': _generate_motor_latch_body_product}
+
+
 def _generate_counter_reset_body(parameters: dict[str, Any]) -> str:
     reset_input = _param(parameters, "reset_input", default="I_Reset")
     counter_tag = _param(parameters, "counter", default="C_PulseCount")
@@ -415,6 +472,16 @@ def _generate_vfd_enable_no_alarm_body(parameters: dict[str, Any]) -> str:
 
 
 def _generate_manual_auto_mode_body(parameters: dict[str, Any]) -> str:
+    if parameters.get('_mode_selection_only') is True:
+        auto_input = _param(parameters, 'auto_input', default='I_Mode_Auto')
+        emergency = _param(parameters, 'emergency_input', default='FALSE')
+        auto_memory = _param(parameters, 'auto_mode_memory', default='M_AutoMode')
+        manual_memory = _param(parameters, 'manual_mode_memory', default='M_ManualMode')
+        return _dedented(f'''\
+            (* Seleccion de modo: no ordena ningun actuador. *)
+            {auto_memory} := {auto_input} AND NOT {emergency};
+            {manual_memory} := NOT {auto_memory};
+            ''')
     manual_command = _optional_tag(parameters, "manual_command_input")
     auto_command = _optional_tag(parameters, "auto_command_input")
     if manual_command or auto_command:
@@ -1196,7 +1263,11 @@ def _composition_condition(expression: str, context: str) -> str:
     if condition_identifiers(expression) is None:
         raise CompositionNotSupportedError(
             f"{COMPOSITION_NOT_SUPPORTED}: la condicion de {context} no es una expresion booleana de tags: {expression!r}")
-    return " ".join(expression.split())
+    return normalize_condition(expression)
+
+
+def _number_literal(value: float) -> str:
+    return str(int(value)) if float(value).is_integer() else repr(float(value))
 
 
 def _ordered_outputs(outputs: list[str], dependencies: dict[str, set[str]]) -> list[str]:
@@ -1274,43 +1345,162 @@ def _generate_composed_program(
         for output in watchdog["affected_outputs"]:
             faults_by_output.setdefault(output, []).append(fault)
 
-    # --- Secuencias temporizadas ----------------------------------------------------------------
+    # --- Secuencias (N etapas; disparo, transiciones, repeticion y estado final) ------------------
     stop_inputs: list[str] = []
     output_steps: dict[str, list[str]] = {}
+    numeric_steps: dict[str, list[tuple[str, Any]]] = {}
+    from functional_requirements import sequence_step_outputs
+    # Contribuciones por condicion (salidas condicionadas, histeresis, fallas de secuencia): OR con el resto.
+    condition_terms: dict[str, list[str]] = {}
+    blocking = [(entry, _composition_condition(entry["condition"], "bloqueo force_off")) for entry in force_offs(functional_requirements)]
     for index, requirement in enumerate(detect_timed_sequences(functional_requirements), start=1):
         steps = timed_sequence_steps(requirement)
+        if not steps:
+            raise CompositionNotSupportedError(f"{COMPOSITION_NOT_SUPPORTED}: la secuencia {index} no tiene etapas con salidas")
         names = timed_sequence_internal_names(index, requirement)
-        start_input = str(requirement.get("start_input") or "FALSE")
-        stop_input = str(requirement.get("stop_input") or "FALSE")
+        aux = timed_sequence_aux_names(index, requirement)
+        repeat, _ = timed_sequence_repeat(requirement)
+        start_mode = timed_sequence_start_mode(requirement)
+        start_input = str(requirement.get("start_input") or "FALSE").strip()
+        stop_input = str(requirement.get("stop_input") or "FALSE").strip()
+        sequence_reset = str(requirement.get("reset_input") or "").strip()
         if stop_input != "FALSE":
             stop_inputs.append(stop_input)
-        mode_condition = str(requirement.get("mode_condition") or "").strip()
-        sequence_outputs = {output for step in steps for output in step["outputs"]}
+        enable_condition = timed_sequence_enable_condition(requirement)
+        sequence_outputs = {output for step in steps for output in sequence_step_outputs(step)}
         sequence_faults = list(dict.fromkeys(f for o in sequence_outputs for f in faults_by_output.get(o, [])))
         stop_terms = [emergency, stop_input] + sequence_faults
-        start_terms = [start_input]
-        if mode_condition:
-            condition = _composition_condition(mode_condition, f"modo de la secuencia {index}")
+        # Un bloqueo que apaga una salida de la secuencia tambien la lleva a reposo (nunca re-energiza sola).
+        stop_terms += [f"({condition})" for entry, condition in blocking if set(entry["outputs"]) & sequence_outputs]
+        start_terms: list[str] = []
+        if start_mode == "input":
+            start_terms += [start_input, f"NOT {aux['start_prev']}"]  # flanco: sin rearranque con el pulsador mantenido
+        if enable_condition:
+            condition = _composition_condition(enable_condition, f"habilitacion de la secuencia {index}")
             stop_terms.append(f"NOT ({condition})")
             start_terms.append(f"({condition})")
         start_terms += [f"NOT {fault}" for fault in sequence_faults]
         all_steps = [entry["step"] for entry in names]
         idle = " OR ".join(all_steps)
-        lines.append(f"(* Secuencia temporizada {index}: {len(steps)} etapa(s) *)")
+        lines.append(f"(* Secuencia {index}: {len(steps)} etapa(s), repeticion {repeat}; al detenerse o terminar sus salidas quedan apagadas *)")
         lines.append(f"IF {' OR '.join(stop_terms)} THEN")
         lines.extend(f"    {step} := FALSE;" for step in all_steps)
-        lines.append(f"ELSIF {' AND '.join(start_terms)} AND NOT ({idle}) THEN")
+        lines.append(f"ELSIF {' AND '.join(start_terms + [f'NOT ({idle})'])} THEN")
         lines.append(f"    {all_steps[0]} := TRUE;")
+        if aux["fault"]:
+            lines.append(f"    {aux['fault']} := FALSE;")  # un nuevo arranque reconoce la falla anterior
         lines.append("END_IF;")
+        if aux["start_prev"]:
+            lines.append(f"{aux['start_prev']} := {start_input};")
+        if aux["fault"] and sequence_reset:
+            lines.append(f"IF {sequence_reset} THEN")
+            lines.append(f"    {aux['fault']} := FALSE;")
+            lines.append("END_IF;")
         for position, (step, entry) in enumerate(zip(steps, names), start=1):
-            if entry["timer"]:
-                lines.append(f"{entry['timer']}(IN := {entry['step']}, PT := {step['duration']});")
-                lines.append(f"IF {entry['timer']}.Q THEN")
-                lines.append(f"    {entry['step']} := FALSE;")
-                lines.append(f"    {names[position]['step']} := TRUE;")
-                lines.append("END_IF;")
             for output in step["outputs"]:
                 output_steps.setdefault(output, []).append(entry["step"])
+            for command in step.get('analog_outputs', []):
+                numeric_steps.setdefault(command['output'], []).append((entry['step'], command['value']))
+            last = position == len(steps)
+            if last and repeat == SEQUENCE_REPEAT_HOLD:
+                continue  # la ultima etapa se mantiene hasta Stop / fin de la habilitacion
+            following = names[position]["step"] if not last else (all_steps[0] if repeat == SEQUENCE_REPEAT_CONTINUOUS else "")
+            advance = [f"    {entry['step']} := FALSE;"] + ([f"    {following} := TRUE;"] if following else [])
+            if entry["timer"]:
+                lines.append(f"{entry['timer']}(IN := {entry['step']}, PT := {step['duration']});")
+            condition = (_composition_condition(step["advance_on"], f"transicion de la etapa {position} de la secuencia {index}")
+                         if step["advance_on"] else "")
+            if step["timeout_alarm_output"] and condition and entry["timer"]:
+                lines.append(f"IF {entry['step']} AND ({condition}) THEN")
+                lines.extend(advance)
+                lines.append(f"ELSIF {entry['timer']}.Q THEN")
+                lines.append(f"    {entry['step']} := FALSE;")
+                lines.append(f"    {aux['fault']} := TRUE;")
+                lines.append("END_IF;")
+                condition_terms.setdefault(step["timeout_alarm_output"], []).append(aux["fault"])
+            elif condition and entry["timer"]:
+                lines.append(f"IF {entry['step']} AND (({condition}) OR {entry['timer']}.Q) THEN")
+                lines.extend(advance)
+                lines.append("END_IF;")
+            elif condition:
+                lines.append(f"IF {entry['step']} AND ({condition}) THEN")
+                lines.extend(advance)
+                lines.append("END_IF;")
+            elif entry["timer"]:
+                lines.append(f"IF {entry['timer']}.Q THEN")
+                lines.extend(advance)
+                lines.append("END_IF;")
+            else:
+                raise CompositionNotSupportedError(
+                    f"{COMPOSITION_NOT_SUPPORTED}: la etapa {position} de la secuencia {index} no tiene duracion ni condicion de fin")
+
+    # --- Salidas condicionadas e histeresis -------------------------------------------------------
+    for index, entry in enumerate(conditional_outputs(functional_requirements), start=1):
+        condition = _composition_condition(entry["condition"], f"salida condicionada {index}")
+        if not entry["outputs"]:
+            raise CompositionNotSupportedError(f"{COMPOSITION_NOT_SUPPORTED}: salida condicionada {index} sin salidas")
+        term = f"({condition})"
+        if entry["duration"]:
+            if not TIME_LITERAL_PATTERN.match(entry["duration"]):
+                raise CompositionNotSupportedError(f"{COMPOSITION_NOT_SUPPORTED}: duracion invalida {entry['duration']!r}")
+            internal = conditional_output_names(index)
+            lines.append(f"(* Salida condicionada {index}: pulso de {entry['duration']} al cumplirse la condicion *)")
+            lines.append(f"IF ({condition}) AND NOT {internal['prev']} THEN")
+            lines.append(f"    {internal['active']} := TRUE;")
+            lines.append("END_IF;")
+            lines.append(f"{internal['prev']} := ({condition});")
+            lines.append(f"{internal['timer']}(IN := {internal['active']}, PT := {entry['duration']});")
+            lines.append(f"IF {internal['timer']}.Q THEN")
+            lines.append(f"    {internal['active']} := FALSE;")
+            lines.append("END_IF;")
+            term = internal["active"]
+        for output in entry["outputs"]:
+            condition_terms.setdefault(output, []).append(term)
+    for index, switch in enumerate(hysteresis_switches(functional_requirements), start=1):
+        if 'on_value' in switch:
+            continue  # Numeric hysteresis is emitted after its enable latch is assigned.
+        memory = hysteresis_memory(index)
+        if switch["on_above"] is not None and switch["off_below"] is not None:
+            on = f"{switch['input']} > {_number_literal(switch['on_above'])}"
+            off = f"{switch['input']} < {_number_literal(switch['off_below'])}"
+        elif switch["on_below"] is not None and switch["off_above"] is not None:
+            on = f"{switch['input']} < {_number_literal(switch['on_below'])}"
+            off = f"{switch['input']} > {_number_literal(switch['off_above'])}"
+        else:
+            raise CompositionNotSupportedError(f"{COMPOSITION_NOT_SUPPORTED}: histeresis {index} sin ambos umbrales")
+        lines.append(f"(* Histeresis {index}: {switch['output']} se activa con {on} y solo se desactiva con {off} *)")
+        lines.append(f"IF {on} THEN")
+        lines.append(f"    {memory} := TRUE;")
+        lines.append(f"ELSIF {off} THEN")
+        lines.append(f"    {memory} := FALSE;")
+        lines.append("END_IF;")
+        condition_terms.setdefault(switch["output"], []).append(memory)
+    for counter in pulse_counters(functional_requirements):
+        count = _composition_condition(counter["count"], f"conteo del contador {counter['name']}")
+        reset = _composition_condition(counter["reset"], f"reinicio del contador {counter['name']}") if counter["reset"] else "FALSE"
+        preset = counter["preset"]
+        if preset is None or float(preset) < 1 or float(preset) != int(preset):
+            raise CompositionNotSupportedError(f"{COMPOSITION_NOT_SUPPORTED}: contador {counter['name']} sin preset entero positivo")
+        reset_terms = " OR ".join(f"({term})" if " " in term else term for term in (reset, emergency) if term != "FALSE") or "FALSE"
+        lines.append(f"(* Contador {counter['name']}: cuenta flancos de {count} hasta {int(preset)}; "
+                     f"alcanzado = {counter['done']}, valor = {counter['value']} *)")
+        lines.append(f"{counter['instance']}(CU := {count}, R := {reset_terms}, PV := {int(preset)}, "
+                     f"Q => {counter['done']}, CV => {counter['value']});")
+        for output in counter["outputs"]:
+            condition_terms.setdefault(output, []).append(counter["done"])
+    for index, entry in enumerate(latches(functional_requirements), start=1):
+        memory = latch_memory(index)
+        set_condition = _composition_condition(entry["set"], f"activacion del enclavamiento {index}")
+        reset_condition = _composition_condition(entry["reset"], f"liberacion del enclavamiento {index}")
+        lines.append(f"(* Enclavamiento {index}: {', '.join(entry['outputs'])} se activa con {set_condition} y se libera con "
+                     f"{reset_condition} (liberacion prioritaria) *)")
+        lines.append(f"IF {reset_condition} THEN")
+        lines.append(f"    {memory} := FALSE;")
+        lines.append(f"ELSIF {set_condition} THEN")
+        lines.append(f"    {memory} := TRUE;")
+        lines.append("END_IF;")
+        for output in entry["outputs"]:
+            condition_terms.setdefault(output, []).append(memory)
 
     # --- Ordenes manuales -----------------------------------------------------------------------
     stop_any = " OR ".join(dict.fromkeys(stop_inputs))
@@ -1339,13 +1529,14 @@ def _generate_composed_program(
         manual_terms.setdefault(command["output"], []).append(term)
 
     # --- Salidas ----------------------------------------------------------------------------------
-    composed_outputs = list(dict.fromkeys(list(output_steps) + list(manual_terms)))
-    if manual_terms or faults_by_output:
-        lines.append("(* Salidas: contribucion automatica (secuencia) y manual, con sus bloqueos *)")
+    composed_outputs = list(dict.fromkeys(list(output_steps) + list(manual_terms) + list(condition_terms)))
+    if manual_terms or faults_by_output or condition_terms:
+        lines.append("(* Salidas: contribucion automatica (secuencia/condiciones) y manual, con sus bloqueos *)")
     for output in _ordered_outputs(composed_outputs, dependencies):
         terms = []
         if output in output_steps:
             terms.append(f"({' OR '.join(dict.fromkeys(output_steps[output]))})")
+        terms.extend(term if term.startswith("(") or " " not in term else f"({term})" for term in condition_terms.get(output, []))
         terms.extend(f"({term})" for term in manual_terms.get(output, []))
         inhibits = [f"NOT {emergency}"]
         if output in manual_terms and stop_any:
@@ -1394,7 +1585,65 @@ def _generate_composed_program(
     for alarm in alarm_outputs(functional_requirements):
         source = " OR ".join(fault_names) if fault_names else emergency
         lines.append(f"(* Alarma {alarm}: activa mientras haya una falla enclavada *)")
-        lines.append(f"{alarm} := {source};")
+        # Si la alarma ya tiene otras contribuciones (p.ej. falla de una secuencia) se suman, nunca se pisan.
+        lines.append(f"{alarm} := {alarm} OR {source};" if alarm in composed_outputs else f"{alarm} := {source};")
+
+    # Numeric analog commands use the same compositor, with a calibrated safe value when disabled.
+    from analog_scaling import real_literal
+    for output, commands in numeric_steps.items():
+        safe = parameters['_analog_safe_values'][output]
+        lines.append(f'(* Órdenes analógicas de las etapas para {output} *)')
+        for index, (active, value) in enumerate(commands):
+            lines.append(f"{'IF' if index == 0 else 'ELSIF'} {active} AND NOT {emergency} THEN")
+            lines.append(f'    {output} := {real_literal(value)};')
+        lines.extend(['ELSE', f'    {output} := {real_literal(safe)};', 'END_IF;'])
+    for requirement in functional_requirements:
+        if requirement.get("type") != "analog_output":
+            continue
+        from analog_scaling import real_literal
+        output = requirement["output"]
+        condition = _composition_condition(requirement.get("condition") or "TRUE", f"orden analógica {output}")
+        safe = parameters["_analog_safe_values"][output]
+        lines.extend([f"(* Orden analógica para {output} en unidades físicas *)",
+                      f"IF ({condition}) AND NOT {emergency} THEN",
+                      f"    {output} := {real_literal(requirement['value'])};", "ELSE",
+                      f"    {output} := {real_literal(safe)};", "END_IF;"])
+
+    for index, switch in enumerate(hysteresis_switches(functional_requirements), start=1):
+        if 'on_value' not in switch:
+            continue
+        output, memory = switch['output'], hysteresis_memory(index)
+        enable = _composition_condition(switch.get('enable_condition') or 'TRUE', f'habilitación de {output}')
+        if switch['on_below'] is not None and switch['off_above'] is not None:
+            on = f"{switch['input']} <= {_number_literal(switch['on_below'])}"
+            off = f"{switch['input']} >= {_number_literal(switch['off_above'])}"
+        elif switch['on_above'] is not None and switch['off_below'] is not None:
+            on = f"{switch['input']} >= {_number_literal(switch['on_above'])}"
+            off = f"{switch['input']} <= {_number_literal(switch['off_below'])}"
+        else:
+            raise CompositionNotSupportedError(f'{COMPOSITION_NOT_SUPPORTED}: histéresis numérica sin ambos umbrales')
+        safe = parameters['_analog_safe_values'][output]
+        lines.extend([f'(* Histéresis numérica para {output}, con habilitación y valor seguro *)',
+                      f'IF NOT ({enable}) OR {emergency} THEN', f'    {memory} := FALSE;',
+                      f'    {output} := {real_literal(safe)};', 'ELSE',
+                      f'    IF {on} THEN', f'        {memory} := TRUE;',
+                      f'    ELSIF {off} THEN', f'        {memory} := FALSE;', '    END_IF;',
+                      f'    IF {memory} THEN', f"        {output} := {real_literal(switch['on_value'])};",
+                      '    ELSE', f"        {output} := {real_literal(switch['off_value'])};",
+                      '    END_IF;', 'END_IF;'])
+
+    # --- Bloqueos force_off (prioridad sobre toda contribucion) ----------------------------------
+    for entry, condition in blocking:
+        lines.append(f"(* Bloqueo: {condition} fuerza a FALSE {', '.join(entry['outputs'])} de inmediato *)")
+        lines.append(f"IF {condition} THEN")
+        safe_values = parameters.get('_analog_safe_values', {})
+        lines.extend(f"    {output} := {real_literal(safe_values[output]) if output in safe_values else 'FALSE'};"
+                     for output in entry['outputs'])
+        if parameters.get('_product_profile'):
+            for index, switch in enumerate(hysteresis_switches(functional_requirements), 1):
+                if switch['output'] in entry['outputs']:
+                    lines.append(f'    {hysteresis_memory(index)} := FALSE;')
+        lines.append("END_IF;")
 
     # --- Invariantes never_together ---------------------------------------------------------------
     for requirement in functional_requirements:
@@ -1417,10 +1666,37 @@ def _effective_semantics_resolved(project_ir: PLCProjectIR) -> bool:
 
 
 def generate_implementation_from_ir(project_ir: PLCProjectIR) -> str:
-    parameters = _resolve_parameters_from_ir(project_ir)
-    functional_requirements = project_ir.metadata.get("functional_requirements", [])
+    from analog_scaling import apply_analog_scaling
+    if project_ir.pid_loops:
+        from pid_scl import render_pid_body
+        return apply_analog_scaling(project_ir,render_pid_body(project_ir.pid_loops[0]))
+    prefix = []
+    for edge in project_ir.metadata.get('product_start_edges', []):
+        prefix += [f"{edge['pulse']} := {edge['initialized']} AND {edge['signal']} AND NOT {edge['previous']};",
+                   f"{edge['previous']} := {edge['signal']};", f"{edge['initialized']} := TRUE;"]
+    body = ('\n'.join(prefix) + '\n' if prefix else '') + _generate_control_implementation(project_ir)
+    return apply_analog_scaling(project_ir, body)
 
-    if detect_timed_sequences(functional_requirements):
+
+def _generate_control_implementation(project_ir: PLCProjectIR) -> str:
+    parameters = _resolve_parameters_from_ir(project_ir)
+    product = ((project_ir.metadata or {}).get('semantic_output') or {}).get('interaction_profile') == 'normal'
+    if product:
+        parameters = {**parameters, '_product_profile': True}
+    if project_ir.metadata.get("analog_bindings"):
+        parameters = {**parameters, "_analog_safe_values": {
+            binding["name"]: binding["config"].get("fault_value")
+            for binding in project_ir.metadata["analog_bindings"] if binding["direction"] == "output"}}
+    functional_requirements = copy.deepcopy(project_ir.metadata.get("functional_requirements", []))
+    from functional_requirements import single_latch_start_signal
+    for edge in project_ir.metadata.get('product_start_edges', []):
+        for requirement in functional_requirements:
+            if requirement.get('type') == 'latch':
+                key = 'set' if requirement.get('set') else 'set_condition'
+                if single_latch_start_signal(requirement.get(key)) == edge['signal']:
+                    requirement[key] = edge['pulse']
+
+    if detect_composed_program(functional_requirements):
         # Programa compuesto (Modo Normal): el compositor genera el programa completo a partir de
         # primitivas genericas; no depende de ninguna plantilla de intent_id.
         return _generate_composed_program(functional_requirements, parameters)
@@ -1443,6 +1719,8 @@ def generate_implementation_from_ir(project_ir: PLCProjectIR) -> str:
         return _generate_multi_actor_motor_body(multi_actor_targets, functional_requirements, parameters)
 
     generator = IMPLEMENTED_TEMPLATES.get(project_ir.intent_id)
+    if ((project_ir.metadata or {}).get("semantic_output") or {}).get("interaction_profile") == "normal":
+        generator = NORMAL_TEMPLATE_OVERRIDES.get(project_ir.intent_id, generator)
     if generator is None:
         raise TemplateNotImplementedError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {project_ir.intent_id}")
     token = _STRICT_EXTERNAL_RESOURCES.set(_effective_semantics_resolved(project_ir))

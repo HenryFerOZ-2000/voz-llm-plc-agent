@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import os
 import re
@@ -105,6 +106,10 @@ def iter_io_map_entries(io_map: dict[str, Any]) -> list[dict[str, Any]]:
             for advanced_field in _ADVANCED_VARIABLE_FIELDS:
                 if advanced_field in entry:
                     normalized_entry[advanced_field] = entry[advanced_field]
+            if "analog_config" in entry:
+                normalized_entry["analog_config"] = copy.deepcopy(entry["analog_config"])
+            if "process_config" in entry:
+                normalized_entry["process_config"] = copy.deepcopy(entry["process_config"])
             normalized_entries.append(normalized_entry)
         return normalized_entries
 

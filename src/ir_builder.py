@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from analog_scaling import prepare_analog_bindings
 
 from functional_requirements import (
     CLASS_CATALOG,
@@ -9,9 +10,14 @@ from functional_requirements import (
     detect_multi_actor_motor_targets,
     get_functional_requirement_process_variables,
     get_functional_requirement_tags,
+    detect_composed_program,
     detect_timed_sequences,
     has_composable_program,
-    resolve_parameter_resources
+    resolve_parameter_resources,
+    SEQUENCE_REPEAT_CONTINUOUS,
+    SEQUENCE_REPEAT_ONCE,
+    timed_sequence_repeat,
+    timed_sequence_start_mode
 )
 from functional_resources import FunctionalResourceError, resolve_functional_resources
 from plc_ir import PLCFunctionBlockInstance, PLCPOU, PLCProjectIR, PLCTask, PLCVariable
@@ -242,13 +248,17 @@ INTENT_VALUE_DEFAULTS: dict[str, dict[str, Any]] = {
 }
 
 
-def intent_resource_table(intent_id: str) -> tuple[tuple[str, str], ...] | None:
+def intent_resource_table(intent_id: str, parameters: dict[str, Any] | None = None) -> tuple[tuple[str, str], ...] | None:
     """(clave, default) de los recursos del intent; None si el intent no tiene plantilla."""
-    return INTENT_RESOURCE_TABLE.get(intent_id)
+    table = INTENT_RESOURCE_TABLE.get(intent_id)
+    if intent_id == 'INT_MANUAL_AUTO_MODE' and (parameters or {}).get('_mode_selection_only') is True:
+        keys = {'auto_input', 'emergency_input', 'manual_mode_memory', 'auto_mode_memory'}
+        return tuple(slot for slot in table if slot[0] in keys)
+    return table
 
 
 def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]) -> list[str]:
-    table = INTENT_RESOURCE_TABLE.get(intent_id)
+    table = intent_resource_table(intent_id, parameters)
     if table is None:
         raise ValueError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {intent_id}")
     required: list[Any] = [
@@ -270,45 +280,73 @@ def get_required_variables_for_intent(intent_id: str, parameters: dict[str, Any]
     return ordered
 
 
-def build_test_cases_for_composition(functional_requirements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def build_test_cases_for_composition(functional_requirements: list[dict[str, Any]],
+                                     analog_bindings: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """
     Casos de prueba GENERICOS derivados de la estructura de una secuencia compuesta (nunca de una
     maquina concreta): arranque -> etapa 1, avance por tiempo a cada etapa siguiente, Stop apaga todo
     y cada invariante never_together.
     """
-    from functional_requirements import timed_sequence_steps
+    from functional_requirements import timed_sequence_steps, sequence_step_outputs
+
+    analog = {binding['name']: binding['config'] for binding in analog_bindings or [] if binding['direction'] == 'output'}
+
+    def expected(step, outputs):
+        values = {output: output in (step or {}).get('outputs', []) for output in outputs}
+        commands = {item['output']: item['value'] for item in (step or {}).get('analog_outputs', [])}
+        for output in outputs:
+            if output in analog:
+                config = analog[output]
+                eu = commands.get(output, config['fault_value'])
+                values[output] = round(config['raw_min'] + (eu - config['engineering_min']) *
+                    (config['raw_max'] - config['raw_min']) / (config['engineering_max'] - config['engineering_min']))
+        return values
 
     cases: list[dict[str, Any]] = []
     for index, requirement in enumerate(detect_timed_sequences(functional_requirements), start=1):
         steps = timed_sequence_steps(requirement)
-        all_outputs = list(dict.fromkeys(output for step in steps for output in step["outputs"]))
-        start_input = requirement.get("start_input") or "I_Start"
+        all_outputs = list(dict.fromkeys(output for step in steps for output in sequence_step_outputs(step)))
+        start_mode = timed_sequence_start_mode(requirement)
+        start_input = requirement.get("start_input") or ("AUTO" if start_mode == "auto" else "I_Start")
         stop_input = requirement.get("stop_input") or "FALSE"
+        repeat, _ = timed_sequence_repeat(requirement)
         if not steps:
             continue
         cases.append({
             "test_id": f"SEQ{index}_START",
-            "description": "Start inicia la etapa 1 de la secuencia.",
-            "initial_state": {output: False for output in all_outputs},
+            "description": "El disparo de la secuencia inicia la etapa 1.",
+            "initial_state": expected(None, all_outputs),
             "input_sequence": [{start_input: True}],
-            "expected_outputs": {output: output in steps[0]["outputs"] for output in all_outputs},
+            "expected_outputs": expected(steps[0], all_outputs),
             "safety_expectation": "Solo una etapa activa a la vez."
         })
         for position in range(1, len(steps)):
+            previous = steps[position - 1]
             cases.append({
                 "test_id": f"SEQ{index}_STEP{position + 1}",
-                "description": f"Tras {steps[position - 1]['duration']} la secuencia pasa a la etapa {position + 1}.",
-                "initial_state": {output: output in steps[position - 1]["outputs"] for output in all_outputs},
-                "input_sequence": [{"wait": steps[position - 1]["duration"]}],
-                "expected_outputs": {output: output in steps[position]["outputs"] for output in all_outputs},
+                "description": f"Tras {previous['duration'] or previous['advance_on']} la secuencia pasa a la etapa {position + 1}.",
+                "initial_state": expected(previous, all_outputs),
+                "input_sequence": [{"wait": previous["duration"]} if previous["duration"] else {previous["advance_on"]: True}],
+                "expected_outputs": expected(steps[position], all_outputs),
                 "safety_expectation": "La transicion entre etapas es exclusiva."
+            })
+        if repeat in (SEQUENCE_REPEAT_ONCE, SEQUENCE_REPEAT_CONTINUOUS):
+            final = steps[-1]
+            cases.append({
+                "test_id": f"SEQ{index}_{'CYCLE' if repeat == SEQUENCE_REPEAT_CONTINUOUS else 'END'}",
+                "description": ("Tras la ultima etapa la secuencia vuelve a la etapa 1." if repeat == SEQUENCE_REPEAT_CONTINUOUS
+                                else "Tras la ultima etapa la secuencia termina: todas sus salidas quedan apagadas."),
+                "initial_state": expected(final, all_outputs),
+                "input_sequence": [{"wait": final["duration"]} if final["duration"] else {final["advance_on"]: True}],
+                "expected_outputs": expected(steps[0] if repeat == SEQUENCE_REPEAT_CONTINUOUS else None, all_outputs),
+                "safety_expectation": "Estado final seguro y definido; sin rearranque sin un nuevo disparo."
             })
         cases.append({
             "test_id": f"SEQ{index}_STOP",
             "description": "Stop apaga todas las salidas de la secuencia.",
-            "initial_state": {output: output in steps[-1]["outputs"] for output in all_outputs},
+            "initial_state": expected(steps[-1], all_outputs),
             "input_sequence": [{stop_input: True}],
-            "expected_outputs": {output: False for output in all_outputs},
+            "expected_outputs": expected(None, all_outputs),
             "safety_expectation": f"{stop_input} tiene prioridad sobre {start_input}."
         })
     for position, requirement in enumerate(functional_requirements, start=1):
@@ -322,6 +360,42 @@ def build_test_cases_for_composition(functional_requirements: list[dict[str, Any
                 "expected_outputs": {},
                 "safety_expectation": f"Nunca simultaneamente: {', '.join(outputs)}."
             })
+    cases.extend(_primitive_test_cases(functional_requirements))
+    return cases
+
+
+def _primitive_test_cases(functional_requirements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Casos genericos de las primitivas no secuenciales (salida condicionada, histeresis, enclavamiento, bloqueo)."""
+    from functional_requirements import conditional_outputs, force_offs, hysteresis_switches, latches
+
+    cases: list[dict[str, Any]] = []
+    for index, entry in enumerate(conditional_outputs(functional_requirements), start=1):
+        cases.append({"test_id": f"COND{index}", "initial_state": {o: False for o in entry["outputs"]},
+                      "description": (f"Al cumplirse {entry['condition']} las salidas se activan durante {entry['duration']}."
+                                      if entry["duration"] else f"Las salidas siguen a la condicion {entry['condition']}."),
+                      "input_sequence": [{entry["condition"]: True}], "expected_outputs": {o: True for o in entry["outputs"]},
+                      "safety_expectation": "Sin la condicion las salidas quedan apagadas."})
+    for index, switch in enumerate(hysteresis_switches(functional_requirements), start=1):
+        cases.append({"test_id": f"HYST{index}", "initial_state": {switch["output"]: False},
+                      "description": f"{switch['output']} conmuta con histeresis sobre {switch['input']}.",
+                      "input_sequence": [], "expected_outputs": {},
+                      "safety_expectation": "Entre ambos umbrales la salida conserva su estado (sin oscilar)."})
+    for index, entry in enumerate(latches(functional_requirements), start=1):
+        cases.append({"test_id": f"LATCH{index}", "initial_state": {o: False for o in entry["outputs"]},
+                      "description": f"{entry['set']} enclava las salidas y {entry['reset']} las libera.",
+                      "input_sequence": [{entry["set"]: True}, {entry["set"]: False}],
+                      "expected_outputs": {o: True for o in entry["outputs"]},
+                      "safety_expectation": f"{entry['reset']} tiene prioridad sobre {entry['set']}."})
+    for index, entry in enumerate(force_offs(functional_requirements), start=1):
+        cases.append({"test_id": f"FORCE_OFF{index}", "initial_state": {o: True for o in entry["outputs"]},
+                      "description": f"{entry['condition']} apaga de inmediato las salidas.",
+                      "input_sequence": [{entry["condition"]: True}], "expected_outputs": {o: False for o in entry["outputs"]},
+                      "safety_expectation": "El bloqueo prevalece sobre cualquier otra contribucion."})
+    for index, entry in enumerate((r for r in functional_requirements if r.get("type") == "analog_output"), start=1):
+        cases.append({"test_id": f"ANALOG{index}", "initial_state": {}, "input_sequence": [],
+                      "description": f"{entry['output']} aplica {entry.get('value')} {entry.get('unit', '')} con calibración confirmada.",
+                      "expected_outputs": {},
+                      "safety_expectation": "Sin habilitación o con emergencia aplica el valor ante fallo configurado."})
     return cases
 
 
@@ -624,6 +698,9 @@ def _internal_resource_spec(name: str) -> dict[str, str]:
     spec = INTERNAL_RESOURCE_SPECS.get(name)
     if spec is not None:
         return spec
+    if name.startswith("M_") and name.endswith("_CV"):
+        # Valor actual EXPLICITO de un contador (salida CV de su CTU): mismo tipo que CV de CTU_INT.
+        return {"type": "INT", "class": "internal"}
     for prefix, fallback in INTERNAL_PREFIX_TYPE_FALLBACK.items():
         if name.startswith(prefix):
             return fallback
@@ -749,33 +826,19 @@ def _build_function_blocks(variables: list[PLCVariable], parameters: dict[str, A
     return function_blocks
 
 
-def build_project_ir(
+def _required_resources(
     semantic_output: dict[str, Any],
     io_map: dict[str, Any],
-    target_platform: str,
-    project_name: str | None = None,
-    functional_requirements: list[dict[str, Any]] | None = None
-) -> PLCProjectIR:
+    functional_requirements: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """
+    Recursos que la IR exige para esta semantica (contrato del intent con sus defaults, requisitos de
+    catalogo, programa compuesto). UNICA fuente: la usan build_project_ir y, en Modo Normal, la resolucion
+    de recursos previa (required_external_resources), de modo que el IOAllocator ve EXACTAMENTE los mismos
+    nombres que la IR exigira despues.
+    """
     intent_id = semantic_output.get("intent_id", "INT_UNKNOWN")
-    command_text = semantic_output.get("command_text", "")
-    case_id = semantic_output.get("case_id") or "NOCASE"
     parameters = semantic_output.get("parameters", {})
-
-    # functional_requirements puede llegar explicito (project_packager.py) o, si no, se toma del
-    # semantic_output directamente - asi el parametro queda activado de punta a punta sin exigir
-    # que cada llamador lo repita.
-    if functional_requirements is None:
-        functional_requirements = list(semantic_output.get("functional_requirements") or [])
-
-    # Todo recurso funcional debe ser identificable y nombrable ANTES de construir la IR: las
-    # referencias {role, actor, kind} sin nombre reciben su tag canonico; lo no identificable o un
-    # comportamiento no soportado se detiene aqui con un error estructurado (codigo + ruta JSON),
-    # nunca mas tarde como "variable funcional sin nombre".
-    resolution = resolve_functional_resources(functional_requirements)
-    if resolution["errors"]:
-        raise FunctionalResourceError(resolution["errors"])
-    functional_requirements = resolution["requirements"]
-
     # Dos formas conviven en el mismo parametro: entradas de catalogo ({"type": "run_pilot"}),
     # que se resuelven a tags fijos, y variables funcionales ad-hoc con nombre propio
     # ({"name": "Level_SP", "type": "REAL"}), que sigue resolviendo _resolve_functional_variables.
@@ -800,7 +863,11 @@ def build_project_ir(
     # intent_id del catalogo representa esto por si solo, asi que intent_id puede legitimamente
     # no tener plantilla (INT_UNKNOWN) sin que eso sea un error - TODAS las variables que necesita
     # el programa llegan via functional_requirement_tags mas abajo, no via el intent base.
-    if has_composable_program(functional_requirements):
+    if detect_composed_program(functional_requirements):
+        # El compositor genera TODO el programa desde sus requisitos, no desde la plantilla
+        # del intent. Igual que effective_semantics, no heredar salidas/defaults que no usa.
+        required_variables = []
+    elif has_composable_program(functional_requirements):
         try:
             required_variables = get_required_variables_for_intent(intent_id, parameters)
         except ValueError as error:
@@ -811,13 +878,13 @@ def build_project_ir(
         required_variables = get_required_variables_for_intent(intent_id, parameters)
     functional_requirement_tags: list[str] = []
     parameter_resources: list[dict[str, Any]] = []  # traza: recurso de requisito <- parametro efectivo
-    if detect_timed_sequences(functional_requirements):
+    if detect_composed_program(functional_requirements):
         # La emergencia del compositor llega por `parameters` (semantic_repair la deja en "FALSE" si
         # el banco no la tiene): declararla si es un tag real, sin plantilla de intent que la aporte.
         emergency_tag = str(parameters.get("emergency_input") or "")
         if emergency_tag.startswith("I_"):
             functional_requirement_tags.append(emergency_tag)
-    if detect_timed_sequences(functional_requirements):
+    if detect_composed_program(functional_requirements):
         # Programa compuesto: modos, ordenes manuales, permisivos, supervisiones y alarmas declaran
         # sus tags por instancia (ver functional_requirements.composition_tags).
         for tag in composition_tags(functional_requirements):
@@ -834,6 +901,48 @@ def build_project_ir(
                 if tag not in functional_requirement_tags:
                     functional_requirement_tags.append(tag)
     required_variables = list(dict.fromkeys(required_variables + functional_requirement_tags))
+    product_start_edges = []
+    if semantic_output.get("interaction_profile") == "normal":
+        occupied = {str(v['name']).casefold() for v in io_map.get('variables', [])}
+        occupied.update(str(name).casefold() for name in required_variables)
+        occupied.update(str(entry.get('name', '')).casefold() for entry in ad_hoc_requirements)
+        def reserve_start_names(names):
+            for name in names.values():
+                if name.casefold() in occupied or len(name) > 100:
+                    raise ValueError(f'START_SYMBOL_CONFLICT: auxiliar de arranque ocupado o demasiado largo: {name}')
+                occupied.add(name.casefold())
+        if detect_composed_program(functional_requirements):
+            from io_allocator import _candidate_role_keys
+            from functional_requirements import latches, latch_start_edge_names, single_latch_start_signal
+            def is_start_input(variable):
+                if variable.get('class') != 'input' or str(variable.get('type', '')).upper() != 'BOOL':
+                    return False
+                role = str(variable.get('semantic_role') or '').strip()
+                if role:
+                    # An explicit sensor/device role takes precedence over a misleading tag name.
+                    role_keys = _candidate_role_keys({'name': '', 'semantic_role': role.replace('_', ' ')})
+                    return 'start' in role_keys or role.upper() in {'START_BUTTON', 'PUSHBUTTON_START'}
+                return any('start' in key.split() for key in _candidate_role_keys(variable))
+            starts = {v['name'] for v in io_map.get('variables', [])
+                      if is_start_input(v)}
+            used_starts = {single_latch_start_signal(entry['set']) for entry in latches(functional_requirements)} & starts
+            for index, signal in enumerate(sorted(used_starts), 1):
+                names = latch_start_edge_names(f'M_ProductStart{index}')
+                reserve_start_names(names)
+                product_start_edges.append({'signal': signal, **names})
+                required_variables = list(dict.fromkeys(required_variables + list(names.values())))
+        if intent_id == 'INT_MOTOR_LATCH' and not detect_composed_program(functional_requirements):
+            from functional_requirements import latch_start_edge_names
+            names = latch_start_edge_names(parameters.get('run_latch') or 'M_RunLatch')
+            reserve_start_names(names)
+            required_variables = list(dict.fromkeys(required_variables + list(names.values())))
+        # Modo Normal: cada instancia CTU publica sus salidas EXPLICITAS (alcanzado / valor) como variables propias;
+        # la logica las usa a ellas, nunca miembros de la instancia (ver functional_requirements.counter_output_names).
+        from functional_requirements import counter_output_names
+
+        for name in [n for n in required_variables if n.startswith("C_")]:
+            outputs = counter_output_names(name)
+            required_variables = list(dict.fromkeys(required_variables + [outputs["done"], outputs["value"]]))
 
     io_index = build_io_map_index(io_map)
 
@@ -846,6 +955,74 @@ def build_project_ir(
     # por el repair) nunca debe terminar exigiendo un recurso fisico que el banco activo no tiene.
     if "I_Emergency" not in io_index:
         required_variables = [name for name in required_variables if name != "I_Emergency"]
+
+    return {"catalog_requirements": catalog_requirements, "ad_hoc_requirements": ad_hoc_requirements,
+            "required_variables": required_variables, "functional_requirement_tags": functional_requirement_tags,
+            "parameter_resources": parameter_resources, "io_index": io_index,
+            'product_start_edges': product_start_edges}
+
+
+def required_external_resources(semantic_output: dict[str, Any], io_map: dict[str, Any]) -> list[str]:
+    """Recursos EXTERNOS (I_/Q_/AI_/AO_) que build_project_ir exigira en el mapa para esta semantica."""
+    from pid_control import has_native_pid, resolve_pid_loops
+    requirements = list(semantic_output.get('functional_requirements') or [])
+    if has_native_pid(requirements):
+        loops = resolve_pid_loops(requirements,io_map,'SIEMENS_SCL_V18')
+        return list(dict.fromkeys(n for loop in loops for n in [loop.process_input,loop.control_output,*loop.resources.values()] if n))
+    resolution = resolve_functional_resources(requirements)
+    if resolution["errors"]:
+        return []
+    try:
+        required = _required_resources(semantic_output, io_map, resolution["requirements"])["required_variables"]
+    except ValueError:
+        return []  # sin plantilla ni composicion: lo informa la validacion, no hay recursos que resolver
+    return [name for name in required if name.startswith(EXTERNAL_PREFIXES)]
+
+
+def build_project_ir(
+    semantic_output: dict[str, Any],
+    io_map: dict[str, Any],
+    target_platform: str,
+    project_name: str | None = None,
+    functional_requirements: list[dict[str, Any]] | None = None
+) -> PLCProjectIR:
+    from pid_control import has_native_pid, build_pid_project_ir
+    native_semantic = {**semantic_output}
+    if functional_requirements is not None:
+        native_semantic['functional_requirements'] = functional_requirements
+    from control_strategy import control_consistency_errors
+    control_errors = control_consistency_errors(native_semantic, io_map)
+    if control_errors:
+        raise ValueError('; '.join(control_errors))
+    if has_native_pid(native_semantic.get('functional_requirements') or []):
+        return build_pid_project_ir(native_semantic,io_map,target_platform,project_name)
+    intent_id = semantic_output.get("intent_id", "INT_UNKNOWN")
+    command_text = semantic_output.get("command_text", "")
+    case_id = semantic_output.get("case_id") or "NOCASE"
+    parameters = semantic_output.get("parameters", {})
+
+    # functional_requirements puede llegar explicito (project_packager.py) o, si no, se toma del
+    # semantic_output directamente - asi el parametro queda activado de punta a punta sin exigir
+    # que cada llamador lo repita.
+    if functional_requirements is None:
+        functional_requirements = list(semantic_output.get("functional_requirements") or [])
+
+    # Todo recurso funcional debe ser identificable y nombrable ANTES de construir la IR: las
+    # referencias {role, actor, kind} sin nombre reciben su tag canonico; lo no identificable o un
+    # comportamiento no soportado se detiene aqui con un error estructurado (codigo + ruta JSON),
+    # nunca mas tarde como "variable funcional sin nombre".
+    resolution = resolve_functional_resources(functional_requirements)
+    if resolution["errors"]:
+        raise FunctionalResourceError(resolution["errors"])
+    functional_requirements = resolution["requirements"]
+
+    resources = _required_resources(semantic_output, io_map, functional_requirements)
+    catalog_requirements = resources["catalog_requirements"]
+    ad_hoc_requirements = resources["ad_hoc_requirements"]
+    required_variables = resources["required_variables"]
+    functional_requirement_tags = resources["functional_requirement_tags"]
+    parameter_resources = resources["parameter_resources"]
+    io_index = resources["io_index"]
 
     external_names = [name for name in required_variables if name.startswith(EXTERNAL_PREFIXES)]
     internal_names = [name for name in required_variables if name.startswith(INTERNAL_PREFIXES)]
@@ -866,6 +1043,20 @@ def build_project_ir(
     )
 
     variables = external_variables + internal_variables + functional_variables
+    analog_bindings, functional_requirements = prepare_analog_bindings(
+        functional_requirements, io_index, required_variables,
+        set(io_index) | {variable.name for variable in variables})
+    analog_variables = []
+    for binding in analog_bindings:
+        specs = [("engineering_variable", "REAL", "0.0"), ("valid_variable", "BOOL", "FALSE")]
+        if binding['direction'] == 'output':
+            specs.append(("raw_variable", "REAL", "0.0"))
+        for key, data_type, initial in specs:
+            analog_variables.append(_build_variable_from_entry({
+                "name": binding[key], "type": data_type, "class": "internal", "location": "",
+                "initial_value": initial, "description": f"Conversión analógica: {binding['name']}"},
+                source="generated_analog"))
+    variables += analog_variables
     function_blocks = _build_function_blocks(variables, parameters)
     safety_rules = _load_safety_rules()
     try:
@@ -875,8 +1066,8 @@ def build_project_ir(
         if INTENT_TEMPLATE_NOT_IMPLEMENTED not in str(error) or not has_composable_program(functional_requirements):
             raise
         test_cases = []
-    if detect_timed_sequences(functional_requirements):
-        test_cases = test_cases + build_test_cases_for_composition(functional_requirements)
+    if detect_composed_program(functional_requirements):
+        test_cases = test_cases + build_test_cases_for_composition(functional_requirements, analog_bindings)
 
     pou = PLCPOU(
         name="PLC_PRG",
@@ -901,6 +1092,7 @@ def build_project_ir(
     normalized_target = _normalize_target_platform(target_platform)
     ir_project_name = project_name or _default_project_name(intent_id, semantic_output.get("case_id"))
     metadata = {
+        'product_start_edges': resources.get('product_start_edges', []),
         "semantic_output": dict(semantic_output),
         "parameters": dict(parameters),
         "required_variables": list(required_variables),
@@ -910,6 +1102,8 @@ def build_project_ir(
         "generated_internal_variables": [variable.to_dict() for variable in generated_internal],
         "generated_functional_variables": [variable.to_dict() for variable in generated_functional],
         "functional_requirements": list(functional_requirements),
+        "analog_bindings": analog_bindings,
+        "generated_analog_variables": [variable.to_dict() for variable in analog_variables],
         "functional_requirement_tags": functional_requirement_tags,
         # Recursos de requisito dependientes de parametros: valor efectivo, resolucion y procedencia.
         "functional_requirement_parameter_resources": parameter_resources

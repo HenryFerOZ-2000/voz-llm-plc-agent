@@ -1,0 +1,246 @@
+[
+  {
+    "case_id": "discrete_relocated",
+    "map_file": "relocated.json",
+    "command_text": "Cuando presione Start, enciende la salida principal y mantenla encendida. Al presionar Stop o activar la emergencia, apágala. No debe volver a encenderse hasta presionar Start otra vez.",
+    "semantic_response": {
+      "intent_id": "INT_MOTOR_LATCH",
+      "case_id": null,
+      "command_text": "Cuando presione Start, enciende la salida principal y mantenla encendida. Al presionar Stop o activar la emergencia, apágala. No debe volver a encenderse hasta presionar Start otra vez.",
+      "normalized_command": "al presionar start, enclavar la salida principal; apagarla con stop o emergencia; requerir una nueva pulsación de start para rearmar",
+      "parameters": {
+        "trigger_input": "I_Start_A",
+        "stop_input": "I_Stop_A",
+        "emergency_input": "I_Emergency_A",
+        "motor_output": "Q_Traffic_Green_A",
+        "run_latch": "M_RunLatch"
+      },
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Se reutiliza Q_Traffic_Green_A como salida principal porque su descripción indica habilitación principal.",
+        "La emergencia tiene prioridad sobre la salida y elimina el enclavamiento.",
+        "Al liberar la emergencia, la salida permanece apagada hasta una nueva pulsación de I_Start_A."
+      ],
+      "recognized_tags": [
+        "I_Start_A",
+        "I_Stop_A",
+        "I_Emergency_A",
+        "Q_Traffic_Green_A",
+        "M_RunLatch"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "emergency_priority"
+        }
+      ],
+      "operation_type": "latching_start_stop",
+      "requested_io_assignments": []
+    }
+  },
+  {
+    "case_id": "fill_relocated",
+    "map_file": "relocated.json",
+    "command_text": "Cuando presione Start, activa la salida principal para llenar el tanque hasta el 80 %. Al alcanzar ese nivel, apágala y espera otro Start para repetir. Stop o la emergencia deben detener el llenado inmediatamente.",
+    "semantic_response": {
+      "intent_id": "INT_UNKNOWN",
+      "case_id": null,
+      "command_text": "Cuando presione Start, activa la salida principal para llenar el tanque hasta el 80 %. Al alcanzar ese nivel, apágala y espera otro Start para repetir. Stop o la emergencia deben detener el llenado inmediatamente.",
+      "normalized_command": "cuando presione start, abrir la válvula de llenado al 100 % hasta que el nivel alcance el 80 %; cerrar la válvula al alcanzar el límite, con stop o emergencia, y esperar un nuevo start para repetir",
+      "parameters": {},
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: La señal AI_Level_Raw_A se usa escalada en porcentaje según su configuración analógica confirmada.",
+        "INFERRED: M_FillActive es un estado interno de ciclo, activado por Start y cancelado con prioridad por Stop, emergencia o nivel igual o superior a 80 %.",
+        "La apertura de la válvula durante el llenado es 100 % y su valor seguro al detenerse es 0 %, según la aclaración proporcionada.",
+        "Tras alcanzar el 80 %, Stop o emergencia, el ciclo queda en reposo y requiere un nuevo flanco de I_Start_A; no hay rearranque automático."
+      ],
+      "recognized_tags": [
+        "I_Start_A",
+        "I_Stop_A",
+        "I_Emergency_A",
+        "AI_Level_Raw_A",
+        "AO_Fill_Command_A"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "latch",
+          "set": "I_Start_A",
+          "reset": "I_Stop_A OR I_Emergency_A OR AI_Level_Raw_A >= 80",
+          "condition_unit": "%",
+          "outputs": [
+            "M_FillActive"
+          ]
+        },
+        {
+          "type": "analog_output",
+          "output": "AO_Fill_Command_A",
+          "value": 100,
+          "unit": "%",
+          "condition": "M_FillActive AND NOT I_Stop_A AND NOT I_Emergency_A AND AI_Level_Raw_A < 80",
+          "condition_unit": "%"
+        }
+      ],
+      "operation_type": "PROGRAM",
+      "requested_io_assignments": []
+    }
+  },
+  {
+    "case_id": "hysteresis_relocated",
+    "map_file": "relocated.json",
+    "command_text": "Al presionar Start, habilita el control del tanque. Activa la salida principal cuando el nivel baje del 30 % y apágala al llegar al 80 %. Entre ambos niveles conserva su estado. Stop o la emergencia deben apagarla y deshabilitar el control hasta otro Start.",
+    "semantic_response": {
+      "intent_id": "INT_UNKNOWN",
+      "case_id": null,
+      "command_text": "Al presionar Start, habilita el control del tanque. Activa la salida principal cuando el nivel baje del 30 % y apágala al llegar al 80 %. Entre ambos niveles conserva su estado. Stop o la emergencia deben apagarla y deshabilitar el control hasta otro Start.",
+      "normalized_command": "al presionar start se habilita el control del tanque; la salida principal se activa por debajo de 30 % de nivel y se apaga al alcanzar 80 %, conservando su estado entre ambos umbrales; stop o emergencia apagan la salida y deshabilitan el control hasta un nuevo start",
+      "parameters": {},
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "La salida principal se representa como el nuevo recurso funcional digital Q_Tank_Main_Output; no se reutiliza AO_Fill_Command_A porque el comando solicita una activación/desactivación binaria, no una orden analógica proporcional.",
+        "I_Stop_A e I_Emergency_A reinician la habilitación enclavada del control, por lo que liberar Stop o emergencia no produce autoarranque."
+      ],
+      "recognized_tags": [
+        "I_Start_A",
+        "I_Stop_A",
+        "I_Emergency_A",
+        "AI_Level_Raw_A",
+        "Q_Tank_Main_Output"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "latch",
+          "set": "I_Start_A",
+          "reset": "I_Stop_A OR I_Emergency_A",
+          "outputs": [
+            "M_TankControlEnabled"
+          ]
+        },
+        {
+          "type": "hysteresis_switch",
+          "input": "AI_Level_Raw_A",
+          "output": "Q_Tank_Main_Output",
+          "on_below": 30.0,
+          "off_above": 80.0,
+          "unit": "%"
+        },
+        {
+          "type": "force_off",
+          "condition": "I_Stop_A OR I_Emergency_A OR NOT M_TankControlEnabled",
+          "outputs": [
+            "Q_Tank_Main_Output"
+          ]
+        }
+      ],
+      "operation_type": "HYSTERESIS",
+      "requested_io_assignments": []
+    }
+  },
+  {
+    "case_id": "pid_relocated",
+    "map_file": "relocated.json",
+    "command_text": "Cuando presione Start, mantén el nivel del tanque al 50 % mediante PID, utilizando el sensor de nivel y la válvula proporcional de llenado. Stop o la emergencia deben detener el control y cerrar la válvula. Para reiniciar debe ser necesario presionar Start nuevamente.",
+    "semantic_response": {
+      "intent_id": "INT_UNKNOWN",
+      "case_id": null,
+      "command_text": "Cuando presione Start, mantén el nivel del tanque al 50 % mediante PID, utilizando el sensor de nivel y la válvula proporcional de llenado. Stop o la emergencia deben detener el control y cerrar la válvula. Para reiniciar debe ser necesario presionar Start nuevamente.",
+      "normalized_command": "al presionar start, regular continuamente mediante pid el nivel del tanque a 50 %, usando el sensor de nivel y la válvula proporcional de llenado; stop o emergencia detienen el control y cierran la válvula; tras una parada se requiere una nueva pulsación de start para reiniciar",
+      "parameters": {},
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "La orden Stop tiene prioridad sobre Start.",
+        "La emergencia tiene prioridad absoluta: deshabilita el control PID y ordena el cierre seguro de la válvula.",
+        "Al liberar Stop o emergencia, el control permanece detenido hasta detectar una nueva pulsación de I_Start_A.",
+        "El valor seguro de cierre de AO_Fill_Command_A es 0.0 %, conforme a su configuración analógica."
+      ],
+      "recognized_tags": [
+        "I_Start_A",
+        "I_Stop_A",
+        "I_Emergency_A",
+        "AI_Level_Raw_A",
+        "AO_Fill_Command_A"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "pid_control",
+          "loop_id": "Loop1",
+          "setpoint": 50,
+          "unit": "%",
+          "direction": "FILL",
+          "process_input": "AI_Level_Raw_A",
+          "control_output": "AO_Fill_Command_A",
+          "resources": {
+            "start": "I_Start_A",
+            "stop": "I_Stop_A",
+            "emergency": "I_Emergency_A"
+          }
+        }
+      ],
+      "operation_type": "CONTINUOUS",
+      "requested_io_assignments": []
+    }
+  },
+  {
+    "case_id": "pid_db",
+    "map_file": "db_engineering.json",
+    "command_text": "Cuando presione Start, mantén el nivel del tanque al 50 % mediante PID, utilizando el sensor de nivel y la válvula proporcional de llenado. Stop o la emergencia deben detener el control y cerrar la válvula. Para reiniciar debe ser necesario presionar Start nuevamente.",
+    "semantic_response": {
+      "intent_id": "INT_UNKNOWN",
+      "case_id": null,
+      "command_text": "Cuando presione Start, mantén el nivel del tanque al 50 % mediante PID, utilizando el sensor de nivel y la válvula proporcional de llenado. Stop o la emergencia deben detener el control y cerrar la válvula. Para reiniciar debe ser necesario presionar Start nuevamente.",
+      "normalized_command": "al presionar start, regular continuamente mediante pid el nivel del tanque a 50 %, usando el sensor de nivel y la válvula proporcional de llenado; stop o emergencia detienen el control y cierran la válvula; tras una parada se requiere una nueva pulsación de start para reiniciar",
+      "parameters": {},
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "La orden Stop tiene prioridad sobre Start.",
+        "La emergencia tiene prioridad absoluta: deshabilita el control PID y ordena el cierre seguro de la válvula.",
+        "Al liberar Stop o emergencia, el control permanece detenido hasta detectar una nueva pulsación de I_Start_A.",
+        "El valor seguro de cierre de AO_Fill_Command_A es 0.0 %, conforme a su configuración analógica."
+      ],
+      "recognized_tags": [
+        "I_Start_A",
+        "I_Stop_A",
+        "I_Emergency_A",
+        "M_AlternateLevel",
+        "M_AlternateFill"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "pid_control",
+          "loop_id": "Loop1",
+          "setpoint": 50,
+          "unit": "%",
+          "direction": "FILL",
+          "process_input": "M_AlternateLevel",
+          "control_output": "M_AlternateFill",
+          "resources": {
+            "start": "I_Start_A",
+            "stop": "I_Stop_A",
+            "emergency": "I_Emergency_A"
+          }
+        }
+      ],
+      "operation_type": "CONTINUOUS",
+      "requested_io_assignments": []
+    }
+  }
+]

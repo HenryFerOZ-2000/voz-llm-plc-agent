@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from utils import get_project_root
+from functional_requirements import PID_PROCESS_VARIABLES
 
 
 TIME_LITERAL_PATTERN = re.compile(r"^T#\d+(?:ms|s|m|h)$", re.IGNORECASE)
@@ -104,7 +105,7 @@ class SemanticOutput(BaseModel):
     def _validate_recognized_tags(cls, values: list[str]) -> list[str]:
         normalized: list[str] = []
         for value in values:
-            if not PLC_TAG_PATTERN.match(value):
+            if not PLC_TAG_PATTERN.match(value) and value not in PID_PROCESS_VARIABLES:
                 raise ValueError(f"invalid PLC tag format: {value}")
             if value not in normalized:
                 normalized.append(value)

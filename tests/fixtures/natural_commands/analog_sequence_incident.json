@@ -1,0 +1,55 @@
+{
+  "intent_id": "INT_UNKNOWN",
+  "case_id": null,
+  "command_text": "Al pulsar Start, abre la v\u00e1lvula de llenado al 100 % hasta que el nivel del tanque alcance el 80 %. Entonces ci\u00e9rrala y espera otra pulsaci\u00f3n de Start para repetir. Stop o la emergencia deben cerrar la v\u00e1lvula y cancelar el llenado.",
+  "normalized_command": "al pulsar start, abrir la v\u00e1lvula de llenado al 100 % hasta que el nivel alcance el 80 %; cerrar la v\u00e1lvula al alcanzar el l\u00edmite y esperar un nuevo start; stop o emergencia cancelan el llenado y cierran la v\u00e1lvula",
+  "parameters": {},
+  "confidence": 0.94,
+  "ambiguities": [],
+  "assumptions": [
+    "La comparaci\u00f3n de nivel utiliza la escala de ingenier\u00eda porcentual declarada para AI_Level_Raw.",
+    "La confirmaci\u00f3n de calibraci\u00f3n de AI_Level_Raw y AO_Fill_Command permanece pendiente de validaci\u00f3n del mapa I/O."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Stop",
+    "I_Emergency",
+    "AI_Level_Raw",
+    "AO_Fill_Command"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "timed_sequence",
+      "start_input": "I_Start",
+      "stop_input": "I_Stop",
+      "repeat": "once",
+      "steps": [
+        {
+          "outputs": [],
+          "analog_outputs": [
+            {
+              "output": "AO_Fill_Command",
+              "value": 100,
+              "unit": "%"
+            }
+          ],
+          "advance_on": "AI_Level_Raw >= 80",
+          "condition_unit": "%"
+        }
+      ]
+    },
+    {
+      "type": "force_off",
+      "condition": "I_Emergency",
+      "outputs": [
+        "AO_Fill_Command"
+      ]
+    }
+  ],
+  "operation_type": "THRESHOLD",
+  "requested_io_assignments": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "interaction_profile": "normal"
+}

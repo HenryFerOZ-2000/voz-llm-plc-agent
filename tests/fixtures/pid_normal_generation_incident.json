@@ -1,0 +1,150 @@
+{
+  "intent_id": "INT_PID_SUPERVISOR",
+  "case_id": null,
+  "command_text": "Mantén el nivel del tanque al 50 % mediante PID, usando el sensor de nivel y la válvula proporcional de llenado. Start inicia y Stop detiene. La emergencia o un nivel del 95 % detienen el llenado y enclavan el fallo. Reset rearma, pero exige una nueva pulsación de Start",
+  "normalized_command": "mantener el nivel del tanque al 50 % mediante pid con sensor de nivel y válvula proporcional de llenado; start inicia, stop detiene; emergencia o nivel mayor o igual al 95 % detienen el llenado y enclavan el fallo; reset rearma sin reinicio automático",
+  "parameters": {},
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "El límite de nivel del 95 % se interpreta como condición de sobrellenado al alcanzar o superar el 95 %.",
+    "El Reset solo rearma el fallo cuando ya no están presentes la emergencia ni el sobrellenado.",
+    "Tras Reset, el lazo PID y el llenado permanecen detenidos hasta una nueva pulsación de I_Start.",
+    "I_Stop detiene el lazo PID y cierra la válvula proporcional de llenado."
+  ],
+  "recognized_tags": [
+    "AI_Level_Raw",
+    "AO_Fill_Command",
+    "I_Start",
+    "I_Stop",
+    "I_Reset",
+    "I_Emergency"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "pid_control",
+      "loop_id": "Loop1",
+      "setpoint": 50,
+      "unit": "%",
+      "direction": "FILL",
+      "process_input": "AI_Level_Raw",
+      "control_output": "AO_Fill_Command",
+      "overfill_limit": 95,
+      "overfill_comparison": ">=",
+      "fault_latch": {
+        "set_conditions": [
+          "I_Emergency",
+          "AI_Level_Raw >= 95"
+        ],
+        "reset_input": "I_Reset",
+        "reset_requires_safe_conditions": true,
+        "restart_requires_new_start": true
+      },
+      "resources": {
+        "start": "I_Start",
+        "stop": "I_Stop",
+        "reset": "I_Reset",
+        "emergency": "I_Emergency"
+      }
+    }
+  ],
+  "operation_type": "PROGRAM",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": [],
+    "resource_bindings": {}
+  },
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "alarm_output",
+      "conditional_alarm_reset",
+      "emergency_priority",
+      "enable_pid",
+      "enable_pump",
+      "high_level_alarm",
+      "low_level_alarm",
+      "reset_behavior",
+      "safe_overfill_stop"
+    ],
+    "explicit_types": [
+      "pid_control"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_PID_SUPERVISOR",
+    "case_id": null,
+    "command_text": "Mantén el nivel del tanque al 50 % mediante PID, usando el sensor de nivel y la válvula proporcional de llenado. Start inicia y Stop detiene. La emergencia o un nivel del 95 % detienen el llenado y enclavan el fallo. Reset rearma, pero exige una nueva pulsación de Start",
+    "normalized_command": "mantener el nivel del tanque al 50 % mediante pid con sensor de nivel y válvula proporcional de llenado; start inicia, stop detiene; emergencia o nivel mayor o igual al 95 % detienen el llenado y enclavan el fallo; reset rearma sin reinicio automático",
+    "parameters": {},
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "El límite de nivel del 95 % se interpreta como condición de sobrellenado al alcanzar o superar el 95 %.",
+      "El Reset solo rearma el fallo cuando ya no están presentes la emergencia ni el sobrellenado.",
+      "Tras Reset, el lazo PID y el llenado permanecen detenidos hasta una nueva pulsación de I_Start.",
+      "I_Stop detiene el lazo PID y cierra la válvula proporcional de llenado."
+    ],
+    "recognized_tags": [
+      "AI_Level_Raw",
+      "AO_Fill_Command",
+      "I_Start",
+      "I_Stop",
+      "I_Reset",
+      "I_Emergency"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "pid_control",
+        "loop_id": "Loop1",
+        "setpoint": 50,
+        "unit": "%",
+        "direction": "FILL",
+        "process_input": "AI_Level_Raw",
+        "control_output": "AO_Fill_Command",
+        "overfill_limit": 95,
+        "overfill_comparison": ">=",
+        "fault_latch": {
+          "set_conditions": [
+            "I_Emergency",
+            "AI_Level_Raw >= 95"
+          ],
+          "reset_input": "I_Reset",
+          "reset_requires_safe_conditions": true,
+          "restart_requires_new_start": true
+        },
+        "resources": {
+          "start": "I_Start",
+          "stop": "I_Stop",
+          "reset": "I_Reset",
+          "emergency": "I_Emergency"
+        }
+      }
+    ],
+    "operation_type": "PROGRAM",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal"
+  }
+}

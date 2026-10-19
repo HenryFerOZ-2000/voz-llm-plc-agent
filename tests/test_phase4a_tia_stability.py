@@ -118,6 +118,10 @@ def test_deferred_evaluation_never_runs_the_full_describe():
         assert forbidden not in evaluate, forbidden
     assert "minimal_identity_started" in evaluate and "expected_project_name" in evaluate
     assert "ListBlockNames" in evaluate
+    minimal=_method('DescribeCpuIdentity')
+    assert 'DescribeCpuIdentity(project,requestedPlcName)' in evaluate
+    for forbidden in ('DescribePlcProject','DescribeInterfaces','CollectInterfaces','CollectBlocks'):
+        assert forbidden not in minimal
 
 
 def test_master_validation_still_runs_the_full_describe():

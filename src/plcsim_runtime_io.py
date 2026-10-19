@@ -118,6 +118,7 @@ def _signal(name: str, address: str, data_type: str, roles: list[str] | None = N
         "direction": location["direction"],
         "offset": location["offset"],
         "bit": location["bit"],
+        "size": location["size"],
         "data_type": str(data_type or "").upper(),
         "roles": list(roles or []),
     }
@@ -144,7 +145,7 @@ def load_program_signals(snapshot_path: Path | None = None, variables_path: Path
             channel["functional_name"]: channel.get("address")
             for channel in snapshot.get("channels", []) or [] if channel.get("functional_name")
         }
-        return {
+        result = {
             "source": "snapshot",
             "path": str(snapshot_path),
             "trial_id": snapshot.get("trial_id"),
@@ -152,6 +153,8 @@ def load_program_signals(snapshot_path: Path | None = None, variables_path: Path
             "parameter_bindings": dict(snapshot.get("parameter_bindings") or {}),
             "inventory": inventory,
         }
+        _attach_frozen_scales(result, Path(variables_path).parent if variables_path else None)
+        return result
     if variables_path is not None and Path(variables_path).exists():
         payload = load_json_file(Path(variables_path))
         signals: dict[str, dict[str, Any]] = {}
@@ -163,7 +166,7 @@ def load_program_signals(snapshot_path: Path | None = None, variables_path: Path
                 signals[variable["name"]] = _signal(variable["name"], location, variable.get("type"))
             except RuntimeIOError:
                 continue
-        return {
+        result = {
             "source": "variables",
             "path": str(variables_path),
             "trial_id": None,
@@ -171,7 +174,27 @@ def load_program_signals(snapshot_path: Path | None = None, variables_path: Path
             "parameter_bindings": {},
             "inventory": {name: signal["address"] for name, signal in signals.items()},
         }
+        _attach_frozen_scales(result, Path(variables_path).parent)
+        return result
     raise RuntimeIOError(ERROR_NO_PROGRAM, "No hay snapshot de ensayo ni variables.json del programa descargado.")
+
+
+def _attach_frozen_scales(program: dict, package: Path | None) -> None:
+    """Only the downloaded package supplies scales; never consult the live map."""
+    if package is None or not (package / 'generation_io_map.json').is_file():
+        return
+    payload = load_json_file(package / 'generation_io_map.json')
+    for row in payload.get('variables', []):
+        signal = program['signals'].get(row.get('name'))
+        if signal is None or row.get('type') != signal['data_type']:
+            continue
+        try:
+            same = runtime_address(row.get('location'))['address'] == signal['address']
+        except RuntimeIOError:
+            continue
+        if same and isinstance(row.get('analog_config'), dict):
+            import copy
+            signal['analog_config'] = copy.deepcopy(row['analog_config'])
 
 
 def bool_inputs(program: dict[str, Any]) -> list[dict[str, Any]]:
@@ -215,16 +238,18 @@ def check_write_allowed(target_type: str | None, runtime_report: dict[str, Any] 
 
 
 def io_test_availability(
-    target_type: str | None, runtime_report: dict[str, Any] | None, expected_instance: str, program: dict[str, Any] | None
+    target_type: str | None, runtime_report: dict[str, Any] | None, expected_instance: str, program: dict[str, Any] | None,
+    allow_manual_stop: bool = False
 ) -> tuple[bool, str]:
     """Para la GUI: la ventana PRUEBA DE I/O solo se habilita si todo esto se cumple."""
     blocked = check_write_allowed(target_type, runtime_report, expected_instance)
-    if blocked:
+    if blocked and not (allow_manual_stop and blocked[0] == ERROR_CPU_NOT_RUN and (runtime_report or {}).get('cpu_state') == 'STOP'):
         return False, f"{blocked[0]}: {blocked[1]}"
     if not program or not program.get("signals"):
         return False, f"{ERROR_NO_PROGRAM}: no hay snapshot/programa valido del que tomar las senales."
-    if not bool_inputs(program) and not bool_outputs(program):
-        return False, f"{ERROR_TYPE_UNSUPPORTED}: el programa no tiene entradas/salidas BOOL."
+    from runtime_io_controls import signals
+    if not signals(program, 'I') and not signals(program, 'Q'):
+        return False, f"{ERROR_TYPE_UNSUPPORTED}: el programa no tiene E/S compatibles."
     return True, ""
 
 
@@ -283,7 +308,10 @@ class RuntimeIOSession:
         )
 
     def _base_payload(self) -> dict[str, Any]:
-        return {"target_type": self.target_type, "settle_ms": self.config["io_settle_ms"]}
+        payload={"target_type": self.target_type, "settle_ms": self.config["io_settle_ms"]}
+        if self.program.get('native_pid_identity'):
+            payload['native_pid_identity']=self.program['native_pid_identity']
+        return payload
 
     def _guard_write(self) -> None:
         blocked = check_write_allowed(self.target_type, self.runtime_report, self.config["instance_name"])
@@ -520,8 +548,9 @@ def run_runtime_io_smoke_test(
 
 def trial_runtime_io_section(report: dict[str, Any]) -> dict[str, Any]:
     """Diagnostico de infraestructura para trial.json (NO es una metrica cientifica)."""
-    writes_ok = any(item.get("match") for item in report.get("writes", []))
-    reads_ok = any(item.get("value") is not None for item in report.get("reads", []))
+    writes_ok = any(item.get("match") and isinstance(item.get('requested_value'), bool)
+                    for item in report.get("writes", []))
+    reads_ok = any(isinstance(item.get("value"), bool) for item in report.get("reads", []))
     return {
         "bool_input_write_supported": writes_ok,
         "bool_read_supported": reads_ok,

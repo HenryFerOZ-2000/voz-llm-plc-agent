@@ -43,6 +43,19 @@ def _manifest():
                              "formal-v1.0", ["x"])
 
 
+def test_future_freeze_tracks_controller_and_model_separately(pinned):
+    controller={'src/process_signals.py','config/native_pid_map_defaults.json'}
+    model={'src/pid_tank_model.py','src/pid_plant_test.py','src/pid_native_validation.py',
+           'src/pid_plant_io.py','plcsim_runtime_bridge/PidPlantSession.cs','config/pid_tank_test_profile.json'}
+    assert controller<=set(SF.GROUPS['generation'])
+    assert model<=set(SF.GROUPS['plant_test'])
+    manifest=_manifest()
+    for path in controller|model:
+        assert path in manifest['files']
+        changed=json.loads(json.dumps(manifest));changed['files'][path]='0'*64
+        assert f'FROZEN_FILE_MODIFIED: {path}' in SF.validate_freeze(_ROOT,changed)['errors']
+
+
 def test_manifest_covers_code_prompt_oracles_benchmark_maps_and_validates(pinned):
     manifest = _manifest()
     assert manifest["schema_version"] == 2 and manifest["oracle_count"] == 32 and manifest["status"] == "FROZEN"

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "protocol_id": "PID_TANK_LEVEL_V1",
+  "tuning_policy": "REQUIRE_PRETUNE",
+  "tuning_authorized": false,
+  "setpoints": [50, 40, 60],
+  "tolerance": 2,
+  "hold_seconds": 10,
+  "deadline_seconds": 300
+}

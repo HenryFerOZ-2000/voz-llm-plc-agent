@@ -67,9 +67,15 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 {
                     report = RunSelfTest();
                 }
-                else if (action == "status" || action == "runtime_status")
+                else if (action == "manual_io_self_test") { report = ManualIO.SelfTest(); }
+                else if (action == "manual_io") { report = ManualIO.Execute(request); }
+                else if (action == "status" || action == "runtime_status" || action == "list_instances")
                 {
                     report = RuntimeReader.Execute(request, action == "runtime_status", apiDllPath);
+                }
+                else if (action == "pid_plant_session")
+                {
+                    return PidPlantSession.Execute(request);
                 }
                 else if (action == "read_signal" || action == "write_input" || action == "io_sequence" || action == "restore_inputs"
                     || action == "discover_tags")
@@ -176,6 +182,12 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             return matches;
         }
 
+        internal static List<int> SelectInstanceIdentity(IList<string> names,IList<int> ids,string name,int? id)
+        {
+            var matches=SelectInstances(names,name);
+            return id.HasValue?matches.Where(index=>ids[index]==id.Value).ToList():matches;
+        }
+
         /// <summary>Adaptadores de Windows cuyo nombre o descripcion CONTIENE el patron configurado.</summary>
         internal static List<int> SelectAdapters(IList<string[]> adapters, string pattern)
         {
@@ -275,6 +287,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
         internal const string KindProcessVariable = "PROCESS_VARIABLE";
         // Proposito obligatorio para escribir variables internas: solo el Oracle de Experimentacion.
         internal const string InternalWritePurpose = "EXPERIMENT_ORACLE";
+        internal const string NativePidPurpose = "NATIVE_PID_COMMISSIONING";
         internal const double DefaultRealTolerance = 0.001;
 
         internal sealed class SignalRequest
@@ -303,8 +316,9 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
 
             public bool IsProcessVariable
             {
-                get { return String.Equals(Kind, KindProcessVariable, StringComparison.Ordinal); }
+                get { return String.Equals(Kind, KindProcessVariable, StringComparison.Ordinal) || IsNativePid; }
             }
+            public bool IsNativePid { get { return Kind=="NATIVE_PID_VARIABLE"; } }
 
             public bool IsReal
             {
@@ -398,6 +412,22 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             }
             string expectedPrimitive = String.Equals(signal.DataType, "BOOL", StringComparison.OrdinalIgnoreCase) ? "Bool"
                 : (signal.IsReal ? "Float" : null);
+            if(signal.IsNativePid)
+            {
+                var fields=new Dictionary<string,string>{{"PV","REAL"},{"CV","REAL"},{"SP","REAL"},{"ManualValue","REAL"},
+                    {"Running","BOOL"},{"Fault","BOOL"},{"SensorValid","BOOL"},{"ControllerError","BOOL"},{"ParametersConfirmed","BOOL"},
+                    {"ControllerState","INT"},{"ErrorBits","DWORD"},{"TuningMode","INT"},{"FaultCode","INT"},
+                    {"CmdStart","BOOL"},{"CmdStop","BOOL"},{"CmdReset","BOOL"},{"CmdManual","BOOL"},{"CmdPretune","BOOL"},{"CmdFinetune","BOOL"},{"SimSensorFault","BOOL"}};
+                for(int i=0;i<16;i++)fields["Build"+i.ToString("00")]="INT";
+                fields["Kp"]="REAL";fields["Ti"]="REAL";fields["Td"]="REAL";
+                string type;
+                bool writable=signal.Member=="SP" || signal.Member=="ManualValue" || signal.Member=="SimSensorFault" || signal.Member.StartsWith("Cmd",StringComparison.Ordinal);
+                if(String.IsNullOrEmpty(signal.Db) || !System.Text.RegularExpressions.Regex.IsMatch(signal.Db,@"^DB_PID_[A-Za-z][A-Za-z0-9_]{0,39}$")
+                    || !fields.TryGetValue(signal.Member??"",out type) || type!=signal.DataType || (forWrite && !writable))
+                { detail="Native PID member is undeclared or read-only"; return "PLCSIM_IO_WRITE_NOT_ALLOWED"; }
+                if(signal.DataType=="INT")expectedPrimitive="Int16";
+                if(signal.DataType=="DWORD")expectedPrimitive="UInt32";
+            }
             if (expectedPrimitive == null)
             {
                 detail = signal.Name + ": tipo '" + signal.DataType + "' no soportado para variables internas (BOOL/REAL).";
@@ -408,7 +438,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 detail = signal.Name + ": la variable interna no es escribible en este ensayo (solo roles INPUT PROCESS_VARIABLE).";
                 return "PLCSIM_IO_WRITE_NOT_ALLOWED";
             }
-            if (forWrite && !String.Equals(purpose, InternalWritePurpose, StringComparison.Ordinal))
+            if (forWrite && !(signal.IsNativePid ? purpose==NativePidPurpose : purpose==InternalWritePurpose))
             {
                 detail = signal.Name + ": escritura interna solo durante la ejecucion del Oracle (purpose=" + purpose + ").";
                 return "PLCSIM_IO_WRITE_NOT_ALLOWED";
@@ -609,6 +639,13 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             verdict("pv.unsupported_type", "PLCSIM_SIGNAL_TYPE_UNSUPPORTED", VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_PV", "INT", false), false, "", out ignored));
             verdict("pv.not_in_program", "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM", VerifyProcessVariable(dbTags, pv("DB_PLC_PRG.Level_SP", "REAL", false), false, "", out ignored));
             verdict("pv.not_a_db_tag", "PLCSIM_SIGNAL_NOT_IN_CURRENT_PROGRAM", VerifyProcessVariable(dbTags, pv("I_Start", "BOOL", false), false, "", out ignored));
+            dbTags["DB_PID_Test.ControllerState"]=new TagMeta{Name="DB_PID_Test.ControllerState",Area="DataBlock",Primitive="Int16"};
+            dbTags["DB_PID_Test.ErrorBits"]=new TagMeta{Name="DB_PID_Test.ErrorBits",Area="DataBlock",Primitive="UInt32"};
+            var native=new SignalRequest{Name="DB_PID_Test.ControllerState",Db="DB_PID_Test",Member="ControllerState",DataType="INT",Kind="NATIVE_PID_VARIABLE",Writable=true};
+            verdict("native.int_read",null,VerifyProcessVariable(dbTags,native,false,NativePidPurpose,out ignored));
+            verdict("native.diagnostic_write_denied","PLCSIM_IO_WRITE_NOT_ALLOWED",VerifyProcessVariable(dbTags,native,true,NativePidPurpose,out ignored));
+            native.Name="DB_PID_Test.ErrorBits";native.Member="ErrorBits";native.DataType="DWORD";
+            verdict("native.dword_read",null,VerifyProcessVariable(dbTags,native,false,NativePidPurpose,out ignored));
             // Resolucion del nombre Runtime: formato descubierto en TagInfos (con o sin comillas), nunca asumido.
             Func<string, string, SignalRequest> member = (db, name) =>
                 new SignalRequest { Name = db + "." + name, DataType = "REAL", Kind = KindProcessVariable, Db = db, Member = name };
@@ -639,6 +676,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             truth("require.approx_out", false, RequirementMatches(new Dictionary<string, object> { { "approx", 60.0 }, { "tolerance", 0.01 } }, 60.02));
             truth("require.range", true, RequirementMatches(new Dictionary<string, object> { { "min", 0.0 }, { "max", 100.0 } }, 50.0));
             truth("require.bool", false, RequirementMatches(false, true));
+            PidPlantSession.SelfTest(checks);
             return report;
         }
     }
@@ -652,7 +690,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static Dictionary<string, object> Execute(Dictionary<string, object> request, bool openInstance, string dllPath)
         {
-            string action = openInstance ? "runtime_status" : "status";
+            string action = Program.GetString(request,"action",openInstance ? "runtime_status" : "status");
             Dictionary<string, object> report = Program.NewReport("PLCSIM_RUNTIME_ERROR", action);
             string instanceName = Program.GetString(request, "instance_name", "");
             report["instance_name_requested"] = instanceName;
@@ -696,7 +734,22 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 string names = infos.Length == 0 ? "(ninguna)" : String.Join(", ", infos.Select(info => info.Name));
                 Program.Log("Registered instances: " + names);
 
-                List<int> matches = Program.SelectInstances(infos.Select(info => info.Name).ToList(), instanceName);
+                if(action == "list_instances")
+                {
+                    List<object> instances=new List<object>();
+                    report["instances"]=instances;
+                    foreach(SInstanceInfo info in infos)
+                    {
+                        Dictionary<string,object> row=new Dictionary<string,object>{{"instance_id",info.ID},{"instance_name",info.Name}};
+                        try { row["instance"]=ReadInstance(SimulationRuntimeManager.CreateInterface((int)info.ID)); }
+                        catch(Exception error) { row["read_errors"]=new[]{error.Message}; }
+                        instances.Add(row);
+                    }
+                    report["status"]="PLCSIM_INSTANCES_PASSED";
+                    return report;
+                }
+                List<int> matches=Program.SelectInstanceIdentity(infos.Select(info=>info.Name).ToList(),infos.Select(info=>(int)info.ID).ToList(),instanceName,
+                    request.ContainsKey("instance_id")?(int?)Convert.ToInt32(request["instance_id"]):null);
                 if (matches.Count == 0)
                 {
                     report["status"] = "PLCSIM_INSTANCE_NOT_FOUND";
@@ -722,7 +775,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                     return report;
                 }
 
-                IInstance instance = SimulationRuntimeManager.CreateInterface(selected.Name);
+                IInstance instance = SimulationRuntimeManager.CreateInterface((int)selected.ID);
                 Dictionary<string, object> details = ReadInstance(instance);
                 report["instance"] = details;
                 Program.Log("OperatingState: " + details["operating_state"]);
@@ -869,6 +922,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             int settleMs = Math.Max(0, Math.Min(10000, GetInt(request, "settle_ms", 500)));
             report["instance_name"] = instanceName;
             report["target_type"] = targetType;
+            if(request.ContainsKey("native_pid_identity"))report["native_pid_identity"]=request["native_pid_identity"];
             report["settle_ms"] = settleMs;
             report["writes"] = new List<object>();
             report["reads"] = new List<object>();
@@ -880,6 +934,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             }
 
             IInstance instance = null;
+            Dictionary<string, Program.TagMeta> tags = new Dictionary<string, Program.TagMeta>(StringComparer.Ordinal);
             List<Program.SignalRequest> writtenInputs = new List<Program.SignalRequest>();
             // Variable interna escrita -> valor original leido ANTES de la primera escritura.
             Dictionary<string, KeyValuePair<Program.SignalRequest, object>> writtenVariables =
@@ -891,13 +946,15 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                     return Deny(report, writes ? "PLCSIM_IO_WRITE_NOT_ALLOWED" : "PLCSIM_RUNTIME_UNAVAILABLE", "Runtime Manager no disponible.");
                 }
                 SInstanceInfo[] infos = SimulationRuntimeManager.RegisteredInstanceInfo ?? new SInstanceInfo[0];
-                List<int> matches = Program.SelectInstances(infos.Select(info => info.Name).ToList(), instanceName);
+                List<int> matches=Program.SelectInstanceIdentity(infos.Select(info=>info.Name).ToList(),infos.Select(info=>(int)info.ID).ToList(),instanceName,
+                    request.ContainsKey("instance_id")?(int?)Convert.ToInt32(request["instance_id"]):null);
                 if (matches.Count != 1)
                 {
                     string code = matches.Count == 0 ? "PLCSIM_INSTANCE_NOT_FOUND" : "PLCSIM_INSTANCE_AMBIGUOUS";
                     return Deny(report, writes ? "PLCSIM_IO_WRITE_NOT_ALLOWED" : code, "Instancia '" + instanceName + "': " + code + ".");
                 }
-                instance = SimulationRuntimeManager.CreateInterface(infos[matches[0]].Name);
+                report["instance_id"]=(int)infos[matches[0]].ID;
+                instance = SimulationRuntimeManager.CreateInterface((int)infos[matches[0]].ID);
                 EOperatingState state = instance.OperatingState;
                 report["cpu_state"] = state.ToString().ToUpperInvariant();
                 if (writes && state != EOperatingState.Run)
@@ -906,9 +963,12 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                     return Deny(report, "PLCSIM_IO_WRITE_NOT_ALLOWED", "CPU en " + state + ": solo se escribe con la CPU en RUN.");
                 }
 
-                instance.UpdateTagList(withDataBlocks ? ETagListDetails.IODB : ETagListDetails.IO, false);
-                report["tag_list_details"] = withDataBlocks ? "IODB" : "IO";
-                Dictionary<string, Program.TagMeta> tags = new Dictionary<string, Program.TagMeta>(StringComparer.Ordinal);
+                // The SDK symbol list is shared by clients of the same instance.
+                // Updating it with IO removes DB symbols used by an active PID provider.
+                // Keep the complete list even for a digital-only request; access permissions
+                // still come from the individual validated signal descriptors below.
+                instance.UpdateTagList(ETagListDetails.IODB, false);
+                report["tag_list_details"] = "IODB";
                 List<STagInfo> tagInfos = (instance.TagInfos ?? new STagInfo[0]).ToList();
                 foreach (STagInfo tag in tagInfos)
                 {
@@ -1024,9 +1084,35 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 {
                     Cleanup(instance, writtenInputs, settleMs, report);
                 }
-                if (instance != null && writtenVariables.Count > 0)
+                if (instance != null && writtenVariables.Count > 0 && purpose==Program.NativePidPurpose
+                    && GetString(report,"status")=="PLCSIM_IO_PASSED")
+                {
+                    report["native_pid_values_persisted"]=true;
+                }
+                else if (instance != null && writtenVariables.Count > 0)
                 {
                     RestoreVariables(instance, writtenVariables, settleMs, realTolerance, report);
+                    if(purpose==Program.NativePidPurpose)
+                    {
+                        foreach(var item in writtenVariables.Values.Where(v=>v.Key.IsNativePid).GroupBy(v=>v.Key.Db))
+                        {
+                            try
+                            {
+                                var signal=item.First().Key;
+                                var stop=new Program.SignalRequest{Kind="NATIVE_PID_VARIABLE",DataType="BOOL",
+                                    Name=signal.Db+".CmdStop",Db=signal.Db,Member="CmdStop",
+                                    RuntimeName=signal.ApiName.Replace("."+signal.Member,".CmdStop")};
+                                var step=new Dictionary<string,object>{{"id","native_pid_error_stop"},{"writes",new object[]{
+                                    new Dictionary<string,object>{{"signal",new Dictionary<string,object>{{"kind",stop.Kind},{"data_type","BOOL"},
+                                        {"name",stop.Name},{"db",stop.Db},{"member","CmdStop"},{"runtime_name",stop.ApiName}}},{"value",true}}}}};
+                                if(!SetMany(instance,tags,step,Stopwatch.StartNew(),report,new List<Program.SignalRequest>(),
+                                    new Dictionary<string,KeyValuePair<Program.SignalRequest,object>>(),purpose,realTolerance,settleMs)
+                                    || !Convert.ToBoolean(ReadValue(instance,stop)))
+                                    throw new InvalidOperationException("native stop write/readback failed");
+                            }
+                            catch(Exception e) { Program.AddError(report,"PID_STOP_UNVERIFIED: "+e.Message); }
+                        }
+                    }
                 }
                 try
                 {
@@ -1062,6 +1148,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             ((List<object>)report["writes"]).Add(entry);
             try
             {
+                if(!GuardNativeWrite(instance,report))return false;
                 instance.InputArea.WriteBit(signal.Offset, signal.Bit, value);
             }
             catch (SimulationRuntimeException exception)
@@ -1124,6 +1211,8 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
         {
             if (signal.IsProcessVariable)
             {
+                if(signal.IsNativePid && signal.DataType=="INT")return (int)instance.ReadInt16(signal.ApiName);
+                if(signal.IsNativePid && signal.DataType=="DWORD")return instance.ReadUInt32(signal.ApiName);
                 return signal.IsReal ? (object)(double)instance.ReadFloat(signal.ApiName) : instance.ReadBool(signal.ApiName);
             }
             IIOArea area = signal.Area == "Input" ? instance.InputArea : instance.OutputArea;
@@ -1184,6 +1273,7 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
             {
                 try
                 {
+                    if(!GuardNativeWrite(instance,report))return false;
                     if (write.Key.IsProcessVariable)
                     {
                         if (!writtenVariables.ContainsKey(write.Key.Name))
@@ -1397,7 +1487,8 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 Dictionary<string, object> entry = new Dictionary<string, object> { { "name", signal.Name }, { "address", signal.Address } };
                 try
                 {
-                    instance.InputArea.WriteBit(signal.Offset, signal.Bit, false);
+                    if(GuardNativeWrite(instance,report))instance.InputArea.WriteBit(signal.Offset, signal.Bit, false);
+                    else entry["error"]="PID_PROGRAM_MISMATCH: stale cleanup denied";
                 }
                 catch (SimulationRuntimeException exception)
                 {
@@ -1524,7 +1615,11 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                 };
                 try
                 {
-                    WriteVariable(instance, signal, target);
+                    if(GuardNativeWrite(instance,report))
+                    {
+                        WriteVariable(instance, signal, target);
+                    }
+                    else entry["error"]="PID_PROGRAM_MISMATCH: stale restoration denied";
                 }
                 catch (SimulationRuntimeException exception)
                 {
@@ -1567,6 +1662,51 @@ namespace VozLlmPlcAgent.PlcsimRuntimeBridge
                     report["status"] = "PLCSIM_IO_CLEANUP_FAILED";
                 }
                 report["cleanup_failed"] = true;
+            }
+        }
+
+        private static bool GuardNativeWrite(IInstance instance,Dictionary<string,object> report)
+        {
+            try
+            {
+                if(report.ContainsKey("instance_id"))
+                {
+                    int id=Convert.ToInt32(report["instance_id"]);
+                    var infos=SimulationRuntimeManager.RegisteredInstanceInfo??new SInstanceInfo[0];
+                    var selected=Program.SelectInstanceIdentity(infos.Select(i=>i.Name).ToList(),infos.Select(i=>(int)i.ID).ToList(),Convert.ToString(report["instance_name"]),id);
+                    if(selected.Count!=1 || instance.ID!=id || instance.OperatingState!=EOperatingState.Run)
+                        throw new InvalidOperationException("PLCSIM_IO_WRITE_NOT_ALLOWED: selected instance changed or is not RUN");
+                }
+                if(!report.ContainsKey("native_pid_identity"))return true;
+                var identity=(Dictionary<string,object>)report["native_pid_identity"];
+                string db=Convert.ToString(identity["db"]);
+                if(!System.Text.RegularExpressions.Regex.IsMatch(db,@"^DB_PID_[A-Za-z][A-Za-z0-9_]{0,39}$"))
+                    throw new InvalidOperationException("PID_PROGRAM_MISMATCH: invalid controller DB");
+                int[] expected=((System.Collections.IEnumerable)identity["build_signature"]).Cast<object>().Select(Convert.ToInt32).ToArray();
+                if(expected.Length!=16)throw new InvalidOperationException("PID_PROGRAM_MISMATCH: expected sixteen Build words");
+                var current=new Dictionary<string,Program.TagMeta>(StringComparer.Ordinal);
+                foreach(var tag in instance.TagInfos??new STagInfo[0])current[tag.Name]=new Program.TagMeta{
+                    Name=tag.Name,Area=tag.Area.ToString(),Offset=tag.Offset,Bit=tag.Bit,Primitive=tag.PrimitiveDataType.ToString()};
+                var actual=new int[16];
+                for(int i=0;i<16;i++)
+                {
+                    string member="Build"+i.ToString("00");
+                    var signal=new Program.SignalRequest{Db=db,Member=member,Name=db+"."+member,DataType="INT"};
+                    Program.TagMeta tag;string detail;
+                    if(Program.ResolveRuntimeName(current,signal,out tag,out detail)!=null || tag.Primitive!="Int16")
+                        throw new InvalidOperationException("PID_PROGRAM_MISMATCH: "+detail);
+                    actual[i]=(int)instance.ReadInt16(signal.ApiName);
+                }
+                var registered=SimulationRuntimeManager.RegisteredInstanceInfo??new SInstanceInfo[0];
+                bool same=Program.SelectInstanceIdentity(registered.Select(v=>v.Name).ToList(),registered.Select(v=>(int)v.ID).ToList(),Convert.ToString(report["instance_name"]),Convert.ToInt32(report["instance_id"])).Count==1;
+                PidPlantSession.CheckIdentity(expected,actual,instance.OperatingState==EOperatingState.Run,same);
+                return true;
+            }
+            catch(Exception error)
+            {
+                report["status"]=report.ContainsKey("native_pid_identity")?"PID_PROGRAM_MISMATCH":"PLCSIM_IO_WRITE_NOT_ALLOWED";
+                Program.AddError(report,Convert.ToString(report["status"])+": write denied: "+error.Message);
+                return false;
             }
         }
 

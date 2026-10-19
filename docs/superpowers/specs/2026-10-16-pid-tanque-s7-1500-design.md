@@ -8,26 +8,24 @@ Configurar el banco S7-1500 existente para un transmisor de nivel y una válvula
 
 El usuario autorizó elegir una configuración inicial editable y eligió **válvula proporcional de llenado**. Las direcciones y la separación corriente/voltaje del banco están confirmadas. Los modelos, rangos raw, cableado y comportamiento del dispositivo todavía no están comprobados: los valores siguientes son una propuesta de prueba, no una certificación del hardware.
 
+Corrección de alcance del usuario: preparar inicialmente solo el sensor y el actuador analógicos. Después el investigador escribirá el comando que quiera; el software debe construirlo usando el inventario y las restricciones del mapa vigente. No se preasignan salidas digitales de habilitación/alarma ni se convierte un ejemplo de tanque en una plantilla funcional obligatoria.
+
 ## Configuración propuesta del banco
 
 Modificar solamente `data/plc_maps/mapa_banco_fisico_working.json`, con copia de seguridad y comparación del contenido justo antes de guardar. Mantener todos sus 24 canales y sus direcciones; conservar el mapa base y los activos experimentales congelados. No cambiar el mapa activo en silencio. Si el archivo cambia durante la preparación, rehacer la propuesta sobre el contenido nuevo antes de guardarla.
 
 | Función | Nombre | Dirección del mapa | Configuración inicial |
 |---|---|---|---|
-| Arranque | I_Start | %IX16.0 | Conservar nombre, dirección y bloqueo |
-| Parada | I_Stop | %IX16.1 | Conservar nombre, dirección y bloqueo |
-| Emergencia | I_Emergency | %IX16.2 | Conservar nombre; prioridad de parada |
-| Reset | I_Reset | %IX16.3 | Reconocer fallo y permitir nuevo Start |
-| Manual | I_Mode_Manual | %IX16.5 | Conservar selector existente |
-| Automático | I_Mode_Auto | %IX16.6 | Conservar selector existente |
 | Nivel | AI_Level_Raw | %IW4 | Transmisor 4–20 mA; raw 0–27648; nivel 0–100 % |
 | Mando de llenado | AO_Fill_Command | %QW4 | Válvula proporcional 4–20 mA; raw 0–27648; apertura 0–100 %; valor ante fallo 0 % |
-| Habilitación del equipo de llenado | Q_Pump_Enable | %QX8.4 | Reutilizar el canal FREE Q_Aux_Output |
-| Alarma del proceso | Q_Alarm | %QX8.7 | Reutilizar el canal FREE Q_Free_8_7 |
 
-La habilitación digital queda disponible para una bomba de alimentación/permiso del banco; no sustituye el mando proporcional de la válvula ni se exige energizar una bomba inexistente. El ejemplo habilita esta salida solamente mientras el control está autorizado. Se documentará que la conexión física de ese permiso es opcional y debe corresponder al banco.
+Estas dos direcciones son la configuración inicial de dispositivos de este banco, no constantes del generador. Si posteriormente se cambia el sensor, la válvula o sus direcciones en el mapa, la generación debe utilizar la nueva configuración.
 
-No reasignar las salidas ASSIGNED Q_Traffic_Green, Q_Traffic_Yellow y Q_Traffic_Red. Mantener los demás canales como están. Si alguno de los cuatro canales elegidos dejó de estar FREE o ya tiene configuración propia, no sustituirla automáticamente: presentar el conflicto concreto.
+Conservar todas las variables digitales actuales, incluidas sus funciones y estados. No reservar Q8.4/Q8.7 ni convertirlas de antemano en habilitación y alarma. Si el comando necesita una salida digital adicional, el asignador resolverá la necesidad contra el mapa de ese momento: reutilizar un recurso compatible por nombre/función, respetar los recursos protegidos y buscar canales disponibles según la política existente. Si no hay un canal compatible, informar la falta concreta sin inventarlo.
+
+`LOCKED` protege la asociación actual entre variable, función y dirección: no cambia la función por sí mismo ni prohíbe utilizarla. Una variable definida como alarma y luego bloqueada puede seguir siendo usada como alarma si tiene permiso de uso. `llm_allowed` determina ese permiso de forma independiente. No interpretar `LOCKED` como canal genérico disponible para otra función.
+
+Si alguno de los dos canales analógicos elegidos dejó de estar FREE o ya tiene configuración propia, no sustituirla automáticamente: presentar el conflicto concreto.
 
 Los dos canales analógicos tendrán `analog_config` con señal, dispositivo, magnitud, unidad, rangos y respuesta ante fallo. Se registrará la procedencia de los valores como `ASSUMED_FOR_TEST`; `confirmed=false` hasta que el investigador compruebe el módulo/dispositivo. Autorizar sus nombres para interpretación y conservar esta confirmación física separada de la disponibilidad de simulación. No marcar como comprobados los rangos de corriente/raw por elegirlos para una prueba.
 
@@ -41,9 +39,11 @@ Una alternativa es exigir al usuario un PID y un OB previamente cableados en la 
 
 Se amplía el pipeline actual parser → validación → IR → adaptador Siemens → Openness. No se crea un segundo generador de programas ni se identifica el comportamiento por una frase literal.
 
-Añadir una representación explícita de un lazo `pid_control` en los requisitos funcionales y un descriptor tipado en la IR. Debe identificar entrada analógica, salida analógica, setpoint y unidad, dirección de acción, período, modo SIMULATION/PHYSICAL y entradas de Start/Stop/Reset/emergencia. El ejemplo usa setpoint 50 %, límites 0–100 %, acción de llenado (nivel bajo requiere mayor apertura) y período 100 ms.
+Añadir una representación explícita de un lazo `pid_control` en los requisitos funcionales y un descriptor tipado en la IR. Debe identificar entrada analógica, salida analógica, setpoint y unidad, dirección de acción, período y modo SIMULATION/PHYSICAL. Los recursos físicos de Start/Stop/Reset/emergencia, selección de modo, habilitación digital y alarma se incorporan según lo solicitado y lo disponible, con la política de seguridad existente; no son un conjunto fijo de tags obligatorio para cualquier PID. La habilitación del controlador y sus diagnósticos pueden ser variables internas de software sin salida física adicional. El ejemplo de prueba usa setpoint 50 %, límites 0–100 %, acción de llenado (nivel bajo requiere mayor apertura) y período 100 ms; esos valores no definen lo que tiene que pedir el investigador.
 
 El LLM interpreta el objetivo y los recursos; no inventa calibraciones, ganancias, parámetros de Openness ni direcciones. La validación determinista comprueba que los canales existen, están permitidos, tienen dirección/tipo compatibles y unidades coherentes. Un comando ambiguo entre llenar y vaciar debe pedir esa información del proceso.
+
+Los nombres AI_Level_Raw/AO_Fill_Command, las direcciones IW4/QW4 y los nombres de bloques del ejemplo no se codificarán como recursos obligatorios del motor de generación. La vinculación funcional se congela en la IR después de resolver el comando contra el mapa. Una petición de PID para nivel con un solo sensor de nivel y una sola válvula compatibles debe reutilizarlos; múltiples dispositivos funcionalmente indistinguibles requieren aclarar cuál proceso se quiere controlar, sin preguntar por direcciones que el mapa ya resuelve.
 
 Los requisitos históricos de `INT_PID_SUPERVISOR` siguen disponibles para P01–P12. No se convierten silenciosamente en un PID ejecutable ni se cambian sus ensayos congelados. Un lazo nativo solicitado explícitamente puede incorporar supervisión compatible, pero se rechaza una mezcla cuyo orden de ejecución o escritores no pueda resolverse.
 
@@ -63,9 +63,9 @@ Importar y compilar de forma repetible sin borrar bloques ajenos ni restablecer 
 
 Orden de cada ciclo: leer/escalar o actualizar planta simulada → comprobar permisivos y fallos → actualizar estado de marcha → llamar al PID una sola vez → aplicar límites y prioridades finales → escalar salida y publicar diagnóstico.
 
-Después de arrancar la CPU el control queda detenido. Start requiere un flanco nuevo y entradas válidas. Stop, emergencia, fallo de sensor, fallo del PID o sobrellenado detienen el llenado, llevan la apertura al valor ante fallo y retiran la habilitación digital. No basta retirar `PID_Enable` dejando intacta la salida anterior.
+En el ejemplo con arranque por pulsador, después de arrancar la CPU el control queda detenido y Start requiere un flanco nuevo y entradas válidas. La política de arranque de otros programas procede del comando; no se añade un pulsador físico inexistente. Stop/emergencia, cuando correspondan al programa/mapa, y los fallos del lazo detienen el llenado y llevan la apertura al valor ante fallo. Si existe una habilitación digital vinculada, también se retira. No basta retirar la habilitación interna del PID dejando intacta la salida anterior.
 
-La parada por fallo/emergencia queda enclavada. Reset solo la reconoce cuando desaparece su causa; no inicia el proceso. Tras Stop o la recuperación de un fallo se exige otro flanco de Start. Mantener Start presionado durante la recuperación no produce rearranque. Un conflicto entre selectores Manual/Automático lleva a reposo con diagnóstico.
+La parada por fallo/emergencia queda enclavada. El rearme solo la reconoce cuando desaparece su causa; no inicia el proceso. En programas con Start/Stop se exige otro flanco de Start tras la parada; mantenerlo presionado durante la recuperación no produce rearranque. Si no existen pulsadores físicos vinculados, el rearme/habilitación se exponen como variables internas de puesta en marcha, sin asignar entradas de hardware. Si el programa usa selectores Manual/Automático, un conflicto entre ellos lleva a reposo con diagnóstico.
 
 Publicar nivel medido/simulado, setpoint solicitado y aceptado, mando calculado y aplicado, validez del sensor, marcha, modo, estado PID, error/advertencia, código de fallo y estado de sintonización. Las variables de control quedan en DB; no se inventan direcciones físicas para ellas.
 
@@ -95,12 +95,13 @@ Conservar las funciones actuales de programas digitales, metadatos del mapa, bac
 
 ## Verificación y aceptación
 
-1. Verificar la propuesta de mapa: 24 canales, mismas direcciones, sin solapamientos, sin cambios en salidas ya asignadas y con copia exacta anterior recuperable. Verificar que guardar no pierde extensiones/historial ni sobrescribe una edición concurrente.
+1. Verificar la propuesta de mapa: 24 canales, mismas direcciones, cambios de preparación limitados a los dos dispositivos analógicos, sin reasignar/reservar salidas digitales y con copia exacta anterior recuperable. Verificar que guardar no pierde extensiones/historial ni sobrescribe una edición concurrente.
 2. Pruebas de validación: canal no permitido/ausente, rangos pendientes en modo físico, unidades incompatibles, período inválido, escritores duplicados y estado contradictorio. Probar conservación de comandos digitales y supervisores P01–P12.
 3. Comprobar que el paquete contiene un solo lazo, la instancia tecnológica requerida, un único escritor final por salida y una sola llamada periódica al PID. Probar repetición de importación y detección de bloques ajenos.
 4. Compilar el puente contra las DLL V18 instaladas. Importar el ejemplo en un proyecto de desarrollo aislado derivado del normal configurado; conservar intactos el MASTER formal y el proyecto original. Confirmar por lectura de TIA el tipo de OB, período y versión PID. Guardar informe completo de compilación.
 5. Ejecutar en PLCSIM: Start/Stop/Reset/emergencia, setpoint 50 %, cambios a 40/60 %, límites de salida, fallo de sensor y ausencia de rearranque al recuperarse. Para el modelo de demostración, comprobar convergencia a ±2 puntos del setpoint, permanencia durante 10 s y plazo máximo de 300 s tras un cambio. Un resultado que no converge se informa como fallo y requiere ajustar el ejemplo, no cambiar el criterio después de observarlo.
 6. La sintonización nativa se considera comprobada solo con evidencia de transición, terminación/error y parámetros del bloque en TIA/PLCSIM. No basta generar los nombres de sus modos.
+7. Generar con sensor/actuador renombrados y en otras direcciones válidas del mapa; cambiar canales digitales disponibles; probar alarma y habilitación previamente definidas y LOCKED, y ausencia de esas salidas cuando no son necesarias. El comportamiento no debe depender de Q8.4/Q8.7 ni de los nombres del ejemplo. Distinguir canal protegido reutilizable para su función de canal protegido que no puede reasignarse.
 
 Entregables de implementación: mapa preparado y respaldado, generación integrada, comando de ejemplo y su paquete completo, instrucciones breves de prueba, resultados de pruebas automáticas y evidencia de compilación/ejecución cuando TIA y PLCSIM estén disponibles. Una comprobación no ejecutada debe figurar como pendiente, nunca como aprobada.
 

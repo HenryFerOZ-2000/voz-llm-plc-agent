@@ -106,7 +106,8 @@ def test_stages_are_exclusive_and_the_last_one_holds(bench_map):
     program = generate_implementation_from_ir(build_project_ir(
         {**_composed("T#5s"), "recognized_tags": []}, _allocated_map(bench_map), "SIEMENS_SCL_V18"))
     assert program.count("PT := ") == 1  # solo la etapa 1 tiene temporizador; la ultima se mantiene
-    assert "ELSIF I_Start AND NOT (M_Seq1_S1 OR M_Seq1_S2) THEN" in program
+    # arranque por FLANCO del pulsador: mantener Start pulsado nunca rearranca la secuencia por si solo
+    assert "ELSIF I_Start AND NOT M_Seq1_StartPrev AND NOT (M_Seq1_S1 OR M_Seq1_S2) THEN" in program
 
 
 def _allocated_map(bench_map: Path) -> dict[str, Any]:
@@ -217,7 +218,7 @@ def test_functional_clarification_is_shown_answered_and_reprocessed_structured(n
     assert app.process_command() is True
     assert state["dialogs"] == [FUNCTIONAL_QUESTION]
     first, second = state["calls"]
-    assert first["interaction_profile"] == "normal" and "clarification_history" not in first
+    assert "interaction_profile" not in first and "clarification_history" not in first  # facade owns the semantic profile
     assert second["command_text"] == COMMAND  # comando ORIGINAL, sin concatenar texto libre
     assert second["clarification_history"] == [{"question": FUNCTIONAL_QUESTION, "answer": "2 segundos"}]
     assert app.command_textbox.get("1.0", "end").strip() != COMMAND + "\n\nAclaracion"
@@ -262,7 +263,7 @@ def test_composed_int_unknown_proceeds_to_generation_in_normal_mode(normal, monk
     assert app.process_command() is True  # INT_UNKNOWN + composicion valida no se bloquea
 
 
-def test_experimentation_parse_call_is_unchanged(pipeline, monkeypatch):
+def test_experimentation_does_not_inject_interactive_history(pipeline, monkeypatch):
     app = pipeline["app"]
     calls: list[dict[str, Any]] = []
     monkeypatch.setattr(gui, "parse_command", lambda text, **kwargs: calls.append(kwargs) or _composed())
@@ -288,7 +289,8 @@ def test_voice_normal_uses_the_same_semantic_pipeline(normal, monkeypatch):
     finally:
         app._normal_voice_flow = None
     voice_kwargs = {k: v for k, v in state["calls"][1].items() if k != "command_text"}
-    assert sorted(text_kwargs) == sorted(voice_kwargs) and voice_kwargs["interaction_profile"] == "normal"
+    assert sorted(text_kwargs) == sorted(voice_kwargs) and "interaction_profile" not in voice_kwargs
+    assert text_kwargs['mode'] == voice_kwargs['mode']
 
 
 def test_resolved_clarification_in_voice_flow_does_not_block_download(normal, monkeypatch):

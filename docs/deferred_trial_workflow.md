@@ -3,6 +3,8 @@
 Esta guía explica cómo generar un ensayo y evaluarlo después, en otro momento. El fundamento
 metodológico está en `docs/experimental_design_v2.md`, sección 12.1.
 
+Actualización del producto: los ensayos nuevos de la GUI usan el motor `PRODUCT_SHARED_V1` y conservan el mapa declarado con `PRODUCT_DECLARED_V1`. Congelan su identidad y verifican su integridad antes de evaluar. La evaluación experimental del PID nativo queda pendiente de soporte y se bloquea antes de TIA, sin veredicto funcional. Los casos históricos de supervisión conservan su recorrido. Véase [motor compartido](26_motor_producto_compartido.md).
+
 ## Antes de empezar
 
 - TIA Portal V18 instalado con Openness, y el usuario dentro del grupo *Siemens TIA Openness*.

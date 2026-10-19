@@ -147,8 +147,20 @@ class PLCInterpretationLLMClient:
         return response_payload
 
     def _build_messages(self, command_text: str, context: dict[str, Any]) -> list[dict[str, Any]]:
+        system_prompt = self._prompt_text()
+        # Normal is an explicit profile. Its composition/control rules must have
+        # instruction priority over the historical closed-catalog prompt.
+        policy = context.get('normal_mode_policy')
+        if isinstance(policy, str) and policy:
+            system_prompt += '\n\nREGLAS PRIORITARIAS DEL PERFIL NORMAL:\n' + policy
+            system_prompt += (
+                '\nCONTRATO DE RESPUESTA: devuelve solo el objeto semantico. Sus unicos campos superiores permitidos son: '
+                + ', '.join(SemanticOutput.model_fields)
+                + '. Los campos de context (incluido requested_control_behavior) son solo metadatos de entrada; '
+                'no los copies como campos nuevos de la respuesta. No generes codigo ni modifiques el esquema.'
+            )
         return [
-            {"role": "system", "content": self._prompt_text()},
+            {"role": "system", "content": system_prompt},
             {
                 "role": "user",
                 "content": json.dumps(
@@ -198,6 +210,7 @@ class PLCInterpretationLLMClient:
         retries = int(self.config.get("max_retries", 2))
         timeout_seconds = int(self.config.get("request_timeout_seconds", 45))
         last_error: str | None = None
+        request_context = dict(context)
 
         for attempt in range(retries + 1):
             started_at = time.perf_counter()
@@ -205,7 +218,7 @@ class PLCInterpretationLLMClient:
                 client = self._client_instance()
                 response = client.responses.create(
                     model=self.model_name,
-                    input=self._build_messages(command_text, context),
+                    input=self._build_messages(command_text, request_context),
                     timeout=timeout_seconds
                 )
                 latency_ms = round((time.perf_counter() - started_at) * 1000, 2)
@@ -229,6 +242,15 @@ class PLCInterpretationLLMClient:
                 last_error = str(error)
                 if attempt >= retries:
                     break
+                if context.get('normal_mode_policy') and isinstance(error, ValueError):
+                    # Keep strict validation. Correct the representation on the bounded
+                    # retry instead of repeating an identical malformed response request.
+                    request_context['response_format_correction'] = (
+                        'La respuesta anterior incumplio el contrato JSON semantico: '
+                        + last_error[:2000]
+                        + '. Devuelve el mismo comportamiento solicitado con los campos permitidos, '
+                        'sin copiar metadatos del contexto ni agregar claves superiores.'
+                    )
 
         raise RuntimeError(f"No fue posible interpretar el comando con el LLM: {last_error}")
 

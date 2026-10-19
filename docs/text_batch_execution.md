@@ -1,5 +1,7 @@
 # Lote automático TEXT
 
+Actualización del producto: los lotes nuevos usan `PRODUCT_SHARED_V1`, el mismo intérprete y generador de Normal, con mapas declarados preservados e identidad congelada. Una aclaración queda sin respuesta. Un paquete PID nativo generado se registra NOT_EVALUABLE por capacidad pendiente antes de TIA, sin intento técnico ni PASS/FAIL funcional. Esto no cambia P01–P12 históricos ni autoriza otra campaña FORMAL con el freeze anterior. Véase [motor compartido](26_motor_producto_compartido.md).
+
 ## 1. Propósito
 
 **EJECUTAR LOTE TEXT** (Modo Experimentación) ejecuta varios ensayos TEXT del benchmark v2 **uno por uno**,

@@ -204,7 +204,12 @@ def _summarize_io_map(io_map: dict[str, Any]) -> list[dict[str, Any]]:
                 # etiqueta permanente - puede reutilizarse tal cual o, si el comando pide una
                 # funcion distinta, el sistema lo reasignara automaticamente (nunca preguntando
                 # por el tag). Solo LOCKED es realmente fijo.
-                "state": entry.get("state", "ASSIGNED")
+                "state": entry.get("state", "ASSIGNED"),
+                **({"analog_config": {key: entry["analog_config"].get(key) for key in (
+                    "confirmed", "device_name", "device_kind", "quantity", "signal_type",
+                    "engineering_min", "engineering_max", "engineering_unit", "fault_action", "fault_value")}}
+                    if isinstance(entry.get("analog_config"), dict) else {}),
+                **({"process_config": entry['process_config']} if isinstance(entry.get('process_config'), dict) else {})
             }
         )
     return summary

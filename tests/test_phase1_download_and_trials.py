@@ -130,7 +130,7 @@ def pipeline(app, temp_map, tmp_path, monkeypatch, _tia_ready):
 
     download_calls: list[dict[str, Any]] = []
 
-    def _fake_download(package_dir_arg, project_root_arg, purpose="normal"):
+    def _fake_download(package_dir_arg, project_root_arg, purpose="normal", **kwargs):
         download_calls.append({"package_dir": package_dir_arg, "purpose": purpose})
         return state.get("download_factory", _successful_download)(package_dir_arg)
 

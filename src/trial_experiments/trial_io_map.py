@@ -155,8 +155,12 @@ def _physical_locations(io_map: dict[str, Any]) -> list[str]:
     )
 
 
-def create_working_map(trial_dir: Path, source_map_path: Path) -> dict[str, Any]:
+def create_working_map(trial_dir: Path, source_map_path: Path, *, map_policy: str = 'LEGACY_CLEARED_V1',
+                        previous_program_id: str | None = None) -> dict[str, Any]:
     """Crea working_io_map.json a partir del mapa base. Devuelve la referencia para trial.json."""
+    from product_engine import MAP_POLICY, prepare_product_map
+    if map_policy not in {'LEGACY_CLEARED_V1', MAP_POLICY}:
+        raise ValueError('Unknown experiment map policy: '+str(map_policy))
     try:
         raw_bytes = Path(source_map_path).read_bytes()
         source_map = json.loads(raw_bytes.decode("utf-8-sig"))
@@ -166,9 +170,13 @@ def create_working_map(trial_dir: Path, source_map_path: Path) -> dict[str, Any]
         raise ExperimentIOError(ERROR_BASE_UNAVAILABLE, f"El mapa base {source_map_path} no es un objeto JSON.")
 
     source_map_id = str((source_map.get("metadata") or {}).get("map_id") or Path(source_map_path).stem)
-    base_map = build_experiment_base_map(source_map, source_map_id)
+    base_map = (prepare_product_map(source_map, previous_program_id=previous_program_id)['io_map']
+                if map_policy == MAP_POLICY else build_experiment_base_map(source_map, source_map_id))
     channels = _physical_locations(base_map)
-    if not channels:
+    from process_signals import process_configuration_report
+    process_signals = [v for v in base_map.get('variables', []) if v.get('process_config') and
+                       process_configuration_report(v)['is_valid']]
+    if not channels and not (map_policy == MAP_POLICY and process_signals):
         raise ExperimentIOError(ERROR_BASE_UNAVAILABLE, f"El mapa base {source_map_id} no tiene canales fisicos.")
 
     working_path = Path(trial_dir) / WORKING_MAP_FILENAME
@@ -178,6 +186,7 @@ def create_working_map(trial_dir: Path, source_map_path: Path) -> dict[str, Any]
         "base_map_path": str(source_map_path),
         "base_source_hash": hashlib.sha256(raw_bytes).hexdigest(),
         "base_map_hash": _canonical_hash(base_map["variables"]),
+        **({'map_policy': map_policy} if map_policy == MAP_POLICY else {}),
         "physical_channel_count": len(channels),
         "working_map_path": str(working_path),
         "snapshot_path": None,
@@ -352,6 +361,8 @@ def build_snapshot(
         "base_map_id": io_map_ref.get("base_map_id"),
         "base_source_hash": io_map_ref.get("base_source_hash"),
         "base_map_hash": io_map_ref.get("base_map_hash"),
+        **({'map_policy': io_map_ref['map_policy'], 'declared_variables': copy.deepcopy(working_map.get('variables', []))}
+           if io_map_ref.get('map_policy') == 'PRODUCT_DECLARED_V1' else {}),
         "frozen_at": datetime.now().isoformat(timespec="seconds"),
         "intent_id": semantic_output.get("intent_id"),
         "physical_channel_count": len(channels),
@@ -435,7 +446,7 @@ def discard_working_map(io_map_ref: dict[str, Any] | None) -> bool:
 
 def trial_record_reference(io_map_ref: dict[str, Any]) -> dict[str, Any]:
     """Seccion io_map de trial.json (sin rutas absolutas innecesarias fuera de lo pedido)."""
-    return {
+    result = {
         key: io_map_ref.get(key)
         for key in (
             "base_map_id", "base_source_hash", "base_map_hash", "physical_channel_count",
@@ -443,3 +454,6 @@ def trial_record_reference(io_map_ref: dict[str, Any]) -> dict[str, Any]:
             "bound_channels", "discarded", "error",
         )
     }
+    if io_map_ref.get('map_policy'):
+        result['map_policy'] = io_map_ref['map_policy']
+    return result

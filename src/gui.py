@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import contextlib
 import csv
+import copy
+import hashlib
 import json
 import queue
 import sys
@@ -29,8 +31,6 @@ except ImportError as error:
 
 from gui_helpers import (
     ADVANCED_VARIABLE_DEFAULTS,
-    ALLOWED_IO_CLASSES,
-    ALLOWED_IO_TYPES,
     ALLOWED_SAFETY_LEVELS,
     IO_TREE_COLUMNS,
     append_history_row,
@@ -47,6 +47,7 @@ from gui_helpers import (
     treeview_rows,
     validate_io_map_variables
 )
+from io_variable_editor import VariableEditorDialog
 from env_manager import get_env_path, load_llm_env_settings, save_llm_env_settings
 from io_allocator import (
     apply_assignments,
@@ -62,7 +63,9 @@ from logger import (
     ensure_generated_dirs
 )
 from llm_client import PLCInterpretationLLMClient
-from llm_parser import parse_command, resolve_parser_mode
+from llm_parser import resolve_parser_mode
+from product_engine import interpret_product_command as parse_command
+import product_engine
 from plc_maps import (
     GENERAL_PROFILE_LABEL,
     apply_profile_filter,
@@ -82,11 +85,13 @@ from plc_maps import (
     save_plc_map,
     validate_plc_variable_map
 )
+from plc_maps.store import is_working_map_path
 from plc_maps.tia_sync import import_tags_from_tia, sync_map_with_tia
-from project_packager import generate_project_package
+from product_engine import generate_product_package as generate_project_package
 from semantic_validator import validate_semantic_output
 from speech_recognizer import SpeechRecognizer
 from tia_openness import (
+    tia_compile_summary,
     DOWNLOAD_PURPOSE_EXPERIMENT,
     DOWNLOAD_PURPOSE_NORMAL,
     TARGET_TYPE_PLCSIM,
@@ -100,9 +105,12 @@ from tia_openness import (
     validate_package_with_tia
 )
 import normal_interaction
+import normal_program_bindings as program_bindings
 from functional_requirements import has_composable_program
 import normal_voice
 import plcsim_runtime
+import plc_targets
+from plc_target_dialog import PlcTargetDialog
 import plcsim_runtime_io
 import tia_projects
 from plcsim_runtime import get_plcsim_runtime_status
@@ -164,148 +172,8 @@ _EXTERNAL_SERVICE_ERROR_MARKERS = (
 _GUI_INSTANCE_SOCKET: socket.socket | None = None
 
 
-class VariableEditorDialog(ctk.CTkToplevel):
-    def __init__(self, parent: ctk.CTk, title: str, variable_data: dict[str, Any] | None = None) -> None:
-        super().__init__(parent)
-        self.title(title)
-        self.geometry("560x780")
-        self.resizable(False, False)
-        self.transient(parent)
-        self.grab_set()
-
-        data = variable_data or {}
-        self.result: dict[str, Any] | None = None
-
-        self.name_var = tk.StringVar(value=data.get("name", ""))
-        self.class_var = tk.StringVar(value=data.get("class", "internal"))
-        self.type_var = tk.StringVar(value=data.get("type", "BOOL"))
-        self.location_var = tk.StringVar(value=data.get("location", ""))
-        self.initial_value_var = tk.StringVar(value=data.get("initial_value", ""))
-        self.description_var = tk.StringVar(value=data.get("description", ""))
-        self.aliases_var = tk.StringVar(value=", ".join(data.get("aliases", [])))
-        self.semantic_role_var = tk.StringVar(value=data.get("semantic_role", ""))
-        self.llm_allowed_var = tk.BooleanVar(value=bool(data.get("llm_allowed", True)))
-        self.safety_level_var = tk.StringVar(value=data.get("safety_level", "normal"))
-        self.unit_var = tk.StringVar(value=str(data.get("unit", "") or ""))
-        self.min_var = tk.StringVar(value="" if data.get("min") is None else str(data.get("min")))
-        self.max_var = tk.StringVar(value="" if data.get("max") is None else str(data.get("max")))
-        self.comments_var = tk.StringVar(value=data.get("comments", ""))
-        # El estado FREE/ASSIGNED/LOCKED NO se edita aqui a proposito (docs/23_io_allocator.md):
-        # solo los botones dedicados [Bloquear]/[Desbloquear] lo cambian, para que editar otro
-        # campo (p. ej. la descripcion) nunca reinicie/pierda silenciosamente un LOCKED existente.
-        self.existing_state = data.get("state", "ASSIGNED")
-
-        self.grid_columnconfigure(1, weight=1)
-
-        header = ctk.CTkLabel(self, text=title, font=ctk.CTkFont(size=20, weight="bold"))
-        header.grid(row=0, column=0, columnspan=2, padx=20, pady=(18, 4), sticky="w")
-
-        state_label = ctk.CTkLabel(
-            self,
-            text=f"Estado: {self.existing_state} (usar [Bloquear]/[Desbloquear] en el panel para cambiarlo)",
-            text_color="#556272"
-        )
-        state_label.grid(row=0, column=0, columnspan=2, padx=20, pady=(44, 8), sticky="w")
-
-        self._build_form_row(1, "Name", ctk.CTkEntry(self, textvariable=self.name_var))
-        self._build_form_row(
-            2,
-            "Class",
-            ctk.CTkOptionMenu(self, variable=self.class_var, values=ALLOWED_IO_CLASSES)
-        )
-        self._build_form_row(
-            3,
-            "Type",
-            ctk.CTkOptionMenu(self, variable=self.type_var, values=ALLOWED_IO_TYPES)
-        )
-        self._build_form_row(4, "Location", ctk.CTkEntry(self, textvariable=self.location_var))
-        self._build_form_row(5, "Initial value", ctk.CTkEntry(self, textvariable=self.initial_value_var))
-        self._build_form_row(6, "Description", ctk.CTkEntry(self, textvariable=self.description_var))
-
-        helper = ctk.CTkLabel(
-            self,
-            text="Use %IX... para entradas, %QX... para salidas y deje vacio para memorias o bloques.",
-            text_color="#556272",
-            justify="left",
-            wraplength=450
-        )
-        helper.grid(row=7, column=0, columnspan=2, padx=20, pady=(6, 10), sticky="w")
-
-        advanced_label = ctk.CTkLabel(self, text="Avanzado (mapa maestro)", font=ctk.CTkFont(size=14, weight="bold"))
-        advanced_label.grid(row=8, column=0, columnspan=2, padx=20, pady=(4, 6), sticky="w")
-
-        self._build_form_row(9, "Aliases (separados por coma)", ctk.CTkEntry(self, textvariable=self.aliases_var))
-        self._build_form_row(10, "Rol semantico", ctk.CTkEntry(self, textvariable=self.semantic_role_var))
-        self._build_form_row(
-            11,
-            "Permitido para LLM",
-            ctk.CTkCheckBox(self, text="", variable=self.llm_allowed_var)
-        )
-        self._build_form_row(
-            12,
-            "Nivel de seguridad",
-            ctk.CTkOptionMenu(self, variable=self.safety_level_var, values=ALLOWED_SAFETY_LEVELS)
-        )
-        self._build_form_row(13, "Unidad", ctk.CTkEntry(self, textvariable=self.unit_var))
-        self._build_form_row(14, "Minimo", ctk.CTkEntry(self, textvariable=self.min_var))
-        self._build_form_row(15, "Maximo", ctk.CTkEntry(self, textvariable=self.max_var))
-        self._build_form_row(16, "Comentarios", ctk.CTkEntry(self, textvariable=self.comments_var))
-
-        button_frame = ctk.CTkFrame(self, fg_color="transparent")
-        button_frame.grid(row=17, column=0, columnspan=2, padx=20, pady=(10, 20), sticky="ew")
-        button_frame.grid_columnconfigure((0, 1), weight=1)
-
-        cancel_button = ctk.CTkButton(button_frame, text="Cancelar", fg_color="#6B7280", hover_color="#4B5563", command=self._cancel)
-        cancel_button.grid(row=0, column=0, padx=(0, 8), sticky="ew")
-
-        save_button = ctk.CTkButton(button_frame, text="Aceptar", command=self._confirm)
-        save_button.grid(row=0, column=1, padx=(8, 0), sticky="ew")
-
-        self.protocol("WM_DELETE_WINDOW", self._cancel)
-        self.after(50, self.focus_force)
-
-    def _build_form_row(self, row_index: int, label_text: str, widget: ctk.CTkBaseClass) -> None:
-        label = ctk.CTkLabel(self, text=label_text)
-        label.grid(row=row_index, column=0, padx=(20, 12), pady=6, sticky="w")
-        widget.grid(row=row_index, column=1, padx=(0, 20), pady=6, sticky="ew")
-
-    def _confirm(self) -> None:
-        self.result = normalize_variable_entry(
-            {
-                "name": self.name_var.get(),
-                "class": self.class_var.get(),
-                "type": self.type_var.get(),
-                "location": self.location_var.get(),
-                "initial_value": self.initial_value_var.get(),
-                "description": self.description_var.get(),
-                "aliases": self.aliases_var.get(),
-                "semantic_role": self.semantic_role_var.get(),
-                "llm_allowed": self.llm_allowed_var.get(),
-                "safety_level": self.safety_level_var.get(),
-                "unit": self.unit_var.get(),
-                "min": self.min_var.get(),
-                "max": self.max_var.get(),
-                "comments": self.comments_var.get(),
-                "state": self.existing_state
-            }
-        )
-        self.destroy()
-
-    def _cancel(self) -> None:
-        self.result = None
-        self.destroy()
-
-
 class FullIOMapWindow(ctk.CTkToplevel):
-    """
-    Ventana independiente "Mapa I/O completo" (secciones 7-10 y 25): muestra TODOS los canales
-    del mapa activo (no solo los que caben en la tabla pequena del panel izquierdo), con
-    Direccion/Nombre/Tipo/Clase/Estado/Descripcion. La direccion fisica nunca es editable aqui.
-    Cada accion (renombrar/bloquear/desbloquear/marcar libre) valida con io_allocator y persiste
-    de inmediato con save_plc_map - nunca queda solo en memoria esperando un "Guardar" separado,
-    que es precisamente el problema reportado (el nombre "no cambiaba realmente"). [Guardar] y
-    [Guardar como...] reutilizan los metodos ya existentes de la app (save_io_map/save_plc_map_as).
-    """
+    """Complete map editor; accepted changes are validated and persisted immediately."""
 
     COLUMNS = ("address", "name", "type", "class_label", "state", "description")
     HEADERS = {
@@ -318,7 +186,8 @@ class FullIOMapWindow(ctk.CTkToplevel):
         self.app = parent
         self.io_map: dict[str, Any] = {}
         self.transient(parent)
-        self.geometry("920x580")
+        self.geometry("960x700")
+        self.minsize(820, 600)
 
         self.read_only_message = block_map_config_message(parent.active_trial, parent.active_profile_id)
 
@@ -346,13 +215,22 @@ class FullIOMapWindow(ctk.CTkToplevel):
         scroll_y = ttk.Scrollbar(tree_container, orient="vertical", command=self.tree.yview)
         scroll_y.grid(row=0, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=scroll_y.set)
+        scroll_x = ttk.Scrollbar(tree_container, orient="horizontal", command=self.tree.xview)
+        scroll_x.grid(row=1, column=0, sticky="ew")
+        self.tree.configure(xscrollcommand=scroll_x.set)
+        self.tree.bind("<Double-1>", self._edit_on_double_click)
+        self.empty_hint = ctk.CTkLabel(tree_container, text="Mapa vacío. Pulse Nueva variable para agregar su primer canal.")
 
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
         button_frame.grid(row=2, column=0, padx=20, pady=(0, 18), sticky="ew")
-        for index in range(6):
+        for index in range(5):
             button_frame.grid_columnconfigure(index, weight=1)
 
         actions = [
+            ("Nueva variable", self.add_variable),
+            ("Editar variable", self.edit_variable),
+            ("Duplicar", self.duplicate_variable),
+            ("Eliminar", self.delete_variable),
             ("Editar nombre", self.edit_name),
             ("Bloquear", self.lock_selected),
             ("Desbloquear", self.unlock_selected),
@@ -362,17 +240,31 @@ class FullIOMapWindow(ctk.CTkToplevel):
         ]
         self.action_buttons: list[ctk.CTkButton] = []
         for index, (text, command) in enumerate(actions):
-            button = ctk.CTkButton(button_frame, text=text, command=command, font=self.app.button_font)
-            button.grid(row=0, column=index, padx=4, sticky="ew")
+            button = ctk.CTkButton(button_frame, text=text, command=command, font=self.app.button_font, width=110)
+            button.grid(row=index // 5, column=index % 5, padx=4, pady=4, sticky="ew")
             self.action_buttons.append(button)
 
+        library=ctk.CTkFrame(self,fg_color='transparent');library.grid(row=3,column=0,padx=20,pady=(0,12),sticky='ew')
+        library.grid_columnconfigure((0,1,2),weight=1)
+        for index,(label,callback) in enumerate((('Nuevo mapa',self.app.new_plc_map),('Abrir archivo…',self.app.open_map_file),('Eliminar mapa',self.app.delete_plc_map_active),('Validar mapa',self.app.validate_plc_map),('Sincronizar con TIA',self.app.sync_plc_map_with_tia),('Importar desde TIA',self.app.import_plc_map_from_tia))):
+            button=ctk.CTkButton(library,text=label,command=lambda cb=callback:self._library_action(cb),font=self.app.button_font)
+            button.grid(row=index//3,column=index%3,padx=4,pady=4,sticky='ew')
+            if self.read_only_message:button.configure(state='disabled')
+        self.app._full_map_windows=getattr(self.app,'_full_map_windows',set())
+        self.app._full_map_windows.add(self)
+        self.bind('<Destroy>',lambda event:self.app._full_map_windows.discard(self) if event.widget is self else None,add='+')
         if self.read_only_message:
-            for button in self.action_buttons[:4]:  # Guardar/Guardar como siguen disponibles (solo lectura de asignaciones)
+            for button in self.action_buttons[:-2]:
                 button.configure(state="disabled")
 
         self.protocol("WM_DELETE_WINDOW", self.destroy)
         self._reload()
         self.after(50, self.focus_force)
+
+    def _library_action(self,callback) -> None:
+        if not self._can_mutate():return
+        callback()
+        self._refresh_everything()
 
     def _class_label(self, variable: dict[str, Any]) -> str:
         location = str(variable.get("location", "")).upper()
@@ -386,11 +278,17 @@ class FullIOMapWindow(ctk.CTkToplevel):
 
     def _reload(self) -> None:
         previous_selection = self._selected_address()
+        self.loaded_path = self.app.io_map_path
+        self._load_failed = False
         try:
-            self.io_map = load_json_file(self.app.io_map_path)
-        except (FileNotFoundError, ValueError) as error:
+            self.loaded_bytes = self.loaded_path.read_bytes()
+            self.io_map = json.loads(self.loaded_bytes)
+        except (OSError, ValueError) as error:
             messagebox.showerror("Mapa I/O completo", f"No se pudo leer el mapa activo.\n\n{error}")
             self.io_map = {"variables": []}
+            self._load_failed = True
+        if self.app.active_map_dirty and not self._load_failed:
+            self.io_map['variables']=self.app._collect_io_variables()
         self.title(f"Mapa I/O - {self.app.active_map_var.get() or self.app.io_map_path.stem}")
         self.tree.delete(*self.tree.get_children())
         for variable in self.io_map.get("variables", []):
@@ -399,12 +297,16 @@ class FullIOMapWindow(ctk.CTkToplevel):
             # (necesario para indexar/autorizar el recurso) se oculta y se muestra "-" en su lugar.
             name_display = "—" if state == "FREE" else variable.get("name", "")
             self.tree.insert(
-                "", "end", iid=variable.get("location"),
+                "", "end", iid=self.app._variable_key(variable),
                 values=(
                     variable.get("location", ""), name_display, variable.get("type", ""),
                     self._class_label(variable), state, variable.get("description", "")
                 )
             )
+        if self.io_map.get("variables"):
+            self.empty_hint.place_forget()
+        else:
+            self.empty_hint.place(relx=0.5, rely=0.5, anchor="center")
         # Reinsertar borra la seleccion (los iids son las direcciones, estables entre recargas) -
         # sin esto, tras UNA accion el usuario tendria que volver a seleccionar la fila cada vez.
         if previous_selection and self.tree.exists(previous_selection):
@@ -417,13 +319,125 @@ class FullIOMapWindow(ctk.CTkToplevel):
 
     def _refresh_everything(self) -> None:
         self._reload()
+        if self.app.active_map_dirty:return
         self.app.io_variables = load_io_map_variables(self.app.io_map_path)
         self.app._load_active_map_metadata_shadow()
         self.app._load_io_map_table()
+        self.app._refresh_map_sync_status()
+
+    def _edit_on_double_click(self, event) -> None:
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            self.edit_variable()
+
+    def _can_mutate(self) -> bool:
+        message = block_map_config_message(self.app.active_trial, self.app.active_profile_id)
+        if message or self.read_only_message:
+            messagebox.showwarning("Mapa I/O completo", message or self.read_only_message, parent=self)
+            return False
+        if self._load_failed:
+            messagebox.showerror("Mapa I/O completo", "No se pudo leer el mapa. Vuelva a abrirlo antes de editar.", parent=self)
+            return False
+        if self.app.active_map_dirty:
+            messagebox.showwarning("Mapa I/O completo", "Guarde primero los cambios pendientes del panel principal con Guardar.", parent=self)
+            return False
+        try:
+            stale = self.app.io_map_path != self.loaded_path or self.loaded_path.read_bytes() != self.loaded_bytes
+        except OSError as error:
+            messagebox.showerror("Mapa I/O completo", str(error), parent=self)
+            return False
+        if stale:
+            self._refresh_everything()
+            messagebox.showwarning("Mapa I/O completo", "El mapa cambió. Se actualizó la tabla; seleccione nuevamente la variable.", parent=self)
+            return False
+        return True
+
+    def _selected_variable(self, *, allow_locked: bool = False) -> dict[str, Any] | None:
+        key = self._selected_address()
+        variable = next((v for v in self.io_map.get("variables", []) if self.app._variable_key(v) == key), None)
+        if variable is None:
+            messagebox.showwarning("Mapa I/O completo", "Seleccione una variable.", parent=self)
+        elif not allow_locked and variable.get("state") == "LOCKED":
+            messagebox.showwarning("Mapa I/O completo", "Esta variable está bloqueada. Desbloquéela antes de modificarla.", parent=self)
+            return None
+        return variable
+
+    def _persist_variables(self, variables: list[dict[str, Any]], selection: dict[str, Any] | None = None,
+                           *, history_entries: list[dict[str, Any]] | None = None) -> bool:
+        if not self._can_mutate():
+            return False
+        validation = validate_plc_variable_map({**self.io_map, "variables": variables})
+        if validation["errors"]:
+            messagebox.showerror("Mapa I/O completo", "\n".join(validation["errors"][:6]), parent=self)
+            return False
+        try:
+            save_plc_map(self.loaded_path, variables, metadata_patch={"dirty": False}, history_entries=history_entries)
+        except (OSError, ValueError) as error:
+            messagebox.showerror("Mapa I/O completo", f"No se pudo guardar el mapa.\n\n{error}", parent=self)
+            return False
+        self.app._rollback_pending_map_transaction("edicion manual del mapa")
+        self.app._invalidate_download_readiness()
+        self._refresh_everything()
+        if selection:
+            key = self.app._variable_key(selection)
+            if self.tree.exists(key):
+                self.tree.selection_set(key)
+                self.tree.see(key)
+        self.app._log("Mapa I/O completo: cambios validados y guardados.")
+        return True
+
+    def _edit_entry(self, original: dict[str, Any] | None = None, *, duplicate: bool = False) -> None:
+        data = copy.deepcopy(original) if original else None
+        if duplicate and data:
+            data["name"] += "_Copia"
+            data["location"] = ""
+            data["state"] = "ASSIGNED"
+            data["aliases"] = []
+        others = [v for v in self.io_map.get("variables", []) if duplicate or v is not original]
+        title = "Duplicar variable" if duplicate else "Editar variable" if original else "Nueva variable"
+        dialog = VariableEditorDialog(self, title, data, other_variables=others)
+        self.wait_window(dialog)
+        if dialog.result is None:
+            return
+        entry = dialog.result
+        for field in program_bindings.BINDING_FIELDS:
+            entry.pop(field, None)
+        if entry.get("state") == "ASSIGNED":
+            entry["assignment_source"] = program_bindings.SOURCE_MANUAL
+        variables = [entry if v is original and not duplicate else v for v in self.io_map.get("variables", [])]
+        if original is None or duplicate:
+            variables.append(entry)
+        self._persist_variables(variables, selection=entry)
+
+    def add_variable(self) -> None:
+        if self._can_mutate():
+            self._edit_entry()
+
+    def edit_variable(self) -> None:
+        if self._can_mutate():
+            variable = self._selected_variable()
+            if variable is not None:
+                self._edit_entry(variable)
+
+    def duplicate_variable(self) -> None:
+        if self._can_mutate():
+            variable = self._selected_variable(allow_locked=True)
+            if variable is not None:
+                self._edit_entry(variable, duplicate=True)
+
+    def delete_variable(self) -> None:
+        if not self._can_mutate():
+            return
+        variable = self._selected_variable()
+        if variable is not None and messagebox.askyesno(
+            "Eliminar variable", f"¿Eliminar {variable['name']} ({variable.get('location') or 'interna'}) del mapa?",
+            parent=self
+        ):
+            self._persist_variables([v for v in self.io_map["variables"] if v is not variable])
 
     def edit_name(self) -> None:
-        if self.read_only_message:
-            messagebox.showwarning("Mapa I/O completo", self.read_only_message)
+        if not self._can_mutate():
             return
         address = self._selected_address()
         if address is None:
@@ -431,6 +445,8 @@ class FullIOMapWindow(ctk.CTkToplevel):
             return
         variable = find_variable_by_address(self.io_map, address)
         if variable is None:
+            # Internal variables have a name-based row key rather than a physical address.
+            self.edit_variable()
             return
         if variable.get("state") == "LOCKED":
             messagebox.showwarning(
@@ -457,23 +473,22 @@ class FullIOMapWindow(ctk.CTkToplevel):
         proposal = {"address": address, "proposed_name": new_name, "blocked": False}
         try:
             updated_map, history_entries = apply_assignments(self.io_map, [proposal], source="MANUAL_EDITOR")
-            save_plc_map(self.app.io_map_path, updated_map["variables"], history_entries=history_entries)
+            if not self._persist_variables(updated_map["variables"], history_entries=history_entries):
+                return
         except ValueError as error:
             messagebox.showerror("Editar nombre", str(error))
             return
 
-        self._refresh_everything()
         self.app._log(f"Mapa I/O completo: {address} renombrado a {new_name}.")
 
     def _apply_state_change(self, new_state: str, guard_locked: bool = False) -> None:
-        if self.read_only_message:
-            messagebox.showwarning("Mapa I/O completo", self.read_only_message)
+        if not self._can_mutate():
             return
         address = self._selected_address()
         if address is None:
             messagebox.showwarning("Mapa I/O completo", "Seleccione un canal.")
             return
-        variable = find_variable_by_address(self.io_map, address)
+        variable = self._selected_variable(allow_locked=not guard_locked)
         if variable is None:
             return
         if guard_locked and variable.get("state") == "LOCKED":
@@ -484,11 +499,16 @@ class FullIOMapWindow(ctk.CTkToplevel):
             return
         try:
             updated_map = set_variable_state(self.io_map, variable.get("name"), new_state)
-            save_plc_map(self.app.io_map_path, updated_map["variables"])
+            for entry in updated_map["variables"]:
+                if entry.get("name") == variable.get("name"):
+                    for field in program_bindings.BINDING_FIELDS:
+                        entry.pop(field, None)
+                    if new_state == "ASSIGNED":
+                        entry["assignment_source"] = program_bindings.SOURCE_MANUAL
+            self._persist_variables(updated_map["variables"])
         except ValueError as error:
             messagebox.showerror("Mapa I/O completo", str(error))
             return
-        self._refresh_everything()
 
     def lock_selected(self) -> None:
         self._apply_state_change("LOCKED")
@@ -500,6 +520,16 @@ class FullIOMapWindow(ctk.CTkToplevel):
         self._apply_state_change("FREE", guard_locked=True)
 
     def save(self) -> None:
+        try:
+            stale = self.loaded_path != self.app.io_map_path or self.loaded_path.read_bytes() != self.loaded_bytes
+        except OSError as error:
+            messagebox.showerror("Mapa I/O completo", str(error), parent=self)
+            return
+        if stale:
+            if not self.app.active_map_dirty:
+                self._refresh_everything()
+            messagebox.showwarning("Mapa I/O completo", "El mapa cambió. Vuelva a abrirlo antes de guardar cambios pendientes.", parent=self)
+            return
         if self.app.save_io_map(show_success=False):
             self._reload()
             messagebox.showinfo("Mapa I/O completo", "Mapa guardado correctamente.")
@@ -1546,223 +1576,7 @@ class OracleViewerWindow(ctk.CTkToplevel):
         textbox.configure(state="disabled")
 
 
-class RuntimeIOTestWindow(ctk.CTkToplevel):
-    """
-    Fase 2B - PRUEBA DE I/O (herramienta tecnica, NO Oracle). Escribe ENTRADAS BOOL y lee
-    salidas BOOL del programa actual en PLCSIM Advanced, con readback y restauracion de entradas.
-    Solo se abre si target == PLCSIM_ADVANCED, Runtime conectado, CPU RUN y hay programa valido.
-    """
-
-    def __init__(
-        self,
-        app: "VozLLMPLCGUI",
-        program: dict[str, Any],
-        target_type: str,
-        runtime_report: dict[str, Any],
-        report_dir: Path,
-        trial_directory: Path | None
-    ) -> None:
-        super().__init__(app)
-        self.app = app
-        self.program = program
-        self.target_type = target_type
-        self.report_dir = report_dir
-        self.trial_directory = trial_directory
-        self.session = plcsim_runtime_io.RuntimeIOSession(program, target_type, runtime_report, app.project_root)
-        self._queue: queue.Queue = queue.Queue()
-        self._busy = False
-        self._closing = False
-        self._last_smoke_report: dict[str, Any] | None = None
-
-        self.title("Prueba de I/O - PLCSIM Advanced")
-        self.geometry("520x560")
-        self.grid_columnconfigure(0, weight=1)
-        self.protocol("WM_DELETE_WINDOW", self.close)
-
-        source = program.get("source")
-        source_text = f"snapshot del ensayo {program.get('trial_id')}" if source == "snapshot" else "variables.json del programa descargado"
-        header = (
-            "MODO SIMULACIÓN\n"
-            f"{self.session.config['instance_name']}   ·   CPU {runtime_report.get('cpu_state')}\n"
-            f"Señales: {source_text}"
-        )
-        ctk.CTkLabel(self, text=header, justify="left", font=app.button_font).grid(row=0, column=0, padx=16, pady=(14, 8), sticky="w")
-
-        inputs = [signal["name"] for signal in plcsim_runtime_io.bool_inputs(program)]
-        outputs = [signal["name"] for signal in plcsim_runtime_io.bool_outputs(program)]
-
-        input_frame = ctk.CTkFrame(self, corner_radius=10)
-        input_frame.grid(row=1, column=0, padx=16, pady=6, sticky="ew")
-        input_frame.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(input_frame, text="Entrada").grid(row=0, column=0, padx=10, pady=8, sticky="w")
-        self.input_var = tk.StringVar(value=inputs[0] if inputs else "")
-        self.input_menu = ctk.CTkOptionMenu(input_frame, variable=self.input_var, values=inputs or ["(sin entradas BOOL)"])
-        self.input_menu.grid(row=0, column=1, padx=10, pady=8, sticky="ew")
-        ctk.CTkLabel(input_frame, text="Valor").grid(row=1, column=0, padx=10, pady=4, sticky="w")
-        self.value_var = tk.StringVar(value="OFF")
-        ctk.CTkSegmentedButton(input_frame, values=["OFF", "ON"], variable=self.value_var).grid(row=1, column=1, padx=10, pady=4, sticky="w")
-        self.write_button = ctk.CTkButton(input_frame, text="ESCRIBIR", command=self.write_input)
-        self.write_button.grid(row=2, column=0, columnspan=2, padx=10, pady=6, sticky="ew")
-        self.readback_var = tk.StringVar(value="Readback: -")
-        ctk.CTkLabel(input_frame, textvariable=self.readback_var).grid(row=3, column=0, columnspan=2, padx=10, pady=(0, 8), sticky="w")
-        if not inputs:
-            self.write_button.configure(state="disabled")
-
-        output_frame = ctk.CTkFrame(self, corner_radius=10)
-        output_frame.grid(row=2, column=0, padx=16, pady=6, sticky="ew")
-        output_frame.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(output_frame, text="Salida").grid(row=0, column=0, padx=10, pady=8, sticky="w")
-        self.output_var = tk.StringVar(value=outputs[0] if outputs else "")
-        self.output_menu = ctk.CTkOptionMenu(output_frame, variable=self.output_var, values=outputs or ["(sin salidas BOOL)"])
-        self.output_menu.grid(row=0, column=1, padx=10, pady=8, sticky="ew")
-        self.read_button = ctk.CTkButton(output_frame, text="LEER", command=self.read_output)
-        self.read_button.grid(row=1, column=0, columnspan=2, padx=10, pady=6, sticky="ew")
-        self.output_value_var = tk.StringVar(value="Valor observado: -")
-        ctk.CTkLabel(output_frame, textvariable=self.output_value_var).grid(row=2, column=0, columnspan=2, padx=10, pady=(0, 8), sticky="w")
-        if not outputs:
-            self.read_button.configure(state="disabled")
-
-        actions = ctk.CTkFrame(self, fg_color="transparent")
-        actions.grid(row=3, column=0, padx=16, pady=6, sticky="ew")
-        actions.grid_columnconfigure((0, 1), weight=1)
-        self.restore_button = ctk.CTkButton(actions, text="RESTAURAR ENTRADAS", command=self.restore_inputs)
-        self.restore_button.grid(row=0, column=0, padx=(0, 4), sticky="ew")
-        self.smoke_button = ctk.CTkButton(actions, text="PRUEBA START/STOP", command=self.run_smoke_test)
-        self.smoke_button.grid(row=0, column=1, padx=(4, 0), sticky="ew")
-
-        self.status_var = tk.StringVar(value="Listo. Las entradas escritas se restauran a OFF al cerrar.")
-        ctk.CTkLabel(self, textvariable=self.status_var, wraplength=480, justify="left").grid(row=4, column=0, padx=16, pady=(6, 14), sticky="w")
-        self._buttons = [self.write_button, self.read_button, self.restore_button, self.smoke_button]
-        self._inputs_available = bool(inputs)
-        self._outputs_available = bool(outputs)
-
-    # -- ejecucion en segundo plano (hilo "plcsim-io") -------------------------------------
-
-    def _run(self, description: str, work: Any, on_done: Any) -> None:
-        if self._busy:
-            return
-        self._busy = True
-        for button in self._buttons:
-            button.configure(state="disabled")
-        self.status_var.set(description + "...")
-
-        def _worker() -> None:
-            try:
-                self._queue.put(("ok", work()))
-            except plcsim_runtime_io.RuntimeIOError as error:
-                self._queue.put(("io_error", error))
-            except Exception as error:  # pragma: no cover - proceso externo
-                self._queue.put(("error", error))
-
-        threading.Thread(target=_worker, name="plcsim-io", daemon=True).start()
-        self._poll(on_done)
-
-    def _poll(self, on_done: Any) -> None:
-        try:
-            outcome, payload = self._queue.get_nowait()
-        except queue.Empty:
-            self.after(150, lambda: self._poll(on_done))
-            return
-        self._busy = False
-        self.write_button.configure(state="normal" if self._inputs_available else "disabled")
-        self.read_button.configure(state="normal" if self._outputs_available else "disabled")
-        self.restore_button.configure(state="normal")
-        self.smoke_button.configure(state="normal")
-        if outcome == "ok":
-            on_done(payload)
-        else:
-            code = getattr(payload, "code", "PLCSIM_RUNTIME_ERROR")
-            self.status_var.set(f"{code}: {getattr(payload, 'detail', payload)}")
-            self.app._log(f"[PLCSIM IO] {code}: {getattr(payload, 'detail', payload)}")
-            if self._closing:
-                self._finish_close()
-
-    @staticmethod
-    def _on_off(value: Any) -> str:
-        return "?" if value is None else ("ON" if value else "OFF")
-
-    # -- acciones --------------------------------------------------------------------------
-
-    def write_input(self) -> None:
-        name, value = self.input_var.get(), self.value_var.get() == "ON"
-        self.app._log(f"[PLCSIM IO] Escribir {name} = {self._on_off(value)}")
-
-        def _done(result: dict[str, Any]) -> None:
-            self.readback_var.set(
-                f"Readback {result['name']} ({result['address']}): {self._on_off(result.get('readback'))}"
-                f"   ·   pedido {self._on_off(result['requested_value'])}   ·   {'OK' if result['match'] else 'NO COINCIDE'}"
-            )
-            self.status_var.set(result["status"] if result["status"] != plcsim_runtime_io.SUCCESS else "Escritura verificada.")
-            self.app._log(f"[PLCSIM IO] {name}: readback {self._on_off(result.get('readback'))} match={result['match']} ({result['status']})")
-
-        self._run(f"Escribiendo {name}", lambda: self.session.write_input(name, value), _done)
-
-    def read_output(self) -> None:
-        name = self.output_var.get()
-
-        def _done(result: dict[str, Any]) -> None:
-            value = result["values"][0].get("value") if result["values"] else None
-            self.output_value_var.set(f"Valor observado {name}: {self._on_off(value)}")
-            self.status_var.set(result["status"] if result["status"] != plcsim_runtime_io.SUCCESS else "Lectura correcta.")
-            self.app._log(f"[PLCSIM IO] Leer {name} = {self._on_off(value)} ({result['status']})")
-
-        self._run(f"Leyendo {name}", lambda: self.session.read_signals([name]), _done)
-
-    def restore_inputs(self) -> None:
-        def _done(result: dict[str, Any]) -> None:
-            if result["status"] == plcsim_runtime_io.SUCCESS:
-                self.status_var.set("Entradas restauradas a OFF: " + (", ".join(result["restored"]) or "(ninguna pendiente)"))
-            else:
-                self.status_var.set(f"{plcsim_runtime_io.ERROR_CLEANUP_FAILED}: pendientes {', '.join(result.get('pending', []))}")
-                messagebox.showerror("Prueba de I/O", f"{plcsim_runtime_io.ERROR_CLEANUP_FAILED}\n\nNo se pudieron restaurar: {', '.join(result.get('pending', []))}", parent=self)
-            self.app._log(f"[PLCSIM IO] Restaurar entradas: {result['status']}")
-            if self._closing:
-                self._finish_close()
-
-        self._run("Restaurando entradas", self.session.restore_inputs, _done)
-
-    def run_smoke_test(self) -> None:
-        if not messagebox.askyesno(
-            "Prueba START/STOP",
-            "Se escribiran entradas en PLCSIM Advanced (Start, Stop) y se leera la salida.\n"
-            "Al terminar todas las entradas vuelven a OFF.\n\n¿Continuar?",
-            parent=self
-        ):
-            return
-
-        def _work() -> dict[str, Any]:
-            return plcsim_runtime_io.run_runtime_io_smoke_test(
-                self.program, self.target_type, self.session.runtime_report, self.app.project_root, report_dir=self.report_dir
-            )
-
-        def _done(report: dict[str, Any]) -> None:
-            self._last_smoke_report = report
-            sequence = " → ".join(self._on_off(value) for value in report.get("output_sequence", []))
-            self.status_var.set(
-                f"runtime_io_test = {report['runtime_io_test']}   ·   {report.get('roles', {}).get('output')}: {sequence}\n"
-                f"Reporte: {report.get('report_path', '-')}"
-            )
-            self.app._log(f"[PLCSIM IO] Prueba START/STOP: {report['runtime_io_test']} (salida {sequence})")
-            self.app._record_runtime_io_report(self.trial_directory, report)
-
-        self._run("Prueba START/STOP", _work, _done)
-
-    def close(self) -> None:
-        if self._busy:
-            return
-        self._closing = True
-        if self.session.touched_inputs:
-            self.restore_inputs()
-            return
-        self._finish_close()
-
-    def _finish_close(self) -> None:
-        if self.session.writes or self.session.reads:
-            report = self.session.build_report()
-            report["report_path"] = str(plcsim_runtime_io.write_io_report(self.report_dir, report))
-            self.app._record_runtime_io_report(self.trial_directory, report)
-        self.app._io_test_window = None
-        self.destroy()
+from runtime_io_view import RuntimeIOTestWindow
 
 
 class VozLLMPLCGUI(ctk.CTk):
@@ -1896,6 +1710,11 @@ class VozLLMPLCGUI(ctk.CTk):
         self._normal_voice_flow: dict[str, Any] | None = None
         # MODO NORMAL: aclaraciones ESTRUCTURADAS del comando en curso (original + preguntas/respuestas).
         self._normal_clarification_state: dict[str, Any] | None = None
+        # MODO NORMAL: asignacion PROVISIONAL de recursos del comando en curso. Solo se escribe en el mapa
+        # (commit) cuando el programa se genero y verifico; cualquier fallo anterior la descarta (rollback).
+        self._pending_map_transaction: dict[str, Any] | None = None
+        # Alcance del comando Normal en curso (programa nuevo/ampliacion) y su copia de trabajo del mapa.
+        self._normal_program_context: dict[str, Any] | None = None
         self._reprocessing_clarification = False
         self._pipeline_stage: str | None = None
         self._voice_worker_active = False
@@ -2084,7 +1903,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.grid_columnconfigure(0, weight=metrics["main_weights"][0], minsize=metrics["main_minsizes"][0], uniform="main_panels")
         self.grid_columnconfigure(1, weight=metrics["main_weights"][1], minsize=metrics["main_minsizes"][1], uniform="main_panels")
         self.grid_columnconfigure(2, weight=metrics["main_weights"][2], minsize=metrics["main_minsizes"][2], uniform="main_panels")
-        self.left_panel.grid_rowconfigure(9, weight=1, minsize=metrics["io_table_minsize"])
+        self.left_panel.grid_rowconfigure(9, weight=0, minsize=0)
         self.center_panel.grid_rowconfigure(2, weight=1, minsize=metrics["command_box_minsize"])
         self.right_panel.grid_rowconfigure(3, weight=1, minsize=metrics["results_box_minsize"])
         self.result_tab_window_size = metrics["visible_result_tabs"]
@@ -2107,7 +1926,7 @@ class VozLLMPLCGUI(ctk.CTk):
         for label in (self.platform_label_widget, self.parser_label_widget, self.table_label, self.status_label):
             label.configure(font=self.section_label_font)
 
-        self.platform_selector.configure(height=metrics["button_height"], font=self.body_font, dropdown_font=self.body_font)
+        self.platform_selector.configure(height=metrics["button_height"], font=self.body_font)
         self.parser_selector.configure(height=metrics["button_height"], font=self.body_font, dropdown_font=self.body_font)
         self.llm_status_banner.configure(font=self.body_font)
         self.status_badge.configure(font=self.status_font, width=metrics["status_width"])
@@ -2208,21 +2027,17 @@ class VozLLMPLCGUI(ctk.CTk):
         self.platform_label_widget = ctk.CTkLabel(self.left_panel, text="Plataforma objetivo", font=self.section_label_font)
         self.platform_label_widget.grid(row=1, column=0, padx=18, pady=(0, 8), sticky="w")
 
-        self.platform_selector = ctk.CTkOptionMenu(
-            self.left_panel,
-            variable=self.platform_var,
-            values=["Siemens TIA V18"],
-            state="disabled",
-            font=self.body_font,
-            dropdown_font=self.body_font
-        )
-        self.platform_selector.grid(row=2, column=0, padx=18, pady=(0, 10), sticky="ew")
-
-        self.parser_label_widget = ctk.CTkLabel(self.left_panel, text="Modo de parser", font=self.section_label_font)
+        self.platform_selector=ctk.CTkLabel(self.left_panel,textvariable=self.platform_var,font=self.body_font)
+        self.platform_selector.grid(row=2,column=0,padx=18,pady=(0,8),sticky='w')
+        self._preferences_window=ctk.CTkToplevel(self)
+        self._preferences_window.title('Preferencias');self._preferences_window.geometry('560x340')
+        self._preferences_window.grid_columnconfigure(0,weight=1);self._preferences_window.withdraw()
+        self._preferences_window.protocol('WM_DELETE_WINDOW',self._preferences_window.withdraw)
+        self.parser_label_widget = ctk.CTkLabel(self._preferences_window, text="Modo de parser", font=self.section_label_font)
         self.parser_label_widget.grid(row=3, column=0, padx=18, pady=(0, 8), sticky="w")
 
         self.parser_selector = ctk.CTkOptionMenu(
-            self.left_panel,
+            self._preferences_window,
             variable=self.parser_mode_var,
             values=["Reglas", "LLM", "Hibrido"],
             font=self.body_font,
@@ -2241,8 +2056,9 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.llm_status_banner.grid(row=5, column=0, padx=18, pady=(0, 10), sticky="ew")
 
-        llm_actions_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent")
+        llm_actions_frame = ctk.CTkFrame(self._preferences_window, fg_color="transparent")
         llm_actions_frame.grid(row=6, column=0, padx=18, pady=(0, 10), sticky="ew")
+        ctk.CTkButton(self.left_panel,text='Preferencias',command=self.open_preferences,font=self.button_font).grid(row=6,column=0,padx=18,pady=(0,8),sticky='ew')
         llm_actions_frame.grid_columnconfigure(0, weight=1)
         llm_actions_frame.grid_columnconfigure(1, weight=1)
 
@@ -2270,12 +2086,12 @@ class VozLLMPLCGUI(ctk.CTk):
         tia_actions_frame.grid_columnconfigure(0, weight=1)
 
         self.configure_tia_button = ctk.CTkButton(
-            tia_actions_frame,
+            self._preferences_window,
             text="Configurar TIA V18",
             command=self.open_tia_config_dialog,
             font=self.button_font
         )
-        self.configure_tia_button.grid(row=0, column=0, sticky="ew")
+        self.configure_tia_button.grid(row=7, column=0, padx=18,pady=8,sticky="ew")
         self._build_plc_connection_panel(tia_actions_frame)
         # "Diagnosticar Openness" e "Importar y compilar ultimo paquete Siemens" viven ahora
         # en Herramientas avanzadas (panel central) para no duplicar el flujo operativo.
@@ -2307,7 +2123,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.map_sync_status_label.grid(row=2, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
 
         map_crud_frame = ctk.CTkFrame(map_library_frame, fg_color="transparent")
-        map_crud_frame.grid(row=3, column=0, columnspan=2, padx=8, pady=(0, 4), sticky="ew")
+
         map_crud_frame.grid_columnconfigure(0, weight=1)
         map_crud_frame.grid_columnconfigure(1, weight=1)
 
@@ -2328,7 +2144,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.validate_map_button.grid(row=1, column=1, padx=4, pady=2, sticky="ew")
 
         map_tia_frame = ctk.CTkFrame(map_library_frame, fg_color="transparent")
-        map_tia_frame.grid(row=4, column=0, columnspan=2, padx=8, pady=(0, 8), sticky="ew")
+
         map_tia_frame.grid_columnconfigure(0, weight=1)
         map_tia_frame.grid_columnconfigure(1, weight=1)
 
@@ -2338,7 +2154,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.import_map_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
 
         self.profile_selector_label = ctk.CTkLabel(map_library_frame, text="Contexto (Modo Normal)", font=self.section_label_font)
-        self.profile_selector_label.grid(row=5, column=0, columnspan=2, padx=12, pady=(4, 4), sticky="w")
+
 
         self.profile_selector = ctk.CTkOptionMenu(
             map_library_frame,
@@ -2349,7 +2165,7 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font,
             dropdown_font=self.body_font
         )
-        self.profile_selector.grid(row=6, column=0, columnspan=2, padx=12, pady=(0, 6), sticky="ew")
+
         # El perfil ya no se elige manualmente: Normal siempre usa GENERAL, Experimentacion
         # lo resuelve automaticamente desde el caso Dxx seleccionado (_on_experiment_case_changed).
 
@@ -2368,28 +2184,6 @@ class VozLLMPLCGUI(ctk.CTk):
         action_frame.grid_columnconfigure(1, weight=1)
 
         self.left_action_buttons: list[ctk.CTkButton] = []
-        paired_buttons = [
-            ("Abrir mapa I/O", self.open_io_map),
-            ("Guardar mapa I/O", self.save_io_map),
-            ("Agregar variable", self.add_variable),
-            ("Editar variable", self.edit_variable),
-            ("Bloquear variable", self.lock_selected_variable),
-            ("Desbloquear variable", self.unlock_selected_variable)
-        ]
-        for index, (text, callback) in enumerate(paired_buttons):
-            button = ctk.CTkButton(action_frame, text=text, command=callback, font=self.button_font)
-            button.grid(row=index // 2, column=index % 2, padx=4, pady=4, sticky="ew")
-            self.left_action_buttons.append(button)
-
-        full_width_buttons = [
-            ("Eliminar variable", self.delete_variable),
-            ("Marcar como libre", self.mark_selected_variable_free)
-        ]
-        for offset, (text, callback) in enumerate(full_width_buttons):
-            button = ctk.CTkButton(action_frame, text=text, command=callback, font=self.button_font)
-            button.grid(row=3 + offset, column=0, columnspan=2, padx=4, pady=4, sticky="ew")
-            self.left_action_buttons.append(button)
-
         self.open_full_map_button = ctk.CTkButton(
             action_frame,
             text="ABRIR MAPA I/O COMPLETO",
@@ -2401,14 +2195,14 @@ class VozLLMPLCGUI(ctk.CTk):
         self.open_full_map_button.grid(row=5, column=0, columnspan=2, padx=4, pady=(2, 4), sticky="ew")
         self.left_action_buttons.append(self.open_full_map_button)
 
-        self.table_label = ctk.CTkLabel(self.left_panel, text="Mapa maestro PLC", font=self.section_label_font)
+        self.table_label = ctk.CTkLabel(self.left_panel, text="Dispositivos y escalas: editar en el mapa completo", font=self.section_label_font)
         self.table_label.grid(row=10, column=0, padx=18, pady=(2, 6), sticky="w")
 
         self.io_tree_container = ctk.CTkFrame(self.left_panel, corner_radius=12)
-        self.io_tree_container.grid(row=11, column=0, padx=18, pady=(0, 8), sticky="nsew")
+
         self.io_tree_container.grid_columnconfigure(0, weight=1)
         self.io_tree_container.grid_rowconfigure(0, weight=1)
-        self.left_panel.grid_rowconfigure(11, weight=1, minsize=230)
+        self.left_panel.grid_rowconfigure(11, weight=0, minsize=0)
 
         self.io_tree = ttk.Treeview(self.io_tree_container, columns=IO_TREE_COLUMNS, show="headings", height=10)
         self.io_tree.grid(row=0, column=0, sticky="nsew")
@@ -2424,26 +2218,7 @@ class VozLLMPLCGUI(ctk.CTk):
         tree_scroll_x.grid(row=1, column=0, sticky="ew")
         self.io_tree.configure(yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set)
 
-        manage_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent")
-        manage_frame.grid(row=12, column=0, padx=18, pady=(0, 8), sticky="ew")
-        manage_frame.grid_columnconfigure(0, weight=1)
-        manage_frame.grid_columnconfigure(1, weight=1)
-
-        self.management_buttons: list[ctk.CTkButton] = []
-        archive_button = ctk.CTkButton(manage_frame, text="Archivar codigos", command=self.archive_codes, font=self.button_font)
-        archive_button.grid(row=0, column=0, padx=4, pady=2, sticky="ew")
-        self.management_buttons.append(archive_button)
-
-        clear_button = ctk.CTkButton(
-            manage_frame,
-            text="Limpiar codigos",
-            fg_color="#C2410C",
-            hover_color="#9A3412",
-            command=self.clear_codes,
-            font=self.button_font
-        )
-        clear_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
-        self.management_buttons.append(clear_button)
+        self.management_buttons=[]
 
     def _build_center_panel(self) -> None:
         self.center_title_label = ctk.CTkLabel(self.center_panel, text="Comando industrial", font=self.panel_title_font)
@@ -2462,6 +2237,8 @@ class VozLLMPLCGUI(ctk.CTk):
         self.command_textbox = ctk.CTkTextbox(self.center_panel, corner_radius=16, wrap="word", font=self.text_font)
         self.command_textbox.grid(row=2, column=0, padx=18, pady=(0, 10), sticky="nsew")
 
+        self.advanced_tools_frame = ctk.CTkFrame(self.center_panel, corner_radius=12)
+        self.advanced_tools_frame.grid_columnconfigure((0,1),weight=1)
         voice_options = ctk.CTkFrame(self.center_panel, fg_color="transparent")
         voice_options.grid(row=3, column=0, padx=18, pady=(0, 8), sticky="ew")
         voice_options.grid_columnconfigure(0, weight=1)
@@ -2474,8 +2251,8 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.save_voice_checkbox.grid(row=0, column=0, sticky="w")
 
-        voice_device_frame = ctk.CTkFrame(self.center_panel, fg_color="transparent")
-        voice_device_frame.grid(row=4, column=0, padx=18, pady=(0, 8), sticky="ew")
+        voice_device_frame = ctk.CTkFrame(self.advanced_tools_frame, fg_color="transparent")
+        voice_device_frame.grid(row=9, column=0, columnspan=2,padx=12, pady=(0, 8), sticky="ew")
         voice_device_frame.grid_columnconfigure(0, weight=1)
 
         self.voice_device_var = tk.StringVar(value="Microfono predeterminado del sistema")
@@ -2526,14 +2303,14 @@ class VozLLMPLCGUI(ctk.CTk):
         self.tall_command_buttons: list[ctk.CTkButton] = []
 
         self.listen_button = ctk.CTkButton(
-            primary_controls_frame, text="\U0001F399 Grabar comando", height=40,
+            self.advanced_tools_frame, text="\U0001F399 Grabar comando", height=40,
             command=self.listen_command, font=self.button_font
         )
-        self.listen_button.grid(row=0, column=0, padx=6, pady=6, sticky="ew")
+        self.listen_button.grid(row=8, column=0, padx=6, pady=6, sticky="ew")
         self.command_buttons.append(self.listen_button)
 
         self.stop_voice_button = ctk.CTkButton(
-            primary_controls_frame,
+            self.advanced_tools_frame,
             text="■ Detener y transcribir",
             height=40,
             fg_color="#B45309",
@@ -2541,12 +2318,12 @@ class VozLLMPLCGUI(ctk.CTk):
             command=self.stop_listening,
             font=self.button_font
         )
-        self.stop_voice_button.grid(row=0, column=1, padx=6, pady=6, sticky="ew")
+        self.stop_voice_button.grid(row=8, column=1, padx=6, pady=6, sticky="ew")
         self.command_buttons.append(self.stop_voice_button)
 
         self.execute_command_button = ctk.CTkButton(
             primary_controls_frame,
-            text="EJECUTAR COMANDO\nGenerar y compilar",
+            text="GENERAR Y COMPILAR",
             height=46,
             fg_color="#0F766E",
             hover_color="#115E59",
@@ -2589,6 +2366,7 @@ class VozLLMPLCGUI(ctk.CTk):
             fg_color="#64748B", hover_color="#475569",
             command=self.cancel_normal_voice_capture, font=self.button_font)
         self.normal_voice_cancel_button.grid(row=5, column=0, columnspan=2, padx=6, pady=(0, 6), sticky="ew")
+        self.normal_voice_cancel_button.grid_remove()
         voice_config = normal_voice.load_config(self.project_root)
         self.normal_voice_auto_download_var = tk.BooleanVar(value=voice_config["auto_download"])
         self.normal_voice_auto_download_check = ctk.CTkCheckBox(
@@ -2620,10 +2398,6 @@ class VozLLMPLCGUI(ctk.CTk):
             font=self.body_font
         )
         self.advanced_tools_toggle_button.grid(row=0, column=0, sticky="ew")
-
-        self.advanced_tools_frame = ctk.CTkFrame(self.center_panel, corner_radius=12)
-        self.advanced_tools_frame.grid_columnconfigure(0, weight=1)
-        self.advanced_tools_frame.grid_columnconfigure(1, weight=1)
 
         advanced_tools_label = ctk.CTkLabel(
             self.advanced_tools_frame, text="Herramientas avanzadas (depuracion)", font=self.section_label_font
@@ -2710,6 +2484,29 @@ class VozLLMPLCGUI(ctk.CTk):
         )
         self.validate_tia_button.grid(row=6, column=0, columnspan=2, padx=6, pady=(4, 10), sticky="ew")
 
+        manage_frame = ctk.CTkFrame(self.advanced_tools_frame, fg_color="transparent")
+        manage_frame.grid(row=12, column=0, columnspan=2, padx=12, pady=(0, 8), sticky="ew")
+        manage_frame.grid_columnconfigure(0, weight=1)
+        manage_frame.grid_columnconfigure(1, weight=1)
+
+        self.management_buttons: list[ctk.CTkButton] = []
+        archive_button = ctk.CTkButton(manage_frame, text="Archivar codigos", command=self.archive_codes, font=self.button_font)
+        archive_button.grid(row=0, column=0, padx=4, pady=2, sticky="ew")
+        self.management_buttons.append(archive_button)
+
+        clear_button = ctk.CTkButton(
+            manage_frame,
+            text="Limpiar codigos",
+            fg_color="#C2410C",
+            hover_color="#9A3412",
+            command=self.clear_codes,
+            font=self.button_font
+        )
+        clear_button.grid(row=0, column=1, padx=4, pady=2, sticky="ew")
+        self.management_buttons.append(clear_button)
+
+        ctk.CTkButton(self.advanced_tools_frame,text='Prueba de I/O',command=self.open_runtime_io_test,font=self.button_font).grid(row=13,column=0,padx=6,pady=4,sticky='ew')
+        ctk.CTkButton(self.advanced_tools_frame,text='Puesta en marcha PID',command=self.open_pid_commissioning,font=self.button_font).grid(row=13,column=1,padx=6,pady=4,sticky='ew')
         self.advanced_tools_frame.grid(row=8, column=0, padx=18, pady=(0, 8), sticky="ew")
         self.advanced_tools_frame.grid_remove()
 
@@ -2951,7 +2748,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.audio_corpus_button.grid(row=3, column=0, pady=(0, 6), sticky="ew")
         self.generate_only_button = ctk.CTkButton(batch_actions, text="GENERAR SOLO (DEVELOPMENT/DEBUG)", command=self.generate_experiment_trial,
                                                   font=self.button_font)
-        self.generate_only_button.grid(row=4, column=0, sticky="ew")
+
 
         ctk.CTkLabel(frame, text="Ensayos generados", font=self.section_label_font).grid(
             row=25, column=0, columnspan=2, padx=12, pady=(4, 2), sticky="w")
@@ -3627,6 +3424,8 @@ class VozLLMPLCGUI(ctk.CTk):
         return self.work_mode_var.get() == "Experimentacion" and not self._legacy_immediate_experiment_allowed()
 
     def validate_latest_package_in_tia(self) -> None:
+        if getattr(self,'_pid_project_operation',None):
+            messagebox.showwarning('PID','Espere a que termine la operación PID.');return
         if self._experiment_touches_normal_project():
             # Guard 6D: Experimentacion NUNCA modifica el proyecto Normal. Los ensayos se evaluan sobre
             # una copia del TIA MASTER (EVALUAR ENSAYO GUARDADO).
@@ -3680,6 +3479,7 @@ class VozLLMPLCGUI(ctk.CTk):
                 break
 
         package_dir = Path(package_dir_text)
+        self._compile_target_identity=self._current_target_identity()
         self._tia_worker_active = True
         self.validate_tia_button.configure(state="disabled")
         self.execute_command_button.configure(state="disabled")
@@ -3811,6 +3611,7 @@ class VozLLMPLCGUI(ctk.CTk):
             self._save_history_state()
 
         if passed and report_package_dir:
+            self._compiled_target_identity=getattr(self,"_compile_target_identity",None)
             self._last_compiled_package_dir = Path(report_package_dir)
             self._last_successful_tia_package_dir = Path(report_package_dir)
             self.download_plc_button.configure(state="normal")
@@ -3825,7 +3626,7 @@ class VozLLMPLCGUI(ctk.CTk):
 
         self._set_status("Listo" if passed else "Error")
         self._set_validation_banner(
-            "Compilacion TIA Portal V18 aprobada." if passed else "TIA Portal reporto errores de compilacion.",
+            tia_compile_summary(report),
             passed
         )
         self._log(f"TIA Openness finalizo con estado {report.get('status')}.")
@@ -3847,6 +3648,8 @@ class VozLLMPLCGUI(ctk.CTk):
         LLM, no reconstruye IR/SCL ni reimporta - solo invoca DownloadProvider.Download sobre el
         paquete que ya paso la ultima compilacion aprobada (self._last_compiled_package_dir).
         """
+        if getattr(self,'_pid_project_operation',None):
+            messagebox.showwarning('PID','Espere a que termine la operación PID.');return
         if self._download_worker_active or self._tia_worker_active:
             messagebox.showwarning("Cargar programa al PLC", "Ya existe una operacion TIA en curso.")
             return
@@ -3894,6 +3697,7 @@ class VozLLMPLCGUI(ctk.CTk):
             f"Proyecto TIA: {project_path}\n"
             f"CPU/dispositivo configurado: {plc_name}\n"
             f"Destino: {target.get('target_name', '')} ({target['target_type']})\n"
+            f"Dirección: {target.get('target_address') or 'ruta heredada'} · PG/PC: {target.get('pc_interface') or 'automática'} · Puerto: {target.get('target_interface') or 'único'}\n"
             f"Alcance: {target['download_scope']}\n"
             f"Paquete: {package_dir}\n"
             f"Ultimo resultado de compilacion: {compile_status}\n"
@@ -3910,6 +3714,17 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _start_download(self, package_dir: Path, purpose: str) -> None:
         """Lanza la descarga del paquete EXACTO indicado (nunca 'el ultimo directorio')."""
+        captured_target=plc_targets.load_normal_target(self.project_root) if purpose==DOWNLOAD_PURPOSE_NORMAL else None
+        if purpose==DOWNLOAD_PURPOSE_NORMAL:
+            current=plc_targets.target_identity(captured_target)
+            expected=getattr(self,'_compiled_target_identity',None)
+            flow_expected=(self._normal_voice_flow or {}).get('target_identity')
+            if (expected is not None and expected!=current) or (flow_expected is not None and flow_expected!=current):
+                self._invalidate_download_readiness()
+                if self._normal_voice_flow:self._fail_normal_voice('Descarga','El destino cambió; vuelva a compilar.')
+                messagebox.showwarning('Destino PLC','El destino cambió desde la compilación; vuelva a compilar.');return
+        if getattr(self,'_pid_project_operation',None):
+            messagebox.showwarning('PID','Espere a que termine la operación PID.');return
         while not self._download_worker_queue.empty():
             try:
                 self._download_worker_queue.get_nowait()
@@ -3937,7 +3752,7 @@ class VozLLMPLCGUI(ctk.CTk):
 
         def _worker() -> None:
             try:
-                result = download_program_to_plc(package_dir, self.project_root, purpose)
+                result=download_program_to_plc(package_dir,self.project_root,purpose,expected_target=captured_target) if captured_target is not None else download_program_to_plc(package_dir,self.project_root,purpose)
                 self._download_worker_queue.put(("success", result))
             except Exception as error:  # pragma: no cover - external Siemens process
                 self._download_worker_queue.put(("error", str(error)))
@@ -3962,6 +3777,9 @@ class VozLLMPLCGUI(ctk.CTk):
         # para permitir reintentar sin tener que recompilar.
         self.download_plc_button.configure(state="normal" if self._last_compiled_package_dir else "disabled")
         purpose = self._download_purpose
+        if purpose == DOWNLOAD_PURPOSE_NORMAL:
+            status = payload.get("status") if isinstance(payload, dict) else payload
+            self._log(normal_interaction.trace("NORMAL_DOWNLOAD", outcome=outcome, status=status))
 
         if outcome == "error":
             self._set_status("Error")
@@ -4327,26 +4145,92 @@ class VozLLMPLCGUI(ctk.CTk):
         self.io_test_button = ctk.CTkButton(
             panel, text="PRUEBA DE I/O", command=self.open_runtime_io_test, font=self.button_font
         )
-        self.io_test_button.grid(row=6, column=0, padx=12, pady=(0, 10), sticky="ew")
+
+        self.io_test_button.grid(row=6,column=0,padx=12,pady=(0,6),sticky='ew')
+
+        self.select_target_button=ctk.CTkButton(panel,text='SELECCIONAR PLC',command=self.select_normal_plc_target,font=self.button_font)
+        self.select_target_button.grid(row=7,column=0,padx=12,pady=(0,10),sticky='ew')
+        self.pid_commissioning_button=ctk.CTkButton(panel,text='Puesta en marcha PID',command=self.open_pid_commissioning,font=self.button_font)
+        self.pid_commissioning_button.grid(row=8,column=0,padx=12,pady=(0,10),sticky='ew')
+        self.pid_commissioning_button.grid_remove()
         self._render_configured_target()
 
-    def _render_configured_target(self) -> None:
-        """Lo CONFIGURADO para la descarga (nunca implica conexion)."""
+    def _current_target_identity(self) -> str:
+        return plc_targets.target_identity(plc_targets.load_normal_target(self.project_root))
+
+    def _normal_runtime_config(self) -> dict:
+        config=plcsim_runtime.load_runtime_config(load_tia_config(self.project_root))
+        target=plc_targets.load_normal_target(self.project_root)
+        config.update({key:target[key] for key in ('instance_name','instance_id') if key in target})
+        if 'instance_id' not in target:config.pop('instance_id',None)
+        return config
+
+    def _current_runtime_identity(self) -> str:
+        if self.work_mode_var.get()=='Normal':return self._current_target_identity()
+        config=load_tia_config(self.project_root);runtime=plcsim_runtime.load_runtime_config(config)
+        target=resolve_download_target(config,DOWNLOAD_PURPOSE_EXPERIMENT)
+        return plc_targets.target_identity({**target,**{key:runtime[key] for key in ('instance_name','instance_id') if key in runtime}})
+
+    def _target_operation_busy(self) -> bool:
+        return bool(self._tia_busy() or self._voice_worker_active or self._normal_voice_flow
+                    or getattr(self,'_pipeline_running',False) or getattr(self,'_map_sync_worker_active',False)
+                    or self.speech_recognizer.is_recording() or self._io_test_window is not None
+                    or (getattr(self,'_pid_commissioning_window',None) is not None
+                        and self._pid_commissioning_window.winfo_exists()))
+
+    def select_normal_plc_target(self) -> None:
+        if self.work_mode_var.get()!='Normal' or self._target_operation_busy():
+            messagebox.showwarning('Destino PLC','Use Modo Normal y espere a que terminen las operaciones de voz, TIA, I/O o PID.');return
+        if getattr(self,'_target_selector_open',False):return
+        self._target_selector_open=True
         try:
-            target = resolve_download_target(load_tia_config(self.project_root), DOWNLOAD_PURPOSE_NORMAL)
-        except Exception:  # pragma: no cover - configuracion ilegible
-            target = {}
-        interface = target.get("target_interface") or "?"
-        self.plc_config_var.set(f"Configurado: {target.get('target_name') or '-'} · {interface}")
+            revision=plc_targets.read_target_revision(self.project_root)
+            dialog=PlcTargetDialog(self,plc_targets.load_normal_target(self.project_root),revision)
+            self.wait_window(dialog)
+            if dialog.result is None:return
+            if self._target_operation_busy():raise ValueError('Hay una operación en curso; no se cambió el destino.')
+            plc_targets.save_normal_target(self.project_root,dialog.result,revision)
+            self._invalidate_download_readiness()
+            self._last_runtime_report=None;self._io_program_context=None
+            self.plc_runtime_var.set('Estado: NO VERIFICADO');self.plc_cpu_var.set('CPU: sin verificar');self.plc_network_var.set('Red: sin verificar')
+            self._render_configured_target();self._refresh_normal_voice_target()
+        except Exception as error:messagebox.showerror('Destino PLC',str(error))
+        finally:self._target_selector_open=False
+
+    def refresh_selected_target_status(self) -> None:
+        self.refresh_plc_runtime_status()
+
+    def _render_configured_target(self) -> None:
+        """Configuration is separate from verified runtime state."""
+        try:
+            target=plc_targets.load_normal_target(self.project_root)
+            text=(f"Configurado: {target.get('target_name') or '-'} · {target.get('target_address') or 'ruta heredada'} · {target.get('target_interface') or '?'}"
+                  +f"\nProyecto: {Path(target.get('project_path') or '-').name} · CPU esperada: {target.get('plc_name') or 'única en plantilla'}")
+        except Exception as error:text=f'Destino no disponible: {error}'
+        self.plc_config_var.set(text)
+        package=(self._io_program_context or {}).get('package_dir')
+        if package and (Path(package)/'pid_process_bindings.json').is_file() and self.work_mode_var.get()=='Normal':
+            self.pid_commissioning_button.grid()
+        else:self.pid_commissioning_button.grid_remove()
 
     def refresh_plc_runtime_status(self) -> None:
         self._start_runtime_refresh("manual")
 
     def _start_runtime_refresh(self, reason: str, package_dir: Path | None = None, on_done: Any = None) -> None:
         """Lectura no bloqueante (hilo 'plcsim-runtime'); nunca hay polling continuo."""
+        normal=self.work_mode_var.get()=='Normal'
+        target=plc_targets.load_normal_target(self.project_root) if normal else resolve_download_target(load_tia_config(self.project_root),DOWNLOAD_PURPOSE_EXPERIMENT)
+        if target['target_type']!='PLCSIM_ADVANCED':
+            self._last_runtime_report=None
+            self.plc_runtime_var.set('PLC físico: configurado; conexión sin verificar')
+            self.plc_cpu_var.set('CPU: identidad y estado sin verificar')
+            self.plc_network_var.set('Dirección configurada: '+str(target.get('target_address') or '-'))
+            if on_done:on_done({'connected':False,'status':'PHYSICAL_NOT_VERIFIED','cpu_state':None})
+            return
         self._runtime_callbacks.append((package_dir, on_done))
         if self._runtime_worker_active:
             return
+        self._runtime_query_identity=self._current_runtime_identity()
         self._runtime_worker_active = True
         self.refresh_runtime_button.configure(state="disabled")
         self.plc_runtime_var.set("Runtime: consultando...")
@@ -4354,7 +4238,8 @@ class VozLLMPLCGUI(ctk.CTk):
 
         def _worker() -> None:
             try:
-                self._runtime_worker_queue.put(("success", get_plcsim_runtime_status(self.project_root)))
+                report=get_plcsim_runtime_status(self.project_root,target=target) if normal and target.get('instance_id') is not None else get_plcsim_runtime_status(self.project_root)
+                self._runtime_worker_queue.put(('success',report))
             except Exception as error:  # pragma: no cover - proceso externo
                 self._runtime_worker_queue.put(("error", str(error)))
 
@@ -4371,6 +4256,10 @@ class VozLLMPLCGUI(ctk.CTk):
 
         self._runtime_worker_active = False
         self.refresh_runtime_button.configure(state="normal")
+        if getattr(self,'_runtime_query_identity',None)!=self._current_runtime_identity():
+            self._runtime_callbacks=[]
+            self._log('[PLC] Resultado de un destino anterior descartado.')
+            return
         if outcome == "error":
             report = plcsim_runtime.evaluate_runtime_report(
                 {"status": plcsim_runtime.STATUS_RUNTIME_ERROR, "errors": [str(payload)]},
@@ -4395,6 +4284,146 @@ class VozLLMPLCGUI(ctk.CTk):
     # ------------------------------------------------------------------------------------------
     # Fase 2B - PRUEBA DE I/O (Runtime I/O BOOL, herramienta tecnica)
     # ------------------------------------------------------------------------------------------
+
+    def open_pid_commissioning(self) -> None:
+        from pid_commissioning import PidCommissioningSession,PidOperationJob
+        from pid_commissioning_view import PidCommissioningPanel
+        from pid_plant_test import PlantTestJob
+        from pid_parameter_store import inspect_parameter_state,load_saved_parameters,save_verified_parameters
+        if self._tia_busy() or getattr(self,'_map_sync_worker_active',False):
+            messagebox.showwarning('PID','Espere a que termine la operación en curso.');return
+        previous=getattr(self,'_pid_commissioning_window',None)
+        if previous is not None and previous.winfo_exists():
+            previous.focus();return
+        package=(self._io_program_context or {}).get('package_dir')
+        if self.work_mode_var.get()!='Normal' or not package or not (Path(package)/'pid_process_bindings.json').is_file():
+            messagebox.showinfo('PID','Primero genere, compile y cargue un programa PID nativo en modo Normal.');return
+        package=Path(package)
+        bindings=load_json_file(package/'pid_process_bindings.json')
+        download=load_json_file(package/'tia_download_report.json')
+        compiled=load_json_file(package/'tia_compile_report.json')
+        verified=download.get('download_success',download.get('success')) is True and compiled.get('status')=='TIA_COMPILATION_PASSED'
+        target=self._io_test_target_type()
+        context={'mode':bindings.get('mode'),'target_type':target,'connected':bool((self._last_runtime_report or {}).get('connected')),
+            'cpu_state':(self._last_runtime_report or {}).get('cpu_state'),'program_verified':verified,'tuning_authorized':False}
+        io=plcsim_runtime_io.RuntimeIOSession({'source':'native_pid','signals':{},'inventory':{}},target,self._last_runtime_report,self.project_root,runtime_config=self._normal_runtime_config(),kind='native_pid')
+        session=PidCommissioningSession(bindings,io,context)
+        window=ctk.CTkToplevel(self);window.title('Puesta en marcha PID');window.geometry('740x960')
+        self._pid_commissioning_window=window
+        results=queue.Queue();busy=False;closing=False
+        job=PlantTestJob();operation=PidOperationJob()
+        can_test=(bindings.get('schema_version')==2 and target=='PLCSIM_ADVANCED' and verified
+                  and context['connected'] and context['cpu_state']=='RUN')
+        def submit(name=None,value=None,authorize=False):
+            nonlocal busy
+            if busy or closing or operation.active or self._tia_busy(allow_pid_model=True) or getattr(self,'_map_sync_worker_active',False):return
+            busy=True;context['tuning_authorized']=authorize
+            self._pid_project_operation='READING' if name is None else 'WRITING'
+            def worker():
+                try:
+                    values=session.read() if name is None else session.write(name,value)
+                    state=inspect_parameter_state(package,{**values,'build_signature':bindings['build_signature']},load_saved_parameters(self.project_root,package))
+                    results.put(('ok',{'values':values,'state':state}))
+                except Exception as error:results.put(('error',str(error)))
+            threading.Thread(target=worker,daemon=True).start()
+        def start_operation(kind,work):
+            if closing or busy or job.active or operation.active or not can_test or self._tia_busy() or getattr(self,'_map_sync_worker_active',False):return
+            if operation.start(kind,work):
+                self._pid_project_operation=kind
+                panel.set_operation_state(kind)
+                panel.show_test_status({'status':'Verificando ajustes guardados en TIA...' if kind=='SAVING' else 'Evaluación aislada en curso; sustituye el programa de PLCSIM.'})
+        def save_parameters():
+            start_operation('SAVING',lambda cancel:save_verified_parameters(self.project_root,package,session,cancel=cancel,verification_only=True))
+        def evaluate_parameters():
+            from trial_experiments import native_pid_protocol as protocol_service,deferred_evaluator
+            protocol=load_json_file(self.project_root/'config/native_pid_evaluation_protocol.json')
+            if protocol['tuning_policy']=='REQUIRE_PRETUNE' and not panel.tuning_var.get():
+                panel.show_test_status({'status':'Autorice la sintonización para ejecutar el protocolo de tanque 50/40/60 %.'});return
+            protocol['tuning_authorized']=panel.tuning_var.get()
+            def work(cancel):
+                profile=load_json_file(self.project_root/'config/pid_tank_test_profile.json')
+                run=protocol_service.create_native_validation_run(self.project_root,package,protocol,profile,
+                    self.project_root/'runtime/native_pid_evaluations')
+                result=deferred_evaluator.run_frozen_native_development(self.project_root,run,cancel=cancel)
+                return {**result,'evidence':str(run)}
+            start_operation('EVALUATING',work)
+        def start_test():
+            if closing or busy or operation.active or not can_test or self._tia_busy() or getattr(self,'_map_sync_worker_active',False):return
+            try:
+                profile=load_json_file(self.project_root/'config/pid_tank_test_profile.json')
+                test_target={'target_type':target,'instance_name':(self._last_runtime_report or {}).get('instance_name'),**({'instance_id':self._last_runtime_report['instance_id']} if (self._last_runtime_report or {}).get('instance_id') is not None else {})}
+                if not test_target['instance_name']:raise ValueError('Instancia PLCSIM no identificada.')
+                if job.start(package,test_target,profile,self.project_root/'runtime/pid_plant_tests'):
+                    self._pid_project_operation='MODEL'
+                    panel.show_test_status({'status':'Modelo externo iniciado; rearme y use Marcha para iniciar el PID.'})
+                    panel.test_button.configure(state='disabled')
+            except Exception as error:panel.show_test_status({'status':'FAILED','errors':[str(error)]})
+        def cancel_test():
+            job.cancel();operation.cancel()
+            panel.show_test_status({'status':'Deteniendo modelo y verificando restauracion...'})
+        panel=PidCommissioningPanel(window,bindings,submit,lambda:submit(),
+            on_test=start_test if can_test else None,on_cancel_test=cancel_test if can_test else None,
+            on_save=save_parameters if can_test else None,on_evaluate=evaluate_parameters if can_test else None)
+        panel.pack(fill='both',expand=True,padx=12,pady=12)
+        def destroy_panel():
+            self._pid_commissioning_window=None
+            self._pid_close_request=None
+            window.destroy()
+        def keep_cleanup_failure_visible(reason):
+            nonlocal closing
+            if closing:self._pid_shutdown_error=reason
+            closing=False
+        def close():
+            nonlocal closing
+            closing=True;job.cancel();operation.cancel()
+            if job.active or busy or operation.active:
+                panel.show_test_status({'status':'Cerrando; esperando parada y restauracion verificadas...'})
+            else:
+                destroy_panel()
+        self._pid_close_request=close
+        window.protocol('WM_DELETE_WINDOW',close)
+        self.bind('<Destroy>',lambda event:(job.cancel(),operation.cancel()) if event.widget is self else None,add='+')
+        def poll():
+            nonlocal busy,closing
+            if not window.winfo_exists():return
+            try:
+                outcome,value=results.get_nowait();busy=False
+                self._pid_project_operation='MODEL' if job.active else None
+                if outcome=='ok':
+                    panel.show_values(value['values']);panel.show_parameter_state(value['state'])
+                else:
+                    panel.status_var.set(value)
+                    panel.invalidate_runtime()
+                    panel.show_parameter_state({'state':'UNVERIFIED','reason':value})
+            except queue.Empty:pass
+            completed=operation.poll()
+            if completed:
+                kind,outcome,value=completed
+                self._pid_project_operation=None;panel.set_operation_state(None)
+                if outcome=='error':
+                    panel.show_test_status({'status':'FAILED','errors':[value]})
+                    panel.show_parameter_state({'state':'UNVERIFIED','reason':value})
+                    keep_cleanup_failure_visible(value)
+                elif kind=='SAVING':
+                    if value['status']=='SAVED_VERIFIED':self._invalidate_download_readiness()
+                    panel.show_parameter_state({'state':value['status'],'reason':'Guardado verificado en TIA. Regenere y compile antes de descargar.' if value['status']=='SAVED_VERIFIED' else value.get('reason','Operación cancelada; ajustes sin verificar.')})
+                    panel.show_test_status({'status':value['status'],'evidence':value.get('record_path')})
+                else:
+                    panel.show_test_status(value)
+                    panel.show_parameter_state({'state':'UNVERIFIED','reason':'La evaluación usó una copia experimental. Lea de nuevo la CPU.'})
+                    if value.get('cleanup_verified') is not True:keep_cleanup_failure_visible('La evaluación no verificó la parada y restauración.')
+            report=job.poll()
+            if report:
+                self._pid_project_operation=None
+                panel.show_test_status(report)
+                if report.get('cleanup',{}).get('cleanup_verified') is not True:
+                    keep_cleanup_failure_visible('El modelo no verificó la parada y restauración.')
+                    panel.test_button.configure(state='disabled')
+                elif can_test:panel.test_button.configure(state='normal')
+            if closing and not job.active and not busy and not operation.active:
+                destroy_panel();return
+            window.after(100,poll)
+        window.after(100,poll)
 
     def _remember_io_program(self, trial_directory: Path | None) -> None:
         """El programa que ACABA de descargarse a PLCSIM es la unica fuente de senales de la prueba."""
@@ -4425,8 +4454,8 @@ class VozLLMPLCGUI(ctk.CTk):
             program = self._load_io_program()
         except plcsim_runtime_io.RuntimeIOError:
             program = None
-        instance = plcsim_runtime.load_runtime_config(load_tia_config(self.project_root))["instance_name"]
-        allowed, reason = plcsim_runtime_io.io_test_availability(self._io_test_target_type(), runtime_report, instance, program)
+        instance=(self._normal_runtime_config() if (self._io_program_context or {}).get('purpose',DOWNLOAD_PURPOSE_NORMAL)==DOWNLOAD_PURPOSE_NORMAL else plcsim_runtime.load_runtime_config(load_tia_config(self.project_root)))['instance_name']
+        allowed, reason = plcsim_runtime_io.io_test_availability(self._io_test_target_type(), runtime_report, instance, program, allow_manual_stop=True)
         return (program, None) if allowed else (program, reason)
 
     def open_runtime_io_test(self) -> None:
@@ -4460,6 +4489,8 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _render_runtime_report(self, report: dict[str, Any]) -> None:
         self._render_configured_target()
+        if self.work_mode_var.get()=='Normal' and plc_targets.load_normal_target(self.project_root)['target_type']!='PLCSIM_ADVANCED':
+            self.plc_runtime_var.set('PLC físico: conexión sin verificar');self.plc_cpu_var.set('CPU: sin verificar');return
         if report.get("connected"):
             self.plc_runtime_var.set(f"Runtime: CONECTADO · {report.get('instance_name')}")
             # RUN / STOP / ... es exactamente lo que reporta la Runtime API (OperatingState).
@@ -4514,11 +4545,7 @@ class VozLLMPLCGUI(ctk.CTk):
         snapshot["verification_text"] = format_json(combined_verification)
         snapshot["files_text"] = self._build_files_summary(combined_files)
         snapshot["validation_ok"] = passed
-        snapshot["validation_text"] = (
-            "Compilacion TIA Portal V18 aprobada."
-            if passed else
-            "TIA Portal reporto errores de compilacion."
-        )
+        snapshot["validation_text"] = tia_compile_summary(report)
         snapshot["export_contents"] = self._build_export_contents(
             command_text=snapshot.get("command_text", ""),
             semantic_output=snapshot.get("semantic_output", {}),
@@ -5241,14 +5268,38 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _collect_io_variables(self) -> list[dict[str, Any]]:
         merged: list[dict[str, Any]] = []
+        extras_by_key = getattr(self, "io_variable_extras", {})
         for entry in treeview_rows(self.io_tree, IO_TREE_COLUMNS):
             advanced = self.io_variable_metadata.get(entry.get("name", ""), {})
-            merged.append(normalize_variable_entry({**entry, **advanced}))
+            normalized = normalize_variable_entry({**entry, **advanced})
+            # Campos fuera de la tabla (configuracion fisica del canal: senal, sensor, rango...; binding del programa):
+            # se conservan por direccion fisica, nunca se pierden al guardar la tabla.
+            extras = extras_by_key.get(self._variable_key(normalized), {})
+            merged.append({**normalized, **{key: value for key, value in extras.items() if key not in normalized}})
         return merged
+
+    @staticmethod
+    def _variable_key(entry: dict[str, Any]) -> str:
+        return str(entry.get("location") or "") or f"name:{entry.get('name', '')}"
+
+    def _mark_manual_binding(self, entry: dict[str, Any], state: str, *, update_configuration: bool = False) -> None:
+        """Cambio hecho por el USUARIO en el editor: ASSIGNED queda MANUAL (se conserva entre programas); FREE sin binding."""
+        if not hasattr(self, "io_variable_extras"):
+            self.io_variable_extras = {}
+        extras = self.io_variable_extras.setdefault(self._variable_key(entry), {})
+        if update_configuration:
+            extras.pop("analog_config", None)
+            extras.update(copy.deepcopy({key: value for key, value in entry.items()
+                                        if key not in IO_TREE_COLUMNS and key not in ADVANCED_VARIABLE_DEFAULTS}))
+        for field in program_bindings.BINDING_FIELDS:
+            extras.pop(field, None)
+        if state == "ASSIGNED":
+            extras["assignment_source"] = program_bindings.SOURCE_MANUAL
 
     def _load_active_map_metadata_shadow(self) -> None:
         """Populate the advanced-fields shadow dict from the raw active map file."""
         self.io_variable_metadata = {}
+        self.io_variable_extras = {}
         try:
             raw_payload = load_json_file(self.io_map_path)
         except (FileNotFoundError, ValueError):
@@ -5257,6 +5308,10 @@ class VozLLMPLCGUI(ctk.CTk):
             name = entry.get("name")
             if not name:
                 continue
+            extras = {key: value for key, value in entry.items()
+                      if key not in IO_TREE_COLUMNS and key not in ADVANCED_VARIABLE_DEFAULTS}
+            if extras:
+                self.io_variable_extras[self._variable_key(entry)] = extras
             self.io_variable_metadata[name] = {
                 field: entry.get(field, default) for field, default in ADVANCED_VARIABLE_DEFAULTS.items()
             }
@@ -5435,7 +5490,9 @@ class VozLLMPLCGUI(ctk.CTk):
         return {column: str(values[index]) for index, column in enumerate(IO_TREE_COLUMNS)}
 
     def _run_variable_dialog(self, title: str, variable_data: dict[str, Any] | None = None) -> dict[str, Any] | None:
-        dialog = VariableEditorDialog(self, title, variable_data)
+        others = [entry for entry in self._collect_io_variables()
+                  if variable_data is None or entry["name"] != variable_data.get("name")]
+        dialog = VariableEditorDialog(self, title, variable_data, other_variables=others)
         self.wait_window(dialog)
         return dialog.result
 
@@ -5443,6 +5500,29 @@ class VozLLMPLCGUI(ctk.CTk):
         """[ABRIR MAPA I/O COMPLETO] (seccion 7): ventana independiente con TODOS los canales del
         mapa activo, no solo los que caben en la tabla del panel izquierdo."""
         FullIOMapWindow(self)
+
+    def open_map_file(self) -> None:
+        if block_map_config_message(self.active_trial,self.active_profile_id) or self._target_operation_busy():
+            messagebox.showwarning('Mapa PLC','Termine la operación o el ensayo antes de cambiar el mapa.');return
+        if not self._confirm_discard_unsaved_map_changes():return
+        selected=filedialog.askopenfilename(title='Importar mapa PLC',filetypes=[('Mapa JSON','*.json')],parent=self)
+        if not selected:return
+        try:
+            payload=load_plc_map(Path(selected))
+            validation=validate_plc_variable_map(payload)
+            if validation['errors']:raise ValueError('\n'.join(validation['errors'][:8]))
+            metadata=payload.get('metadata') or {}
+            path=create_plc_map(self.project_root,name=metadata.get('name') or Path(selected).stem,
+                                description=metadata.get('description',''),variables=copy.deepcopy(payload['variables']))
+            copied=load_plc_map(path)
+            copied_metadata={**metadata,**copied['metadata']}
+            copied={**payload,**copied,'metadata':copied_metadata}
+            path.write_text(json.dumps(copied,ensure_ascii=False,indent=2),encoding='utf-8')
+            save_active_map_id(self.project_root,path.stem)
+        except (OSError,ValueError,TypeError,KeyError) as error:
+            messagebox.showerror('Mapa PLC',str(error));return
+        self.io_map_path=path;self.active_map_dirty=False
+        self._invalidate_download_readiness();self.open_io_map();self._refresh_map_selector_values()
 
     def open_io_map(self) -> None:
         try:
@@ -5485,6 +5565,7 @@ class VozLLMPLCGUI(ctk.CTk):
             return
         self.io_tree.insert("", "end", values=[result[column] for column in IO_TREE_COLUMNS])
         self.io_variable_metadata[result["name"]] = {field: result[field] for field in ADVANCED_VARIABLE_DEFAULTS}
+        self._mark_manual_binding(result, result.get("state", "ASSIGNED"), update_configuration=True)
         self._mark_active_map_dirty()
         self._log(f"Variable agregada en tabla: {result['name']}.")
 
@@ -5495,7 +5576,9 @@ class VozLLMPLCGUI(ctk.CTk):
             messagebox.showwarning("Editar variable", "Seleccione una variable para editar.")
             return
 
-        merged_data = {**selected_data, **self.io_variable_metadata.get(selected_data["name"], {})}
+        old_key = self._variable_key(selected_data)
+        merged_data = {**selected_data, **self.io_variable_metadata.get(selected_data["name"], {}),
+                       **copy.deepcopy(self.io_variable_extras.get(old_key, {}))}
         result = self._run_variable_dialog("Editar variable", merged_data)
         if result is None:
             return
@@ -5504,6 +5587,10 @@ class VozLLMPLCGUI(ctk.CTk):
         if selected_data["name"] != result["name"]:
             self.io_variable_metadata.pop(selected_data["name"], None)
         self.io_variable_metadata[result["name"]] = {field: result[field] for field in ADVANCED_VARIABLE_DEFAULTS}
+        new_key = self._variable_key(result)
+        if new_key != old_key:
+            self.io_variable_extras[new_key] = self.io_variable_extras.pop(old_key, {})
+        self._mark_manual_binding(result, result.get("state", "ASSIGNED"), update_configuration=True)
         self._mark_active_map_dirty()
         self._log(f"Variable editada en tabla: {result['name']}.")
 
@@ -5543,6 +5630,7 @@ class VozLLMPLCGUI(ctk.CTk):
         state_index = IO_TREE_COLUMNS.index("state")
         row_values[state_index] = new_state
         self.io_tree.item(item_id, values=row_values)
+        self._mark_manual_binding(selected_data, new_state)
 
         self._mark_active_map_dirty()
         self._log(f"{name}: estado cambiado a {new_state} (pendiente de guardar).")
@@ -5670,7 +5758,7 @@ class VozLLMPLCGUI(ctk.CTk):
             messagebox.showerror("Validar mapa", report_text)
 
     def sync_plc_map_with_tia(self) -> None:
-        if self._map_sync_worker_active or self._tia_worker_active:
+        if self._map_sync_worker_active or self._tia_busy():
             messagebox.showwarning("Sincronizar con TIA", "Ya existe una operacion TIA en curso.")
             return
 
@@ -5716,7 +5804,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self.after(250, self._poll_map_sync_worker)
 
     def import_plc_map_from_tia(self) -> None:
-        if self._map_sync_worker_active or self._tia_worker_active:
+        if self._map_sync_worker_active or self._tia_busy():
             messagebox.showwarning("Importar desde TIA", "Ya existe una operacion TIA en curso.")
             return
 
@@ -5799,6 +5887,8 @@ class VozLLMPLCGUI(ctk.CTk):
             }
             self.io_variables = [normalize_variable_entry(v) for v in merged_variables]
             self._mark_active_map_dirty()
+            for window in list(getattr(self,'_full_map_windows',())):
+                if window.winfo_exists():window._reload()
             self._log(
                 f"Importacion desde TIA completada: {result['new_count']} nuevas, "
                 f"{result['refreshed_count']} actualizadas. Revise y guarde el mapa."
@@ -5806,7 +5896,7 @@ class VozLLMPLCGUI(ctk.CTk):
             messagebox.showinfo(
                 "Importar desde TIA",
                 f"{result['new_count']} variables nuevas y {result['refreshed_count']} actualizadas.\n\n"
-                "Revise la tabla y use 'Guardar mapa I/O' para persistir los cambios."
+                "Revise el mapa completo y pulse Guardar para persistir los cambios."
             )
 
     # ------------------------------------------------------------------------------------------
@@ -5816,6 +5906,7 @@ class VozLLMPLCGUI(ctk.CTk):
     def _refresh_normal_voice_target(self) -> None:
         try:
             target = resolve_download_target(load_tia_config(self.project_root), DOWNLOAD_PURPOSE_NORMAL)
+            if self._normal_voice_flow is not None:self._normal_voice_flow["target_identity"]=self._current_target_identity()
             physical = target["target_type"] != TARGET_TYPE_PLCSIM
             self.normal_voice_target_var.set(
                 f"Destino Normal: {target.get('target_name', '')} ({target['target_type']})"
@@ -5851,6 +5942,7 @@ class VozLLMPLCGUI(ctk.CTk):
         self._normal_voice_flow = None
         self.normal_voice_button.configure(text=NORMAL_VOICE_BUTTON_TEXT)
         self.normal_voice_cancel_button.configure(state="disabled")
+        self.normal_voice_cancel_button.grid_remove()
 
     def capture_and_execute_by_voice(self) -> None:
         """1er clic: empieza a grabar. 2o clic (DETENER Y EJECUTAR): transcribe y ejecuta todo sin mas clics."""
@@ -5861,6 +5953,7 @@ class VozLLMPLCGUI(ctk.CTk):
             self._set_normal_voice_stage("Captura", "ok")
             self._set_normal_voice_stage("Transcripcion", "running")
             self.normal_voice_cancel_button.configure(state="disabled")
+            self.normal_voice_cancel_button.grid_remove()
             self.stop_listening()
             return
         if self._tia_worker_active or self._download_worker_active or self._voice_worker_active:
@@ -5875,6 +5968,7 @@ class VozLLMPLCGUI(ctk.CTk):
             return
         self.normal_voice_button.configure(text="■ DETENER Y EJECUTAR")
         self.normal_voice_cancel_button.configure(state="normal")
+        self.normal_voice_cancel_button.grid()
 
     def cancel_normal_voice_capture(self) -> None:
         """Cancelar ANTES de enviar: se descarta la grabacion y no se ejecuta nada."""
@@ -5951,7 +6045,10 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
         target = resolve_download_target(load_tia_config(self.project_root), DOWNLOAD_PURPOSE_NORMAL)
         if target["target_type"] != TARGET_TYPE_PLCSIM:
-            # PLC FISICO: nunca sin confirmacion explicita. Cancelar conserva la compilacion vigente.
+            if target.get('target_address') and flow.get('source')!=normal_voice.SOURCE_TEXT:
+                self._set_normal_voice_stage('Descarga','skipped')
+                self._finish_normal_voice('PLC físico sin identidad verificada: use CARGAR PROGRAMA AL PLC y confirme el destino.');return False
+            # PLC FISICO: never without explicit confirmation.
             if not self._confirm_physical_download(self._physical_download_info(target)):
                 self._set_normal_voice_stage("Descarga", "skipped")
                 self._finish_normal_voice("Descarga al PLC fisico cancelada: la compilacion sigue vigente "
@@ -5968,7 +6065,7 @@ class VozLLMPLCGUI(ctk.CTk):
         return {
             "destino": f"{target.get('target_name') or '-'} ({target['target_type']})",
             "cpu": str(config.get("plc_name") or "") or "(unica en el proyecto)",
-            "ip": str(target.get("target_ip") or target.get("ip_address") or config.get("plc_ip") or "") or "no disponible",
+            "ip": str(target.get("target_address") or target.get("target_ip") or target.get("ip_address") or config.get("plc_ip") or "") or "no disponible",
             "proyecto": Path(tia_projects.normal_project_path(self.project_root) or "-").name,
         }
 
@@ -6173,6 +6270,34 @@ class VozLLMPLCGUI(ctk.CTk):
         self._log("Comando y resultados visuales limpiados.")
 
     def _on_close(self) -> None:
+        if getattr(self,'_application_close_pending',False):return
+        self._application_close_pending=True
+        self._pid_shutdown_error=None
+        self._io_shutdown_error=None
+        close_pid=getattr(self,'_pid_close_request',None)
+        if close_pid:close_pid()
+        self._finish_close_after_pid()
+
+    def _finish_close_after_pid(self) -> None:
+        io_error=getattr(self,'_io_shutdown_error',None)
+        if io_error:
+            self._application_close_pending=False
+            messagebox.showwarning('Prueba de I/O',f'No se cerró la aplicación: {io_error}')
+            return
+        io_window=getattr(self,'_io_test_window',None)
+        if io_window is not None and io_window.winfo_exists():
+            if not io_window._busy and not io_window._closing:io_window.close()
+            self.after(100,self._finish_close_after_pid)
+            return
+        error=getattr(self,'_pid_shutdown_error',None)
+        if error:
+            self._application_close_pending=False
+            messagebox.showwarning('PID',f'No se cerró la aplicación: {error} Revise la evidencia en la ventana PID.')
+            return
+        window=getattr(self,'_pid_commissioning_window',None)
+        if (window is not None and window.winfo_exists()) or getattr(self,'_pid_project_operation',None):
+            self.after(100,self._finish_close_after_pid)
+            return
         if self._voice_level_poll_job is not None:
             try:
                 self.after_cancel(self._voice_level_poll_job)
@@ -6556,7 +6681,7 @@ class VozLLMPLCGUI(ctk.CTk):
             messagebox.showerror("Ejecutar ensayo", f"Ningun mapa experimental cubre este caso.\n\n{selection.get('reason')}")
             return False
         try:
-            reference = trial_io_map.create_working_map(Path(info["dir"]), source_path)
+            reference = trial_io_map.create_working_map(Path(info["dir"]), source_path, map_policy=product_engine.MAP_POLICY)
         except trial_io_map.ExperimentIOError as error:
             self._log(f"[EXPERIMENT IO] {error}")
             self._update_new_trial({"io_map": {"error": error.code}})
@@ -6787,9 +6912,15 @@ class VozLLMPLCGUI(ctk.CTk):
     # Fase 4A-DEFERRED: GENERAR ENSAYO / EVALUAR ENSAYO GUARDADO
     # ------------------------------------------------------------------------------------------
 
-    def _tia_busy(self) -> bool:
+    def _tia_busy(self, *, allow_pid_model: bool=False) -> bool:
         return bool(self._tia_worker_active or self._download_worker_active or self._runtime_worker_active
-                    or self._oracle_worker_active or self._deferred_worker_active)
+                    or self._oracle_worker_active or self._deferred_worker_active
+                    or getattr(self,'_io_test_window',None) is not None
+                    or (getattr(self,'_pid_project_operation',None)
+                        and not (allow_pid_model and self._pid_project_operation=='MODEL')))
+
+    def open_preferences(self) -> None:
+        self._preferences_window.deiconify();self._preferences_window.lift();self._preferences_window.focus()
 
     def open_tia_config_dialog(self) -> TiaConfigDialog:
         dialog = TiaConfigDialog(self)
@@ -7765,6 +7896,7 @@ class VozLLMPLCGUI(ctk.CTk):
             self._update_new_trial({
                 "command_text": command_text,
                 "transcript": transcript or None,
+                **({'product_engine': semantic_output['product_engine']} if semantic_output.get('product_engine') else {}),
                 "timing": {"semantic_ms": int(round((time.perf_counter() - started_perf) * 1000)) if started_perf is not None else None},
                 "semantic": {
                     "intent_id": semantic_output.get("intent_id"),
@@ -7797,6 +7929,7 @@ class VozLLMPLCGUI(ctk.CTk):
             self._update_new_trial({
                 "command_text": command_text,
                 "stages": {"semantic_success": False},
+                **({'product_engine': semantic_output['product_engine']} if semantic_output.get('product_engine') else {}),
                 "failure_stage": failure_stage,
                 "timing": {"semantic_ms": int(round((time.perf_counter() - started_perf) * 1000)) if started_perf is not None else None},
             })
@@ -8071,6 +8204,7 @@ class VozLLMPLCGUI(ctk.CTk):
         # potencialmente de varios segundos por llamadas LLM reales) podria reencolar el mismo
         # comando antes de que _tia_worker_active exista siquiera. Solo lo reactivamos aqui si la
         # operacion TIA nunca llego a arrancar - si arranco, _poll_tia_worker es quien la libera.
+        self._pipeline_running=True
         self.execute_command_button.configure(state="disabled")
         self.start_trial_button.configure(state="disabled")
         tia_started = False
@@ -8097,6 +8231,7 @@ class VozLLMPLCGUI(ctk.CTk):
             tia_started = self._tia_worker_active
             return True
         finally:
+            self._pipeline_running=False
             if not tia_started:
                 self.execute_command_button.configure(state="normal")
                 self.start_trial_button.configure(state="normal")
@@ -8120,6 +8255,196 @@ class VozLLMPLCGUI(ctk.CTk):
             "- Seleccione otro caso experimental.\n"
             "- Utilice Modo Normal si necesita programacion libre."
         )
+
+    def _normal_map_transactions_apply(self) -> bool:
+        """Transacciones de mapa: solo Modo Normal sin ensayo (Experimentacion usa su working map congelado)."""
+        return self.work_mode_var.get() == "Normal" and self.active_trial is None and self._trial_io() is None
+
+    @staticmethod
+    def _file_sha256(path: Path) -> str | None:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest() if Path(path).is_file() else None
+
+    def _prepare_provisional_allocation(
+        self, semantic_output: dict[str, Any], intents_catalog: dict[str, Any], safety_rules: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """
+        Aplica las propuestas del IOAllocator a una COPIA del mapa (nunca al archivo ni a la tabla de la GUI) y
+        revalida contra ella; la puerta semantica de process_command juzga ese resultado y, si falla, la descarta.
+        Esa copia alimenta IR/SCL; el mapa real cambia solo en el commit, con el programa verificado.
+        """
+        proposals = [p for p in (semantic_output.get("semantic_validation") or {}).get("io_assignment_proposals") or []
+                     if not p.get("blocked")]
+        if not proposals:
+            return semantic_output
+        block_message = block_map_config_message(self.active_trial, self.active_profile_id)
+        if block_message:
+            self._log("Asignacion de recursos rechazada: perfil experimental activo.")
+            messagebox.showwarning("Configuracion de mapa", block_message)
+            return None
+        base_map = self._program_base_map()  # inventario COMPLETO (con los AUTO liberados si es un programa nuevo)
+        try:
+            semantic_output, provisional_map, history_entries = product_engine.resolve_product_assignments(
+                semantic_output, base_map, proposals, intents_catalog, safety_rules)
+        except ValueError as error:
+            self._log(normal_interaction.trace("NORMAL_IO_ROLLBACK", reason=str(error)))
+            messagebox.showerror("Recursos del programa", f"No se pudieron asignar los recursos.\n\n{error}")
+            return None
+        revalidated = semantic_output['semantic_validation']
+        if not revalidated.get("is_valid", False):
+            return semantic_output  # no aceptar nuevas propuestas como si ya estuvieran aplicadas
+        self._open_map_transaction(provisional_map, history_entries, proposals, intents_catalog, safety_rules)
+        self.pending_semantic_output = semantic_output
+        self._last_map_config_summary = ("Asignacion provisional de recursos (se aplica al mapa solo si el programa se genera):"
+                                         + "".join(f"\n{p.get('address')} -> {p.get('proposed_name')}" for p in proposals))
+        self._log(normal_interaction.trace("NORMAL_IO_PROVISIONAL", status="Asignacion provisional de recursos",
+                                           assignments=", ".join(f"{p.get('proposed_name')}@{p.get('address')} "
+                                                                 f"({(p.get('current_state') or '').lower()})" for p in proposals)))
+        return semantic_output
+
+    def _program_metadata_allowed(self) -> bool:
+        """Bindings/registro de programa solo en mapas WORKING locales (nunca en un mapa versionado/congelado)."""
+        return is_working_map_path(Path(self.io_map_path))
+
+    def _prepare_program_scope(self, command_text: str, io_map: dict[str, Any]) -> dict[str, Any]:
+        """
+        NUEVO programa: copia de trabajo con los ASSIGNED automaticos del programa anterior devueltos al pool
+        (LOCKED/MANUAL/persistent y toda la configuracion fisica se conservan). AMPLIACION: el mapa tal cual y el
+        programa actual como contexto del interprete. Nada se escribe hasta el commit.
+        """
+        current = (load_json_file(self.io_map_path).get("metadata") or {}).get(program_bindings.CURRENT_PROGRAM_KEY) \
+            if Path(self.io_map_path).is_file() else None
+        scope, reason = program_bindings.classify_program_scope(command_text, current)
+        context: dict[str, Any] = {"scope": scope, "current_program": current, "released": [], "working_map": None,
+                                   "llm_context": program_bindings.llm_program_context(current)
+                                   if scope == program_bindings.SCOPE_EXTEND else None}
+        working = io_map
+        if scope == program_bindings.SCOPE_NEW:
+            prepared = product_engine.prepare_product_map(io_map, scope=scope,
+                previous_program_id=(current or {}).get('program_id'))
+            working, context['released'] = prepared['io_map'], prepared['released']
+        context["working_map"] = working
+        self._normal_program_context = context
+        self._log(normal_interaction.trace("NORMAL_PROGRAM_SCOPE", scope=scope, reason=reason,
+                                           current_program=(current or {}).get("program_id"),
+                                           released=", ".join(f"{r['address']}:{r['name']}" for r in context["released"])))
+        return working
+
+    def _program_base_map(self) -> dict[str, Any]:
+        """Base de la asignacion: la copia de trabajo del alcance del programa (o el mapa completo del archivo)."""
+        context = self._normal_program_context or {}
+        if context.get("working_map") is not None:
+            return copy.deepcopy(context["working_map"])
+        return load_json_file(self.io_map_path)
+
+    def _open_map_transaction(self, provisional_map: dict[str, Any], history_entries: list[dict[str, Any]],
+                              proposals: list[dict[str, Any]], intents_catalog: dict[str, Any],
+                              safety_rules: dict[str, Any]) -> None:
+        self._pending_map_transaction = {
+            "map_path": Path(self.io_map_path), "base_sha256": self._file_sha256(self.io_map_path),
+            "map": provisional_map, "history_entries": history_entries, "proposals": proposals,
+            "releases_previous": bool((self._normal_program_context or {}).get("released"))}
+        self.pending_runtime_config = (provisional_map, intents_catalog, safety_rules)
+
+    def _commit_pending_map_transaction(self) -> bool:
+        """Programa generado y verificado: escribe la asignacion provisional en el mapa (si nadie lo cambio entretanto)."""
+        transaction, self._pending_map_transaction = self._pending_map_transaction, None
+        if transaction is None:
+            return True
+        if Path(transaction["map_path"]) != Path(self.io_map_path) or \
+                self._file_sha256(transaction["map_path"]) != transaction["base_sha256"]:
+            self._log(normal_interaction.trace("NORMAL_IO_ROLLBACK", reason="el mapa activo cambio durante la operacion"))
+            messagebox.showwarning("Recursos del programa", "El mapa PLC cambió durante la operación; no se aplicaron "
+                                   "las asignaciones. Repita el comando para generar un programa coherente con el mapa.")
+            return False
+        committed_map, metadata_patch = transaction["map"], None
+        if self._program_metadata_allowed():
+            from ir_builder import required_external_resources
+
+            semantic = self.pending_semantic_output or {}
+            used = required_external_resources(semantic, committed_map)
+            manual = {p.get("proposed_name") for p in transaction["proposals"] if p.get("address_was_explicit")}
+            context = self._normal_program_context or {}
+            program_id = program_bindings.new_program_id()
+            committed_map = program_bindings.stamp_program_bindings(committed_map, used, program_id, manual,
+                strict_owner=True, previous_program_id=(context.get('current_program') or {}).get('program_id'),
+                newly_assigned_names={p.get('proposed_name') for p in transaction['proposals']})
+            metadata_patch = {program_bindings.CURRENT_PROGRAM_KEY: program_bindings.program_record(
+                program_id, context.get("scope") or program_bindings.SCOPE_NEW, semantic, used)}
+            self._log(normal_interaction.trace("NORMAL_PROGRAM_COMMIT", program_id=program_id, scope=context.get("scope"),
+                                               resources=", ".join(used),
+                                               released=", ".join(f"{r['address']}:{r['name']}" for r in context.get("released") or [])))
+        save_plc_map(transaction["map_path"], committed_map["variables"], metadata_patch=metadata_patch,
+                     history_entries=transaction["history_entries"])
+        self.io_variables = load_io_map_variables(self.io_map_path)
+        self._load_active_map_metadata_shadow()
+        self._load_io_map_table()
+        self._log(normal_interaction.trace("NORMAL_IO_COMMIT", status="Configuracion de mapa aplicada",
+                                           assignments=", ".join(f"{p.get('proposed_name')}@{p.get('address')}"
+                                                                 for p in transaction["proposals"])))
+        self._persist_generated_functional_variables(transaction.get("functional_variables") or [])
+        return True
+
+    def _rollback_pending_map_transaction(self, reason: str, notify: bool = False) -> None:
+        """Descarta la asignacion provisional: el mapa real nunca se toco (no hay nada que deshacer en disco)."""
+        transaction, self._pending_map_transaction = getattr(self, "_pending_map_transaction", None), None
+        if transaction is None:
+            return
+        self._log(normal_interaction.trace("NORMAL_IO_ROLLBACK", reason=reason, discarded=", ".join(
+            f"{p.get('proposed_name')}@{p.get('address')}" for p in transaction["proposals"]),
+            program_kept="programa y mapa anteriores intactos"))
+        if notify and transaction["proposals"] or notify and transaction.get("releases_previous"):
+            self._log(normal_interaction.ROLLBACK_MESSAGE)
+            messagebox.showwarning("Mapa PLC", normal_interaction.ROLLBACK_MESSAGE)
+
+    def _trace_normal_interpretation(self, semantic_output: dict[str, Any]) -> None:
+        """Trazas NORMAL_* tras interpretar: semantica, inferencias, E/S requeridas y aclaracion resuelta."""
+        validation = semantic_output.get("semantic_validation") or {}
+        self._log(normal_interaction.trace("NORMAL_SEMANTIC_PARSE", **normal_interaction.semantic_trace_fields(semantic_output)))
+        for inference in validation.get("inferences") or []:
+            self._log(normal_interaction.trace("NORMAL_INFERENCES", **inference))
+        for requested, resolved in (semantic_output.get("resource_bindings") or {}).items():
+            self._log(normal_interaction.trace("NORMAL_RESOURCE_BINDING", role=requested, resolved_symbol=resolved,
+                                               reason="funcion ya cubierta en el mapa: se reutiliza"))
+        for assumption in semantic_output.get("assumptions") or []:
+            if str(assumption).upper().startswith("INFERRED"):
+                self._log(normal_interaction.trace("NORMAL_INFERENCES", provenance="INFERRED", reason=assumption))
+        proposals = validation.get("io_assignment_proposals") or []
+        if proposals:
+            self._log(normal_interaction.trace(
+                "NORMAL_RESOURCE_REQUIREMENTS",
+                resolved=", ".join(f"{p.get('proposed_name')}->{p.get('address')}" for p in proposals if not p.get("blocked")),
+                blocked=", ".join(str(p.get("proposed_name")) for p in proposals if p.get("blocked"))))
+        # Las respuestas se marcan resueltas en el estado (los registros {question, answer} que recibe el
+        # parser no se alteran) cuando la reinterpretacion ya no repite la pregunta.
+        state = self._normal_clarification_state or {}
+        history = state.get("history") or []
+        resolved = state.setdefault("resolved", []) if state else []
+        pending = [index for index in range(len(history)) if index not in resolved]
+        question = semantic_output.get("clarification_question") or validation.get("clarification_question")
+        if pending and not (question and normal_interaction.already_answered(question, [history[i] for i in pending])):
+            for index in pending:
+                resolved.append(index)
+                self._log(normal_interaction.trace("NORMAL_CLARIFICATION_RESOLVED", question=history[index].get("question"),
+                                                   answer=history[index].get("answer")))
+
+    def _trace_normal_ir(self, project_ir: dict[str, Any]) -> None:
+        metadata = project_ir.get("metadata") or {}
+        internal = [variable.get("name") for variable in metadata.get("generated_internal_variables") or []]
+        self._log(normal_interaction.trace("NORMAL_IR_BUILT", variables=len((project_ir.get("pou") or {}).get("variables") or []),
+                                           test_cases=len(project_ir.get("test_cases") or [])))
+        self._log(normal_interaction.trace("NORMAL_INTERNAL_RESOURCES", generated=", ".join(internal) or "ninguno",
+                                           physical_address="ninguna (variables internas)"))
+
+    def _report_normal_capability_gap(self, command_text: str, semantic_output: dict[str, Any], gap: dict[str, Any]) -> None:
+        """Falta de hardware: el comando es valido pero el mapa no tiene canales compatibles. Nunca pregunta canales."""
+        self._log(normal_interaction.trace("NORMAL_CAPABILITY_GAP", message=gap.get("message"),
+                                           blocked=", ".join(str(n) for n in gap.get("blocked_resources") or [])))
+        snapshot = self._build_unknown_snapshot(command_text, semantic_output, {
+            "is_valid": False, "errors": [gap.get("message")], "warnings": []})
+        self._restore_snapshot(snapshot)
+        self._record_history(snapshot, platform="Sin plataforma", is_valid=False)
+        self._set_status("Listo")
+        messagebox.showwarning("Recursos de hardware insuficientes", normal_interaction.capability_gap_message(gap))
 
     def _show_normal_missing_variable(self, unauthorized_tags: list[str]) -> None:
         """En Modo Normal no hay protocolo Dxx: si falta la variable, sí puede ofrecerse editar el mapa."""
@@ -8174,6 +8499,7 @@ class VozLLMPLCGUI(ctk.CTk):
         if self._last_compiled_package_dir is not None or self.download_plc_button.cget("state") != "disabled":
             self._log("'CARGAR PROGRAMA AL PLC' deshabilitado: no hay una compilacion vigente.")
         self._last_compiled_package_dir = None
+        self._compiled_target_identity=None
         self.download_plc_button.configure(state="disabled")
 
     def _resolve_semantic_ambiguity(self, command_text: str, semantic_output: dict[str, Any]) -> bool:
@@ -8206,6 +8532,9 @@ class VozLLMPLCGUI(ctk.CTk):
             state = self._normal_clarification_state or normal_interaction.new_state(command_text)
             self._normal_clarification_state = state
             decision = normal_interaction.classify_clarification(question, state["history"])
+            self._log(normal_interaction.trace(
+                "NORMAL_CLARIFICATION_REPEATED" if decision["action"] == "repeated" else "NORMAL_CLARIFICATION_REQUIRED",
+                action=decision["action"], question=question))
             if decision["action"] != "ask":
                 # Nunca se muestra al usuario una pregunta interna (catalogo/intencion/schema) ni se
                 # repite una ya respondida: log de diagnostico + mensaje de producto.
@@ -8326,6 +8655,10 @@ class VozLLMPLCGUI(ctk.CTk):
             # Ensayo: MISMO apply_assignments que Modo Normal, sobre el working map del ensayo,
             # de forma transaccional (trial_io_map). El mapa base no se toca.
             try:
+                semantic_output, candidate, _ = product_engine.resolve_product_assignments(
+                    semantic_output, io_map, to_apply, intents_catalog, safety_rules)
+                if not semantic_output['semantic_validation'].get('is_valid'):
+                    return semantic_output
                 trial_io_map.apply_proposals_to_working_map(
                     Path(trial_info["io_map"]["working_map_path"]),
                     to_apply,
@@ -8350,6 +8683,11 @@ class VozLLMPLCGUI(ctk.CTk):
             if trial_info is None:
                 full_io_map = load_json_file(self.io_map_path)
                 updated_map, history_entries = apply_assignments(full_io_map, to_apply, source="TEXT_EXPLICIT")
+                if self._program_metadata_allowed():
+                    explicit = {p.get("address") for p in to_apply if p.get("address_was_explicit", True)}
+                    for entry in updated_map["variables"]:
+                        if entry.get("location") in explicit and entry.get("state") == "ASSIGNED":
+                            entry["assignment_source"] = program_bindings.SOURCE_MANUAL
                 save_plc_map(self.io_map_path, updated_map["variables"], history_entries=history_entries)
         except ValueError as error:
             messagebox.showerror("Configuracion de mapa", f"No se pudo aplicar la asignacion.\n\n{error}")
@@ -8365,7 +8703,7 @@ class VozLLMPLCGUI(ctk.CTk):
         # sin cambio real) de lo que efectivamente cambio de nombre (reasignado).
         kept = [p for p in to_apply if p.get("current_name") == p.get("proposed_name")]
         reassigned = [p for p in to_apply if p.get("current_name") != p.get("proposed_name")]
-        summary_parts = ["CONFIGURACION AUTOMATICA"]
+        summary_parts = ["Configuración de mapa aplicada." if trial_info is None else "CONFIGURACION AUTOMATICA"]
         if kept:
             summary_parts.append("\nConservados:\n" + "\n".join(f"{p['address']} -> {p['proposed_name']}" for p in kept))
         if reassigned:
@@ -8381,6 +8719,12 @@ class VozLLMPLCGUI(ctk.CTk):
                 f"- {proposal.get('reason')}" for proposal in blocked
             )
         self._log("MAP_CONFIG aplicado. " + "; ".join(summary_lines))
+        if self.work_mode_var.get() == "Normal" and trial_info is None:
+            self._log(normal_interaction.trace(
+                "NORMAL_IO_COMMIT",
+                reused=", ".join(f"{p['proposed_name']}@{p['address']}" for p in kept),
+                assigned=", ".join(f"{p['proposed_name']}@{p['address']} ({(p.get('current_state') or '').lower()})"
+                                   for p in reassigned)))
 
         io_map, intents_catalog, safety_rules = self._load_runtime_configuration()
         self.pending_runtime_config = (io_map, intents_catalog, safety_rules)
@@ -8422,6 +8766,9 @@ class VozLLMPLCGUI(ctk.CTk):
         return semantic_output
 
     def process_command(self) -> bool:
+        if getattr(self,'_pid_project_operation',None):
+            messagebox.showwarning('PID','Espere a que termine la operación PID antes de generar otro programa.')
+            return False
         command_text = self.command_textbox.get("1.0", "end").strip()
         if not command_text:
             self._set_status("Error")
@@ -8430,6 +8777,7 @@ class VozLLMPLCGUI(ctk.CTk):
             return False
 
         self._invalidate_download_readiness()
+        self._rollback_pending_map_transaction("comando nuevo")
         # Un resumen de MAP_CONFIG solo es valido para el comando que lo genero - nunca debe
         # sobrevivir y aparecer en el dialogo de confirmacion de un comando siguiente que no toco
         # el mapa.
@@ -8455,16 +8803,20 @@ class VozLLMPLCGUI(ctk.CTk):
                 self._log("Modo hibrido activo sin API lista. El flujo usara reglas hasta que configure OpenAI.")
 
             io_map, intents_catalog, safety_rules = self._load_runtime_configuration()
+            if self._normal_map_transactions_apply():
+                io_map = self._prepare_program_scope(command_text, io_map)
             self.pending_runtime_config = (io_map, intents_catalog, safety_rules)
             normal_kwargs: dict[str, Any] = {}
             if self.work_mode_var.get() == "Normal":
-                # Modo Normal: composicion funcional + aclaraciones estructuradas (Experimentacion no cambia).
+                # Interaction history belongs to Normal; semantics are shared by both modes.
                 if not self._reprocessing_clarification:
                     self._normal_clarification_state = normal_interaction.new_state(command_text)
-                normal_kwargs["interaction_profile"] = normal_interaction.PROFILE_NORMAL
                 history = (self._normal_clarification_state or {}).get("history") or []
                 if history:
                     normal_kwargs["clarification_history"] = list(history)
+                program_context = (self._normal_program_context or {}).get("llm_context")
+                if program_context:
+                    normal_kwargs["program_context"] = program_context
             semantic_output = parse_command(
                 command_text,
                 io_map=io_map,
@@ -8476,6 +8828,25 @@ class VozLLMPLCGUI(ctk.CTk):
             )
             self._log("Intencion detectada.")
             self._log("Parametros extraidos.")
+            if self.work_mode_var.get() == "Normal":
+                self._trace_normal_interpretation(semantic_output)
+                scope = (self._normal_program_context or {}).get("scope")
+                if scope == program_bindings.SCOPE_EXTEND and semantic_output.get("parser_mode_used") == "rule_based":
+                    # Ampliar exige combinar el programa actual con el cambio: el parser por reglas no puede hacerlo.
+                    self._log(normal_interaction.trace("NORMAL_PROGRAM_SCOPE", scope=scope, error="interprete por reglas"))
+                    messagebox.showwarning("Comando", "Para modificar el programa actual se necesita el intérprete LLM. "
+                                                      "Revise la conexión o describa el programa completo.")
+                    self._set_status("Listo")
+                    return False
+                if scope == program_bindings.SCOPE_EXTEND:
+                    from ir_builder import required_external_resources
+
+                    kept = set(required_external_resources(semantic_output, io_map))
+                    dropped = [name for name in ((self._normal_program_context or {}).get("current_program") or {}).get(
+                        "resources") or [] if name not in kept]
+                    if dropped:  # una ampliacion no deberia dejar de usar recursos del programa actual
+                        self._log(normal_interaction.trace("NORMAL_PROGRAM_SCOPE", scope=scope,
+                                                           warning="el programa ampliado ya no usa: " + ", ".join(dropped)))
 
             self._set_textbox_content(self.intent_textbox, self._format_intention_text(semantic_output))
             self._set_textbox_content(self.voice_textbox, self._build_voice_text())
@@ -8487,9 +8858,43 @@ class VozLLMPLCGUI(ctk.CTk):
             if self.work_mode_var.get() == "Experimentacion":
                 self._refresh_experiment_status()
 
+            hardware_gap = (semantic_output.get("semantic_validation") or {}).get("capability_gap")
+            if self.work_mode_var.get() == "Normal" and hardware_gap and self.active_trial is None:
+                question = semantic_output.get("clarification_question") or (
+                    semantic_output.get("semantic_validation") or {}).get("clarification_question")
+                if question and str(question).strip():
+                    # La semantica incompleta se aclara primero (los recursos dependen de ella).
+                    self._set_status("Listo")
+                    return self._resolve_semantic_ambiguity(command_text, {**semantic_output, "clarification_question": question})
+                self._report_normal_capability_gap(command_text, semantic_output, hardware_gap)
+                return False
+
             has_map_proposals = bool(semantic_output.get("semantic_validation", {}).get("io_assignment_proposals"))
             map_config_continued = False
-            if semantic_output.get("operation_type") == "MAP_CONFIG" or has_map_proposals:
+            normal_transactional = self._normal_map_transactions_apply()
+            if normal_transactional:
+                # Modo Normal: los roles funcionales con nombre nuevo son REQUISITOS del programa, no una
+                # configuracion del mapa. Nada se escribe en el mapa antes de una semantica valida.
+                operation = normal_interaction.classify_map_operation(semantic_output)
+                self._log(normal_interaction.trace("NORMAL_RESOURCE_REQUIREMENTS", operation=operation["kind"],
+                                                   **normal_interaction.resource_requirement_fields(semantic_output)))
+                if operation["kind"] == normal_interaction.MAP_OPERATION_CONFIG:
+                    self._log(normal_interaction.trace("NORMAL_MAP_CONFIG_EXPLICIT", assignments=", ".join(
+                        f"{p.get('address')}->{p.get('proposed_name')}" for p in operation["explicit"])))
+                    self._handle_map_config_command(semantic_output, io_map, intents_catalog, safety_rules)
+                    self._set_status("Listo")
+                    return False  # configuracion pura: no hay programa que generar
+                # Asignacion PROVISIONAL en memoria (si no hay una aclaracion pendiente): la validacion se juzga
+                # contra ella, igual que antes contra el mapa ya escrito, pero sin tocar el archivo ni la tabla.
+                if has_map_proposals and not (semantic_output.get("requires_clarification") or (
+                        semantic_output.get("semantic_validation") or {}).get("requires_clarification")):
+                    semantic_output = self._prepare_provisional_allocation(semantic_output, intents_catalog, safety_rules)
+                    if semantic_output is None:
+                        self._set_status("Listo")
+                        return False
+                # Mismo criterio que antes para continuar con INT_UNKNOWN + requisitos con contenido logico.
+                map_config_continued = has_map_proposals and operation["has_logic"]
+            elif semantic_output.get("operation_type") == "MAP_CONFIG" or has_map_proposals:
                 # has_map_proposals cubre el caso implicito (seccion 11/12): un tag no autorizado
                 # pero bien formado que el IOAllocator ya resolvio dentro de validate_semantic_output
                 # (nunca paso por extract_io_assignment_requests, asi que operation_type solo no
@@ -8509,11 +8914,12 @@ class VozLLMPLCGUI(ctk.CTk):
             # INT_UNKNOWN" deshacia esa decision y detenia el pipeline otra vez. Fuera del flujo
             # MAP_CONFIG, intent_id == INT_UNKNOWN sigue significando exactamente lo mismo que
             # siempre (no se entendio el comando, se pide aclaracion) - sin cambios ahi.
-            composable = self.work_mode_var.get() == "Normal" and has_composable_program(
-                semantic_output.get("functional_requirements") or [])
+            composable = product_engine.is_generatable_product(semantic_output)
             intent_missing = semantic_output.get("intent_id") == "INT_UNKNOWN" and not map_config_continued and not composable
             is_valid_now = semantic_output.get("semantic_validation", {}).get("is_valid", False)
             if intent_missing or not is_valid_now:
+                # Semantica no valida / aclaracion / INT_UNKNOWN: ningun efecto persistente (se descarta lo provisional).
+                self._rollback_pending_map_transaction("interpretacion no valida o aclaracion pendiente")
                 unknown_payload = {
                     "is_valid": False,
                     "errors": list(semantic_output.get("semantic_validation", {}).get("errors", [])),
@@ -8587,6 +8993,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 self._set_status("Listo")
                 return False
 
+            if normal_transactional and self._pending_map_transaction is None:
+                self._open_map_transaction(self._program_base_map(), [], [], intents_catalog, safety_rules)
             self._set_validation_banner("Interpretacion lista.", None)
             interpretation_snapshot = self._build_interpretation_snapshot(command_text, semantic_output)
             self._record_history(
@@ -8652,6 +9060,8 @@ class VozLLMPLCGUI(ctk.CTk):
                 verification = package_result["verification"]
                 saved_paths = package_result.get("artifacts") or None
                 self._log("[PIPELINE] IR built")
+                if self.work_mode_var.get() == "Normal":
+                    self._trace_normal_ir(package_result.get("project_ir") or {})
                 if target_platform == "SIEMENS_SCL_V18":
                     self._log("[PIPELINE] Siemens SCL generated")
                 self._log(
@@ -8678,7 +9088,10 @@ class VozLLMPLCGUI(ctk.CTk):
                 generated_functional = package_result.get("project_ir", {}).get("metadata", {}).get(
                     "generated_functional_variables", []
                 )
-                self._persist_generated_functional_variables(generated_functional)
+                if self._pending_map_transaction is not None:
+                    self._pending_map_transaction.setdefault("functional_variables", []).extend(generated_functional)
+                else:
+                    self._persist_generated_functional_variables(generated_functional)
                 if target_platform == "OPENPLC_ST":
                     self._log(
                         "Compilacion OpenPLC: "
@@ -8734,9 +9147,17 @@ class VozLLMPLCGUI(ctk.CTk):
             if self.active_trial:
                 if self._capture_trial_generation_result(combined_results) is False:
                     all_valid = False
+            if self.work_mode_var.get() == "Normal" and self.active_trial is None:
+                self._log(normal_interaction.trace("NORMAL_GENERATION", verified=all_valid,
+                                                   platforms=", ".join(combined_results)))
+                if all_valid:
+                    all_valid = self._commit_pending_map_transaction()
+                else:
+                    self._rollback_pending_map_transaction("la verificacion del programa fallo", notify=True)
             self._set_status("Listo")
             return all_valid
         except Exception as error:  # pragma: no cover - GUI feedback path
+            self._rollback_pending_map_transaction(f"error durante la generacion: {error}", notify=True)
             self._set_status("Error")
             self._set_validation_banner("Error durante la generacion.", False)
             self._log(f"Error durante la generacion: {error}")

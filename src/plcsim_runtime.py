@@ -21,11 +21,13 @@ como atributo dinamico de Node (GetAttribute("Address")), no verificable estatic
 """
 from __future__ import annotations
 
+import copy
 import ipaddress
 import json
 import os
 import subprocess
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -88,6 +90,7 @@ def load_runtime_config(tia_config: dict[str, Any] | None) -> dict[str, Any]:
     section = tia_config.get("plcsim_runtime") or {}
     normal_target = (tia_config.get("download_targets") or {}).get("normal") or {}
     return {
+        **({"instance_id": section["instance_id"]} if section.get("instance_id") is not None else {}),
         "api_dll_path": str(section.get("api_dll_path") or DEFAULT_RUNTIME_API_DLL),
         "instance_name": str(section.get("instance_name") or DEFAULT_INSTANCE_NAME),
         "windows_adapter_match": str(
@@ -128,18 +131,19 @@ def build_runtime_bridge(project_root: Path | None = None, force: bool = False, 
     bridge = _bridge_paths(root)
     api_dll = Path(api_dll or DEFAULT_RUNTIME_API_DLL)
     references = [api_dll, DEFAULT_WEB_EXTENSIONS]
-    missing = [str(path) for path in (DEFAULT_COMPILER, bridge["source"], *references) if not path.exists()]
+    sources = [bridge['source'], bridge['root']/'PidPlantSession.cs', bridge['root']/'ManualIO.cs']
+    missing = [str(path) for path in (DEFAULT_COMPILER, *sources, *references) if not path.exists()]
     if missing:
         return {"built": False, "exe_path": str(bridge["exe"]), "errors": ["Faltan dependencias: " + ", ".join(missing)]}
 
-    inputs = [bridge["source"], *references]
+    inputs = [*sources, *references]
     if not force and bridge["exe"].exists() and bridge["exe"].stat().st_mtime >= max(p.stat().st_mtime for p in inputs):
         return {"built": True, "reused": True, "exe_path": str(bridge["exe"]), "errors": []}
 
     bridge["bin"].mkdir(parents=True, exist_ok=True)
     command = [
         str(DEFAULT_COMPILER), "/nologo", "/target:exe", "/platform:x64", "/optimize+",
-        f"/out:{bridge['exe']}", *[f"/reference:{path}" for path in references], str(bridge["source"]),
+        f"/out:{bridge['exe']}", *[f"/reference:{path}" for path in references], *map(str,sources),
     ]
     result = subprocess.run(command, capture_output=True, text=True, errors="replace", timeout=120, check=False)
     built = result.returncode == 0 and bridge["exe"].exists()
@@ -175,40 +179,46 @@ def run_runtime_bridge(
         return {"status": "PLCSIM_BRIDGE_BUILD_FAILED", "errors": list(build.get("errors", [])), "build": build}
 
     work_dir = _bridge_paths(root)["root"]
-    request_path = work_dir / "runtime_request.json"
-    result_path = work_dir / "runtime_result.json"
+    call_id=uuid.uuid4().hex
+    request_path = work_dir / ("request_"+call_id+".json")
+    result_path = work_dir / ("result_"+call_id+".json")
     request = {
         "action": action,
         "result_path": str(result_path),
         "api_dll_path": runtime_config["api_dll_path"],
         "instance_name": runtime_config["instance_name"],
+        **({"instance_id": runtime_config["instance_id"]} if runtime_config.get("instance_id") is not None else {}),
         "windows_adapter_match": runtime_config["windows_adapter_match"],
         **(extra or {}),
     }
+    request['result_path']=str(result_path)  # A caller cannot share another call's result file.
     request_path.write_text(json.dumps(request, indent=2, ensure_ascii=False), encoding="utf-8")
-    if result_path.exists():
-        result_path.unlink()
     try:
-        completed = subprocess.run(
-            [build["exe_path"], str(request_path)],
-            capture_output=True, text=True, errors="replace",
-            timeout=timeout_seconds or runtime_config["timeout_seconds"], check=False, env=os.environ.copy(),
-        )
-    except subprocess.TimeoutExpired:
-        return {
-            "status": "PLCSIM_RUNTIME_TIMEOUT",
-            "errors": [f"La Runtime API no respondio en {timeout_seconds or runtime_config['timeout_seconds']} s."],
-        }
-    raw: dict[str, Any] = {}
-    if result_path.exists():
-        payload = load_json_file(result_path)
-        if isinstance(payload, dict):
-            raw = payload
-    if not raw:
-        raw = {"status": STATUS_RUNTIME_ERROR, "errors": ["El bridge PLCSIM Runtime no produjo resultado."]}
-    raw["bridge_return_code"] = completed.returncode
-    raw["bridge_stderr"] = completed.stderr.strip()
-    return raw
+        try:
+            completed = subprocess.run(
+                [build["exe_path"], str(request_path)],
+                capture_output=True, text=True, errors="replace",
+                timeout=timeout_seconds or runtime_config["timeout_seconds"], check=False, env=os.environ.copy(),
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "PLCSIM_RUNTIME_TIMEOUT",
+                "errors": [f"La Runtime API no respondio en {timeout_seconds or runtime_config['timeout_seconds']} s."],
+            }
+        raw: dict[str, Any] = {}
+        if result_path.exists():
+            payload = load_json_file(result_path)
+            if isinstance(payload, dict):
+                raw = payload
+        if not raw:
+            raw = {"status": STATUS_RUNTIME_ERROR, "errors": ["El bridge PLCSIM Runtime no produjo resultado."]}
+        raw["bridge_return_code"] = completed.returncode
+        raw["bridge_stderr"] = completed.stderr.strip()
+        return raw
+    finally:
+        # Per-attempt PID evidence is kept by its owner; health polling must not accumulate files.
+        request_path.unlink(missing_ok=True)
+        result_path.unlink(missing_ok=True)
 
 
 def _load_tia_config(project_root: Path) -> dict[str, Any]:
@@ -323,6 +333,7 @@ def evaluate_runtime_report(
         "duration_ms": duration_ms,
         "connected": connected,
         "instance_name": runtime_config["instance_name"],
+        **({"instance_id": instance["id"]} if instance and instance.get("id") is not None else {}),
         "instance_found": bool(raw.get("instance_found")),
         "registered_instances": list(raw.get("registered_instances") or []),
         "cpu_state": cpu_state,
@@ -426,16 +437,46 @@ def apply_runtime_confirmation(package_dir: Path | None, runtime_report: dict[st
     return confirmed
 
 
-def get_plcsim_runtime_status(project_root: Path | None = None, action: str = ACTION_RUNTIME_STATUS) -> dict[str, Any]:
+def resolve_instance(instances: list[dict], target: dict) -> dict:
+    name=str(target.get('instance_name') or '').strip().casefold()
+    matches=[item for item in instances if name and str(item.get('instance_name') or '').strip().casefold()==name
+             and (target.get('instance_id') is None or item.get('instance_id')==target['instance_id'])]
+    if len(matches)!=1:raise ValueError('La instancia seleccionada no existe o su identidad es ambigua; vuelva a buscar.')
+    return copy.deepcopy(matches[0])
+
+
+def list_plcsim_instances(root: Path) -> dict:
+    report=run_runtime_bridge('list_instances',root)
+    instances=[]
+    for item in report.get('instances') or []:
+        row=copy.deepcopy(item);details=row.get('instance') or {}
+        row['cpu_state']=details.get('operating_state')
+        row['addresses']=[suite['ip'] for suite in details.get('ip_suites') or [] if suite.get('ip') and suite['ip']!='0.0.0.0']
+        row['cpu_name']=details.get('controller_name')
+        row['cpu_type']=details.get('controller_short_designation')
+        instances.append(row)
+    return {**report,'instances':instances,'errors':report.get('errors') or []}
+
+
+def get_plcsim_runtime_status(project_root: Path | None = None, action: str = ACTION_RUNTIME_STATUS, *, target: dict | None = None) -> dict[str, Any]:
     """Punto de entrada (bloqueante: la GUI lo llama desde un hilo de trabajo)."""
     root = project_root or get_project_root()
     tia_config = _load_tia_config(root)
     runtime_config = load_runtime_config(tia_config)
+    if target is not None:
+        if not target.get('instance_name'):raise ValueError('Seleccione una instancia virtual.')
+        runtime_config.update({key:target[key] for key in ('instance_name','instance_id') if key in target})
+        if 'instance_id' not in target:runtime_config.pop('instance_id',None)
+        tia_config=copy.deepcopy(tia_config)
+        tia_config.setdefault('download_targets',{})['normal']=copy.deepcopy(target)
     started = time.perf_counter()
     raw = run_runtime_bridge(action, root, runtime_config)
     duration_ms = int(round((time.perf_counter() - started) * 1000))
     report = evaluate_runtime_report(raw, tia_config, runtime_config, duration_ms)
-    write_runtime_report(_bridge_paths(root)["root"], report)
+    if target is None:write_runtime_report(_bridge_paths(root)["root"], report)
+    else:
+        from plc_targets import target_identity
+        report['target_identity']=target_identity(target)
     return report
 
 

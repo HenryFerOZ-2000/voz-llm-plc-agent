@@ -49,6 +49,25 @@ def _sample_map():
     }
 
 
+def test_named_digital_assignment_uses_compatible_free_channel_without_mutating_map():
+    import copy
+    source=_sample_map();before=copy.deepcopy(source)
+    result=propose_assignment(source,[{'name':'Q_Sensor_Alarm','class':'output','type':'BOOL'}])
+    assert len(result)==1 and result[0]['blocked'] is False
+    assert result[0]['proposed_name']=='Q_Sensor_Alarm' and result[0]['address']=='%QX8.0'
+    assert source==before
+
+
+@pytest.mark.parametrize('assignment',[
+    {'name':'Q_Sensor_Alarm','class':'input','type':'BOOL'},
+    {'name':'Q_Sensor_Alarm','class':'output','type':'REAL'},
+    {'name':'Level_PV','class':'internal','type':'REAL'},
+])
+def test_named_assignment_cannot_change_resource_kind_or_allocate_analog_as_bool(assignment):
+    result=propose_assignment(_sample_map(),[assignment])
+    assert result[0]['blocked'] is True and result[0]['address'] is None
+
+
 # ---------- 6. Address normalization ----------
 
 @pytest.mark.parametrize("raw,expected", [

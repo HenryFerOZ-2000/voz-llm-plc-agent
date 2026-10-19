@@ -41,6 +41,7 @@ from trial_experiments import tia_classification as TC
 from trial_experiments import system_resources as SR
 from trial_experiments import tia_workspace as TW
 from trial_experiments import trial_model
+from trial_experiments import product_contract as PC
 
 # ---------------------------------------------------------------------------------------------
 # Constantes
@@ -155,7 +156,10 @@ def _present_process_variable_artifacts(trial_dir: Path) -> tuple[str, ...]:
 def build_integrity_manifest(project_root: Path, trial_dir: Path, record: dict[str, Any]) -> dict[str, Any]:
     oracle = S.find_case_oracle(project_root, record["case_id"])
     oracle_ref = S.oracle_reference(oracle) if oracle else {"oracle_id": None, "oracle_version": None, "oracle_hash": None}
+    product = _read_json(trial_dir / PC.CONTRACT_FILE) if (trial_dir / PC.CONTRACT_FILE).is_file() else None
+    additional = (PC.CONTRACT_FILE, *product['files']) if product else ()
     return {
+        **({'product_engine': record['product_engine']} if product else {}),
         "schema_version": 1,
         "trial_id": record["trial_id"],
         "generated_at": _now(),
@@ -173,11 +177,12 @@ def build_integrity_manifest(project_root: Path, trial_dir: Path, record: dict[s
         # Audio (VOICE_CLEAN / VOICE_NOISE): evidencia experimental congelada junto al resto.
         # process_variable_bindings.json (P01-P12): variables internas congeladas para el Oracle.
         "files": {name: sha256_file(trial_dir / name) for name in
-                  FROZEN_ARTIFACTS + _present_audio_artifacts(trial_dir) + _present_process_variable_artifacts(trial_dir)},
+                  FROZEN_ARTIFACTS + _present_audio_artifacts(trial_dir) + _present_process_variable_artifacts(trial_dir) + additional},
     }
 
 
-def finalize_generation(project_root: Path, trial_dir: Path, package_dir: Path | None) -> dict[str, Any]:
+def finalize_generation(project_root: Path, trial_dir: Path, package_dir: Path | None, *,
+                        native_protocol: dict | None = None, plant_profile: dict | None = None) -> dict[str, Any]:
     """
     Cierra GENERAR ENSAYO: copia program.scl/variables.json del paquete, escribe
     generation_report.json e integrity_manifest.json y deja evaluation = PENDING. Si la generacion
@@ -199,6 +204,14 @@ def finalize_generation(project_root: Path, trial_dir: Path, package_dir: Path |
     missing = [name for name in FROZEN_ARTIFACTS if not (trial_dir / name).exists()]
     if missing:
         errors.append("Faltan artefactos congelables: " + ", ".join(missing))
+    product = None
+    if not errors:
+        try:
+            product = PC.freeze_product_contract(trial_dir, package_dir, record,
+                native_protocol=native_protocol, plant_profile=plant_profile)
+        except (ValueError, OSError, TypeError, KeyError) as exc:
+            errors.append(f"PRODUCT_CONTRACT: {exc}")
+    if errors:
         trial_model.update_trial(trial_dir, {"failure_stage": "generate"})
         trial_model.finalize_trial(trial_dir, trial_model.FINAL_STATUS_FAIL, errors)
         record = trial_model.load_trial(trial_dir)
@@ -221,6 +234,7 @@ def finalize_generation(project_root: Path, trial_dir: Path, package_dir: Path |
         "timing": record.get("timing"),
         "model": record.get("model"),
         "parser_mode": record.get("parser_mode"),
+        **({'product_engine': record['product_engine'], 'package_kind': product['package_kind']} if product else {}),
         "note": "Generacion sin TIA/PLCSIM/Oracle. La evaluacion se hace despues sobre estos artefactos congelados.",
     })
     manifest = build_integrity_manifest(project_root, trial_dir, record)
@@ -230,7 +244,8 @@ def finalize_generation(project_root: Path, trial_dir: Path, package_dir: Path |
         "lifecycle_state": STATE_EVALUATION_PENDING,
         "oracle_reference": {key: manifest["oracle"].get(key) for key in ("oracle_id", "oracle_version", "oracle_hash")},
         "generation": {"status": GENERATION_SUCCESS, "completed_at": manifest["generated_at"], "generated_code_id": generated_code_id},
-        "evaluation": {"status": EVALUATION_PENDING, "attempt": 0, "attempts": [], "final_verdict": None},
+        "evaluation": {"status": EVALUATION_PENDING, "attempt": 0, "attempts": [], "final_verdict": None,
+                       **({'capability': PC.evaluation_capability(product)} if product else {})},
     })
 
 
@@ -244,10 +259,20 @@ def verify_trial_integrity(trial_dir: Path) -> dict[str, Any]:
     errors = []
     for name, expected in (manifest.get("files") or {}).items():
         target = trial_dir / name
+        if target.resolve().parent != trial_dir.resolve():
+            errors.append(f"{ERROR_INTEGRITY}: ruta fuera del ensayo: {name}")
+            continue
         actual = sha256_file(target) if target.exists() else None
         if actual != expected:
             errors.append(f"{ERROR_INTEGRITY}: {name} {'falta' if actual is None else 'cambio'} desde la generacion.")
-    return {"ok": not errors, "code": ERROR_INTEGRITY if errors else None, "errors": errors, "manifest": manifest}
+    product = None
+    if not errors:
+        try:
+            product = PC.verify_product_contract(trial_dir, trial_model.load_trial(trial_dir), manifest)
+        except (ValueError, OSError, TypeError, KeyError) as exc:
+            errors.append(f"{ERROR_INTEGRITY}: {exc}")
+    return {"ok": not errors, "code": ERROR_INTEGRITY if errors else None, "errors": errors, "manifest": manifest,
+            'product_contract': product}
 
 
 # ---------------------------------------------------------------------------------------------
@@ -602,6 +627,129 @@ def run_bridge(
     return report
 
 
+def execute_isolated_trial_request(project_root: Path, request: dict, workspace: Path,
+                                   on_archived: Callable, *, bridge: Callable | None = None) -> dict:
+    """One guarded bridge boundary for frozen supervisor and native trial copies."""
+    import tia_projects
+    root, workspace = Path(project_root), Path(workspace).resolve()
+    if (request.get('action') != 'evaluate_trial' or request.get('target_type') != 'PLCSIM_ADVANCED'
+            or request.get('purpose') != 'experiment' or request.get('physical_download_allowed') is not False
+            or request.get('require_simulation') is not True):
+        raise ValueError('EXPERIMENT_TARGET_GUARD: solo copias experimentales y PLCSIM.')
+    master = load_master_config(root)
+    expected = Path((master.get('snapshot') or {}).get('archive_path') or '')
+    archive = Path(request.get('master_archive_path') or '')
+    if (not expected.is_file() or archive.resolve() != expected.resolve()
+            or sha256_file(archive) != (master.get('snapshot') or {}).get('archive_sha256')):
+        raise ValueError('EXPERIMENT_MASTER_GUARD: snapshot no coincide con el MASTER.')
+    protected = [Path(master['path']).resolve().parent]
+    normal = tia_projects.normal_project_path(root)
+    if normal:
+        protected.append(Path(normal).resolve().parent)
+    if any(workspace.is_relative_to(path) for path in protected):
+        raise ValueError('EXPERIMENT_PROJECT_GUARD: workspace dentro de proyecto protegido.')
+    working = Path(request.get('working_dir') or '').resolve()
+    if (not working.is_relative_to(workspace) or working == workspace
+            or Path(request.get('trial_archive_dir') or '').resolve() != workspace
+            or Path(request.get('handshake_dir') or '').resolve() != workspace):
+        raise ValueError('EXPERIMENT_PATH_GUARD: rutas fuera del workspace.')
+    def guarded_archived(info):
+        path = Path(info.get('archive_path') or '').resolve()
+        if not path.is_relative_to(workspace):
+            return {'download':False,'reason':'EXPERIMENT_ARCHIVE_GUARD'}
+        return on_archived(info)
+    return (bridge or run_bridge)(request, workspace, project_root=root, on_archived=guarded_archived)
+
+
+def run_frozen_native_development(project_root: Path, run_dir: Path, *, cancel=None) -> dict:
+    """Additional DEVELOPMENT protocol, never a replacement verdict for a Pxx Oracle."""
+    import tia_openness
+    import plcsim_runtime
+    from trial_experiments import native_pid_protocol as NP
+    root, directory = Path(project_root), Path(run_dir)
+    record = NP.verify_native_run(directory)
+    if record.get('status') != 'GENERATED':
+        raise ValueError('PID_NATIVE_RUN_NOT_PENDING: conservar el resultado anterior.')
+    if cancel is not None and cancel.is_set():
+        record['status']='CANCELLED';_write_json(directory/'native_run.json',record)
+        return {'status':'CANCELLED','native_execution_verified':False,'cleanup_verified':False}
+    environment = environment_precheck(root, trial_model.PHASE_DEVELOPMENT)
+    if not environment.get('ok'):
+        return {'status':'INFRASTRUCTURE_ERROR','errors':environment.get('errors',[]), 'native_execution_verified':False}
+    master = load_master_config(root); snapshot=master['snapshot']
+    target = tia_openness.resolve_download_target(tia_openness.load_tia_config(root),'experiment')
+    if target['target_type'] != 'PLCSIM_ADVANCED':
+        raise ValueError('EXPERIMENT_TARGET_GUARD: protocolo nativo solo en PLCSIM.')
+    before = master_folder_fingerprint(master['path'])
+    runtime = plcsim_runtime.get_plcsim_runtime_status(root)
+    if not runtime.get('connected'):
+        return {'status':'INFRASTRUCTURE_ERROR','errors':['PLCSIM no conectado.'],'native_execution_verified':False}
+    entry = TW.allocate(root,record['run_id'],1,directory)
+    workspace = Path(entry['path']); paths=TW.layout(workspace,entry['workspace_id'])
+    attempt_dir=directory/'evaluation/attempt_1';attempt_dir.mkdir(parents=True,exist_ok=False)
+    context_path=attempt_dir/'native_execution_context.json'
+    record['status']='EVALUATING'
+    record['evaluation']={'status':'RUNNING','attempts':[{'attempt':1,'workspace_id':entry['workspace_id'],
+        'context_path':str(context_path.resolve())}]}
+    _write_json(directory/'native_run.json',record)
+    result={'status':'INFRASTRUCTURE_ERROR','native_execution_verified':False,'cleanup_verified':False}
+    copied={}
+    try:
+        staged=NP.build_native_trial_request(directory,workspace,NP.verify_native_run(directory))
+        request={**staged,'action':'evaluate_trial','master_archive_path':snapshot['archive_path'],
+            'working_dir':str(paths['retrieve_dir']),'trial_archive_dir':str(paths['archive_dir']),
+            'trial_archive_name':str(paths['archive_name']),'handshake_dir':str(workspace),
+            'expected_project_name':master_internal_project_name(master),
+            'checkpoint_path':str(workspace/TW.CHECKPOINTS_FILENAME),'handshake_timeout_seconds':600,
+            'plc_name':str(tia_openness.load_tia_config(root).get('plc_name','')),'with_user_interface':False,
+            'tags':trial_tag_payload(_read_json(directory/'variables.json'),{}),'delete_blocks':[],
+            'download_after_archive':True,'purpose':'experiment','require_simulation':True,
+            **target,'physical_download_allowed':False}
+        def archived(info):
+            if Path(info.get('archive_path') or '').resolve()!=paths['archive_path'].resolve():
+                return {'download':False,'reason':'EXPERIMENT_ARCHIVE_GUARD'}
+            copied.update(TW.copy_archive_to_evidence(paths['archive_path'],attempt_dir/'compiled.zap18',info.get('archive_sha256')))
+            allowed=bool(copied.get('copied_ok')) and not (cancel and cancel.is_set())
+            return {'download':allowed,'reason':'EVIDENCE_VERIFIED' if allowed else 'NO_VERIFIED_EVIDENCE_OR_CANCELLED'}
+        raw=execute_isolated_trial_request(root,request,workspace,archived)
+        _write_json(attempt_dir/'compile_download_report.json',raw)
+        _write_json(attempt_dir/'archive_copy.json',copied)
+        if raw.get('status')=='TIA_COMPILATION_FAILED' and raw.get('error_count',0)>0:
+            result.update(status='FAILED',errors=raw.get('errors') or raw.get('compiler_messages',[]))
+        elif cancel and cancel.is_set():
+            result.update(status='CANCELLED')
+        elif (raw.get('status')!='TIA_COMPILATION_PASSED' or not copied.get('copied_ok')
+                or (raw.get('download') or {}).get('status')!='TIA_DOWNLOAD_PASSED'
+                or (raw.get('download') or {}).get('success',True) is not True):
+            result.update(errors=raw.get('errors') or (raw.get('download') or {}).get('errors')
+                          or ['No se confirmó compilación, archivo y descarga.'])
+        else:
+            context={'workspace_id':entry['workspace_id'],'workspace_path':str(workspace.resolve()),
+                'run_id':record['run_id'],'execution_package':staged['execution_package'],
+                'master_archive_path':snapshot['archive_path'],'master_archive_sha256':snapshot['archive_sha256'],
+                'evidence_archive_path':str((attempt_dir/'compiled.zap18').resolve()),
+                'evidence_archive_sha256':copied['evidence_hash'],'report':raw}
+            _write_json(context_path,context)
+            native=NP.evaluate_native_trial(root,directory,cancel=cancel)
+            record['native_validation']=native
+            proven=(native.get('status')=='PASSED' and native.get('native_execution_verified') is True
+                    and native.get('cleanup_verified') is True)
+            result.update(native,status='PASSED' if proven else 'FAILED')
+    except Exception as error:
+        result.update(status='INFRASTRUCTURE_ERROR',errors=[str(error)])
+    finally:
+        intact=(sha256_file(Path(snapshot['archive_path']))==snapshot['archive_sha256']
+                and master_folder_fingerprint(master['path'])==before)
+        result['master_unchanged']=intact
+        if not intact:result.update(status='INFRASTRUCTURE_ERROR',errors=['MASTER cambió durante el ensayo.'])
+        record['status']=result['status'];record['evaluation']['status']=result['status']
+        record['evaluation']['attempts'][-1]['result']=result
+        _write_json(directory/'native_run.json',record)
+        _write_json(attempt_dir/'result.json',result)
+        TW.update_entry(root,entry['workspace_id'],state=TW.STATE_KEPT)
+    return result
+
+
 def declared_blocks(program_scl: str) -> list[str]:
     return [match.group(2) for match in _BLOCK_DECLARATION.finditer(program_scl)]
 
@@ -615,6 +763,8 @@ def trial_tag_payload(variables: list[dict[str, Any]], snapshot: dict[str, Any])
 
     tags: dict[str, dict[str, str]] = {}
     for variable in variables or []:
+        if isinstance(variable,dict) and variable.get('tia_scope')=='PROCESS_DB_PORT':
+            continue  # Same contract as Normal: the cyclic OB wires these owned DB members.
         if isinstance(variable, dict) and variable.get("class") in ("input", "output"):
             name = str(variable.get("name"))
             tags[name] = {"name": name, "data_type": str(variable.get("siemens_type") or SIEMENS_TYPE_MAP.get(str(variable.get("type", "BOOL")).upper(), "Bool")),
@@ -691,6 +841,10 @@ def precheck(project_root: Path, trial_dir: Path, retry_reason: str | None = Non
         return {"ok": False, "integrity_failed": integrity["code"] == ERROR_INTEGRITY, "legacy": integrity["code"] == ERROR_LEGACY,
                 "errors": integrity["errors"], "warnings": [], "record": record}
     manifest = integrity["manifest"]
+    capability = PC.evaluation_capability(integrity.get('product_contract'))
+    if not capability['supported']:
+        return {'ok': False, 'errors': [capability['code'] + ': ' + capability['reason']],
+                'warnings': [], 'record': record, 'manifest': manifest, 'capability_gap': capability}
     generation = record.get("generation") or {}
     evaluation = record.get("evaluation") or {}
     if generation.get("status") != GENERATION_SUCCESS:
@@ -1004,6 +1158,8 @@ def _evaluate_trial(
     trial_dir = Path(trial_dir)
     check = precheck(project_root, trial_dir, retry_reason)
     if not check["ok"]:
+        if check.get('capability_gap'):
+            record_capability_gap(trial_dir, check['capability_gap'])
         if check.get("integrity_failed"):
             trial_model.update_trial(trial_dir, {
                 "lifecycle_state": STATE_INTEGRITY_FAILED,
@@ -1011,7 +1167,8 @@ def _evaluate_trial(
             })
         log("[DEFERRED] ABORT: " + " | ".join(check["errors"]))
         return {"aborted": True, "errors": check["errors"], "integrity_failed": check.get("integrity_failed"),
-                "legacy": check.get("legacy"), "path_validation": check.get("path_validation")}
+                "legacy": check.get("legacy"), "path_validation": check.get("path_validation"),
+                'capability_gap': check.get('capability_gap')}
 
     record, manifest, master = check["record"], check["manifest"], check["master"]
     evaluation = record.get("evaluation") or {}
@@ -1122,7 +1279,7 @@ def _evaluate_trial(
     context["phase"] = "tia_bridge"
     if path_validation["ok"] and source_ok:
         tia_started = time.perf_counter()
-        raw = (bridge or run_bridge)(request, workspace_path, project_root=project_root, on_archived=_on_archived)
+        raw = execute_isolated_trial_request(project_root, request, workspace_path, _on_archived, bridge=bridge)
         tia_ms = int(round((time.perf_counter() - tia_started) * 1000))
     else:
         raw = {"status": "TIA_NOT_CALLED", "errors": list(errors)}
@@ -1463,6 +1620,14 @@ def _final_verdict(record: dict[str, Any]) -> str | None:
     return None if final in (None, "", trial_model.FINAL_STATUS_PREPARED) else str(final)
 
 
+def record_capability_gap(trial_dir: Path, capability: dict) -> dict:
+    """Keep generation and verdict untouched; no evaluation attempt is consumed."""
+    record = trial_model.load_trial(trial_dir)
+    if (record.get('generation') or {}).get('status') == GENERATION_SUCCESS and not _final_verdict(record):
+        return trial_model.update_trial(trial_dir, {'evaluation': {'capability': capability}})
+    return record
+
+
 def trial_status_label(record: dict[str, Any]) -> str:
     """Estado del ensayo para encabezados y listas, siempre desde lo persistido (nunca un estado visual previo)."""
     evaluation = record.get("evaluation") or {}
@@ -1474,6 +1639,8 @@ def trial_status_label(record: dict[str, Any]) -> str:
         return trial_model.FINAL_STATUS_INFRASTRUCTURE_ERROR
     if final:
         return f"{final} / COMPLETADO"
+    if (evaluation.get('capability') or {}).get('code') == PC.NATIVE_EVALUATION_UNSUPPORTED:
+        return PC.NATIVE_PENDING_LABEL
     if status == EVALUATION_PENDING:
         return STATUS_PENDING_LABEL
     return str(status or "LEGACY")

@@ -41,6 +41,8 @@ def _fold(node: tuple) -> Any:
 
 def _render(node: tuple) -> str:
     kind = node[0]
+    if kind == "conversion":
+        return f"{node[1]}({_render(node[2])})"
     if kind == "const":
         return str(node[1]).upper() if isinstance(node[1], bool) else str(node[1])
     if kind == "var":
@@ -83,6 +85,10 @@ def _walk(body: list[tuple], conditional: bool, writers: dict[str, list[dict[str
 
 def analyze_composition(source: str) -> dict[str, Any]:
     """{valid, writers: {variable: [...]}, conflicts: [...], errors: [...]} para un programa SCL generado."""
+    if 'NATIVE_PID_BEGIN' in source:
+        return {'valid':True,'analyzed':False,'writers':{},'conflicts':[], 'errors':[],
+                'native_execution_status':'PENDING',
+                'warnings':['PID_NATIVE_EXECUTION_PENDING: el interprete offline no ejecuta PID_Compact.']}
     try:
         program = parse_program(source)
     except SclSimError as error:

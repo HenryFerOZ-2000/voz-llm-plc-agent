@@ -26,6 +26,7 @@ from typing import Any
 from functional_requirements import (
     classify_functional_requirement,
     CLASS_UNSUPPORTED,
+    PID_PROCESS_VARIABLES,
 )
 
 FUNCTIONAL_RESOURCE_UNRESOLVED = "FUNCTIONAL_RESOURCE_UNRESOLVED"
@@ -50,10 +51,18 @@ _KIND_WORDS: dict[str, set[str]] = {
 }
 _REFERENCE_NAME_KEYS = ("name", "tag")
 _REFERENCE_KEYS = {"name", "tag", "role", "actor", "kind", "direction", "data_type", "description"}
-_CONDITION_KEYS = ("mode_condition", "enable_condition", "start_condition")
+_CONDITION_KEYS = ("mode_condition", "enable_condition", "start_condition", "run_condition", "condition",
+                   "advance_on", "transition_condition", "until", "set", "reset", "count_condition")
 _IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-_TAG = re.compile(r"^(?:AI|AO|[IQMTCFR])_[A-Za-z0-9_]+$")
+_SIGNAL_NAME = r"(?:(?:AI|AO|[IQMTCFR])_[A-Za-z0-9_]+|" + "|".join(
+    re.escape(name) for name in PID_PROCESS_VARIABLES
+) + r")"
+_TAG = re.compile(r"^" + _SIGNAL_NAME + r"$")
 _EXPRESSION_KEYWORDS = {"AND", "OR", "NOT", "XOR", "TRUE", "FALSE"}
+_COMPARISON_OPERATORS = ("<=", ">=", "<>", "<", ">", "=")
+_CONDITION_TOKEN = re.compile(r"<=|>=|<>|<|>|=|[()]|-?\d+(?:\.\d+)?|[A-Za-z_][A-Za-z0-9_]*")
+_NUMBER = re.compile(r"^-?\d+(?:\.\d+)?$")
+_OPERAND = re.compile(r"^(?:-?\d+(?:\.\d+)?|" + _SIGNAL_NAME + r")$")
 
 
 def _ascii_tokens(text: Any) -> list[str]:
@@ -107,23 +116,38 @@ def canonical_functional_tag(role: Any = None, actor: Any = None, kind: Any = No
 
 def condition_identifiers(expression: Any) -> list[str] | None:
     """
-    Tags de una condicion booleana simple ("I_Start AND M_AutoMode"). None si la expresion usa algo
-    que no sea tags, AND/OR/NOT/XOR/TRUE/FALSE o parentesis (nunca se ejecuta texto libre).
+    Tags de una condicion booleana simple ("I_Start AND M_AutoMode", "AI_Temp > 80"). None si la
+    expresion usa algo que no sea tags, AND/OR/NOT/XOR/TRUE/FALSE, parentesis o una comparacion
+    tag-numero (<, >, <=, >=, =, <>) - nunca se ejecuta texto libre.
     """
-    text = str(expression or "").strip()
+    text = str(expression or "").replace("==", "=").replace("!=", "<>").strip()
     if not text:
         return []
-    if re.sub(r"[A-Za-z0-9_()\s]", "", text):
+    tokens = _CONDITION_TOKEN.findall(text)
+    if "".join(tokens) != re.sub(r"\s+", "", text):
         return None
     tags: list[str] = []
-    for identifier in _IDENTIFIER.findall(text):
-        if identifier.upper() in _EXPRESSION_KEYWORDS:
+    for position, token in enumerate(tokens):
+        if token in _COMPARISON_OPERATORS:
+            # una comparacion solo entre un operando (tag o numero) a cada lado
+            before = tokens[position - 1] if position else ""
+            after = tokens[position + 1] if position + 1 < len(tokens) else ""
+            if not (_OPERAND.match(before) and _OPERAND.match(after)):
+                return None
             continue
-        if not _TAG.match(identifier):
+        if token in "()" or _NUMBER.match(token) or token.upper() in _EXPRESSION_KEYWORDS:
+            continue
+        if not _TAG.match(token):
             return None
-        if identifier not in tags:
-            tags.append(identifier)
+        if token not in tags:
+            tags.append(token)
     return tags
+
+
+def normalize_condition(expression: Any) -> str:
+    """Forma SCL canonica: espacios simples y '=='/'!=' de lenguaje de programacion -> '='/'<>'."""
+    text = str(expression or "").replace("==", "=").replace("!=", "<>")
+    return " ".join(" ".join(_CONDITION_TOKEN.findall(text)).split()).replace("( ", "(").replace(" )", ")")
 
 
 def _error(code: str, path: str, requirement_type: str, message: str, **details: Any) -> dict[str, Any]:
@@ -184,6 +208,12 @@ class _Resolver:
             result = {}
             for key, item in value.items():
                 child_path = f"{path}.{key}"
+                if key == 'analog_outputs' and isinstance(item, list):
+                    # Stage commands are objects containing an output reference AND a numeric value.
+                    # Treating each whole object as a resource drops the value/unit or invents a name.
+                    result[key] = [self.walk(command, f'{child_path}[{i}]', requirement_type)
+                                   for i, command in enumerate(item)]
+                    continue
                 if key in _CONDITION_KEYS and isinstance(item, str):
                     tags = condition_identifiers(item)
                     for tag in tags or []:

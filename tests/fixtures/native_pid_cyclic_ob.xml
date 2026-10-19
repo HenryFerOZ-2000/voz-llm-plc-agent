@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Document xmlns:ns0="http://www.siemens.com/automation/Openness/SW/Interface/v5" xmlns:ns1="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v3">
+  <Engineering version="V18" />
+  <SW.Blocks.OB ID="0">
+    <AttributeList>
+      <AutoNumber>true</AutoNumber>
+      <HeaderAuthor />
+      <HeaderFamily />
+      <HeaderName />
+      <HeaderVersion>0.1</HeaderVersion>
+      <Interface><ns0:Sections>
+  <ns0:Section Name="Input">
+    <ns0:Member Name="Initial_Call" Datatype="Bool" Accessibility="Public" Informative="true">
+      <ns0:Comment>
+        <ns0:MultiLanguageText Lang="en-US">Initial call of this OB</ns0:MultiLanguageText>
+      </ns0:Comment>
+    </ns0:Member>
+    <ns0:Member Name="Event_Count" Datatype="Int" Accessibility="Public" Informative="true">
+      <ns0:Comment>
+        <ns0:MultiLanguageText Lang="en-US">Events discarded</ns0:MultiLanguageText>
+      </ns0:Comment>
+    </ns0:Member>
+  </ns0:Section>
+  <ns0:Section Name="Temp" />
+  <ns0:Section Name="Constant" />
+</ns0:Sections></Interface>
+      <IsIECCheckEnabled>false</IsIECCheckEnabled>
+      <MemoryLayout>Optimized</MemoryLayout>
+      <Name>OB30</Name>
+      <Namespace />
+      <Number>30</Number>
+      <ProgrammingLanguage>SCL</ProgrammingLanguage>
+      <SecondaryType>CyclicInterrupt</SecondaryType>
+      <SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><ns1:StructuredText>
+  <ns1:NewLine Num="1" UId="21" />
+</ns1:StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="4" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="5" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="6" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="7" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <MultilingualText ID="8" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.OB>
+</Document>

@@ -1,0 +1,79 @@
+{
+  "intent_id": "INT_UNKNOWN",
+  "case_id": null,
+  "command_text": "Al pulsar Start, habilita el control de llenado. Cuando el nivel baje al 30 %, abre la válvula al 100 %. Cuando alcance el 80 %, ciérrala. Entre ambos límites conserva su estado. Stop o la emergencia deben cerrar la válvula y deshabilitar el control hasta una nueva pulsación de Start.",
+  "normalized_command": "al pulsar start, habilita el control de llenado; abre la válvula al 100 % cuando el nivel baje al 30 % y ciérrala al alcanzar el 80 %, conservando su estado entre límites; stop o emergencia cierran la válvula y deshabilitan el control hasta un nuevo start",
+  "parameters": {
+    "control_enable_latch": "M_Fill_Control_Enabled"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: AI_Level_Raw se utiliza en unidades de ingeniería porcentuales según su configuración analógica confirmada.",
+    "INFERRED: El valor seguro de cierre de AO_Fill_Command es 0 %, conforme a su configuración analógica."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Stop",
+    "I_Emergency",
+    "AI_Level_Raw",
+    "AO_Fill_Command"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "latch",
+      "set": "I_Start",
+      "reset": "I_Stop OR I_Emergency",
+      "outputs": [
+        "M_Fill_Control_Enabled"
+      ]
+    },
+    {
+      "type": "hysteresis_switch",
+      "input": "AI_Level_Raw",
+      "output": "AO_Fill_Command",
+      "on_below": 30.0,
+      "off_above": 80.0,
+      "unit": "%",
+      "enable_condition": "M_Fill_Control_Enabled",
+      "on_value": 100.0,
+      "off_value": 0.0,
+      "output_unit": "%"
+    },
+    {
+      "type": "force_off",
+      "condition": "I_Stop OR I_Emergency",
+      "outputs": [
+        "AO_Fill_Command"
+      ]
+    },
+    {
+      "type": "emergency_priority",
+      "target": "AO_Fill_Command"
+    }
+  ],
+  "operation_type": "HYSTERESIS",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "control_enable_latch": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "NOT_APPLICABLE",
+    "intent_id": "INT_UNKNOWN",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "control_enable_latch": "M_Fill_Control_Enabled"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  }
+}

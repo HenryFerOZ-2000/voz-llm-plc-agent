@@ -38,7 +38,7 @@ FROZEN_DIRS = ("src", "prompts", "schemas", "knowledge_base", "config", "data", 
                "tia_openness_bridge", "scripts")
 FROZEN_ROOT_FILES = ("requirements.txt", "requirements-transfer.txt", "Abrir_Voz_LLM_PLC_Agent.pyw",
                      "Abrir_Voz_LLM_PLC_Agent.bat")
-FROZEN_SUFFIXES = (".py", ".cs", ".json", ".txt", ".md", ".pyw", ".bat")
+FROZEN_SUFFIXES = (".py", ".cs", ".json", ".txt", ".md", ".pyw", ".bat", ".xml")
 # Informes DERIVADOS que la aplicacion regenera (no se ejecutan ni definen la evaluacion): fuera del congelado.
 DERIVED_EXCLUDED = {
     "data/preformal_readiness_report.json", "data/oracle_validation_report.json", "data/system_capability_gaps.json",
@@ -54,11 +54,18 @@ GROUPS = {
             "src/effective_semantics.py", "src/knowledge_retriever.py"],
     "generation": ["src/functional_requirements.py", "src/functional_resources.py", "src/ir_builder.py", "src/plc_ir.py",
                    "src/code_generator.py", "src/verifier.py", "src/composition_check.py", "src/project_packager.py",
-                   "src/platforms/siemens_scl_adapter.py", "src/io_allocator.py"],
+                   "src/platforms/siemens_scl_adapter.py", "src/io_allocator.py", "src/pid_control.py", "src/pid_scl.py",
+                   "src/pid_package.py", "src/pid_tia_contract.py", "config/native_pid_defaults.json",
+                   "config/native_pid_v18_capabilities.json", "config/native_pid_cyclic_ob.xml",
+                   "src/process_signals.py", "config/native_pid_map_defaults.json"],
+    "plant_test": ["src/pid_tank_model.py", "src/pid_plant_test.py", "src/pid_native_validation.py",
+                   "src/pid_plant_io.py", "plcsim_runtime_bridge/PidPlantSession.cs", "config/pid_tank_test_profile.json"],
     "runtime": ["plcsim_runtime_bridge/Program.cs", "tia_openness_bridge/Program.cs", "src/plcsim_runtime.py",
                 "src/plcsim_runtime_io.py", "src/tia_openness.py", "src/tia_projects.py",
                 "src/trial_experiments/oracle_runner.py", "src/trial_experiments/process_variables.py",
-                "src/trial_experiments/deferred_evaluator.py", "src/trial_experiments/oracle_schema.py"],
+                "src/trial_experiments/deferred_evaluator.py", "src/trial_experiments/oracle_schema.py",
+                "tia_openness_bridge/PidControlSupport.cs", "src/pid_commissioning.py", "src/pid_commissioning_view.py",
+                "src/pid_acceptance.py", "scripts/validate_native_pid.py"],
     "maps": ["data/plc_maps/mapa_banco_fisico_base.json", "data/plc_maps/mapa_experimental_simulacion.json",
              "config/experiment_maps.json"],
     "config": ["config/pid_supervisor_config.json"],

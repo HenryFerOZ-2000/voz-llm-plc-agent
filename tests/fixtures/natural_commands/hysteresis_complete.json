@@ -1,0 +1,50 @@
+{
+  "intent_id": "INT_UNKNOWN",
+  "case_id": null,
+  "command_text": "Al presionar Start, habilita el control del tanque. Activa la salida principal cuando el nivel baje del 30 % y apágala al llegar al 80 %. Entre ambos niveles conserva su estado. Stop o la emergencia deben apagarla y deshabilitar el control hasta otro Start.",
+  "normalized_command": "al presionar start se habilita el control del tanque; la salida principal se activa por debajo de 30 % de nivel y se apaga al alcanzar 80 %, conservando su estado entre ambos umbrales; stop o emergencia apagan la salida y deshabilitan el control hasta un nuevo start",
+  "parameters": {},
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "La salida principal se representa como el nuevo recurso funcional digital Q_Tank_Main_Output; no se reutiliza AO_Fill_Command porque el comando solicita una activación/desactivación binaria, no una orden analógica proporcional.",
+    "I_Stop e I_Emergency reinician la habilitación enclavada del control, por lo que liberar Stop o emergencia no produce autoarranque."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Stop",
+    "I_Emergency",
+    "AI_Level_Raw",
+    "Q_Tank_Main_Output"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "latch",
+      "set": "I_Start",
+      "reset": "I_Stop OR I_Emergency",
+      "outputs": [
+        "M_TankControlEnabled"
+      ]
+    },
+    {
+      "type": "hysteresis_switch",
+      "input": "AI_Level_Raw",
+      "output": "Q_Tank_Main_Output",
+      "on_below": 30.0,
+      "off_above": 80.0,
+      "unit": "%"
+    },
+    {
+      "type": "force_off",
+      "condition": "I_Stop OR I_Emergency OR NOT M_TankControlEnabled",
+      "outputs": [
+        "Q_Tank_Main_Output"
+      ]
+    }
+  ],
+  "operation_type": "HYSTERESIS",
+  "requested_io_assignments": []
+}

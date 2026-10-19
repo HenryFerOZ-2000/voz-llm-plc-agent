@@ -95,9 +95,9 @@ def test_execute_and_load_compiles_and_downloads_with_the_same_pipeline(normal):
     text_kwargs = state["parsed"][-1]
     _execute_and_load(app)
     load_kwargs = state["parsed"][-1]
-    # misma llamada semantica que EJECUTAR COMANDO (mismas claves, modo y perfil Normal)
+    # Same product facade; its semantic profile is fixed inside the shared engine.
     assert sorted(load_kwargs) == sorted(text_kwargs)
-    assert load_kwargs["mode"] == text_kwargs["mode"] and load_kwargs["interaction_profile"] == text_kwargs["interaction_profile"] == "normal"
+    assert load_kwargs["mode"] == text_kwargs["mode"] and "interaction_profile" not in load_kwargs
     assert len(pipeline["download_calls"]) == 1 and pipeline["download_calls"][0]["purpose"] == tia_openness.DOWNLOAD_PURPOSE_NORMAL
     result = app.last_normal_voice_result
     assert result["final"] == normal_voice.FINAL_LOADED and result["source"] == normal_voice.SOURCE_TEXT
@@ -231,8 +231,8 @@ def test_execute_and_load_is_only_for_normal_mode(normal):
 
 def test_gui_shows_the_four_normal_actions(normal):
     app = normal["app"]
-    assert app.execute_command_button.cget("text").startswith("EJECUTAR COMANDO")
-    assert "Generar y compilar" in app.execute_command_button.cget("text")
+    assert app.execute_command_button.cget("text")=="GENERAR Y COMPILAR"
+    assert "GENERAR Y COMPILAR" in app.execute_command_button.cget("text")
     assert app.execute_and_load_button.cget("text").startswith("EJECUTAR Y CARGAR AL PLC")
     assert "CAPTURAR Y EJECUTAR POR VOZ" in app.normal_voice_button.cget("text")
     assert app.download_plc_button.cget("text") == "CARGAR PROGRAMA AL PLC"

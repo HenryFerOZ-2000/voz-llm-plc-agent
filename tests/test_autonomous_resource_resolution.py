@@ -255,10 +255,14 @@ def test_reported_command_no_longer_asks_for_clarification(app, temp_map, monkey
 def test_reported_command_resolves_two_distinct_motor_outputs_and_inputs(app, temp_map, monkeypatch):
     monkeypatch.setattr(gui, "parse_command", lambda command_text, **kwargs: _simulated_llm_output_for_reported_command(_current_io_map(temp_map)))
 
+    before = json.loads(temp_map.read_text(encoding="utf-8"))
     app.command_textbox.insert("1.0", REPORTED_COMMAND)
     app.process_command()
 
-    saved = json.loads(temp_map.read_text(encoding="utf-8"))
+    # Asignacion PROVISIONAL (Modo Normal transaccional): el archivo no cambia hasta el commit.
+    identity = lambda io_map: [(v["location"], v["name"], v["state"]) for v in io_map["variables"]]  # noqa: E731
+    assert identity(json.loads(temp_map.read_text(encoding="utf-8"))) == identity(before)
+    saved = app._pending_map_transaction["map"]
     names_by_address = {v["location"]: v["name"] for v in saved["variables"]}
     # I_Start/I_Stop bloqueados: exactamente iguales.
     assert names_by_address["%IX16.0"] == "I_Start"

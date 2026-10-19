@@ -1,0 +1,40 @@
+{
+  "intent_id": "INT_MANUAL_AUTO_MODE",
+  "case_id": null,
+  "command_text": "El sistema de nivel debe pasar a modo automático solo cuando el operador seleccione Automático.",
+  "normalized_command": "el sistema de nivel debe estar en modo automático únicamente mientras el operador seleccione automático",
+  "parameters": {
+    "auto_input": "I_Mode_Auto",
+    "emergency_input": "I_Emergency",
+    "manual_mode_memory": "M_ManualMode",
+    "auto_mode_memory": "M_AutoMode"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "Se propone I_Mode_Auto como nueva entrada funcional para el selector del operador: TRUE selecciona modo Automático y FALSE selecciona modo Manual.",
+    "La selección de modo no ordena el arranque, la bomba ni modifica la regulación de nivel."
+  ],
+  "recognized_tags": [
+    "I_Mode_Auto",
+    "I_Emergency",
+    "M_ManualMode",
+    "M_AutoMode"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "automatic_mode",
+      "mode_input": "I_Mode_Auto"
+    },
+    {
+      "type": "manual_mode",
+      "mode_input": "I_Mode_Auto",
+      "commands": []
+    }
+  ],
+  "operation_type": "mode_selection",
+  "requested_io_assignments": []
+}

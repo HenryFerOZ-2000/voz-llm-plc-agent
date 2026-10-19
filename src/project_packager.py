@@ -269,6 +269,7 @@ def _build_generation_metadata(
         "retrieved_context_count": len(retrieved_context),
         "transcription": transcription_payload or {},
         "generation_mode": "CONTROLLED_DETERMINISTIC_POU",
+        **({"product_engine": semantic_output["product_engine"]} if semantic_output.get("product_engine") else {}),
         **_status_payload(verification_ok=None)
     }
 

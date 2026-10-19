@@ -1,0 +1,67 @@
+{
+  "intent_id": "INT_UNKNOWN",
+  "case_id": null,
+  "command_text": "Al presionar Start, habilita el control del tanque. Activa la salida principal cuando el nivel baje del 30 % y apágala al llegar al 80 %. Entre ambos niveles conserva su estado. Stop o la emergencia deben apagarla y deshabilitar el control hasta otro Start.",
+  "normalized_command": "al presionar start, habilita el control del tanque; activa la salida principal cuando el nivel baje del 30 % y apágala al llegar al 80 %; entre ambos niveles conserva su estado; stop o la emergencia deben apagarla y deshabilitar el control hasta otro start",
+  "parameters": {},
+  "confidence": 0.97,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: La salida principal solicitada es una salida digital de llenado, denominada Q_Tank_Main_Output.",
+    "INFERRED: AI_Level_Raw se interpreta en la unidad de ingeniería configurada (%) para evaluar los umbrales de 30 % y 80 %.",
+    "INFERRED: Start enclava la habilitación del control; Stop o I_Emergency la reinician y requieren una nueva pulsación de Start.",
+    "INFERRED: La emergencia tiene prioridad sobre el control y no permite autoarranque al liberarse."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Stop",
+    "I_Emergency",
+    "AI_Level_Raw",
+    "Q_Tank_Main_Output"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "latch",
+      "set": "I_Start",
+      "reset": "I_Stop OR I_Emergency",
+      "outputs": [
+        "Q_Tank_Control_Enable"
+      ]
+    },
+    {
+      "type": "hysteresis_switch",
+      "input": "AI_Level_Raw",
+      "output": "Q_Tank_Main_Output",
+      "on_below": 30.0,
+      "off_above": 80.0,
+      "unit": "%",
+      "enable_condition": "Q_Tank_Control_Enable AND NOT I_Emergency"
+    },
+    {
+      "type": "force_off",
+      "condition": "I_Stop OR I_Emergency",
+      "outputs": [
+        "Q_Tank_Main_Output",
+        "Q_Tank_Control_Enable"
+      ]
+    }
+  ],
+  "operation_type": "HYSTERESIS",
+  "requested_io_assignments": [
+    {
+      "name": "Q_Tank_Main_Output",
+      "class": "output",
+      "type": "BOOL",
+      "functional_role": "Salida principal de llenado del tanque"
+    },
+    {
+      "name": "Q_Tank_Control_Enable",
+      "class": "output",
+      "type": "BOOL",
+      "functional_role": "Indicador o habilitación física del control de tanque"
+    }
+  ]
+}

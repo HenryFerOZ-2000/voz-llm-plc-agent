@@ -36,6 +36,7 @@ from trial_experiments import deferred_evaluator as DE
 from trial_experiments import experimental_design as ED
 from trial_experiments import oracle_schema as S
 from trial_experiments import trial_model
+from trial_experiments import product_contract as PC
 
 SCHEMA_VERSION = 1
 BATCHES_DIRNAME = "batches"
@@ -422,6 +423,8 @@ def outcome_for_record(record: dict[str, Any]) -> tuple[str, str | None]:
         return ENTRY_INFRASTRUCTURE, PAUSE_INFRASTRUCTURE
     if final in (trial_model.FINAL_STATUS_PASS, trial_model.FINAL_STATUS_FAIL, trial_model.FINAL_STATUS_REVIEW):
         return ENTRY_COMPLETED, None
+    if (record.get('evaluation', {}).get('capability') or {}).get('code') == PC.NATIVE_EVALUATION_UNSUPPORTED:
+        return ENTRY_NOT_EVALUABLE, None
     return ENTRY_INTERRUPTED, PAUSE_INTERRUPTED
 
 
@@ -455,6 +458,14 @@ def record_precheck_block(project_root: Path, batch_dir: Path, manifest: dict[st
     """El precheck de evaluacion (el mismo del dialogo individual) no se supero."""
     record = trial_model.load_trial(Path(entry["trial_dir"]))
     not_evaluable = bool(errors) and all(RUNTIME_EXTENSION_MARKER in error for error in errors)
+    if errors and all(error.startswith(PC.NATIVE_EVALUATION_UNSUPPORTED + ':') for error in errors):
+        # Recheck frozen evidence before persisting a capability reason or skipping the entry.
+        integrity = DE.verify_trial_integrity(Path(entry['trial_dir']))
+        if integrity['ok']:
+            capability = PC.evaluation_capability(integrity.get('product_contract'))
+            if not capability['supported']:
+                record = DE.record_capability_gap(Path(entry['trial_dir']), capability)
+                not_evaluable = True
     entry["status"] = ENTRY_NOT_EVALUABLE if not_evaluable else ENTRY_BLOCKED
     entry["completed_at"] = _now() if not_evaluable else None
     entry["notes"] = list(entry.get("notes") or []) + [f"precheck: {error}" for error in errors[:5]]

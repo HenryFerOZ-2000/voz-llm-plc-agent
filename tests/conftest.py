@@ -38,15 +38,16 @@ def _real_bench_map_untouched_guard():
     entera falla aqui con un mensaje claro, sin depender de que cada test se acuerde de revisarlo
     por su cuenta.
     """
-    guarded = (REAL_BENCH_MAP_PATH, REAL_BENCH_WORKING_MAP_PATH)
+    guarded = (REAL_BENCH_MAP_PATH, REAL_BENCH_WORKING_MAP_PATH,
+               PROJECT_ROOT / 'generated_code' / 'gui_history.json')
     before = {path: _hash_file(path) for path in guarded}
     yield
     for path in guarded:
-        if before[path] is None:
+        if before[path] is None and path.name != 'gui_history.json':
             continue  # el working se crea en la primera ejecucion de la app; crearlo no es modificarlo
         assert before[path] == _hash_file(path), (
-            f"data/plc_maps/{path.name} cambio durante la corrida de la suite - ningun test "
-            "debe escribir sobre el mapa fisico real (usar tmp_path o el patron `temp_map`). Restaure "
+            f"{path.relative_to(PROJECT_ROOT)} cambio durante la corrida de la suite - ningun test "
+            "debe escribir sobre los mapas o el historial real (usar tmp_path o el patron `temp_map`). Restaure "
             "el archivo desde un estado conocido antes de continuar."
         )
 
@@ -72,7 +73,7 @@ def safety_rules(project_root: Path) -> dict:
 
 
 @pytest.fixture(scope="session")
-def app():
+def app(tmp_path_factory):
     """
     Single shared Tk root for the WHOLE pytest session. Creating more than one customtkinter
     root (one per test module, say) in the same Windows process is unreliable - a second
@@ -81,10 +82,34 @@ def app():
     """
     import gui  # noqa: E402 - deferred import, needs SRC_DIR already on sys.path (see above)
 
-    instance = gui.VozLLMPLCGUI()
+    session_dir = tmp_path_factory.mktemp('gui_session')
+    real_load = gui.VozLLMPLCGUI._load_history_state
+    def load_isolated_history(instance):
+        instance.generated_dir = session_dir / 'generated_code'
+        instance.history_storage_path = session_dir / 'gui_history.json'
+        gui.ensure_generated_dirs(instance.generated_dir)
+        real_load(instance)
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(gui.VozLLMPLCGUI, '_load_history_state', load_isolated_history)
+        instance = gui.VozLLMPLCGUI()
     instance.update_idletasks()
     yield instance
     instance.destroy()
+
+
+@pytest.fixture(autouse=True)
+def _isolated_gui_history(request, tmp_path, monkeypatch):
+    """A GUI test neither imports user logs nor leaves history for the next test."""
+    if 'app' not in request.fixturenames:
+        return
+    import gui
+    instance = request.getfixturevalue('app')
+    monkeypatch.setattr(instance, 'generated_dir', tmp_path / 'generated_code')
+    monkeypatch.setattr(instance, 'history_storage_path', tmp_path / 'gui_history.json')
+    for name, value in (('history_records', []), ('history_item_map', {}), ('history_record_keys', set())):
+        monkeypatch.setattr(instance, name, value)
+    gui.ensure_generated_dirs(instance.generated_dir)
+    instance._clear_history_ui()
 
 
 @pytest.fixture(autouse=True)

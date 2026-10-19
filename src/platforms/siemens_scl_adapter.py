@@ -61,6 +61,9 @@ class SiemensSCLAdapter(PLCPlatformAdapter):
         return implementation + "\n"
 
     def render_full_program(self, project_ir: PLCProjectIR) -> str:
+        if project_ir.pid_loops:
+            from pid_scl import render_pid_source
+            return render_pid_source(project_ir,self)
         pou_name = self._safe_block_name(project_ir.pou.name)
         instance_db = f"DB_{pou_name}"
         source_sections = [
@@ -100,7 +103,10 @@ class SiemensSCLAdapter(PLCPlatformAdapter):
             row = self._variable_to_row(variable)
             row["siemens_type"] = self._siemens_type(variable)
             row["siemens_address"] = self.to_siemens_address(variable.location)
-            if variable.var_class in {"input", "output"}:
+            if project_ir.pid_loops and variable.name in project_ir.metadata.get('pid_db_access', {}):
+                row['tia_scope'] = 'PROCESS_DB_PORT'
+                row['storage'] = project_ir.metadata['pid_db_access'][variable.name]
+            elif variable.var_class in {"input", "output"}:
                 row["tia_scope"] = "PLC_TAG"
             elif variable.source == "generated_functional":
                 row["tia_scope"] = "FB_STATIC_PERSISTENT"
@@ -123,6 +129,11 @@ class SiemensSCLAdapter(PLCPlatformAdapter):
         return manifest
 
     def render_task_configuration(self, project_ir: PLCProjectIR) -> dict[str, Any]:
+        if project_ir.pid_loops:
+            loop=project_ir.pid_loops[0]
+            return {'resource_name':self.resource_name,'task_name':loop.symbols['ob'],'interval':project_ir.task.interval,
+                'priority':project_ir.task.priority,'pou_instance':project_ir.pou.name,'instance_db':loop.symbols['db'],
+                'secondary_type':'CyclicInterrupt','period_ms':loop.period_ms,'period_verification':'REQUIRED_AFTER_IMPORT'}
         return {
             "resource_name": self.resource_name,
             "task_name": "Main (OB1)",
@@ -136,6 +147,20 @@ class SiemensSCLAdapter(PLCPlatformAdapter):
         return list(project_ir.test_cases)
 
     def render_extra_artifacts(self, project_ir: PLCProjectIR) -> dict[str, Any]:
+        if project_ir.pid_loops:
+            from pid_scl import build_pid_infrastructure,render_pid_cyclic_ob
+            from pid_commissioning import build_pid_process_bindings
+            from utils import get_project_root,load_json_file
+            caps=load_json_file(get_project_root()/'config/native_pid_v18_capabilities.json')
+            loop=project_ir.pid_loops[0]
+            return {'siemens_source.scl':self.render_full_program(project_ir),
+                'pid_infrastructure.json':build_pid_infrastructure(project_ir),
+                'pid_cyclic_ob.xml':render_pid_cyclic_ob(project_ir,caps),
+                'pid_process_bindings.json':build_pid_process_bindings(project_ir),
+                'tia_import_manifest.json':{'tia_portal_version':'V18','source_file':'siemens_source.scl',
+                    'source_name':loop.symbols['fb']+'.scl','pou_name':loop.symbols['fb'],'instance_db':loop.symbols['db'],
+                    'organization_block':loop.symbols['ob'],'native_pid':True,'physical_download_allowed':False,
+                    'create_plc_tags':True,'compile_after_import':True,'save_only_after_successful_compile':True}}
         return {
             "siemens_source.scl": self.render_full_program(project_ir),
             "tia_import_manifest.json": {

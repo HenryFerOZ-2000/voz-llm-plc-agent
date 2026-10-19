@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "technology_version": "2.3",
+  "period_ms": 100,
+  "simulation": {
+    "initial_level": 20.0,
+    "fill_rate": 2.0,
+    "drain_rate": 0.8,
+    "min": 0.0,
+    "max": 100.0
+  },
+  "controller": {
+    "status": "DEMO_SIMULATION",
+    "gain": 2.0,
+    "ti_seconds": 20.0,
+    "td_seconds": 0.0
+  }
+}

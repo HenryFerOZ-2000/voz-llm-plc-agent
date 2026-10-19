@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import subprocess
 import tempfile
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -30,6 +32,27 @@ DEFAULT_PORTAL_ROOT = Path(r"C:\Program Files\Siemens\Automation\Portal V18")
 def normal_project_path(project_root: Path | None = None) -> str:
     """Ruta del proyecto TIA del Modo Normal (tia.normal_project; fallback: project_path historico)."""
     return tia_projects.normal_project_path(project_root or get_project_root())
+
+
+def _normal_program_state_path(root: Path, project_path: str) -> str:
+    key = hashlib.sha256(str(Path(project_path).resolve()).casefold().encode()).hexdigest()
+    return str((root/'runtime/pid/normal_projects'/f'{key}.json').resolve())
+
+
+def tia_compile_summary(report: dict[str, Any]) -> str:
+    """Explain failures before compilation without blaming generated PLC code."""
+    from trial_experiments.tia_classification import classify_tia_compile, COMPILE_FAILURE
+    status = report.get('status')
+    if status == 'TIA_COMPILATION_PASSED':
+        return 'Compilacion TIA Portal V18 aprobada.'
+    if status == 'PID_TEMPLATE_UNSAVED_CHANGES':
+        return 'Guarde los cambios de la plantilla en TIA y vuelva a ejecutar; puede dejarla abierta.'
+    detail = ' '.join(str(e) for e in report.get('errors', [])) + str(report.get('exception', ''))
+    if 'already been opened' in detail.lower():
+        return 'El proyecto ya esta abierto y TIA bloqueo el acceso. No se llego a compilar.'
+    if classify_tia_compile(report)['category'] == COMPILE_FAILURE:
+        return 'TIA Portal reporto errores de compilacion.'
+    return 'No se pudo completar el acceso o la importacion en TIA. Revise el reporte.'
 
 
 def get_tia_config_path(project_root: Path | None = None) -> Path:
@@ -59,6 +82,8 @@ def _bridge_paths(project_root: Path | None = None) -> dict[str, Path]:
     return {
         "root": bridge_root,
         "source": bridge_root / "Program.cs",
+        "pid_source": bridge_root / "PidControlSupport.cs",
+        "connection_source": bridge_root / "ConnectionTargetSupport.cs",
         "bin": bin_dir,
         "exe": bin_dir / "TiaOpennessBridge.exe"
     }
@@ -161,7 +186,8 @@ def build_openness_bridge(
         DEFAULT_PORTAL_ROOT / "Bin" / "PublicAPI" / "Siemens.Engineering.ClientAdapter.Interfaces.dll",
         DEFAULT_WEB_EXTENSIONS
     ]
-    missing = [str(path) for path in [DEFAULT_COMPILER, bridge["source"], *references] if not path.exists()]
+    sources = [bridge['source'], bridge['pid_source'], bridge['connection_source']]
+    missing = [str(path) for path in [DEFAULT_COMPILER, *sources, *references] if not path.exists()]
     if missing:
         return {
             "built": False,
@@ -171,7 +197,7 @@ def build_openness_bridge(
             "stderr": ""
         }
 
-    build_inputs = [bridge["source"], *references]
+    build_inputs = [*sources, *references]
     if (
         not force
         and bridge["exe"].exists()
@@ -195,7 +221,7 @@ def build_openness_bridge(
         "/optimize+",
         f"/out:{bridge['exe']}",
         *[f"/reference:{path}" for path in references],
-        str(bridge["source"])
+        *[str(path) for path in sources]
     ]
     result = subprocess.run(
         command,
@@ -330,6 +356,8 @@ def _build_tag_payload(variables_path: Path, project_root: Path | None = None) -
         variables = []
     tags_by_name: dict[str, dict[str, str]] = {}
     for variable in variables:
+        if isinstance(variable,dict) and variable.get('tia_scope')=='PROCESS_DB_PORT':
+            continue  # Wired to owned DB members in the cyclic OB; never a physical PLC tag.
         if not isinstance(variable, dict) or variable.get("class") not in {"input", "output"}:
             continue
         name = str(variable.get("name", ""))
@@ -382,8 +410,44 @@ def prepare_tia_request(
         "tags": _build_tag_payload(variables_path, project_root=root),
         "physical_download_allowed": False
     }
+    request['normal_program_state_path'] = _normal_program_state_path(root, project_path)
+    request['normal_save_before_backup'] = True
+    request['normal_program_backup_directory'] = str((root/'runtime/backups'/f'normal_program_{uuid.uuid4().hex[:8]}').resolve())
+    if (package_dir/'pid_infrastructure.json').is_file():
+        from pid_package import native_request
+        map_driven = load_json_file(package_dir/'pid_infrastructure.json').get('schema_version') == 2
+        request.update(native_request(package_dir,root,project_path,in_place=map_driven))
+        if map_driven:
+            request['attach_to_running'] = bool(config.get('attach_to_running', True))
+            request['with_user_interface'] = bool(config.get('with_user_interface', True))
+        request['pid_archive_attach_to_running'] = bool(config.get('attach_to_running', True))
     request_path.write_text(json.dumps(request, indent=2, ensure_ascii=False), encoding="utf-8")
     return request_path, result_path, request
+
+
+def _run_openness_process(command,package_dir,environment,timeout_seconds,native):
+    options=dict(text=True,errors='replace',timeout=timeout_seconds,check=False,env=environment)
+    if not native:
+        return subprocess.run(command,capture_output=True,**options),False
+    # A Portal descendant can inherit stdout/stderr handles. File logs avoid
+    # communicate() waiting indefinitely for inherited pipe handles after timeout.
+    log_dir=Path(tempfile.mkdtemp(prefix='tia_bridge_',dir=package_dir))
+    out_path,err_path=log_dir/'stdout.log',log_dir/'stderr.log'
+    timed_out=False
+    with out_path.open('w',encoding='utf-8') as out,err_path.open('w',encoding='utf-8') as err:
+        try:result=subprocess.run(command,stdout=out,stderr=err,**options)
+        except subprocess.TimeoutExpired:
+            timed_out=True
+            result=subprocess.CompletedProcess(command,None)
+    result.stdout=out_path.read_text(encoding='utf-8',errors='replace')
+    result.stderr=err_path.read_text(encoding='utf-8',errors='replace')
+    return result,timed_out
+
+
+def _openness_timeout_report():
+    return {'status':'TIA_OPENNESS_TIMEOUT','success':False,'download_success':False,
+        'bridge_timed_out':True,'download_outcome_unknown':True,
+        'errors':['TIA no finalizo dentro del tiempo configurado. Revise el permiso Openness y el proyecto de desarrollo; no se cerro el Portal.']}
 
 
 def validate_package_with_tia(
@@ -392,7 +456,7 @@ def validate_package_with_tia(
 ) -> dict[str, Any]:
     root = project_root or get_project_root()
     diagnostic = diagnose_tia_openness(root)
-    if not diagnostic["checks"].get("bridge_built"):
+    if (package_dir / 'pid_infrastructure.json').is_file() or not diagnostic["checks"].get("bridge_built"):
         build_result = build_openness_bridge(root)
         if not build_result.get("built"):
             return {
@@ -417,20 +481,14 @@ def validate_package_with_tia(
     environment = os.environ.copy()
     portal_bin = str(DEFAULT_PORTAL_ROOT / "Bin")
     environment["PATH"] = portal_bin + os.pathsep + environment.get("PATH", "")
-    result = subprocess.run(
-        [diagnostic["bridge_exe_path"], str(request_path)],
-        capture_output=True,
-        text=True,
-        errors="replace",
-        timeout=timeout_seconds,
-        check=False,
-        env=environment
-    )
+    result,timed_out = _run_openness_process([diagnostic['bridge_exe_path'],str(request_path)],
+        package_dir,environment,timeout_seconds,(package_dir/'pid_infrastructure.json').is_file())
     report: dict[str, Any] = {}
     if result_path.exists():
         payload = load_json_file(result_path)
         if isinstance(payload, dict):
             report = payload
+    if timed_out:report=_openness_timeout_report()
     report.update(
         {
             "executed": True,
@@ -444,6 +502,9 @@ def validate_package_with_tia(
     )
     result_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     _persist_tia_report(package_dir, report)
+    if request.get('action')=='native_pid_import_compile':
+        from pid_package import remember_native_project
+        remember_native_project(root,report)
     return report
 
 
@@ -477,18 +538,27 @@ def resolve_download_target(config: dict[str, Any], purpose: str = DOWNLOAD_PURP
     scope = str(target.get("download_scope") or "SOFTWARE").strip().upper()
     target["download_scope"] = scope if scope in DOWNLOAD_SCOPES else "SOFTWARE"
     target["start_modules"] = bool(target.get("start_modules", True))
+    if target.get('target_address'):
+        from plc_targets import normalize_target
+        target=normalize_target(target)
     return target
 
 
 def prepare_download_request(
     package_dir: Path,
     project_root: Path | None = None,
-    purpose: str = DOWNLOAD_PURPOSE_NORMAL
+    purpose: str = DOWNLOAD_PURPOSE_NORMAL,
+    *, expected_target: dict | None = None
 ) -> tuple[Path, Path, dict[str, Any]]:
     root = project_root or get_project_root()
     config = load_tia_config(root)
     target = resolve_download_target(config, purpose)
 
+    if expected_target is not None:
+        from plc_targets import load_normal_target,target_identity
+        if purpose!=DOWNLOAD_PURPOSE_NORMAL or target_identity(load_normal_target(root))!=target_identity(expected_target):
+            raise ValueError('TIA_TARGET_CHANGED: el destino cambió desde su autorización.')
+        target=dict(expected_target)
     request_path = package_dir / "tia_download_request.json"
     result_path = package_dir / "tia_download_report.json"
     project_path = normal_project_path(root)
@@ -512,8 +582,43 @@ def prepare_download_request(
         "download_scope": target["download_scope"],
         "start_modules": target["start_modules"]
     }
+    for key in ('target_address','pc_interface_number'):
+        if target.get(key) not in (None,''):request[key]=target[key]
+    if (package_dir/'pid_infrastructure.json').is_file():
+        from pid_package import native_download_project
+        request['project_path']=native_download_project(package_dir,root,target['target_type'])
+        request['pid_manifest']=load_json_file(package_dir/'pid_infrastructure.json')
+        compile_report=load_json_file(package_dir/'tia_compile_report.json')
+        if compile_report.get('pid_project_mode') == 'NORMAL_PROJECT':
+            request['pid_project_mode']='NORMAL_PROJECT'
+            request['normal_program_state_path']=_normal_program_state_path(root, request['project_path'])
+        else:
+            request['attach_to_running']=False
+            request['with_user_interface']=False
+        request['require_simulation']=target['target_type']==TARGET_TYPE_PLCSIM
     request_path.write_text(json.dumps(request, indent=2, ensure_ascii=False), encoding="utf-8")
     return request_path, result_path, request
+
+
+def list_tia_connections(root: Path) -> dict:
+    """Read available project interfaces; this is not a scan of online PLCs."""
+    directory=root/'runtime/target_queries'/uuid.uuid4().hex[:8]
+    directory.mkdir(parents=True)
+    build=build_openness_bridge(root)
+    if not build.get('built'):return {'status':'BRIDGE_BUILD_FAILED','errors':build.get('errors',[])}
+    config=load_tia_config(root);result_path=directory/'result.json'
+    request={'action':'list_connections','project_path':normal_project_path(root),
+        'plc_name':config.get('plc_name',''),'attach_to_running':True,'with_user_interface':False,
+        'result_path':str(result_path)}
+    request_path=directory/'request.json';request_path.write_text(json.dumps(request),encoding='utf-8')
+    environment={**os.environ,'PATH':str(DEFAULT_PORTAL_ROOT/'Bin')+os.pathsep+os.environ.get('PATH','')}
+    try:
+        result=subprocess.run([build['exe_path'],str(request_path)],capture_output=True,text=True,
+            errors='replace',timeout=int(config.get('timeout_seconds',300)),env=environment)
+    except subprocess.TimeoutExpired:
+        return {'status':'TIA_CONNECTION_TIMEOUT','errors':['TIA no respondió a la consulta de interfaces.']}
+    if result_path.is_file():return load_json_file(result_path)
+    return {'status':'TIA_CONNECTION_FAILED','errors':[result.stderr.strip() or 'Sin respuesta de TIA.']}
 
 
 def _finalize_download_report(
@@ -558,7 +663,8 @@ def _finalize_download_report(
 def download_program_to_plc(
     package_dir: Path,
     project_root: Path | None = None,
-    purpose: str = DOWNLOAD_PURPOSE_NORMAL
+    purpose: str = DOWNLOAD_PURPOSE_NORMAL,
+    *, expected_target: dict | None = None
 ) -> dict[str, Any]:
     """
     Downloads the already-compiled program of THIS package to the configured download target
@@ -587,8 +693,13 @@ def download_program_to_plc(
             [f"El destino experimental configurado es {target['target_type']}; solo se admite {TARGET_TYPE_PLCSIM}."]
         )
 
+    if expected_target is not None:
+        from plc_targets import load_normal_target,target_identity
+        if purpose!=DOWNLOAD_PURPOSE_NORMAL or target_identity(load_normal_target(root))!=target_identity(expected_target):
+            return _early('TIA_TARGET_CHANGED',['El destino cambió desde su autorización.'])
+        target=dict(expected_target)
     diagnostic = diagnose_tia_openness(root)
-    if not diagnostic["checks"].get("bridge_built"):
+    if (package_dir/'pid_infrastructure.json').is_file() or not diagnostic["checks"].get("bridge_built"):
         build_result = build_openness_bridge(root)
         if not build_result.get("built"):
             return _early("BRIDGE_BUILD_FAILED", list(build_result.get("errors", [])), {"build": build_result})
@@ -597,25 +708,26 @@ def download_program_to_plc(
     if not diagnostic.get("is_ready"):
         return _early("TIA_NOT_READY", list(diagnostic.get("warnings", [])), {"diagnostic": diagnostic})
 
-    request_path, result_path, request = prepare_download_request(package_dir, root, purpose)
+    try:
+        if expected_target is None:request_path,result_path,request=prepare_download_request(package_dir,root,purpose)
+        else:request_path,result_path,request=prepare_download_request(package_dir,root,purpose,expected_target=expected_target)
+    except ValueError as error:
+        if 'TIA_TARGET_CHANGED' in str(error):return _early('TIA_TARGET_CHANGED',[str(error)])
+        raise
     timeout_seconds = int(load_tia_config(root).get("timeout_seconds", 300))
     environment = os.environ.copy()
     portal_bin = str(DEFAULT_PORTAL_ROOT / "Bin")
     environment["PATH"] = portal_bin + os.pathsep + environment.get("PATH", "")
-    result = subprocess.run(
-        [diagnostic["bridge_exe_path"], str(request_path)],
-        capture_output=True,
-        text=True,
-        errors="replace",
-        timeout=timeout_seconds,
-        check=False,
-        env=environment
-    )
+    if expected_target is not None and target_identity(load_normal_target(root))!=target_identity(expected_target):
+        return _early('TIA_TARGET_CHANGED',['El destino cambió antes de iniciar la descarga.'])
+    result,timed_out = _run_openness_process([diagnostic['bridge_exe_path'],str(request_path)],
+        package_dir,environment,timeout_seconds,(package_dir/'pid_infrastructure.json').is_file())
     raw: dict[str, Any] = {}
     if result_path.exists():
         payload = load_json_file(result_path)
         if isinstance(payload, dict):
             raw = payload
+    if timed_out:raw=_openness_timeout_report()
     raw.update(
         {
             "executed": True,

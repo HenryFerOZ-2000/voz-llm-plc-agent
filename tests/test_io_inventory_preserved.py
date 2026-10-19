@@ -197,6 +197,10 @@ def test_locked_entries_untouched(app, temp_map, monkeypatch):
 
 # ---------- Only the targeted channels actually changed ----------
 
+def before_by_address_states(io_map):
+    return [(v["location"], v["name"], v["state"]) for v in io_map["variables"]]
+
+
 def test_only_targeted_channels_change_name_or_state(app, temp_map, monkeypatch):
     """
     Solo los 4 canales realmente reclamados por el allocator cambian - todo lo demas queda
@@ -212,15 +216,22 @@ def test_only_targeted_channels_change_name_or_state(app, temp_map, monkeypatch)
     app.command_textbox.insert("1.0", "dos motores independientes")
     app.process_command()
 
-    after = _load(temp_map)
+    # Modo Normal transaccional: la asignacion es PROVISIONAL hasta que el programa se genera y verifica;
+    # el archivo no cambia todavia y la seleccion de canales se comprueba sobre la copia provisional.
+    assert {(v["location"], v["name"], v["state"]) for v in _load(temp_map)["variables"]} == set(before_by_address_states(before))
+    after = app._pending_map_transaction["map"]
     after_by_address = {v["location"]: (v["name"], v["state"]) for v in after["variables"]}
 
-    changed = {
-        address for address in before_by_address
-        if before_by_address[address] != after_by_address[address]
-    }
-    assert len(changed) == 4
-    assert "%IX16.0" not in changed and "%IX16.1" not in changed  # LOCKED, nunca tocados
+    renamed = {address for address in before_by_address if before_by_address[address][0] != after_by_address[address][0]}
+    assert len(renamed) == 4  # solo los 4 canales que el nuevo programa usa cambian de funcion
+    assert "%IX16.0" not in renamed and "%IX16.1" not in renamed  # LOCKED, nunca tocados
+    assert after_by_address["%IX16.0"] == before_by_address["%IX16.0"] and after_by_address["%IX16.1"] == before_by_address["%IX16.1"]
+    # Programa NUEVO: los ASSIGNED automaticos del programa anterior que no se reutilizan vuelven a FREE (mismo
+    # nombre, misma configuracion fisica); ningun otro canal cambia.
+    for address, (name, state) in before_by_address.items():
+        if address in renamed or after_by_address[address] == (name, state):
+            continue
+        assert (state, after_by_address[address]) == ("ASSIGNED", (name, "FREE")), address
 
 
 # ---------- Full Mapa I/O completo window reflects the complete inventory ----------

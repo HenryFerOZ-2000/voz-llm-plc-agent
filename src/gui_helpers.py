@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import re
 from datetime import datetime
@@ -8,10 +9,12 @@ from tkinter import ttk
 from typing import Any
 
 from utils import iter_io_map_entries, load_json_file
+from analog_config import analog_configuration_report
+from process_signals import process_configuration_report
 
 
 ALLOWED_IO_CLASSES = ["input", "output", "internal", "timer", "counter", "auxiliary"]
-ALLOWED_IO_TYPES = ["BOOL", "INT", "TON", "TP", "CTU", "R_TRIG", "F_TRIG"]
+ALLOWED_IO_TYPES = ["BOOL", "INT", "REAL", "TON", "TP", "CTU", "R_TRIG", "F_TRIG"]
 ALLOWED_SAFETY_LEVELS = ["normal", "critical"]
 LOCATION_PATTERN = re.compile(r"^%[IQM][A-Z]*\d+(?:\.\d+)?$", re.IGNORECASE)
 IO_TREE_COLUMNS = ("name", "class", "type", "location", "initial_value", "description", "state")
@@ -114,6 +117,10 @@ def normalize_variable_entry(entry: dict[str, Any]) -> dict[str, Any]:
     }
     for field, default in ADVANCED_VARIABLE_DEFAULTS.items():
         normalized[field] = _normalize_advanced_field(field, entry.get(field, default))
+    if "analog_config" in entry:
+        normalized["analog_config"] = copy.deepcopy(entry["analog_config"])
+    if "process_config" in entry:
+        normalized["process_config"] = copy.deepcopy(entry["process_config"])
     return normalized
 
 
@@ -152,6 +159,8 @@ def validate_io_map_variables(variables: list[dict[str, str]]) -> list[str]:
 
     for index, raw_entry in enumerate(variables, start=1):
         entry = normalize_variable_entry(raw_entry)
+        errors.extend(analog_configuration_report(entry)["errors"])
+        errors.extend(process_configuration_report(entry)["errors"])
         name = entry["name"]
         var_class = entry["class"]
         var_type = entry["type"]

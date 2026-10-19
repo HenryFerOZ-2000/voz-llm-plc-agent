@@ -95,6 +95,11 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 
 ## Criterio de uso en tesis
 
+Para retomar las campañas y el cierre del control analógico, consultar [Contexto de evaluación y cierre del control analógico](25_contexto_evaluacion_y_cierre_analogico.md), actualizado el 17 de octubre de 2026.
+
+Estado de la implementación de cierre y evidencia del PID virtual:
+[Validación de PID y adaptación](30_cierre_validacion_pid_y_adaptacion.md).
+
 La documentacion se organiza para cubrir tres necesidades complementarias:
 
 - justificar el problema y la arquitectura propuesta,

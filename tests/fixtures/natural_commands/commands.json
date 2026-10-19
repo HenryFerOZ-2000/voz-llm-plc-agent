@@ -1,0 +1,6 @@
+{
+  "discrete": "Cuando presione Start, enciende la salida principal y mantenla encendida. Al presionar Stop o activar la emergencia, apágala. No debe volver a encenderse hasta presionar Start otra vez.",
+  "threshold": "Cuando presione Start, activa la salida principal para llenar el tanque hasta el 80 %. Al alcanzar ese nivel, apágala y espera otro Start para repetir. Stop o la emergencia deben detener el llenado inmediatamente.",
+  "hysteresis": "Al presionar Start, habilita el control del tanque. Activa la salida principal cuando el nivel baje del 30 % y apágala al llegar al 80 %. Entre ambos niveles conserva su estado. Stop o la emergencia deben apagarla y deshabilitar el control hasta otro Start.",
+  "pid": "Cuando presione Start, mantén el nivel del tanque al 50 % mediante PID, utilizando el sensor de nivel y la válvula proporcional de llenado. Stop o la emergencia deben detener el control y cerrar la válvula. Para reiniciar debe ser necesario presionar Start nuevamente."
+}

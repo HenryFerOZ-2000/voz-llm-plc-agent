@@ -254,7 +254,8 @@ def _repair_and_validate(
     io_map: dict[str, Any],
     intents_catalog: dict[str, Any],
     safety_rules: dict[str, Any],
-    origin: str = SOURCE_PARSER
+    origin: str = SOURCE_PARSER,
+    pid_mode: str | None = None
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """
     Shape-normalization pass (see semantic_repair.py) BEFORE validation: a compound-command
@@ -267,6 +268,10 @@ def _repair_and_validate(
     payload, its validation) so callers keep using the SAME repaired object downstream (IR building
     reads semantic_output["parameters"] directly), never the pre-repair one.
     """
+    from pid_control import has_native_pid, normalize_native_pid_command
+    if payload.get('interaction_profile')=='normal' and has_native_pid(payload.get('functional_requirements') or []):
+        payload=normalize_native_pid_command(payload)
+        return payload,_validate_result(payload,io_map,intents_catalog,safety_rules)
     parameters_before_repair = dict(payload.get("parameters") or {}) if isinstance(payload.get("parameters"), dict) else None
     payload = strip_unavailable_emergency_reference(payload, io_map)
     repaired = repair_semantic_output(payload, INTENT_PARAMETER_RULES)
@@ -324,6 +329,9 @@ def _merge_functional_requirements(
     se incorporan tipos del MISMO dominio que la intencion final (PID vs discreto): un requisito de
     otro dominio nunca se compone con ella.
     """
+    from pid_control import has_native_pid
+    if has_native_pid(primary):
+        return list(primary)
     primary_types = {str(requirement.get("type", "")) for requirement in primary}
     merged = list(primary)
     pid_context = intent_id == "INT_PID_SUPERVISOR" if intent_id else None
@@ -387,6 +395,8 @@ def _annotate_result(
     reason_for_retry: str | None = None
 ) -> dict[str, Any]:
     payload = dict(selected_result)
+    from control_strategy import clarify_control_failure
+    payload, semantic_validation = clarify_control_failure(payload, semantic_validation)
     payload["parser_mode_requested"] = requested_mode
     payload["parser_mode_used"] = used_mode
     payload["rule_result"] = rule_result or {}
@@ -463,9 +473,12 @@ def parse_with_mode(
     llm_client: PLCInterpretationLLMClient | None = None,
     llm_response_text: str | dict[str, Any] | None = None,
     interaction_profile: str | None = None,
-    clarification_history: list[dict[str, str]] | None = None
+    clarification_history: list[dict[str, str]] | None = None,
+    program_context: dict[str, Any] | None = None,
+    pid_execution_mode: str | None = None
 ) -> dict[str, Any]:
     """
+    program_context (solo Modo Normal): programa ACTUAL cuando el comando lo amplia/modifica (EXTEND_PROGRAM).
     interaction_profile="normal" (solo Modo Normal): agrega la politica de composicion funcional y el
     historial ESTRUCTURADO de aclaraciones al contexto del LLM. Sin perfil, el comportamiento es
     exactamente el anterior (Experimentacion queda congelada).
@@ -599,6 +612,14 @@ def parse_with_mode(
         from normal_interaction import NORMAL_MODE_POLICY
 
         llm_context["normal_mode_policy"] = NORMAL_MODE_POLICY
+        from control_strategy import requested_control
+        llm_context['requested_control_behavior'] = requested_control(command_text)
+        if program_context:
+            from normal_program_bindings import EXTEND_POLICY, SCOPE_EXTEND
+
+            llm_context["program_scope"] = SCOPE_EXTEND
+            llm_context["current_program"] = program_context
+            llm_context["extend_policy"] = EXTEND_POLICY
         if clarification_history:
             llm_context["original_command"] = command_text
             llm_context["clarification_history"] = [
@@ -629,7 +650,8 @@ def parse_with_mode(
         # Marca de perfil (fuera del contrato semantico): habilita la validacion temprana de
         # recursos funcionales solo en Modo Normal.
         llm_result = {**llm_result, "interaction_profile": "normal"}
-    llm_result, llm_validation = _repair_and_validate(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules, SOURCE_LLM)
+    model_requested_clarification = bool(llm_result.get('requires_clarification') and llm_result.get('clarification_question'))
+    llm_result, llm_validation = _repair_and_validate(llm_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules, SOURCE_LLM, pid_execution_mode)
     llm_result = _sync_clarification_from_validation(llm_result, llm_validation)
 
     first_pass_result = dict(llm_result)
@@ -667,7 +689,7 @@ def parse_with_mode(
             )
             if interaction_profile == "normal":
                 retry_result = {**retry_result, "interaction_profile": "normal"}
-            retry_result, retry_validation = _repair_and_validate(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules, SOURCE_LLM)
+            retry_result, retry_validation = _repair_and_validate(retry_result, runtime_io_map, runtime_intents_catalog, runtime_safety_rules, SOURCE_LLM, pid_execution_mode)
             second_pass_result = retry_result
             retry_result = _sync_clarification_from_validation(retry_result, retry_validation)
             retry_coverage = compute_semantic_coverage(
@@ -681,7 +703,57 @@ def parse_with_mode(
         except Exception:
             pass  # se conserva la primera pasada; el flujo normal de abajo decide que hacer con ella
 
-    if requested_mode == "llm":
+    if interaction_profile == "normal" and clarification_history and llm_response_text is None:
+        # Modo Normal: una pregunta YA respondida no se repite. Antes de rendirse, UNA reinterpretacion que
+        # integra explicitamente la respuesta (nunca un bucle: si vuelve a repetirla, decide la GUI).
+        from normal_interaction import already_answered, answered_question_note
+
+        repeated = llm_result.get("clarification_question") if llm_result.get("requires_clarification") else None
+        if repeated and already_answered(repeated, clarification_history):
+            retry_context = dict(llm_context)
+            retry_context["correction_note"] = answered_question_note(repeated, clarification_history)
+            try:
+                retry_result, retry_usage = _invoke_llm(
+                    command_text=command_text, llm_client=runtime_llm_client, context=retry_context, llm_response_text=None)
+                retry_result, retry_validation = _repair_and_validate(
+                    {**retry_result, "interaction_profile": "normal"}, runtime_io_map, runtime_intents_catalog,
+                    runtime_safety_rules, SOURCE_LLM, pid_execution_mode)
+                retry_result = _sync_clarification_from_validation(retry_result, retry_validation)
+                second_pass_result = retry_result
+                again = retry_result.get("clarification_question") if retry_result.get("requires_clarification") else None
+                if not (again and already_answered(again, clarification_history)):
+                    llm_result, llm_usage, llm_validation = retry_result, retry_usage, retry_validation
+                    reason_for_retry = "normal_clarification_already_answered: " + str(repeated)
+            except Exception:
+                pass  # se conserva la primera pasada; la GUI informa la repeticion sin volver a preguntar
+
+    if (interaction_profile == "normal" and llm_response_text is None and reason_for_retry is None
+            and not llm_validation.get("is_valid")
+            and (not llm_validation.get("requires_clarification") or
+                 (not model_requested_clarification and any(str(e).startswith('CONTROL_') for e in llm_validation.get('errors', []))))
+            and not llm_validation.get("capability_gap") and llm_validation.get("errors")):
+        # Modo Normal: una interpretacion NO generable (no es una pregunta ni falta de hardware) recibe UNA
+        # reinterpretacion con los errores exactos; si tampoco es valida, se conserva la primera (sin bucles).
+        from normal_interaction import invalid_interpretation_note
+
+        retry_context = dict(llm_context)
+        retry_context["correction_note"] = invalid_interpretation_note(llm_validation.get("errors") or [])
+        try:
+            retry_result, retry_usage = _invoke_llm(
+                command_text=command_text, llm_client=runtime_llm_client, context=retry_context, llm_response_text=None)
+            retry_result, retry_validation = _repair_and_validate(
+                {**retry_result, "interaction_profile": "normal"}, runtime_io_map, runtime_intents_catalog,
+                runtime_safety_rules, SOURCE_LLM, pid_execution_mode)
+            retry_result = _sync_clarification_from_validation(retry_result, retry_validation)
+            second_pass_result = retry_result
+            if retry_validation.get("is_valid") or retry_validation.get("requires_clarification"):
+                llm_result, llm_usage, llm_validation = retry_result, retry_usage, retry_validation
+                reason_for_retry = "normal_invalid_interpretation: " + "; ".join(llm_validation.get("errors") or [])[:300]
+        except Exception:
+            pass
+
+    from pid_control import has_native_pid
+    if requested_mode == "llm" or (interaction_profile == 'normal' and has_native_pid(llm_result.get('functional_requirements') or [])):
         return _annotate_result(
             llm_result,
             requested_mode=requested_mode,
@@ -890,7 +962,9 @@ def parse_command(
     llm_client: PLCInterpretationLLMClient | None = None,
     llm_response_text: str | dict[str, Any] | None = None,
     interaction_profile: str | None = None,
-    clarification_history: list[dict[str, str]] | None = None
+    clarification_history: list[dict[str, str]] | None = None,
+    program_context: dict[str, Any] | None = None,
+    pid_execution_mode: str | None = None
 ) -> dict[str, Any]:
     settings = load_parser_settings()
     resolved_mode = _normalize_parser_mode(mode or resolve_parser_mode(settings))
@@ -903,6 +977,38 @@ def parse_command(
         llm_client=llm_client,
         llm_response_text=llm_response_text,
         interaction_profile=interaction_profile,
-        clarification_history=clarification_history
+        clarification_history=clarification_history,
+        program_context=program_context if interaction_profile == "normal" else None,
+        pid_execution_mode=pid_execution_mode if interaction_profile == 'normal' else None
     )
-    return _attach_io_assignment_requests(result, command_text, io_map, intents_catalog, safety_rules)
+    result = _attach_io_assignment_requests(result, command_text, io_map, intents_catalog, safety_rules)
+    runtime_maps = (io_map or _load_io_map(), intents_catalog or _load_intents_catalog(), safety_rules or _load_safety_rules())
+    if interaction_profile == "normal" and result.get("interaction_profile") != "normal":
+        # Resultado por REGLAS (modo reglas/hibrido o fallback cuando el LLM falla): tambien es Modo Normal, asi que
+        # pasa por la misma resolucion de recursos (requisitos de la IR, IOAllocator, falta de hardware).
+        result = {**result, "interaction_profile": "normal"}
+        validation = _validate_result(result, *runtime_maps)
+        result = {**_sync_clarification_from_validation(result, validation), "semantic_validation": validation}
+    return bind_semantic_resources(result, *runtime_maps) if interaction_profile == "normal" else result
+
+
+def bind_semantic_resources(result: dict[str, Any], io_map: dict[str, Any],
+                            intents_catalog: dict[str, Any], safety_rules: dict[str, Any]) -> dict[str, Any]:
+    """Apply the resource bindings found by validation without a second interpretation."""
+    runtime_maps = (io_map, intents_catalog, safety_rules)
+    bindings = (result.get("semantic_validation") or {}).get("resource_bindings")
+    if bindings:
+        # Modo Normal: un rol ya cubierto en el mapa por otro nombre queda vinculado a ESE simbolo en toda la
+        # semantica (parametros, requisitos, semantica efectiva) antes de IR/SCL; se revalida contra el mismo mapa.
+        from ir_builder import intent_resource_table
+        from normal_interaction import apply_resource_bindings
+
+        # Un default del contrato que se vincula se vuelve parametro explicito (la IR ya no lo pone por su cuenta).
+        parameters = dict(result.get("parameters") or {})
+        for key, default in intent_resource_table(str(result.get("intent_id"))) or ():
+            if key not in parameters and default in bindings:
+                parameters[key] = default
+        result = apply_resource_bindings({**result, "parameters": parameters}, bindings)
+        result["semantic_validation"] = {**_validate_result(result, *runtime_maps),
+                                         "resource_bindings": result["resource_bindings"]}
+    return result

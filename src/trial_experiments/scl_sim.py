@@ -319,6 +319,11 @@ class _Parser:
             return ("const", parse_time_ms(token.value))
         if token.kind == "ident":
             name = _clean_name(token.value)
+            if self.peek().value == "(" and name.upper() in {"INT_TO_REAL", "REAL_TO_INT"}:
+                self.take()
+                argument = self.expression()
+                self.expect(")")
+                return ("conversion", name.upper(), argument)
             if self.peek().value == "." and self.peek(1).kind == "ident":
                 self.take()
                 return ("member", name, _clean_name(self.take().value))
@@ -532,6 +537,16 @@ class SclMachine:
 
     def _eval(self, node: tuple, io: dict[str, Any]) -> Any:
         kind = node[0]
+        if kind == "conversion":
+            value = self._eval(node[2], io)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise SclSimError(f"Conversión numérica inválida: {value!r}")
+            if node[1] == "INT_TO_REAL":
+                return float(value)
+            converted = round(value)
+            if not -32768 <= converted <= 32767:
+                raise SclSimError(f"REAL_TO_INT fuera de rango: {value!r}")
+            return converted
         if kind == "const":
             return node[1]
         if kind == "var":

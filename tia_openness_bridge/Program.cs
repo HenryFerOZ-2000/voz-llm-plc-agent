@@ -61,6 +61,10 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 {
                     report = ExecuteDownload(request);
                 }
+                else if (action == "list_connections")
+                {
+                    report = ExecuteListConnections(request);
+                }
                 else if (action == "validate_master")
                 {
                     report = ExecuteValidateMaster(request);
@@ -72,6 +76,18 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 else if (action == "retrieve_probe")
                 {
                     report = ExecuteRetrieveProbe(request);
+                }
+                else if (action == "pid_probe")
+                {
+                    report = ExecutePidProbe(request);
+                }
+                else if (action == "native_pid_import_compile")
+                {
+                    report = ExecuteNativePidCompile(request);
+                }
+                else if (action == "native_pid_save_parameters")
+                {
+                    report = ExecuteSaveNativePidParameters(request);
                 }
                 else if (action == "self_test")
                 {
@@ -105,12 +121,17 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             }
             if (!report.ContainsKey("success"))
             {
-                report["success"] = GetString(report, "status", "").EndsWith("PASSED", StringComparison.Ordinal);
+                report["success"] = IsSuccessfulStatus(GetString(report, "status", ""));
             }
 
             WriteJson(resultPath, report);
             Console.WriteLine(Json.Serialize(report));
-            return GetString(report, "status", "").EndsWith("PASSED", StringComparison.Ordinal) ? 0 : 1;
+            return IsSuccessfulStatus(GetString(report, "status", "")) ? 0 : 1;
+        }
+
+        internal static bool IsSuccessfulStatus(string status)
+        {
+            return status.EndsWith("PASSED",StringComparison.Ordinal) || status=="PID_PARAMETERS_SAVED";
         }
 
         private sealed class ReconciliationTagInfo
@@ -330,6 +351,9 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             assertDecision("physical.start", "StartModules", "PHYSICAL_PLC", true, true, "StartModule");
 
             RunArchiveRetrySelfTest(report, checks);
+            RunPidSourceSnapshotSelfTest(report, checks);
+            PidControlSupport.SelfTest(checks);
+            PidControlSupport.NormalProgramSelfTest(checks);
 
             if (((List<string>)report["errors"]).Count > 0)
             {
@@ -344,6 +368,510 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             report["api_assembly"] = typeof(TiaPortal).Assembly.FullName;
             report["user"] = Environment.UserDomainName + "\\" + Environment.UserName;
             report["portal_root"] = PortalRoot;
+            return report;
+        }
+
+        private static Dictionary<string, object> ExecutePidProbe(Dictionary<string, object> request)
+        {
+            string sourcePath=GetRequiredString(request,"project_path");
+            string directory=GetRequiredString(request,"development_directory");
+            string resumePath=GetString(request,"development_project_path","");
+            if(String.IsNullOrEmpty(resumePath))
+            {
+                if(Directory.Exists(directory)) throw new InvalidOperationException("Development directory must be new.");
+                Directory.CreateDirectory(directory);
+            }
+            else if(!Path.GetFullPath(resumePath).StartsWith(Path.GetFullPath(Path.Combine(directory,"work"))+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase)
+                || !File.Exists(Path.Combine(directory,"NativePID.zap18")))
+                throw new InvalidOperationException("Only an Archive/Retrieve development copy can be resumed.");
+            var report=NewReport("RUNNING");
+            report["physical_download_executed"]=false;
+            using(var portal=new TiaPortal(TiaPortalMode.WithoutUserInterface))
+            {
+                if(String.IsNullOrEmpty(resumePath))
+                {
+                    Project source=portal.Projects.Open(new FileInfo(sourcePath));
+                    try { ArchiveProject(source,directory,"NativePID.zap18",report,"PID",TrialArchiveMaxAttempts); }
+                    finally { source.Close(); }
+                }
+                string archive=Path.Combine(directory,"NativePID.zap18");
+                if(!File.Exists(archive)) throw new InvalidOperationException("Development archive was not created.");
+                var project=String.IsNullOrEmpty(resumePath)
+                    ? portal.Projects.Retrieve(new FileInfo(archive),new DirectoryInfo(Path.Combine(directory,"work")))
+                    : portal.Projects.Open(new FileInfo(resumePath));
+                try
+                {
+                    report["development_project_path"]=project.Path.FullName;
+                    report["cpu"]=DescribePlcProject(project,GetString(request,"plc_name",""));
+                    report["pid_capabilities"]=PidControlSupport.Probe(FindPlcSoftware(project,GetString(request,"plc_name","")),directory);
+                    project.Save();
+                    report["status"]="PID_PROBE_PASSED";
+                }
+                finally { project.Close(); }
+            }
+            return report;
+        }
+
+        // An attached project belongs to the operator. Only snapshot saved contents;
+        // never save or close it. Import and compile always happen in a separate copy.
+        internal static string SnapshotSavedPidSource(bool attached, Func<bool> isModified,
+            Func<string> archive, Action close)
+        {
+            try
+            {
+                if (isModified()) return "PID_TEMPLATE_UNSAVED_CHANGES";
+                return archive();
+            }
+            finally
+            {
+                if (!attached) close();
+            }
+        }
+
+        private static string ArchiveNativePidSource(Dictionary<string, object> request, string directory,
+            Dictionary<string, object> report)
+        {
+            string path = GetRequiredString(request, "project_path");
+            TiaPortal sourcePortal = null;
+            Project original = null;
+            bool attached = false;
+            report["failed_stage"] = "open_pid_source";
+            try
+            {
+                if (GetBool(request, "pid_archive_attach_to_running", true))
+                {
+                    foreach (TiaPortalProcess process in TiaPortal.GetProcesses())
+                    {
+                        if (process.ProjectPath == null || !PathsEqual(process.ProjectPath.FullName, path)) continue;
+                        sourcePortal = process.Attach();
+                        original = sourcePortal.Projects.FirstOrDefault(p => PathsEqual(p.Path.FullName, path));
+                        if (original == null) throw new InvalidOperationException("PID_SOURCE_CHANGED: el proyecto abierto cambio durante la conexion.");
+                        attached = true;
+                        report["pid_source_process_id"] = process.Id;
+                        break;
+                    }
+                }
+                if (original == null)
+                {
+                    sourcePortal = new TiaPortal(TiaPortalMode.WithoutUserInterface);
+                    original = sourcePortal.Projects.Open(new FileInfo(path));
+                }
+                report["pid_source_attached"] = attached;
+                report["failed_stage"] = "archive_pid_source";
+                return SnapshotSavedPidSource(attached,
+                    () => { bool modified = original.IsModified; report["pid_source_is_modified"] = modified; return modified; },
+                    () => ArchiveProject(original, directory, "NativePID.zap18", report, "PID", TrialArchiveMaxAttempts),
+                    () => original.Close());
+            }
+            finally
+            {
+                if (sourcePortal != null) sourcePortal.Dispose();
+            }
+        }
+
+        private static void RunPidSourceSnapshotSelfTest(Dictionary<string, object> report, List<object> checks)
+        {
+            foreach (string name in new[] { "attached_saved", "attached_unsaved", "owned_saved", "attached_archive_error", "owned_archive_error" })
+            {
+                bool attached = name.StartsWith("attached", StringComparison.Ordinal);
+                bool modified = name == "attached_unsaved";
+                bool error = name.EndsWith("archive_error", StringComparison.Ordinal);
+                int archives = 0, closes = 0;
+                string status = null;
+                bool threw = false;
+                try
+                {
+                    status = SnapshotSavedPidSource(attached, () => modified,
+                        () => { archives++; if (error) throw new InvalidOperationException("test archive error"); return "CREATED"; },
+                        () => { closes++; });
+                }
+                catch (InvalidOperationException) { threw = true; }
+                bool passed = archives == (modified ? 0 : 1) && closes == (attached ? 0 : 1)
+                    && threw == error && (error || status == (modified ? "PID_TEMPLATE_UNSAVED_CHANGES" : "CREATED"));
+                checks.Add(new Dictionary<string, object> { { "pid_source_case", name }, { "passed", passed },
+                    { "archives", archives }, { "closes", closes } });
+                if (!passed) AddError(report, "PID source snapshot lifecycle: " + name);
+            }
+        }
+
+        private static PlcSoftware GenerateNativePidBlocks(Project project,Dictionary<string,object> request,
+            Dictionary<string,object> manifest,Dictionary<string,object> loop,Dictionary<string,object> report,
+            string directory,bool compileChecks)
+        {
+            string sourcePath=GetRequiredString(request,"source_path");
+            string xmlPath=GetRequiredString(request,"pid_cyclic_ob_path");
+            var plc=FindPlcSoftware(project,GetString(request,"plc_name",""));
+            if(plc==null) throw new InvalidOperationException("No unique PLC software selected");
+            var symbols=(Dictionary<string,object>)loop["symbols"];
+            string hash=Convert.ToString(loop["configuration_hash"]);
+            // Development verification may explicitly start from a clean hardware-only COPY.
+            // This option is never emitted by the normal UI/request builder and never touches the source.
+            if(GetBool(request,"pid_development_clean_template",false))
+            {
+                if(!loop.ContainsKey("mode") || Convert.ToString(loop["mode"])!="SIMULATION") throw new InvalidOperationException("Development cleanup is restricted to historical SIMULATION packages");
+                var names=new[]{"Main","PLC_PRG","DB_PLC_PRG","OB30"};
+                foreach(var b in PidControlSupport.AllBlocks(plc.BlockGroup).ToList())
+                    if(names.Contains(b.Name)) b.Delete();
+                report["development_template_cleanup"]=names;
+            }
+            // Normal mode verifies/regenerates the legacy program before its transaction:
+            // newly generated blocks must be compiled before they can be exported.
+            else if(compileChecks)report["verified_legacy_program_retired"]=PidControlSupport.RetireVerifiedLegacyProgram(plc,directory,true);
+            PidControlSupport.RejectForeignExecutableObs(plc,manifest,directory);
+            report["pid_infrastructure"]=PidControlSupport.Ensure(plc,manifest);
+            report["tags"]=EnsureTags(plc,request);
+            string stagedSource=Path.Combine(directory,"pid.scl");
+            var controller=plc.TechnologicalObjectGroup.TechnologicalObjects.Find(Convert.ToString(symbols["controller"]));
+            string binding="(* PID_OWNER_BINDING:"+controller.CreationDate.ToUniversalTime().Ticks+" *)";
+            string text=File.ReadAllText(sourcePath).Replace("(* PID_OWNER_BINDING *)",binding);
+            var info=(Dictionary<string,object>)report["pid_infrastructure"];
+            if(Object.Equals(manifest["schema_version"],2) && Convert.ToBoolean(info["parameters_verified_offline"]))
+            {
+                text=text.Replace("ParametersConfirmed : Bool := FALSE;","ParametersConfirmed : Bool := TRUE;");
+                report["offline_parameters_confirmation_restored"]=true;
+            }
+            File.WriteAllText(stagedSource,text);
+            var ownedGroup=plc.BlockGroup.Groups.Find("VozPID_"+hash);
+            PidControlSupport.GenerateTemporarySource(
+                name=>plc.ExternalSourceGroup.ExternalSources.CreateFromFile(name,stagedSource),
+                source=>source.GenerateBlocksFromSource(ownedGroup,GenerateBlockOption.None),
+                source=>source.Delete());
+            report["pid_external_source_cleanup"]="TEMPORARY_SOURCE_REMOVED";
+            string stagedXml=Path.Combine(directory,"ob.xml");File.Copy(xmlPath,stagedXml);
+            ownedGroup.Blocks.Import(new FileInfo(stagedXml),ImportOptions.Override);
+            report["pid_cyclic_ob"]=PidControlSupport.VerifyCyclic(plc,manifest,true);
+            return plc;
+        }
+
+        private static void CompileNativePidBlocks(Project project,PlcSoftware plc,Dictionary<string,object> request,
+            Dictionary<string,object> manifest,Dictionary<string,object> loop,Dictionary<string,object> report)
+        {
+            string hash=Convert.ToString(loop["configuration_hash"]);
+            var compiled=plc.GetService<ICompilable>().Compile();
+            report["error_count"]=compiled.ErrorCount;report["warning_count"]=compiled.WarningCount;
+            report["compiler_messages"]=FlattenMessages(compiled.Messages);
+            report["cpu"]=DescribePlcProject(project,GetString(request,"plc_name",""));
+            report["configuration_hash"]=hash;
+            if(compiled.ErrorCount==0)
+            {
+                report["pid_cyclic_ob"]=PidControlSupport.VerifyCyclic(plc,manifest,false);
+                report["pid_infrastructure_after"]=PidControlSupport.Ensure(plc,manifest);
+                if(GetString(report,"pid_project_mode","")=="NORMAL_PROJECT")
+                    SaveNormalState(project,request,PidControlSupport.CaptureNormalPidInventory(plc,manifest,
+                        project.Path.FullName,GetRequiredString(request,"pid_development_directory")),report);
+                else { project.Save();report["project_saved"]=true; }
+                report["status"]="TIA_COMPILATION_PASSED";
+            }
+            else { report["project_saved"]=false;report["status"]="TIA_COMPILATION_FAILED"; }
+        }
+
+        private static void OpenConfiguredProject(Dictionary<string,object> request,out TiaPortal portal,out Project project,out bool attached)
+        {
+            string path=GetRequiredString(request,"project_path");
+            portal=null;project=null;attached=false;
+            Log("[TIA PROJECT] Resolving configured project: "+path);
+            if(GetBool(request,"attach_to_running",true))
+                foreach(var process in TiaPortal.GetProcesses())
+                    if(process.ProjectPath!=null && PathsEqual(process.ProjectPath.FullName,path))
+                    {
+                        Log("[TIA PROJECT] Attaching to matching TIA session");
+                        portal=process.Attach();attached=true;
+                        Log("[TIA PROJECT] Attached; locating configured project");
+                        project=portal.Projects.FirstOrDefault(p=>PathsEqual(p.Path.FullName,path));
+                        if(project==null)throw new InvalidOperationException("TIA_PROJECT_OPEN_FAILED: configured project changed while attaching.");
+                        break;
+                    }
+            if(portal==null){Log("[TIA PROJECT] Starting TIA session");portal=new TiaPortal(GetBool(request,"with_user_interface",true)?TiaPortalMode.WithUserInterface:TiaPortalMode.WithoutUserInterface);}
+            if(project==null){Log("[TIA PROJECT] Opening configured project");project=portal.Projects.Open(new FileInfo(path));}
+            if(!PathsEqual(project.Path.FullName,path))throw new InvalidOperationException("TIA_PROJECT_OPEN_FAILED: project path mismatch.");
+            Log("[TIA PROJECT] Configured project available");
+        }
+
+        private static Dictionary<string,object> ReadNormalState(Dictionary<string,object> request,string projectPath,
+            PlcSoftware plc=null,string directory=null)
+        {
+            string path=GetString(request,"normal_program_state_path","");
+            if(String.IsNullOrEmpty(path))return null;
+            var states=new List<Dictionary<string,object>>();
+            foreach(string candidate in new[]{path,path+".pending"})
+                if(File.Exists(candidate))
+                {
+                    var state=ReadJson(candidate);
+                    if(!PathsEqual(GetRequiredString(state,"project_path"),projectPath))throw new InvalidOperationException("PID_BLOCK_CONFLICT: Normal ownership record belongs to another project.");
+                    states.Add(state);
+                }
+            if(plc!=null && plc.BlockGroup.Groups.Any(g=>Regex.IsMatch(g.Name,"^VozPID_[a-f0-9]{64}$")))
+                return PidControlSupport.ResolveNormalPidState(states,state=>PidControlSupport.CaptureNormalPidInventory(plc,
+                    state["manifest"] as Dictionary<string,object>,projectPath,directory));
+            return states.FirstOrDefault();
+        }
+
+        private static void SaveNormalState(Project project,Dictionary<string,object> request,
+            Dictionary<string,object> state,Dictionary<string,object> report)
+        {
+            string path=GetRequiredString(request,"normal_program_state_path");
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            string pending=path+".pending",temporary=path+"."+Guid.NewGuid().ToString("N")+".tmp";
+            WriteJson(temporary,state);
+            if(File.Exists(pending))File.Replace(temporary,pending,null);else File.Move(temporary,pending);
+            // Persist the complete ownership record before saving the project. If publication
+            // fails afterwards, the verified pending record remains recoverable on the next call.
+            project.Save();report["project_saved"]=true;
+            try{if(File.Exists(path))File.Replace(pending,path,null);else File.Move(pending,path);}
+            catch(IOException exception){report["normal_program_state_pending"]=pending;((List<string>)report["warnings"]).Add("Registro recuperable pendiente: "+exception.Message);}
+            catch(UnauthorizedAccessException exception){report["normal_program_state_pending"]=pending;((List<string>)report["warnings"]).Add("Registro recuperable pendiente: "+exception.Message);}
+        }
+
+        private static void RecoverNormalProject(TiaPortal portal,ref Project project,Dictionary<string,object> report)
+        {
+            if(!report.ContainsKey("normal_program_backup_path") || GetBool(report,"project_saved",false))return;
+            string path=project.Path.FullName;
+            try
+            {
+                // The operator's saved state was checked under exclusive access before backup.
+                // These are only our unsaved changes. Reopen the saved project after a failed
+                // generation/compile rather than leaving it paired with stale ownership metadata.
+                var previous=project;project=null;previous.Close();
+                project=portal.Projects.Open(new FileInfo(path));
+                report["normal_program_restored"]=true;
+            }
+            catch(Exception exception)
+            {
+                report["normal_program_restored"]=false;
+                AddError(report,"No se pudo reabrir el proyecto guardado. Respaldo: "+report["normal_program_backup_path"]+". "+exception.Message);
+            }
+        }
+
+        private static void BackupNormalProject(Project project,Dictionary<string,object> request,Dictionary<string,object> report)
+        {
+            if(project.IsModified && GetBool(request,"normal_save_before_backup",false))
+            {
+                Log("[TIA NORMAL] Saving current project before backup");
+                project.Save();
+                report["normal_input_saved_before_backup"]=true;
+                Log("[TIA NORMAL] Current project saved");
+            }
+            if(project.IsModified)throw new InvalidOperationException("PID_TEMPLATE_UNSAVED_CHANGES: guarde el proyecto TIA antes de generar otro programa.");
+            string directory=GetRequiredString(request,"normal_program_backup_directory");
+            if(Directory.Exists(directory))throw new InvalidOperationException("Normal backup directory must be new.");
+            Directory.CreateDirectory(directory);
+            var state=ReadNormalState(request,project.Path.FullName);
+            if(state!=null)WriteJson(Path.Combine(directory,"normal_program_state.json"),state);
+            string statePath=GetRequiredString(request,"normal_program_state_path")+".pending";
+            if(File.Exists(statePath))File.Copy(statePath,Path.Combine(directory,"normal_program_state.pending.json"));
+            string status=ArchiveProject(project,directory,"BeforeProgram.zap18",report,"NORMAL",TrialArchiveMaxAttempts);
+            report["normal_program_backup_path"]=Path.Combine(directory,"BeforeProgram.zap18");
+            if(status!="CREATED")throw new InvalidOperationException(status+": "+GetString(report,"archive_error",""));
+        }
+
+        private static Dictionary<string,object> ExecuteSaveNativePidParameters(Dictionary<string,object> request)
+        {
+            var report=NewReport("PID_PARAMETER_SAVE_FAILED");
+            report["project_saved"]=false;report["parameters_verified"]=false;
+            report["physical_download_executed"]=false;
+            TiaPortal portal=null;Project project=null;bool attached=false;
+            bool verificationOnly=GetBool(request,"verification_only",false);
+            try
+            {
+                var parameters=request["parameters"] as Dictionary<string,object>;
+                PidControlSupport.ValidateParameterValues(parameters);
+                string directory=GetRequiredString(request,"parameter_save_directory");
+                PidControlSupport.VerifyFileHash(GetRequiredString(request,"source_path"),GetRequiredString(request,"pid_source_sha256"));
+                PidControlSupport.VerifyFileHash(GetRequiredString(request,"pid_manifest_path"),GetRequiredString(request,"pid_manifest_sha256"));
+                PidControlSupport.VerifyFileHash(GetRequiredString(request,"pid_bindings_path"),GetRequiredString(request,"pid_bindings_sha256"));
+                var manifest=ReadJson(GetRequiredString(request,"pid_manifest_path"));
+                var loop=PidControlSupport.ValidateManifest(manifest);
+                if(!Object.Equals(manifest["schema_version"],2) || Convert.ToString(loop["configuration_hash"])!=GetRequiredString(request,"configuration_hash"))
+                    throw new InvalidOperationException("PID_PARAMETER_SAVE: mismatched controller configuration");
+                OpenConfiguredProject(request,out portal,out project,out attached);
+                report["project_path"]=project.Path.FullName;report["configuration_hash"]=loop["configuration_hash"];
+                using(var access=portal.ExclusiveAccess("Guardar parametros PID verificados"))
+                {
+                    if(project.IsModified)throw new InvalidOperationException("PID_TEMPLATE_UNSAVED_CHANGES: guarde sus cambios antes de guardar ajustes PID.");
+                    var oldState=ReadNormalState(request,project.Path.FullName);
+                    if(oldState==null || GetString(oldState,"kind","")!="PID"
+                        || GetString(oldState,"configuration_hash","")!=Convert.ToString(loop["configuration_hash"]))
+                        throw new InvalidOperationException("PID_PARAMETER_SAVE: missing matching Normal ownership record");
+                    BackupNormalProject(project,request,report);
+                    report["backup_path"]=report["normal_program_backup_path"];
+                    report["backup_sha256"]=Sha256File(Convert.ToString(report["backup_path"]));
+                    var plc=FindPlcSoftware(project,GetString(request,"plc_name",""));
+                    if(plc==null)throw new InvalidOperationException("PID_PARAMETER_SAVE: PLC software missing");
+                    var actual=PidControlSupport.CaptureNormalPidInventory(plc,manifest,project.Path.FullName,directory);
+                    PidControlSupport.ValidateNormalPidInventory(oldState,actual);
+                    var symbols=(Dictionary<string,object>)loop["symbols"];
+                    var fb=FindBlock(plc.BlockGroup,Convert.ToString(symbols["fb"]));
+                    string exported=Path.Combine(directory,"BeforePidFB.xml");
+                    fb.Export(new FileInfo(exported),ExportOptions.WithDefaults);
+                    var signature=((IEnumerable)request["build_signature"]).Cast<object>().Select(v=>Convert.ToInt32(v)).ToArray();
+                    PidControlSupport.ValidateBuildSignatureXml(File.ReadAllText(exported),signature);
+                    var obj=plc.TechnologicalObjectGroup.TechnologicalObjects.Find(Convert.ToString(symbols["controller"]));
+                    var mapping=new Dictionary<string,string>{{"Kp","Retain.CtrlParams.Gain"},{"Ti","Retain.CtrlParams.Ti"},{"Td","Retain.CtrlParams.Td"}};
+                    var before=new Dictionary<string,object>();var after=new Dictionary<string,object>();
+                    foreach(var item in mapping)before[item.Key]=obj.Parameters.Find(item.Value).Value;
+                    report["parameters_before"]=before;
+                    if(verificationOnly)
+                    {
+                        PidControlSupport.VerifyUploadedParameters(parameters,before,
+                            Convert.ToBoolean(obj.Parameters.Find("_Retain.CtrlParams.SetByUser").Value));
+                        after=before;
+                        report["project_saved"]=!project.IsModified;
+                        report["save_method"]="TIA_MANUAL_UPLOAD_VERIFIED";
+                    }
+                    else
+                    {
+                        foreach(var item in mapping)
+                        {
+                            var parameter=obj.Parameters.Find(item.Value);
+                            parameter.Value=Convert.ChangeType(parameters[item.Key],parameter.Value.GetType());
+                            after[item.Key]=Convert.ToDouble(parameter.Value);
+                        }
+                        PidControlSupport.VerifyUploadedParameters(parameters,after,true);
+                        obj.Parameters.Find("_Retain.CtrlParams.SetByUser").Value=true;
+                        SaveNormalState(project,request,PidControlSupport.CaptureNormalPidInventory(plc,manifest,project.Path.FullName,directory),report);
+                        report["save_method"]="OPENNESS_WRITE_VERIFIED";
+                    }
+                    PidControlSupport.ValidateParameterValues(after);
+                    foreach(var item in mapping)
+                        if(Math.Abs(Convert.ToDouble(obj.Parameters.Find(item.Value).Value)-Convert.ToDouble(parameters[item.Key]))>0.0001)
+                            throw new InvalidOperationException("PID_PARAMETER_SAVE: saved readback differs");
+                    report["parameters_after"]=after;report["parameters_verified"]=true;
+                    report["status"]="PID_PARAMETERS_SAVED";
+                }
+            }
+            catch(Exception exception)
+            {
+                report["status"]="PID_PARAMETER_SAVE_FAILED";
+                AddError(report,exception.GetType().FullName+": "+exception.Message);
+                if(project!=null && !verificationOnly)RecoverNormalProject(portal,ref project,report);
+            }
+            finally
+            {
+                if(project!=null && !attached)try{project.Close();}catch(Exception){}
+                if(portal!=null)portal.Dispose();
+            }
+            return report;
+        }
+
+        private static Dictionary<string,object> ExecuteNormalPidCompile(Dictionary<string,object> request)
+        {
+            var manifest=request["pid_manifest"] as Dictionary<string,object>;
+            var loop=PidControlSupport.ValidateManifest(manifest);
+            if(!Object.Equals(manifest["schema_version"],2))throw new InvalidOperationException("PID_CONFIG_MISMATCH: Normal in-place requires a map-driven v2 package.");
+            string requested=GetRequiredString(request,"project_path");
+            if(!PathsEqual(requested,GetRequiredString(request,"template_project_path")))throw new InvalidOperationException("PID_CONFIG_MISMATCH: Normal project differs from configured template.");
+            PidControlSupport.VerifyFileHash(GetRequiredString(request,"source_path"),GetRequiredString(request,"pid_source_sha256"));
+            PidControlSupport.VerifyFileHash(GetRequiredString(request,"pid_cyclic_ob_path"),GetRequiredString(request,"pid_cyclic_ob_sha256"));
+            string directory=GetRequiredString(request,"pid_development_directory");
+            if(Directory.Exists(directory))throw new InvalidOperationException("PID_CONFIG_MISMATCH: staging directory must be new.");
+            Directory.CreateDirectory(directory);
+            var report=NewReport("RUNNING");
+            report["pid_project_mode"]="NORMAL_PROJECT";report["project_path"]=requested;
+            report["template_project_path"]=requested;report["physical_download_executed"]=false;
+            report["original_project_preserved"]=false;report["project_saved"]=false;
+            foreach(string key in new[]{"pid_source_sha256","pid_cyclic_ob_sha256","pid_manifest_sha256","pid_bindings_sha256"})
+                if(request.ContainsKey(key))report[key]=request[key];
+            TiaPortal portal=null;Project project=null;bool attached=false;
+            try
+            {
+                report["failed_stage"]="open_pid_source";
+                OpenConfiguredProject(request,out portal,out project,out attached);
+                report["attached_to_existing_tia"]=attached;
+                Log("[TIA NORMAL] Requesting exclusive access for PID generation");
+                using(var access=portal.ExclusiveAccess("Generar PID en proyecto Normal"))
+                {
+                    Log("[TIA NORMAL] Exclusive access acquired");
+                    report["failed_stage"]="backup_normal_project";
+                    BackupNormalProject(project,request,report);
+                    var plc=FindPlcSoftware(project,GetString(request,"plc_name",""));
+                    if(plc==null)throw new InvalidOperationException("No unique PLC software selected.");
+                    // Compile is forbidden inside an Openness transaction. Check the old program
+                    // first; regeneration/import then forms one undo unit and rolls back on errors.
+                    report["failed_stage"]="verify_previous_program";
+                    if(plc.GetService<ICompilable>().Compile().ErrorCount!=0)throw new InvalidOperationException("PID_TEMPLATE_COMPILE_REQUIRED: el programa anterior contiene errores.");
+                    var state=ReadNormalState(request,project.Path.FullName,plc,directory);
+                    report["failed_stage"]="verify_legacy_program";
+                    report["verified_legacy_program_retired"]=PidControlSupport.RetireVerifiedLegacyProgram(plc,directory,true);
+                    report["failed_stage"]="generate_blocks";
+                    using(var transaction=access.Transaction(project,"Programa PID generado"))
+                    {
+                        report["previous_pid_retired"]=PidControlSupport.RetireNormalPidProgram(plc,state,manifest,project.Path.FullName,directory);
+                        plc=GenerateNativePidBlocks(project,request,manifest,loop,report,directory,false);
+                        transaction.CommitOnDispose();
+                    }
+                    report["failed_stage"]="compile";
+                    CompileNativePidBlocks(project,plc,request,manifest,loop,report);
+                    report.Remove("failed_stage");
+                }
+                if(GetString(report,"status","")!="TIA_COMPILATION_PASSED")RecoverNormalProject(portal,ref project,report);
+            }
+            catch(Exception exception)
+            {
+                report["status"]=exception.Message.StartsWith("PID_TEMPLATE_UNSAVED_CHANGES",StringComparison.Ordinal)
+                    ? "PID_TEMPLATE_UNSAVED_CHANGES" : "TIA_OPENNESS_ERROR";
+                AddError(report,exception.GetType().FullName+": "+exception.Message);report["exception"]=exception.ToString();
+                if(project!=null)RecoverNormalProject(portal,ref project,report);
+            }
+            finally
+            {
+                try{if(!attached && project!=null)project.Close();}finally{if(portal!=null)portal.Dispose();}
+            }
+            return report;
+        }
+
+        private static Dictionary<string, object> ExecuteNativePidCompile(Dictionary<string, object> request)
+        {
+            if(GetString(request,"pid_project_mode","")=="NORMAL_PROJECT")return ExecuteNormalPidCompile(request);
+            var manifest=request["pid_manifest"] as Dictionary<string,object>;
+            var loop=PidControlSupport.ValidateManifest(manifest);
+            string directory=GetRequiredString(request,"pid_development_directory");
+            string sourcePath=GetRequiredString(request,"source_path");
+            string xmlPath=GetRequiredString(request,"pid_cyclic_ob_path");
+            PidControlSupport.VerifyFileHash(sourcePath,GetRequiredString(request,"pid_source_sha256"));
+            PidControlSupport.VerifyFileHash(xmlPath,GetRequiredString(request,"pid_cyclic_ob_sha256"));
+            if(Directory.Exists(directory)) throw new InvalidOperationException("PID_CONFIG_MISMATCH: staging directory must be new");
+            Directory.CreateDirectory(directory);
+            var report=NewReport("RUNNING");
+            report["physical_download_executed"]=false;
+            report["template_project_path"]=GetRequiredString(request,"template_project_path");
+            report["original_project_preserved"]=true;
+            report["pid_source_sha256"]=GetRequiredString(request,"pid_source_sha256");
+            report["pid_cyclic_ob_sha256"]=GetRequiredString(request,"pid_cyclic_ob_sha256");
+            foreach(string key in new[]{"pid_manifest_sha256","pid_bindings_sha256"})
+                if(request.ContainsKey(key))report[key]=request[key];
+            try
+            {
+                string archiveStatus = ArchiveNativePidSource(request, directory, report);
+                if (archiveStatus != "CREATED")
+                {
+                    report["status"] = archiveStatus;
+                    AddError(report, archiveStatus == "PID_TEMPLATE_UNSAVED_CHANGES"
+                        ? "La plantilla tiene cambios sin guardar. Guardela en TIA Portal y vuelva a ejecutar; puede dejarla abierta."
+                        : archiveStatus + ": " + GetString(report, "archive_error", ""));
+                    return report;
+                }
+            }
+            catch (Exception exception)
+            {
+                report["status"] = GetString(report, "failed_stage", "") == "open_pid_source"
+                    ? "TIA_PROJECT_OPEN_FAILED" : "TIA_PID_SNAPSHOT_FAILED";
+                AddError(report, exception.GetType().FullName + ": " + exception.Message);
+                report["exception"] = exception.ToString();
+                return report;
+            }
+            report.Remove("failed_stage");
+            using(var portal=new TiaPortal(TiaPortalMode.WithoutUserInterface))
+            {
+                if(!File.Exists(Path.Combine(directory,"NativePID.zap18"))) throw new InvalidOperationException("PID_CONFIG_MISMATCH: archive missing");
+                var project=portal.Projects.Retrieve(new FileInfo(Path.Combine(directory,"NativePID.zap18")),new DirectoryInfo(Path.Combine(directory,"work")));
+                try
+                {
+                    report["project_path"]=project.Path.FullName;
+                    var plc=GenerateNativePidBlocks(project,request,manifest,loop,report,directory,true);
+                    CompileNativePidBlocks(project,plc,request,manifest,loop,report);
+                }
+                finally { project.Close(); }
+            }
             return report;
         }
 
@@ -363,40 +891,11 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             TiaPortal portal = null;
             Project project = null;
             bool attachedToExisting = false;
+            ExclusiveAccess normalAccess=null;
+            Transaction normalTransaction=null;
             try
             {
-                if (attach)
-                {
-                    TiaPortalProcess process = TiaPortal.GetProcesses().FirstOrDefault();
-                    if (process != null)
-                    {
-                        portal = process.Attach();
-                        attachedToExisting = true;
-                    }
-                }
-                if (portal == null)
-                {
-                    portal = new TiaPortal(withUi ? TiaPortalMode.WithUserInterface : TiaPortalMode.WithoutUserInterface);
-                }
-
-                project = portal.Projects.FirstOrDefault();
-                if (project == null)
-                {
-                    if (String.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
-                    {
-                        throw new FileNotFoundException("No TIA project is open and project_path is invalid.", projectPath);
-                    }
-                    project = portal.Projects.Open(new FileInfo(projectPath));
-                }
-
-                string openProjectPath = project.Path.FullName;
-                if (!String.IsNullOrWhiteSpace(projectPath) && !PathsEqual(projectPath, openProjectPath))
-                {
-                    throw new InvalidOperationException(
-                        "The open TIA project does not match the configured project. Open: "
-                        + openProjectPath + "; configured: " + projectPath
-                    );
-                }
+                OpenConfiguredProject(request,out portal,out project,out attachedToExisting);
 
                 PlcSoftware plcSoftware = FindPlcSoftware(project, requestedPlcName);
                 if (plcSoftware == null)
@@ -405,10 +904,27 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 }
 
                 report["attached_to_existing_tia"] = attachedToExisting;
-                report["project_path"] = openProjectPath;
+                report["project_path"] = project.Path.FullName;
                 report["plc_name"] = plcSoftware.Name;
                 report["source_path"] = sourcePath;
                 report["physical_download_executed"] = false;
+
+                if(request.ContainsKey("normal_program_state_path"))
+                {
+                    normalAccess=portal.ExclusiveAccess("Generar programa discreto en proyecto Normal");
+                    BackupNormalProject(project,request,report);
+                    // Verification regenerates and compiles the old source before export.
+                    // Compile is forbidden inside a transaction; backup/reopen recovery
+                    // protects this preparation as well as the transactional replacement.
+                    report["verified_legacy_program_retired"]=PidControlSupport.RetireVerifiedLegacyProgram(plcSoftware,
+                        GetRequiredString(request,"normal_program_backup_directory"),true);
+                    normalTransaction=normalAccess.Transaction(project,"Programa discreto generado");
+                    report["previous_pid_retired"]=PidControlSupport.RetireNormalPidProgram(plcSoftware,
+                        ReadNormalState(request,project.Path.FullName,plcSoftware,GetRequiredString(request,"normal_program_backup_directory")),null,project.Path.FullName,
+                        GetRequiredString(request,"normal_program_backup_directory"));
+                    var collisions=PidControlSupport.NormalSourceCollisions(PidControlSupport.AllBlocks(plcSoftware.BlockGroup).Select(block=>block.Name),File.ReadAllText(sourcePath));
+                    if(collisions.Count>0)throw new InvalidOperationException("PID_BLOCK_CONFLICT: la fuente reemplazaria bloques ajenos: "+String.Join(", ",collisions));
+                }
 
                 if (createTags)
                 {
@@ -428,6 +944,11 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 PlcExternalSource source = plcSoftware.ExternalSourceGroup.ExternalSources.CreateFromFile(sourceName, sourcePath);
                 IList<IEngineeringObject> generatedBlocks = source.GenerateBlocksFromSource(GenerateBlockOption.None);
                 report["generated_blocks_count"] = generatedBlocks == null ? 0 : generatedBlocks.Count;
+
+                if(normalTransaction!=null)
+                {
+                    normalTransaction.CommitOnDispose();normalTransaction.Dispose();normalTransaction=null;
+                }
 
                 int errorCount = 0;
                 int warningCount = 0;
@@ -450,17 +971,37 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                 bool success = errorCount == 0;
                 if (success && saveOnSuccess)
                 {
-                    project.Save();
-                    report["project_saved"] = true;
+                    if(request.ContainsKey("normal_program_state_path"))
+                        SaveNormalState(project,request,new Dictionary<string,object>{{"schema_version",1},
+                            {"owner","VozLlmPlcAgent.NormalProgram.v1"},{"kind","DISCRETE"},{"project_path",project.Path.FullName}},report);
+                    else {project.Save();report["project_saved"]=true;}
                 }
                 else
                 {
                     report["project_saved"] = false;
                 }
                 report["status"] = success ? "TIA_COMPILATION_PASSED" : "TIA_COMPILATION_FAILED";
+                if(!success && normalAccess!=null)
+                {
+                    normalAccess.Dispose();normalAccess=null;
+                    RecoverNormalProject(portal,ref project,report);
+                }
+            }
+            catch(Exception exception)
+            {
+                if(!request.ContainsKey("normal_program_state_path"))throw;
+                if(normalTransaction!=null){normalTransaction.Dispose();normalTransaction=null;}
+                if(normalAccess!=null){normalAccess.Dispose();normalAccess=null;}
+                report["status"]=exception.Message.StartsWith("PID_TEMPLATE_UNSAVED_CHANGES",StringComparison.Ordinal)
+                    ? "PID_TEMPLATE_UNSAVED_CHANGES" : "TIA_OPENNESS_ERROR";
+                report["project_saved"]=GetBool(report,"project_saved",false);
+                AddError(report,exception.GetType().FullName+": "+exception.Message);report["exception"]=exception.ToString();
+                if(project!=null)RecoverNormalProject(portal,ref project,report);
             }
             finally
             {
+                if(normalTransaction!=null)normalTransaction.Dispose();
+                if(normalAccess!=null)normalAccess.Dispose();
                 if (!attachedToExisting && project != null)
                 {
                     project.Close();
@@ -983,38 +1524,36 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             TiaPortal portal = null;
             Project project = null;
             bool attachedToExisting = false;
+            ExclusiveAccess downloadAccess=null;
             try
             {
-                if (attach)
-                {
-                    TiaPortalProcess process = TiaPortal.GetProcesses().FirstOrDefault();
-                    if (process != null)
-                    {
-                        portal = process.Attach();
-                        attachedToExisting = true;
-                    }
-                }
-                if (portal == null)
-                {
-                    portal = new TiaPortal(withUi ? TiaPortalMode.WithUserInterface : TiaPortalMode.WithoutUserInterface);
-                }
+                OpenConfiguredProject(request,out portal,out project,out attachedToExisting);
 
-                project = portal.Projects.FirstOrDefault();
-                if (project == null)
+                if(GetString(request,"pid_project_mode","")=="NORMAL_PROJECT")
                 {
-                    if (String.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
-                    {
-                        throw new FileNotFoundException("No TIA project is open and project_path is invalid.", projectPath);
-                    }
-                    project = portal.Projects.Open(new FileInfo(projectPath));
+                    downloadAccess=portal.ExclusiveAccess("Verificar y descargar PID Normal");
+                    if(project.IsModified)throw new InvalidOperationException("PID_COMPILE_REQUIRED: el proyecto tiene cambios sin guardar.");
+                    string checks=Path.Combine(Path.GetTempPath(),"normal_pid_download_"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(checks);
+                    var normalPlc=FindPlcSoftware(project,GetString(request,"plc_name",""));
+                    var state=ReadNormalState(request,project.Path.FullName,normalPlc,checks);
+                    var manifest=request["pid_manifest"] as Dictionary<string,object>;
+                    if(state==null || !state.ContainsKey("manifest"))throw new InvalidOperationException("PID_COMPILE_REQUIRED: falta el registro compilado del PID.");
+                    PidControlSupport.ValidateNormalPidInventory(state,PidControlSupport.CaptureNormalPidInventory(normalPlc,manifest,project.Path.FullName,checks));
                 }
-
                 report["attached_to_existing_tia"] = attachedToExisting;
                 report["project_path"] = project.Path.FullName;
+                if(request.ContainsKey("pid_manifest"))
+                {
+                    var manifest=request["pid_manifest"] as Dictionary<string,object>;
+                    PidControlSupport.VerifyDownloadTarget(manifest,GetString(request,"target_type",""));
+                    var plc=FindPlcSoftware(project,GetString(request,"plc_name",""));
+                    report["pid_pre_download"]=PidControlSupport.VerifyForDownload(plc,manifest);
+                }
                 RunDownload(project, request, report);
             }
             finally
             {
+                if(downloadAccess!=null)downloadAccess.Dispose();
                 if (!attachedToExisting && project != null)
                 {
                     project.Close();
@@ -1130,7 +1669,18 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             DownloadResult downloadResult;
             try
             {
-                downloadResult = downloadProvider.Download(targetConfiguration, handler, handler, options);
+                string address=ConnectionTargetSupport.ValidateAddress(request);
+                report["requested_target_address"]=address;
+                if(address==null)
+                    downloadResult=downloadProvider.Download(targetConfiguration,handler,handler,options);
+                else
+                {
+                    var targetPort=targetConfiguration as ConfigurationTargetInterface;
+                    if(targetPort==null)throw new InvalidOperationException("Seleccione un puerto del PLC para la direccion explicita.");
+                    var endpoint=targetPort.Addresses.Find(address) ?? targetPort.Addresses.Create(address);
+                    report["address_route_applied"]=true;
+                    downloadResult=downloadProvider.Download(targetConfiguration,endpoint,handler,handler,options);
+                }
             }
             catch (DownloadConfigurationRejectedException rejected)
             {
@@ -1300,78 +1850,55 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
         /// "PLCSIM"; any other target requires exactly one PC interface overall. Never scans the
         /// network, never changes addresses, never picks among several candidates.
         /// </summary>
-        private static IConfiguration ResolveDownloadTarget(
-            ConnectionConfiguration connectionConfiguration,
-            Dictionary<string, object> request,
-            string targetType,
-            Dictionary<string, object> report,
-            out ConfigurationPcInterface pcInterface)
+        private static List<Dictionary<string,object>> ConnectionRows(ConnectionConfiguration configuration)
         {
-            pcInterface = null;
-            string modeName = GetString(request, "configuration_mode", "").Trim();
-            string pcName = GetString(request, "pc_interface", "").Trim();
-            string targetName = GetString(request, "target_interface", "").Trim();
+            var rows=new List<Dictionary<string,object>>();
+            foreach(var mode in configuration.Modes)
+                foreach(var pc in mode.PcInterfaces)
+                    rows.Add(new Dictionary<string,object>{{"mode",mode.Name},{"pc_interface",pc.Name},
+                        {"number",pc.Number},{"target_interfaces",pc.TargetInterfaces.Select(t=>t.Name).ToList()}});
+            return rows;
+        }
 
-            List<object> available = new List<object>();
-            List<KeyValuePair<ConfigurationMode, ConfigurationPcInterface>> candidates = new List<KeyValuePair<ConfigurationMode, ConfigurationPcInterface>>();
-            foreach (ConfigurationMode mode in connectionConfiguration.Modes)
+        private static Dictionary<string,object> ExecuteListConnections(Dictionary<string,object> request)
+        {
+            var report=NewReport("TIA_CONNECTIONS_FAILED");TiaPortal portal=null;Project project=null;bool attached=false;
+            try
             {
-                foreach (ConfigurationPcInterface candidate in mode.PcInterfaces)
-                {
-                    available.Add(new Dictionary<string, object>
-                    {
-                        { "mode", mode.Name },
-                        { "pc_interface", candidate.Name },
-                        { "number", candidate.Number },
-                        { "target_interfaces", candidate.TargetInterfaces.Select(t => t.Name).ToList() }
-                    });
-                    if (modeName.Length > 0 && !String.Equals(mode.Name, modeName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-                    bool match = pcName.Length > 0
-                        ? String.Equals(candidate.Name, pcName, StringComparison.OrdinalIgnoreCase)
-                        : targetType != TargetTypePlcsimAdvanced || candidate.Name.IndexOf("PLCSIM", StringComparison.OrdinalIgnoreCase) >= 0;
-                    if (match)
-                    {
-                        candidates.Add(new KeyValuePair<ConfigurationMode, ConfigurationPcInterface>(mode, candidate));
-                    }
-                }
+                OpenConfiguredProject(request,out portal,out project,out attached);
+                report["project_path"]=project.Path.FullName;
+                var cpus=new List<KeyValuePair<DeviceItem,PlcSoftware>>();
+                foreach(Device device in project.Devices)
+                    foreach(DeviceItem item in device.DeviceItems)CollectPlcCandidates(item,cpus);
+                report["expected_cpus"]=cpus.Select(c=>new Dictionary<string,object>{{"plc_name",c.Value.Name},{"name",c.Key.Name},{"type_identifier",c.Key.TypeIdentifier}}).ToList();
+                string name=GetString(request,"plc_name","");
+                var matches=String.IsNullOrWhiteSpace(name)?cpus:cpus.Where(c=>String.Equals(c.Value.Name,name,StringComparison.OrdinalIgnoreCase)).ToList();
+                if(matches.Count!=1)throw new InvalidOperationException("Seleccione una CPU unica en el proyecto Normal.");
+                var provider=matches[0].Key.GetService<DownloadProvider>();
+                if(provider==null)throw new InvalidOperationException("La CPU seleccionada no ofrece el servicio de descarga.");
+                report["connections"]=ConnectionRows(provider.Configuration);
+                report["capabilities"]=new Dictionary<string,object>{{"physical_discovery",false},{"explicit_address",true}};
+                report["status"]="TIA_CONNECTIONS_PASSED";report["physical_download_executed"]=false;
             }
-            report["available_connections"] = available;
+            finally {if(project!=null && !attached)project.Close();if(portal!=null)portal.Dispose();}
+            return report;
+        }
 
-            if (candidates.Count != 1)
-            {
-                AddError(
-                    report,
-                    "No se pudo determinar de forma inequivoca la interfaz PG/PC de descarga (" + candidates.Count
-                    + " candidatas). Configure 'pc_interface' en download_targets (ver available_connections)."
-                );
-                return null;
-            }
-
-            pcInterface = candidates[0].Value;
-            report["configuration_mode"] = candidates[0].Key.Name;
-            report["pc_interface_name"] = pcInterface.Name;
-
-            List<ConfigurationTargetInterface> targets = pcInterface.TargetInterfaces.ToList();
-            ConfigurationTargetInterface target = null;
-            if (targetName.Length > 0)
-            {
-                target = targets.FirstOrDefault(t => String.Equals(t.Name, targetName, StringComparison.OrdinalIgnoreCase));
-            }
-            else if (targets.Count == 1)
-            {
-                target = targets[0];
-            }
-            if (target == null)
-            {
-                report["available_target_interfaces"] = targets.Select(t => t.Name).ToList();
-                AddError(report, "No se pudo determinar de forma inequivoca la interfaz destino del PLC. Configure 'target_interface'.");
-                return null;
-            }
-            report["target_interface_name"] = target.Name;
-            return target;
+        private static IConfiguration ResolveDownloadTarget(ConnectionConfiguration connectionConfiguration,
+            Dictionary<string,object> request,string targetType,Dictionary<string,object> report,out ConfigurationPcInterface pcInterface)
+        {
+            pcInterface=null;var rows=ConnectionRows(connectionConfiguration);report["available_connections"]=rows;
+            var selection=new Dictionary<string,object>(request);selection["target_type"]=targetType;
+            Dictionary<string,object> selected;
+            try {selected=ConnectionTargetSupport.SelectInterface(rows,selection);ConnectionTargetSupport.ValidateAddress(request);}
+            catch(InvalidOperationException error){AddError(report,error.Message);return null;}
+            var mode=connectionConfiguration.Modes.Find(Convert.ToString(selected["mode"]));
+            pcInterface=mode.PcInterfaces.Find(Convert.ToString(selected["pc_interface"]),Convert.ToInt32(selected["number"]));
+            report["configuration_mode"]=mode.Name;report["pc_interface_name"]=pcInterface.Name;report["pc_interface_number"]=pcInterface.Number;
+            var targets=pcInterface.TargetInterfaces.ToList();string name=GetString(request,"target_interface","").Trim();
+            var matches=name.Length==0?targets:targets.Where(t=>String.Equals(t.Name,name,StringComparison.OrdinalIgnoreCase)).ToList();
+            if(matches.Count!=1){report["available_target_interfaces"]=targets.Select(t=>t.Name).ToList();AddError(report,"Seleccione un puerto destino inequivoco del proyecto.");return null;}
+            report["target_interface_name"]=matches[0].Name;return matches[0];
         }
 
         private static void CollectPlcCandidates(DeviceItem item, IList<KeyValuePair<DeviceItem, PlcSoftware>> result)
@@ -1578,6 +2105,26 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             {
                 CollectInterfaces(child, result);
             }
+        }
+
+        private static Dictionary<string, object> DescribeCpuIdentity(Project project,string requestedPlcName)
+        {
+            var candidates=new List<KeyValuePair<DeviceItem,PlcSoftware>>();
+            foreach(Device device in project.Devices)
+                foreach(DeviceItem item in device.DeviceItems)CollectPlcCandidates(item,candidates);
+            var matches=String.IsNullOrWhiteSpace(requestedPlcName)?candidates:
+                candidates.Where(c=>String.Equals(c.Value.Name,requestedPlcName,StringComparison.OrdinalIgnoreCase)).ToList();
+            var info=new Dictionary<string,object>{{"project_name",project.Name},{"plc_count",candidates.Count}};
+            if(matches.Count!=1)throw new InvalidOperationException("PID_CPU_IDENTITY: no unique CPU in the compiled copy");
+            info["plc_name"]=matches[0].Value.Name;
+            info["cpu_device_item"]=matches[0].Key.Name;
+            info["cpu_type_identifier"]=matches[0].Key.TypeIdentifier;
+            foreach(string attribute in new[]{"TypeName","OrderNumber","FirmwareVersion"})
+            {
+                object value=null;try{value=matches[0].Key.GetAttribute(attribute);}catch(Exception){}
+                info["cpu_"+attribute]=value==null?null:value.ToString();
+            }
+            return info;
         }
 
         private static Dictionary<string, object> DescribePlcProject(Project project, string requestedPlcName)
@@ -2292,6 +2839,31 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
             string stage = "start_tia";
             TiaPortal portal = null;
             Project project = null;
+            Dictionary<string,object> nativeRequest=null,nativeManifest=null,nativeLoop=null;
+            if(request.ContainsKey("native_pid"))
+            {
+                PidControlSupport.VerifyExperimentalTarget(GetString(request,"target_type",""),
+                    GetString(request,"purpose",""),GetBool(request,"require_simulation",false),
+                    GetBool(request,"physical_download_allowed",true));
+                var native=request["native_pid"] as Dictionary<string,object>;
+                if(native==null)throw new InvalidOperationException("PID_BUNDLE_INTEGRITY: malformed native request");
+                nativeRequest=new Dictionary<string,object>(request);
+                foreach(var item in native)nativeRequest[item.Key]=item.Value;
+                string boundary=Path.GetFullPath(GetRequiredString(request,"handshake_dir")).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
+                foreach(string key in new[]{"source_path","pid_manifest_path","pid_bindings_path","pid_cyclic_ob_path"})
+                    if(!Path.GetFullPath(GetRequiredString(nativeRequest,key)).StartsWith(boundary,StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("PID_BUNDLE_INTEGRITY: native file outside workspace");
+                PidControlSupport.VerifyFileHash(sourcePath,GetRequiredString(nativeRequest,"pid_source_sha256"));
+                PidControlSupport.VerifyFileHash(GetRequiredString(nativeRequest,"pid_cyclic_ob_path"),GetRequiredString(nativeRequest,"pid_cyclic_ob_sha256"));
+                PidControlSupport.VerifyFileHash(GetRequiredString(nativeRequest,"pid_manifest_path"),GetRequiredString(nativeRequest,"pid_manifest_sha256"));
+                PidControlSupport.VerifyFileHash(GetRequiredString(nativeRequest,"pid_bindings_path"),GetRequiredString(nativeRequest,"pid_bindings_sha256"));
+                nativeManifest=ReadJson(GetRequiredString(nativeRequest,"pid_manifest_path"));
+                nativeLoop=PidControlSupport.ValidateManifest(nativeManifest);
+                report["pid_project_mode"]="EXPERIMENT_COPY";
+                report["configuration_hash"]=nativeLoop["configuration_hash"];
+                foreach(string key in new[]{"pid_source_sha256","pid_cyclic_ob_sha256","pid_manifest_sha256","pid_bindings_sha256"})
+                    report[key]=nativeRequest[key];
+            }
             try
             {
                 try
@@ -2374,8 +2946,18 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                     }
                     PlcExternalSource source = plcSoftware.ExternalSourceGroup.ExternalSources.CreateFromFile(sourceName, sourcePath);
                     report["imported_source_sha256"] = Sha256File(sourcePath);
-                    IList<IEngineeringObject> generatedBlocks = source.GenerateBlocksFromSource(GenerateBlockOption.None);
-                    report["generated_blocks_count"] = generatedBlocks == null ? 0 : generatedBlocks.Count;
+                    if(nativeManifest!=null)
+                    {
+                        string nativeStage=Path.Combine(workingDir,"np");Directory.CreateDirectory(nativeStage);
+                        plcSoftware=GenerateNativePidBlocks(project,nativeRequest,nativeManifest,nativeLoop,report,nativeStage,false);
+                        report["generated_blocks_count"]=3;
+                        report["project_path"]=project.Path.FullName;
+                    }
+                    else
+                    {
+                        IList<IEngineeringObject> generatedBlocks = source.GenerateBlocksFromSource(GenerateBlockOption.None);
+                        report["generated_blocks_count"] = generatedBlocks == null ? 0 : generatedBlocks.Count;
+                    }
                     Checkpoint("import_completed", "blocks=" + report["generated_blocks_count"]);
                     stages.Add(new Dictionary<string, object> { { "stage", stage }, { "ok", true } });
 
@@ -2391,6 +2973,12 @@ namespace VozLlmPlcAgent.TiaOpennessBridge
                     report["warning_count"] = compileResult.WarningCount;
                     report["compiler_state"] = compileResult.State.ToString();
                     report["compiler_messages"] = FlattenMessages(compileResult.Messages);
+                    if(nativeManifest!=null && compileResult.ErrorCount==0)
+                    {
+                        report["pid_cyclic_ob"]=PidControlSupport.VerifyCyclic(plcSoftware,nativeManifest,false);
+                        report["pid_infrastructure_after"]=PidControlSupport.Ensure(plcSoftware,nativeManifest);
+                        report["cpu"]=DescribeCpuIdentity(project,requestedPlcName);
+                    }
                     report["status"] = compileResult.ErrorCount == 0 ? "TIA_COMPILATION_PASSED" : "TIA_COMPILATION_FAILED";
                     Checkpoint("compile_completed", "errors=" + compileResult.ErrorCount + " warnings=" + compileResult.WarningCount);
                     // Solo NOMBRES de bloques (sin atributos enumerados ni interfaces) para detectar logica no administrada.

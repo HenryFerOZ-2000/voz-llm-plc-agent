@@ -64,6 +64,27 @@ class PLCTask:
 
 
 @dataclass
+class PLCPIDLoop:
+    loop_id: str
+    process_input: str | None
+    control_output: str | None
+    setpoint: float
+    unit: str
+    direction: str
+    period_ms: int
+    start_policy: str
+    resources: dict[str, str]
+    input_binding: dict
+    output_binding: dict
+    controller: dict
+    overfill_limit: float | None
+    symbols: dict[str, str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class PLCProjectIR:
     project_name: str
     target_platform: str
@@ -75,9 +96,10 @@ class PLCProjectIR:
     safety_rules: list[str] = field(default_factory=list)
     test_cases: list[dict[str, Any]] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+    pid_loops: list[PLCPIDLoop] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "project_name": self.project_name,
             "target_platform": self.target_platform,
             "case_id": self.case_id,
@@ -89,3 +111,6 @@ class PLCProjectIR:
             "test_cases": list(self.test_cases),
             "metadata": dict(self.metadata)
         }
+        if self.pid_loops:
+            result['pid_loops'] = [loop.to_dict() for loop in self.pid_loops]
+        return result

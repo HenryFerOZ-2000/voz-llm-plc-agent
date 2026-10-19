@@ -1,0 +1,46 @@
+{
+  "intent_id": "INT_UNKNOWN",
+  "case_id": null,
+  "command_text": "Cuando presione Start, activa la salida principal para llenar el tanque hasta el 80 %. Al alcanzar ese nivel, apágala y espera otro Start para repetir. Stop o la emergencia deben detener el llenado inmediatamente.",
+  "normalized_command": "cuando presione start, abrir la válvula de llenado al 100 % hasta que el nivel alcance el 80 %; cerrar la válvula al alcanzar el límite, con stop o emergencia, y esperar un nuevo start para repetir",
+  "parameters": {},
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: La señal AI_Level_Raw se usa escalada en porcentaje según su configuración analógica confirmada.",
+    "INFERRED: M_FillActive es un estado interno de ciclo, activado por Start y cancelado con prioridad por Stop, emergencia o nivel igual o superior a 80 %.",
+    "La apertura de la válvula durante el llenado es 100 % y su valor seguro al detenerse es 0 %, según la aclaración proporcionada.",
+    "Tras alcanzar el 80 %, Stop o emergencia, el ciclo queda en reposo y requiere un nuevo flanco de I_Start; no hay rearranque automático."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Stop",
+    "I_Emergency",
+    "AI_Level_Raw",
+    "AO_Fill_Command"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "latch",
+      "set": "I_Start",
+      "reset": "I_Stop OR I_Emergency OR AI_Level_Raw >= 80",
+      "condition_unit": "%",
+      "outputs": [
+        "M_FillActive"
+      ]
+    },
+    {
+      "type": "analog_output",
+      "output": "AO_Fill_Command",
+      "value": 100,
+      "unit": "%",
+      "condition": "M_FillActive AND NOT I_Stop AND NOT I_Emergency AND AI_Level_Raw < 80",
+      "condition_unit": "%"
+    }
+  ],
+  "operation_type": "PROGRAM",
+  "requested_io_assignments": []
+}

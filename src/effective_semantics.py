@@ -126,6 +126,34 @@ def normalize_effective_semantics(
         result["effective_semantics"] = {"schema_version": SCHEMA_VERSION, "status": STATUS_NOT_APPLICABLE, "intent_id": intent_id,
                                          "reason": "parameters no es un objeto", "errors": []}
         return result
+    # A pure selection request has no actuator/start/stop contract. Infer this
+    # compiler scope from the interpreted structure; never trust an LLM marker.
+    parameters = dict(parameters)
+    parameters.pop('_mode_selection_only', None)
+    requirements = semantic_output.get('functional_requirements') or []
+    selection_request = (
+        intent_id == 'INT_MANUAL_AUTO_MODE'
+        and str(semantic_output.get('operation_type') or '').lower() == 'mode_selection'
+        and bool(requirements)
+        and all(isinstance(r, dict) and r.get('type') in {'automatic_mode', 'manual_mode'}
+                and not r.get('commands') for r in requirements)
+    )
+    selector_only = (
+        selection_request
+        and bool(parameters.get('auto_input'))
+        and not any(parameters.get(k) for k in ('motor_output','manual_command_input','auto_command_input',
+                                                'trigger_input','stop_input','manual_input'))
+        and all(r.get('mode_input') in (None, '', parameters['auto_input']) for r in requirements)
+    )
+    if selection_request and not selector_only and not any(parameters.get(k) for k in ('manual_command_input','auto_command_input')):
+        # An unsupported selector must not turn into a motor program by fallback.
+        question = 'Confirme el selector de modo y si la orden solo selecciona el modo o tambien manda un actuador.'
+        result.update(parameters=parameters, requires_clarification=True, clarification_question=question)
+        result['effective_semantics'] = {'schema_version': SCHEMA_VERSION, 'status': STATUS_UNRESOLVED,
+            'intent_id': intent_id, 'origin': origin, 'interpreted_parameters': copy.deepcopy(parameters),
+            'defaulted_keys': [], 'internal_technical_defaults': {}, 'functional_value_defaults': {},
+            'errors': [{'code':'MODE_SELECTION_SCOPE_UNRESOLVED','detail':question}]}
+        return result
     before = parameters_before_repair if isinstance(parameters_before_repair, dict) else parameters
     interpreted = copy.deepcopy(parameters)
     provenance: dict[str, dict[str, Any]] = {}
@@ -142,7 +170,11 @@ def normalize_effective_semantics(
     # Programas compuestos (multi-actor, secuencias temporizadas) no usan la plantilla del intent: sus
     # recursos salen de functional_requirements (functional_resources). No se completa nada aqui.
     composable = has_composable_program(list(semantic_output.get("functional_requirements") or []))
-    table = None if composable else intent_resource_table(intent_id)
+    if selector_only:
+        parameters['_mode_selection_only'] = True
+        provenance['_mode_selection_only'] = {'source': SOURCE_DEFAULT, 'category': CATEGORY_INTERNAL,
+            'reason': 'seleccion de modo sin orden de actuador; alcance derivado de la estructura interpretada'}
+    table = None if composable else intent_resource_table(intent_id, parameters)
     effective = dict(parameters)
     errors: list[dict[str, Any]] = []
     defaulted: list[str] = []
@@ -187,6 +219,8 @@ def normalize_effective_semantics(
             if not isinstance(requirement, dict):
                 continue
             req_type = canonical_requirement_type(requirement.get("type"))
+            if selector_only and req_type in {'automatic_mode', 'manual_mode'}:
+                continue
             for key, default in (FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS.get(req_type) or {}).items():
                 if key in effective or key == EMERGENCY_KEY or not default.startswith(EXTERNAL_PREFIXES):
                     continue

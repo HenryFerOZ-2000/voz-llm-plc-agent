@@ -271,7 +271,7 @@ def test_final_summary_shown_after_apply(app, temp_map, monkeypatch):
     app.process_command()
 
     assert len(summaries) == 1
-    assert "CONFIGURACION AUTOMATICA" in summaries[0]
+    assert "Configuración de mapa aplicada." in summaries[0]  # mensaje solo tras aplicar
     assert "%QX8.0" in summaries[0] and "Q_Motor_1" in summaries[0]
 
 
@@ -361,16 +361,18 @@ def test_intent_unknown_with_functional_requirements_is_not_misreported_as_pure_
     monkeypatch.setattr(gui.messagebox, "showinfo", lambda title, message, *a, **k: info_messages.append(message))
     monkeypatch.setattr(gui, "ClarificationDialog", _stub_clarification_dialog(None))
 
+    before = json.loads(temp_map.read_text(encoding="utf-8"))
     app.command_textbox.insert("1.0", combined_output["command_text"])
     app.process_command()
 
-    # La configuracion de mapa SI se aplico (canal reclamado, sin ventana intermedia bloqueante) -
-    # el mensaje enganoso "sin logica adicional" nunca aparecio en ningun messagebox.
+    # Regla de Modo Normal transaccional: un INT_UNKNOWN que no puede generarse NO deja efectos persistentes
+    # (antes el canal quedaba reasignado en el mapa sin programa). El mensaje enganoso "sin logica adicional"
+    # tampoco aparece: el comando tiene logica, solo que no es generable.
     saved = json.loads(temp_map.read_text(encoding="utf-8"))
-    variable = next(v for v in saved["variables"] if v["location"] == "%QX8.0")
-    assert variable["name"] == "Q_Motor_1"
+    identity = lambda io_map: [(v["location"], v["name"], v["state"]) for v in io_map["variables"]]  # noqa: E731
+    assert identity(saved) == identity(before)
+    assert app._pending_map_transaction is None
     assert not any("no incluia logica PLC adicional" in message for message in info_messages)
-    assert app._last_map_config_summary is not None
 
 
 def test_map_config_summary_is_logged_before_automatic_generation(app, temp_map, monkeypatch):
@@ -405,6 +407,6 @@ def test_map_config_summary_is_logged_before_automatic_generation(app, temp_map,
 
     app.generate_package()
 
-    summary_logged = [message for message in logged_messages if "CONFIGURACION AUTOMATICA" in message]
+    summary_logged = [message for message in logged_messages if "Asignacion provisional de recursos" in message]
     assert len(summary_logged) == 1
     assert "Q_Motor_1" in summary_logged[0]

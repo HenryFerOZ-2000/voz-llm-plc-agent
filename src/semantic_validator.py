@@ -4,15 +4,19 @@ import re
 from typing import Any
 
 from functional_requirements import detect_functional_requirement_conflicts, has_composable_program, timed_sequence_missing_data
-from io_allocator import IEC_NAME_PATTERN, propose_assignment
+from io_allocator import IEC_NAME_PATTERN, capacity_gap, functional_role_key, propose_assignment
 from functional_requirements import (
     COMPOSABLE_TYPES,
+    composition_conflicts,
+    composition_missing_data,
+    detect_composed_program,
     detect_multi_actor_motor_targets,
-    detect_timed_sequences,
+    invalid_conditions,
     is_catalog_functional_requirement,
+    timed_sequence_inferences,
 )
 from effective_semantics import validation_errors as effective_validation_errors
-from functional_resources import resolve_functional_resources
+from functional_resources import condition_identifiers, resolve_functional_resources
 from ir_builder import INTENT_TEMPLATE_NOT_IMPLEMENTED, INTERNAL_PREFIXES, get_required_variables_for_intent
 from schemas import (
     PLC_TAG_PATTERN,
@@ -156,14 +160,64 @@ def _humanize_outputs(outputs: list[str]) -> str:
     return ", ".join(names) or "las salidas indicadas"
 
 
+PARAMETER_EXPRESSION_NOT_SUPPORTED = "PARAMETER_EXPRESSION_NOT_SUPPORTED"
+
+
+def _parameter_expression_errors(parameters: dict[str, Any]) -> list[str]:
+    """
+    Modo Normal: un parametro de recurso de una intencion lleva UNA senal, nunca una expresion
+    ("I_A AND I_B"). Detectarlo aqui evita que la IR falle despues con un "recurso inexistente"; la condicion
+    combinada se representa con la primitiva conditional_output.
+    """
+    errors = []
+    for key, value in parameters.items():
+        if not isinstance(value, str) or PLC_TAG_PATTERN.match(value.strip()):
+            continue
+        tags = condition_identifiers(value)
+        if tags and (len(tags) > 1 or value.strip() != tags[0]):
+            errors.append(f"{PARAMETER_EXPRESSION_NOT_SUPPORTED}: el parametro {key} debe ser una sola senal, no la "
+                          f"expresion {value!r}; una condicion combinada se representa con conditional_output.")
+    return errors
+
+
 def describe_sequence_gap(gap: dict[str, Any]) -> str:
-    """Pregunta funcional (una sola) para el primer dato indispensable que falta en una secuencia."""
-    if gap["kind"] == "duration":
-        return (f"¿Cuánto tiempo debe permanecer activa la etapa {gap['step']} ({_humanize_outputs(gap['outputs'])}) "
-                f"antes de pasar a la siguiente ({_humanize_outputs(gap.get('next_outputs') or [])})?")
-    if gap["kind"] == "start_input":
-        return "¿Con qué pulsador o señal debe iniciarse la secuencia?"
-    return f"¿Qué salidas deben activarse en la etapa {gap['step']} de la secuencia?"
+    """Pregunta funcional (una sola) para el primer dato indispensable que falta (nunca canales ni direcciones)."""
+    kind = gap["kind"]
+    outputs = _humanize_outputs(gap.get("outputs") or []) if gap.get("outputs") else "todas las salidas apagadas"
+    if kind == "duration" and gap.get("step") is None:
+        return f"¿Cuánto tiempo debe permanecer activa la salida ({outputs})? Indíquelo con su unidad (por ejemplo, 5 segundos)."
+    if kind == "duration" and gap.get("invalid"):
+        return (f"El tiempo indicado para la etapa {gap['step']} ({outputs}) no es válido ({gap['invalid']}). "
+                "¿Cuánto debe durar, con su unidad (por ejemplo, 5 segundos)?")
+    if kind == "duration" and gap.get("final"):
+        return f"¿Cuánto tiempo debe permanecer activa la última etapa ({outputs}) antes de terminar la secuencia?"
+    if kind == "duration":
+        return (f"¿Cuánto tiempo debe permanecer activa la etapa {gap['step']} ({outputs}) "
+                f"antes de pasar a la siguiente ({_humanize_outputs(gap.get('next_outputs') or []) if gap.get('next_outputs') else 'todas las salidas apagadas'})?")
+    if kind == "start_input":
+        return "¿Qué debe iniciar la secuencia (por ejemplo, un pulsador de marcha o un sensor)?"
+    if kind == "stop_input":
+        return (f"La última etapa ({outputs}) quedaría activa indefinidamente: ¿con qué pulsador o señal debe detenerse, "
+                "o cuánto tiempo debe durar?")
+    if kind == "timeout_condition":
+        return (f"En la etapa {gap['step']} ({outputs}), ¿qué condición se espera y en cuánto tiempo, "
+                "antes de considerar que falló y activar la alarma?")
+    if kind == "cycle":
+        return (f"La secuencia repetiría siempre la misma etapa ({outputs}): ¿qué debe ocurrir entre una repetición y la "
+                "siguiente (por ejemplo, un tiempo con las salidas apagadas)?")
+    if kind == "conditional_output":
+        return "¿Qué condición debe activar la salida y qué salida debe activarse?"
+    if kind == "hysteresis":
+        return "¿Con qué valor debe activarse la salida y con qué valor debe desactivarse (por ejemplo, encender sobre 80 y apagar bajo 70)?"
+    if kind == "counter":
+        return "¿Qué señal se debe contar y hasta qué cantidad (por ejemplo, piezas del sensor hasta 10)?"
+    if kind == "counter_reset":
+        return f"¿Con qué pulsador o señal debe reiniciarse el contador ({outputs})?"
+    if kind == "latch_reset":
+        return f"¿Con qué pulsador o señal debe desactivarse ({outputs}) una vez activada?"
+    if kind == "force_off":
+        return "¿Qué condición debe apagar de inmediato la salida y qué salida debe apagarse?"
+    return "¿Qué salidas deben activarse en cada etapa y en qué orden?"
 
 
 def _collect_functional_requirement_tags(functional_requirements: list[dict[str, Any]]) -> list[str]:
@@ -314,6 +368,11 @@ def validate_semantic_output(
         payload = dict(core_payload)
 
     intent_id = str(payload.get("intent_id", "INT_UNKNOWN"))
+    from control_strategy import control_consistency_errors
+    errors.extend(control_consistency_errors({**semantic_output, **payload}, io_map))
+    from pid_control import has_native_pid, validate_native_pid_semantics
+    if has_native_pid(payload.get('functional_requirements') or []):
+        return validate_native_pid_semantics({**semantic_output,**payload},io_map,errors)
     parameters = payload.get("parameters", {})
     if not isinstance(parameters, dict):
         parameters = {}
@@ -324,19 +383,23 @@ def validate_semantic_output(
     functional_resource_errors: list[dict[str, Any]] = []
     composition_referenced_tags: list[str] = []
     raw_requirements = payload.get("functional_requirements", []) or []
-    if semantic_output.get("interaction_profile") == "normal" or detect_timed_sequences(raw_requirements):
+    normal_profile = semantic_output.get("interaction_profile") == "normal"
+    if normal_profile or detect_composed_program(raw_requirements):
         resolution = resolve_functional_resources(raw_requirements)
         functional_resource_errors = resolution["errors"]
         composition_referenced_tags = resolution["referenced_tags"]
         payload["functional_requirements"] = resolution["requirements"]
         errors.extend(error["message"] for error in functional_resource_errors)
-        if detect_timed_sequences(resolution["requirements"]):
+        if detect_composed_program(resolution["requirements"]):
             unsupported = [
                 f"functional_requirements[{i}].type={r.get('type')!r}" for i, r in enumerate(resolution["requirements"])
                 if isinstance(r, dict) and is_catalog_functional_requirement(r) and str(r.get("type")) not in COMPOSABLE_TYPES]
             if unsupported:
                 errors.append("COMPOSITION_NOT_SUPPORTED: comportamiento no soportado dentro de un programa compuesto: "
                               + ", ".join(unsupported))
+            for condition in invalid_conditions(resolution["requirements"]):
+                errors.append("COMPOSITION_NOT_SUPPORTED: condicion no interpretable como expresion de senales o "
+                              f"comparaciones: {condition!r}")
 
     if intent_id not in intents_catalog and intent_id != "INT_UNKNOWN":
         errors.append(f"La intencion no existe en el catalogo: {intent_id}")
@@ -375,6 +438,8 @@ def validate_semantic_output(
     # IOAllocator/IR/SCL (nunca se adivina ni se deja que el generador ponga un default oculto).
     errors.extend(effective_validation_errors(semantic_output))
 
+    if normal_profile:
+        errors.extend(_parameter_expression_errors(parameters))
     errors.extend(_validate_time_literals(parameters, validation_rules.get("time_keys", [])))
     errors.extend(_validate_positive_ints(parameters, validation_rules.get("positive_int_keys", [])))
     errors.extend(_detect_contradictions(intent_id, parameters))
@@ -386,6 +451,24 @@ def validate_semantic_output(
     for tag in _collect_functional_requirement_tags(payload.get("functional_requirements", []) or []) + composition_referenced_tags:
         if tag not in parameter_tags:
             parameter_tags.append(tag)
+    # Nombres que la semantica puede re-vincular a otro simbolo: los que lleva en parametros/requisitos y los
+    # defaults del contrato del intent (se materializan como parametro al vincularlos). Un tag FIJO de catalogo
+    # (p.ej. run_pilot -> Q_Pilot_Run) no es re-vinculable: se asigna con su nombre o es falta de hardware.
+    from ir_builder import intent_resource_table
+
+    rebindable = set(parameter_tags) | {default for key, default in (intent_resource_table(intent_id) or ())
+                                        if key not in parameters and isinstance(default, str)}
+    required_program_tags: list[str] = []
+    if normal_profile:
+        # Modo Normal: los recursos se resuelven contra EXACTAMENTE lo que la IR exigira (incluidos los nombres
+        # por defecto del contrato del intent), nunca solo contra lo que el interprete escribio. Asi un recurso
+        # canonico ausente del mapa se asigna (o es una falta de hardware) aqui, no un fallo de nombre en la IR.
+        from ir_builder import required_external_resources
+
+        required_program_tags = required_external_resources({**semantic_output, **payload}, io_map)
+        for tag in required_program_tags:
+            if tag not in parameter_tags:
+                parameter_tags.append(tag)
 
     llm_disallowed_tags: list[str] = []
     for tag_name in recognized_tags + parameter_tags:
@@ -439,7 +522,18 @@ def validate_semantic_output(
             or f"Se detecto un conflicto entre requisitos funcionales: {conflict_summary} "
             "Indique cual valor debe aplicarse."
         )
-    sequence_gaps = timed_sequence_missing_data(requirements_payload)
+    # Contradiccion FUNCIONAL de un programa compuesto (p.ej. activar a la vez salidas never_together): se
+    # informa y se pregunta que debe prevalecer; nunca se adivina.
+    contradictions = composition_conflicts(requirements_payload)
+    if contradictions:
+        functional_requirement_conflicts = list(functional_requirement_conflicts) + contradictions
+        if not requires_clarification:
+            requires_clarification = True
+            clarification_question = (
+                "El comando es contradictorio: " + " ".join(c["reason"] for c in contradictions)
+                + " ¿Qué debe prevalecer?"
+            )
+    sequence_gaps = timed_sequence_missing_data(requirements_payload) + composition_missing_data(requirements_payload)
     if sequence_gaps and not requires_clarification:
         # Dato FUNCIONAL indispensable ausente en una secuencia compuesta: se pregunta UNA sola cosa,
         # en lenguaje del proceso (nunca catalogo/intencion/schema).
@@ -467,23 +561,47 @@ def validate_semantic_output(
     # en el mapa). Un solo lote comparte `claimed_in_batch`, asi que la segunda mencion del mismo
     # nombre encuentra la PRIMERA propuesta ya resuelta (via find_variable_by_name/claimed
     # address) en vez de reclamar un canal libre distinto.
+    # Modo Normal: una necesidad IMPLICITA (el usuario nunca nombro un canal) solo toma canales FREE o
+    # reutiliza el mismo nombre/funcion; nunca reasigna un canal ASSIGNED a otra funcion (eso cambiaria el
+    # cableado de otro equipo). Una asignacion EXPLICITA del usuario ("usa Q8.1 para ...") no cambia.
+    role_counts: dict[str | None, int] = {}
+    for tag in well_formed:
+        role_counts[functional_role_key(tag)] = role_counts.get(functional_role_key(tag), 0) + 1
     combined_requests = (
-        [{"functional_name_hint": tag} for tag in well_formed]
+        [{"functional_name_hint": tag,
+          # reuse_by_role: el rol ya cubierto por otro nombre se reutiliza (solo si el programa no pide dos
+          # recursos distintos con el mismo rol, que entonces son actores distintos).
+          **({"allow_reassign": False,
+              "reuse_by_role": role_counts.get(functional_role_key(tag)) == 1 and tag in rebindable}
+             if normal_profile else {})}
+         for tag in well_formed]
         + list(requested_io_assignments)
     )
     implicit_count = len(well_formed)
     io_assignment_proposals: list[dict[str, Any]] = []
+    hardware_gap: dict[str, Any] | None = None
+    resource_bindings: dict[str, str] = {}
     if combined_requests:
-        combined_proposals = propose_assignment(io_map, combined_requests)
+        # Un simbolo ya presente puede estar FREE y seguir siendo usado por este programa.
+        # Reservarlo antes de buscar canales evita que otra necesidad nueva lo renombre.
+        allocation_options = {"reserved_names": set(required_program_tags)} if normal_profile else {}
+        combined_proposals = propose_assignment(io_map, combined_requests, **allocation_options)
         implicit_proposals = combined_proposals[:implicit_count]
         explicit_proposals = combined_proposals[implicit_count:]
         io_assignment_proposals = combined_proposals
 
         resolved_names = {p["proposed_name"] for p in implicit_proposals if not p.get("blocked")}
+        # Rol reutilizado con otro nombre: el nombre pedido queda VINCULADO al simbolo existente.
+        resource_bindings = {p["requested_name"]: p["proposed_name"] for p in implicit_proposals
+                             if p.get("semantic_reuse") and not p.get("blocked") and p.get("requested_name")}
+        resolved_names |= set(resource_bindings)
         unauthorized_tags = [tag for tag in unauthorized_tags if tag not in resolved_names]
         for proposal in implicit_proposals:
             if proposal.get("blocked"):
                 errors.append(f"Recurso funcional sin canal fisico disponible: {proposal.get('reason')}")
+        if normal_profile and any(proposal.get("blocked") for proposal in implicit_proposals):
+            # Falta de HARDWARE, no ambiguedad: nunca se pregunta que canal usar.
+            hardware_gap = capacity_gap(io_map, implicit_proposals)
 
         # MAP_CONFIG (docs/23_io_allocator.md): el LLM/parser solo aporto menciones crudas de
         # texto (requested_io_assignments); TODA la resolucion de direccion/estado/compatibilidad
@@ -529,6 +647,15 @@ def validate_semantic_output(
     if "emergency" in normalized_command and intent_id not in {"INT_EMERGENCY_PRIORITY", "INT_MOTOR_START_STOP", "INT_DELAYED_START", "INT_DELAYED_STOP"}:
         warnings.append("El comando menciona emergencia y la intencion elegida podria requerir revision.")
 
+    # The same analog calibration checks run before packaging and again at the IR boundary.
+    from analog_scaling import prepare_analog_bindings
+    try:
+        from ir_builder import required_external_resources
+        analog_used = required_program_tags or required_external_resources({**semantic_output, **payload}, io_map)
+        prepare_analog_bindings(requirements_payload, io_index, analog_used, set(io_index))
+    except ValueError as error:
+        errors.append(str(error))
+
     result = SemanticValidationResult(
         is_valid=not errors and not requires_clarification,
         errors=errors,
@@ -541,6 +668,13 @@ def validate_semantic_output(
         io_assignment_proposals=io_assignment_proposals
     )
     dumped = result.model_dump(mode="python")
+    if hardware_gap:
+        dumped["capability_gap"] = hardware_gap
+    if resource_bindings:
+        dumped["resource_bindings"] = resource_bindings
+    inferences = timed_sequence_inferences(requirements_payload)
+    if inferences:
+        dumped["inferences"] = inferences  # procedencia INFERRED/DEFAULT de lo no dicho explicitamente
     if functional_resource_errors:
         dumped["functional_resource_errors"] = functional_resource_errors  # detalle estructurado (codigo + ruta)
     return dumped

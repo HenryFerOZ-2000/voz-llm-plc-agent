@@ -368,12 +368,14 @@ def test_gui_io_test_disabled_when_target_is_not_simulation(gui_io, monkeypatch)
     assert warnings and rio.ERROR_WRITE_NOT_ALLOWED in warnings[-1]
 
 
-def test_gui_io_test_disabled_when_cpu_stop(gui_io, monkeypatch):
+def test_gui_io_test_allows_observation_and_separate_manual_outputs_when_cpu_stop(gui_io, monkeypatch):
     app, warnings = gui_io
     monkeypatch.setattr(app, "_io_test_target_type", lambda: "PLCSIM_ADVANCED")
     app._open_runtime_io_window_if_allowed({**_RUN, "cpu_state": "STOP"})
-    assert app._io_test_window is None
-    assert warnings and rio.ERROR_CPU_NOT_RUN in warnings[-1]
+    assert app._io_test_window is not None
+    assert warnings == []
+    assert app._io_test_window.write_button.cget('state') == 'disabled'
+    assert app._io_test_window.output_write_button.cget('state') == 'disabled'
 
 
 def test_gui_io_test_disabled_without_program(app, monkeypatch):
@@ -385,14 +387,14 @@ def test_gui_io_test_disabled_without_program(app, monkeypatch):
     assert app._io_test_window is None and rio.ERROR_NO_PROGRAM in warnings[-1]
 
 
-def test_gui_io_window_lists_only_program_bool_signals(gui_io, monkeypatch, tmp_path):
+def test_gui_io_window_lists_only_current_program_compatible_signals(gui_io, monkeypatch, tmp_path):
     app, warnings = gui_io
     monkeypatch.setattr(app, "_io_test_target_type", lambda: "PLCSIM_ADVANCED")
     app._io_program_context = {"trial_dir": None, "package_dir": tmp_path}
     app._open_runtime_io_window_if_allowed(dict(_RUN))
     window = app._io_test_window
     assert window is not None and warnings == []
-    assert sorted(window.input_menu.cget("values")) == ["I_Start", "I_Stop"]
+    assert sorted(window.input_menu.cget("values")) == ["AI_IW0", "I_Start", "I_Stop"]
     assert list(window.output_menu.cget("values")) == ["Q_Motor"]
 
 
