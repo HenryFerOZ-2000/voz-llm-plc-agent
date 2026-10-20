@@ -1326,10 +1326,13 @@ def _generate_composed_program(
     # --- Modos de operacion ---------------------------------------------------------------------
     if modes:
         lines.append("(* Seleccion de modo de operacion (excluyentes) *)")
-        if "auto" in modes:
+        if modes.get('auto') and modes.get('auto') == modes.get('manual'):
+            lines.append(f"{AUTO_MODE_MEMORY} := {modes['auto']};")
+            lines.append(f"{MANUAL_MODE_MEMORY} := NOT {modes['auto']};")
+        elif "auto" in modes:
             other = f" AND NOT {modes['manual']}" if "manual" in modes else ""
             lines.append(f"{AUTO_MODE_MEMORY} := {modes['auto']}{other};")
-        if "manual" in modes:
+        if "manual" in modes and modes.get('auto') != modes.get('manual'):
             other = f" AND NOT {modes['auto']}" if "auto" in modes else ""
             lines.append(f"{MANUAL_MODE_MEMORY} := {modes['manual']}{other};")
     if commands and "manual" not in modes:
@@ -1696,7 +1699,7 @@ def _generate_control_implementation(project_ir: PLCProjectIR) -> str:
                 if single_latch_start_signal(requirement.get(key)) == edge['signal']:
                     requirement[key] = edge['pulse']
 
-    if detect_composed_program(functional_requirements):
+    if detect_composed_program(functional_requirements, project_ir.intent_id):
         # Programa compuesto (Modo Normal): el compositor genera el programa completo a partir de
         # primitivas genericas; no depende de ninguna plantilla de intent_id.
         return _generate_composed_program(functional_requirements, parameters)
@@ -1725,10 +1728,29 @@ def _generate_control_implementation(project_ir: PLCProjectIR) -> str:
         raise TemplateNotImplementedError(f"{INTENT_TEMPLATE_NOT_IMPLEMENTED}: {project_ir.intent_id}")
     token = _STRICT_EXTERNAL_RESOURCES.set(_effective_semantics_resolved(project_ir))
     try:
-        base_body = generator(parameters)
+        base_parameters = parameters
+        if project_ir.intent_id == 'INT_MOTOR_LATCH':
+            # A stop of this actuator clears its latch; it must not restart when the blocker clears.
+            motor = _param(parameters, 'motor_output', default='Q_Motor_Enable')
+            stops = [_composition_condition(entry['condition'], 'bloqueo force_off')
+                     for entry in force_offs(functional_requirements) if motor in entry['outputs']]
+            if stops:
+                stop = _param(parameters, 'stop_input', default='I_Stop')
+                base_parameters = {**parameters, 'stop_input': f"({stop} OR " + ' OR '.join(f'({s})' for s in stops) + ')'}
+        base_body = generator(base_parameters)
     finally:
         _STRICT_EXTERNAL_RESOURCES.reset(token)
-    extra_body = _generate_functional_requirement_clauses(functional_requirements, parameters)
+    extra_requirements = functional_requirements
+    if project_ir.intent_id == 'INT_SAFE_START_ALARM':
+        # This template already owns the alarm and its emergency/reset priority.
+        extra_requirements = [r for r in functional_requirements if r.get('type') != 'alarm_output']
+    extra_body = _generate_functional_requirement_clauses(extra_requirements, parameters)
+    overrides = [r for r in functional_requirements if r.get('type') in {'force_off', 'never_together'}]
+    if overrides:
+        guards = _generate_composed_program(overrides, parameters)
+        # Indicators observe the effective actuator state. Reapply guards afterward so a
+        # modifier that targets an indicator itself still has final priority.
+        extra_body = guards + extra_body + guards if extra_body else guards
     return base_body + extra_body if extra_body else base_body
 
 

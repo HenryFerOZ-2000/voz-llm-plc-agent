@@ -863,11 +863,11 @@ def _required_resources(
     # intent_id del catalogo representa esto por si solo, asi que intent_id puede legitimamente
     # no tener plantilla (INT_UNKNOWN) sin que eso sea un error - TODAS las variables que necesita
     # el programa llegan via functional_requirement_tags mas abajo, no via el intent base.
-    if detect_composed_program(functional_requirements):
+    if detect_composed_program(functional_requirements, intent_id):
         # El compositor genera TODO el programa desde sus requisitos, no desde la plantilla
         # del intent. Igual que effective_semantics, no heredar salidas/defaults que no usa.
         required_variables = []
-    elif has_composable_program(functional_requirements):
+    elif has_composable_program(functional_requirements, intent_id):
         try:
             required_variables = get_required_variables_for_intent(intent_id, parameters)
         except ValueError as error:
@@ -878,13 +878,13 @@ def _required_resources(
         required_variables = get_required_variables_for_intent(intent_id, parameters)
     functional_requirement_tags: list[str] = []
     parameter_resources: list[dict[str, Any]] = []  # traza: recurso de requisito <- parametro efectivo
-    if detect_composed_program(functional_requirements):
+    if detect_composed_program(functional_requirements, intent_id):
         # La emergencia del compositor llega por `parameters` (semantic_repair la deja en "FALSE" si
         # el banco no la tiene): declararla si es un tag real, sin plantilla de intent que la aporte.
         emergency_tag = str(parameters.get("emergency_input") or "")
         if emergency_tag.startswith("I_"):
             functional_requirement_tags.append(emergency_tag)
-    if detect_composed_program(functional_requirements):
+    if detect_composed_program(functional_requirements, intent_id):
         # Programa compuesto: modos, ordenes manuales, permisivos, supervisiones y alarmas declaran
         # sus tags por instancia (ver functional_requirements.composition_tags).
         for tag in composition_tags(functional_requirements):
@@ -911,7 +911,7 @@ def _required_resources(
                 if name.casefold() in occupied or len(name) > 100:
                     raise ValueError(f'START_SYMBOL_CONFLICT: auxiliar de arranque ocupado o demasiado largo: {name}')
                 occupied.add(name.casefold())
-        if detect_composed_program(functional_requirements):
+        if detect_composed_program(functional_requirements, intent_id):
             from io_allocator import _candidate_role_keys
             from functional_requirements import latches, latch_start_edge_names, single_latch_start_signal
             def is_start_input(variable):
@@ -931,7 +931,7 @@ def _required_resources(
                 reserve_start_names(names)
                 product_start_edges.append({'signal': signal, **names})
                 required_variables = list(dict.fromkeys(required_variables + list(names.values())))
-        if intent_id == 'INT_MOTOR_LATCH' and not detect_composed_program(functional_requirements):
+        if intent_id == 'INT_MOTOR_LATCH' and not detect_composed_program(functional_requirements, intent_id):
             from functional_requirements import latch_start_edge_names
             names = latch_start_edge_names(parameters.get('run_latch') or 'M_RunLatch')
             reserve_start_names(names)
@@ -1063,10 +1063,10 @@ def build_project_ir(
         test_cases = build_test_cases_for_intent(intent_id, parameters)
     except ValueError as error:
         # Programa compuesto (INT_UNKNOWN + primitivas componibles): casos derivados de su estructura.
-        if INTENT_TEMPLATE_NOT_IMPLEMENTED not in str(error) or not has_composable_program(functional_requirements):
+        if INTENT_TEMPLATE_NOT_IMPLEMENTED not in str(error) or not has_composable_program(functional_requirements, intent_id):
             raise
         test_cases = []
-    if detect_composed_program(functional_requirements):
+    if detect_composed_program(functional_requirements, intent_id):
         test_cases = test_cases + build_test_cases_for_composition(functional_requirements, analog_bindings)
 
     pou = PLCPOU(

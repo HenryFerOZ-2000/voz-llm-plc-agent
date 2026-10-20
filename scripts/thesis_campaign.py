@@ -65,7 +65,7 @@ def main() -> int:
     args = parser.parse_args()
     report = inspect_campaign(ROOT, check_runtime=args.check_runtime)
     if args.write_report:
-        out = ROOT / 'runtime/thesis_discrete_v3'
+        out = ROOT / 'runtime/thesis_discrete_v4'
         out.mkdir(parents=True, exist_ok=True)
         (out/'readiness.json').write_text(json.dumps(report,indent=2,ensure_ascii=False,default=str),encoding='utf-8')
         with (out/'planned_trials.csv').open('w',newline='',encoding='utf-8') as f:

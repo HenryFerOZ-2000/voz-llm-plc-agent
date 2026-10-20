@@ -377,16 +377,27 @@ def detect_timed_sequences(functional_requirements: list[dict[str, Any]]) -> lis
 COMPOSED_PROGRAM_TYPES = ("timed_sequence", "conditional_output", "hysteresis_switch", "force_off", "latch", "pulse_counter", "analog_output")
 
 
-def detect_composed_program(functional_requirements: list[dict[str, Any]]) -> bool:
-    return any(isinstance(r, dict) and str(r.get("type", "")) in COMPOSED_PROGRAM_TYPES for r in functional_requirements or [])
+def detect_composed_program(functional_requirements: list[dict[str, Any]], intent_id: str | None = None) -> bool:
+    types = {str(r.get('type', '')) for r in functional_requirements or [] if isinstance(r, dict)}
+    # A stop override is a modifier, not an alternative implementation of a known intent.
+    # Without a known intent it retains the existing standalone composer behavior.
+    modifiers = {'force_off', 'never_together', 'reset_behavior', 'emergency_priority',
+                 'run_pilot', 'stop_pilot', 'fault_pilot', 'alarm_output', 'motor_start_latch',
+                 'delayed_start', 'delayed_stop', 'maintenance_inhibit', 'counter_requirement',
+                 'automatic_mode', 'manual_mode', 'interlock'}
+    if (intent_id not in (None, '', 'INT_UNKNOWN') and 'force_off' in types and types <= modifiers
+            and len(detect_multi_actor_motor_targets(functional_requirements)) < 2
+            and not manual_commands(functional_requirements)):
+        return False
+    return bool(types.intersection(COMPOSED_PROGRAM_TYPES))
 
 
-def has_composable_program(functional_requirements: list[dict[str, Any]]) -> bool:
+def has_composable_program(functional_requirements: list[dict[str, Any]], intent_id: str | None = None) -> bool:
     """
     Programa completo descrito SOLO por primitivas componibles (multi-actor o programa compuesto):
     un intent_id sin plantilla (INT_UNKNOWN) no es un error en ese caso.
     """
-    return any(r.get('type')=='pid_control' for r in functional_requirements or []) or len(detect_multi_actor_motor_targets(functional_requirements or [])) >= 2 or detect_composed_program(functional_requirements)
+    return any(r.get('type')=='pid_control' for r in functional_requirements or []) or len(detect_multi_actor_motor_targets(functional_requirements or [])) >= 2 or detect_composed_program(functional_requirements, intent_id)
 
 
 def _valid_time(value: str | None) -> bool:
@@ -547,6 +558,12 @@ def get_functional_requirement_tags(requirement: dict[str, Any], parameters: dic
     if (parameters or {}).get('_mode_selection_only') is True and req_type in {'automatic_mode', 'manual_mode'}:
         memory = ('auto_mode_memory', 'M_AutoMode') if req_type == 'automatic_mode' else ('manual_mode_memory', 'M_ManualMode')
         return [parameters['auto_input'], parameters.get(memory[0]) or memory[1]]
+    if req_type in {'automatic_mode', 'manual_mode'} and requirement.get('mode_input'):
+        memory = AUTO_MODE_MEMORY if req_type == 'automatic_mode' else MANUAL_MODE_MEMORY
+        return [str(requirement['mode_input']).strip(), memory]
+    if req_type == 'force_off':
+        return list(dict.fromkeys([*_condition_tags(requirement.get('condition', '')),
+                                   *_output_list(requirement)]))
     if req_type in FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS:
         parameter_defaults = set(FUNCTIONAL_REQUIREMENT_PARAMETER_TAGS[req_type].values())
         fixed = [tag for tag in FUNCTIONAL_REQUIREMENT_TAGS.get(req_type, []) if tag not in parameter_defaults]

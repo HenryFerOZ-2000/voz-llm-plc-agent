@@ -169,7 +169,7 @@ def normalize_effective_semantics(
 
     # Programas compuestos (multi-actor, secuencias temporizadas) no usan la plantilla del intent: sus
     # recursos salen de functional_requirements (functional_resources). No se completa nada aqui.
-    composable = has_composable_program(list(semantic_output.get("functional_requirements") or []))
+    composable = has_composable_program(list(semantic_output.get("functional_requirements") or []), intent_id)
     if selector_only:
         parameters['_mode_selection_only'] = True
         provenance['_mode_selection_only'] = {'source': SOURCE_DEFAULT, 'category': CATEGORY_INTERNAL,

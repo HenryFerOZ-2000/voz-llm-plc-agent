@@ -1,4 +1,4 @@
-# Campaña discreta de tesis — THESIS_DISCRETE_V3
+# Campaña discreta de tesis — THESIS_DISCRETE_V4
 
 Alcance aprobado por Henry el 20 de octubre de 2026, después de consultar con su tutor.
 Se evalúan D01–D20 del benchmark v3: 3 variantes lingüísticas por caso y las modalidades
@@ -20,7 +20,7 @@ desde Modo Normal ni desde Prueba de I/O; esas herramientas sirven para comproba
 
 ## Identidad y mapas
 
-- Campaña y freeze: `THESIS_DISCRETE_V3`; manifiesto activo: `data/software_freeze_discrete_v3.json`.
+- Campaña y freeze: `THESIS_DISCRETE_V4`; manifiesto activo: `data/software_freeze_discrete_v4.json`.
 - El manifiesto anterior `data/software_freeze_manifest.json` se conserva como histórico.
 - El código completo queda congelado, incluido el PID que comparte módulos. Desarrollar el
   artículo en una copia/rama separada; cambiar código, prompts o configuración invalida las guardas.
@@ -38,7 +38,7 @@ desde Modo Normal ni desde Prueba de I/O; esas herramientas sirven para comproba
    personalmente las solicitudes de acceso Openness si aparecen.
 2. Ejecutar `.venv\Scripts\python.exe scripts\thesis_campaign.py --check-runtime --write-report`.
    Debe indicar `ready: true`. El informe y las 180 celdas planificadas quedan en
-   `runtime/thesis_discrete_v3/`. Esta orden no llama al LLM ni descarga programas.
+   `runtime/thesis_discrete_v4/`. Esta orden no llama al LLM ni descarga programas.
    Que `noise_phase_ready` sea falso inicialmente es normal: todavía faltan las grabaciones.
 3. En Experimentación, abrir **LOTE TEXT**. Seleccionar fase **FORMAL**, D01–D20,
    variantes V1/V2/V3. Dejar P01–P12 desmarcado y el rango vacío. El total debe ser **60**.
@@ -56,7 +56,7 @@ desde Modo Normal ni desde Prueba de I/O; esas herramientas sirven para comproba
 
 Audio: PCM16 mono a 16 kHz. El noisy se deriva del mismo clean con el ruido industrial ya
 aprobado, SNR 10 dB ±0,25 dB y el algoritmo pareado existente. No cambiar la SNR después
-de observar resultados. El nuevo corpus vive en `results/formal_audio_discrete_v3`.
+de observar resultados. El nuevo corpus vive en `results/formal_audio_discrete_v4`.
 Los pilotos anteriores de `results/development_audio` no cuentan como pruebas formales.
 
 PASS, FAIL y REVIEW se conservan. Las aclaraciones formales no se contestan para obtener PASS.
@@ -71,7 +71,7 @@ los nuevos llevan `campaign_id` y `software_freeze_id`. El número de ensayo con
 reutilizar identificadores. Un lote de la campaña anterior no se puede reanudar como si fuera nuevo.
 
 Para analizar esta campaña, filtrar **FORMAL_TRIAL + FORMAL + benchmark v3 +
-campaign_id THESIS_DISCRETE_V3 + D01–D20**. No mezclar los 52 PASS/8 FAIL del lote de texto
+campaign_id THESIS_DISCRETE_V4 + D01–D20**. No mezclar los 52 PASS/8 FAIL del lote de texto
 del 13 de octubre con los ensayos nuevos. Se conservan como antecedentes de otra versión.
 
 Presentar por modalidad y complejidad: éxito semántico, compilación, comportamiento funcional,
@@ -101,4 +101,10 @@ para el artículo/trabajo futuro. Verificar con el tutor que objetivos y conclus
 
 ## Reinicio autorizado del 20-10-2026
 
-El lote cancelado TEXT_FORMAL_20261020_001 de THESIS_DISCRETE_V2 fue retirado de los resultados activos por solicitud del investigador y respaldado con sus hashes. El reinicio usa THESIS_DISCRETE_V3 y PRODUCT_DECLARED_V2: al iniciar un programa nuevo se recuperan bindings digitales ASSIGNED heredados o automáticos; LOCKED y reservas manuales/persistentes siguen protegidos. Se conservan direcciones, tipos y configuración de proceso; EXTEND_PROGRAM no libera recursos. No se alteraron el benchmark ni los Oracles. La sal de mezcla de audio se mantiene para no cambiar el procedimiento acústico.
+El lote cancelado TEXT_FORMAL_20261020_001 de THESIS_DISCRETE_V2 fue retirado de los resultados activos por solicitud del investigador y respaldado con sus hashes. El reinicio usa THESIS_DISCRETE_V4 y PRODUCT_DECLARED_V2: al iniciar un programa nuevo se recuperan bindings digitales ASSIGNED heredados o automáticos; LOCKED y reservas manuales/persistentes siguen protegidos. Se conservan direcciones, tipos y configuración de proceso; EXTEND_PROGRAM no libera recursos. No se alteraron el benchmark ni los Oracles. La sal de mezcla de audio se mantiene para no cambiar el procedimiento acústico.
+
+## Revision de generacion del lote TEXT de V3
+
+V3 se conserva integra: TEXT_FORMAL_20261020_002, 60 ensayos, 54 PASS y 6 FAIL. V4 corrige la duplicacion de la alarma implementada por su plantilla, la perdida de logica principal al incorporar force_off y la representacion del selector compartido Manual/Automatico. Las comprobaciones y los pilotos usan las salidas efectivas; el bloqueo del motor enclavado exige un nuevo Start. Los comandos, mapas de referencia, variantes, Oracles y expectativas permanecen intactos. La aclaracion por secuencia abierta sin parada definida se conserva como politica del producto; D16 V3 fue una limitacion de resolucion autonoma, no un error de TIA.
+
+La nueva campana exige repetir las 60 celdas TEXT completas; no sustituir solo los fallos. Voz limpia y ruido deben usar V4. La sal y el algoritmo de ruido no cambian. La auditoria y las regresiones se conservan en runtime/campaign_v4_20261020. Los programas de reproduccion offline no son resultados de la campana formal.

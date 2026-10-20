@@ -384,13 +384,13 @@ def validate_semantic_output(
     composition_referenced_tags: list[str] = []
     raw_requirements = payload.get("functional_requirements", []) or []
     normal_profile = semantic_output.get("interaction_profile") == "normal"
-    if normal_profile or detect_composed_program(raw_requirements):
+    if normal_profile or detect_composed_program(raw_requirements, intent_id):
         resolution = resolve_functional_resources(raw_requirements)
         functional_resource_errors = resolution["errors"]
         composition_referenced_tags = resolution["referenced_tags"]
         payload["functional_requirements"] = resolution["requirements"]
         errors.extend(error["message"] for error in functional_resource_errors)
-        if detect_composed_program(resolution["requirements"]):
+        if detect_composed_program(resolution["requirements"], intent_id):
             unsupported = [
                 f"functional_requirements[{i}].type={r.get('type')!r}" for i, r in enumerate(resolution["requirements"])
                 if isinstance(r, dict) and is_catalog_functional_requirement(r) and str(r.get("type")) not in COMPOSABLE_TYPES]
