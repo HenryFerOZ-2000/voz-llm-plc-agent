@@ -957,7 +957,10 @@ class TextBatchDialog(ctk.CTkToplevel):
         groups = (["D"] if self.d_var.get() else []) + (["P"] if self.p_var.get() else [])
         case_ids = text_batch.parse_case_selection(self.app.project_root, self.range_var.get(), groups)
         variants = [variant for variant, var in self.variant_vars.items() if var.get()]
-        return self.PHASES[self.phase_var.get()], case_ids, variants
+        phase = self.PHASES[self.phase_var.get()]
+        if phase == trial_model.PHASE_FORMAL:
+            experimental_design.require_formal_cases(self.app.project_root, case_ids)
+        return phase, case_ids, variants
 
     def _update_total(self) -> None:
         try:
@@ -6801,6 +6804,7 @@ class VozLLMPLCGUI(ctk.CTk):
                 number,
                 complexity=profile.get("complexity"),
                 extra={
+                    **experimental_design.campaign_reference(self.project_root, phase),
                     "legacy_trial_id": self.active_trial.get("trial_id"),
                     "legacy_experiment_label": self.active_trial.get("experiment_label"),
                     "parser_mode": condition.get("parser_mode"),
@@ -6843,6 +6847,11 @@ class VozLLMPLCGUI(ctk.CTk):
         phase = self._selected_phase()
         if phase == trial_model.PHASE_FORMAL:
             # Guard de congelacion: sin software_freeze_manifest valido no existe FORMAL_TRIAL.
+            try:
+                experimental_design.require_formal_cases(self.project_root, [profile.get('case_id', '')])
+            except ValueError as error:
+                messagebox.showwarning('Ejecutar ensayo', str(error))
+                return False
             allowed, reasons = experimental_design.check_formal_trial_allowed(self.project_root)
             if not allowed:
                 self._log("[EXPERIMENT] " + " | ".join(reasons))
@@ -7147,6 +7156,9 @@ class VozLLMPLCGUI(ctk.CTk):
         if self._load_open_text_batch() is not None:
             return {"ok": False, "errors": [f"{text_batch.ERROR_OPEN_BATCH}: reanude o cancele el lote abierto."]}
         try:
+            if phase == trial_model.PHASE_FORMAL:
+                case_ids = experimental_design.formal_case_ids(self.project_root) if case_ids is None else case_ids
+                experimental_design.require_formal_cases(self.project_root, case_ids)
             plan = text_batch.build_plan(self.project_root, case_ids, variants, input_mode)
         except ValueError as error:
             return {"ok": False, "errors": [str(error)]}
@@ -7224,6 +7236,9 @@ class VozLLMPLCGUI(ctk.CTk):
         manifest = self._load_open_text_batch()
         if manifest is None or manifest["status"] != text_batch.STATUS_PAUSED:
             return {"ok": False, "errors": ["El lote no esta pausado."]}
+        campaign_errors = text_batch.campaign_errors(self.project_root, manifest)
+        if campaign_errors:
+            return {'ok': False, 'errors': campaign_errors}
         if not (reason or "").strip():
             return {"ok": False, "errors": [f"{deferred_evaluator.ERROR_RETRY_REASON}: indique el motivo del reintento."]}
         entry = text_batch.next_entry(manifest)
@@ -7316,6 +7331,11 @@ class VozLLMPLCGUI(ctk.CTk):
             return
         manifest, batch_dir = state["manifest"], state["dir"]
         if manifest["status"] != text_batch.STATUS_RUNNING:
+            return
+        campaign_errors = text_batch.campaign_errors(self.project_root, manifest)
+        if campaign_errors:
+            text_batch.pause(manifest, text_batch.PAUSE_INCONSISTENT, '; '.join(campaign_errors))
+            self._batch_save()
             return
         if self._tia_busy() or self._voice_worker_active or self.active_trial is not None:
             self.after(1000, lambda: self._batch_run_next(retry_reason))  # nunca se solapa con otra operacion
@@ -7561,6 +7581,9 @@ class VozLLMPLCGUI(ctk.CTk):
         """Repetir una celda nunca borra el resultado anterior: exige motivo y enlaza el ensayo previo."""
         previous = [row for row in deferred_evaluator.list_trials(self.project_root, (phase,))
                     if row["case_id"] == case_id and row["variant_id"] == variant_id and row["input_mode"] == input_mode]
+        campaign = experimental_design.campaign_reference(self.project_root, phase)
+        if campaign:
+            previous = [row for row in previous if row.get('campaign_id') == campaign['campaign_id']]
         if not previous:
             return {}
         last = sorted(previous, key=lambda r: (r.get("created_at") or "", r["trial_id"]))[-1]
@@ -7597,6 +7620,12 @@ class VozLLMPLCGUI(ctk.CTk):
             return None
         phase, input_mode = self._selected_phase(), self._selected_input_mode()
         case_id, variant_id = profile.get("case_id", ""), self.experiment_variant_var.get()
+        if phase == trial_model.PHASE_FORMAL:
+            try:
+                experimental_design.require_formal_cases(self.project_root, [case_id])
+            except ValueError as error:
+                messagebox.showwarning('Ejecutar ensayo completo', str(error))
+                return None
         environment = deferred_evaluator.environment_precheck(self.project_root, phase)
         if not environment["ok"]:
             messagebox.showwarning("Ejecutar ensayo completo", "No se inicia el ensayo:\n\n" + "\n".join(environment["errors"][:8]))

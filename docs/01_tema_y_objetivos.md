@@ -1,5 +1,10 @@
 # 01 Tema y Objetivos
 
+> Documento del MVP inicial, conservado como antecedente. Desde el 20 de octubre de 2026,
+> el alcance de evaluación para sustentación es texto/voz → LLM → SCL → TIA → PLCSIM,
+> exclusivamente discreto. Consultar la [campaña vigente](31_campana_discreta_tesis.md).
+> Las limitaciones de texto, voz y despliegue descritas abajo corresponden al MVP histórico.
+
 ## Tema del trabajo de titulación
 
 **Desarrollo de una arquitectura de programación automática de PLC mediante comandos de voz y modelos de lenguaje (LLM) para sistemas de automatización industrial.**

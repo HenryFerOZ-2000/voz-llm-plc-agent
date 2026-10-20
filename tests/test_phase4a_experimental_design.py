@@ -31,23 +31,23 @@ _INTEGRITY_BEFORE = B.integrity_snapshot(_ROOT)
 def test_design_has_three_input_modes_and_no_parser_factor():
     design = ED.load_design(_ROOT)
     assert ED.formal_input_modes(_ROOT) == ["TEXT", "VOICE_CLEAN", "VOICE_NOISE"]
-    assert design["factors"] == ["DOMAIN", "COMPLEXITY", "VARIANT", "INPUT_MODE", "CASE"]
+    assert design["factors"] == ["COMPLEXITY", "VARIANT", "INPUT_MODE", "CASE"]
     assert not {"PARSER_MODE", "RULES", "LLM", "HYBRID"} & {factor.upper() for factor in design["factors"]}
     assert design["legacy_conditions"]["status"] == "DEPRECATED"
     assert design["manual_baseline"] == {**design["manual_baseline"], "enabled": True, "included_in_factorial": False}
     assert design["architecture"]["target_type"] == "PLCSIM_ADVANCED" and design["architecture"]["physical_download"] == "forbidden"
 
 
-def test_formal_design_count_is_288_with_nine_trials_per_case():
+def test_formal_thesis_design_is_180_discrete_cells_with_nine_trials_per_case():
     matrix = ED.formal_design_matrix(_ROOT)
-    assert len(matrix) == ED.load_design(_ROOT)["formal_trial_count"] == 288
-    assert ED.validate_formal_matrix(matrix) == []
+    assert len(matrix) == ED.load_design(_ROOT)["formal_trial_count"] == 180
+    assert ED.validate_formal_matrix(matrix, _ROOT) == []
     per_case: dict[str, int] = {}
     for cell in matrix:
         per_case[cell["case_id"]] = per_case.get(cell["case_id"], 0) + 1
         assert cell["trial_kind"] == "FORMAL_TRIAL" and "parser_mode" not in cell
-    assert len(per_case) == 32 and set(per_case.values()) == {9}
-    assert {c["domain"] for c in matrix} == {"DISCRETE", "PID_SUPERVISOR"}
+    assert len(per_case) == 20 and set(per_case.values()) == {9}
+    assert {c["domain"] for c in matrix} == {"DISCRETE"}
     assert {c["complexity"] for c in matrix} <= {"LOW", "MEDIUM", "HIGH"}
 
 
@@ -116,10 +116,10 @@ def test_formal_trial_requires_software_freeze_manifest(tmp_path):
     repo_manifest = json.loads((_ROOT / "data" / "software_freeze_manifest.json").read_text(encoding="utf-8"))
     assert repo_manifest["status"] == "FROZEN" and repo_manifest["schema_version"] == 2
     manifest = {"status": "FROZEN", **ED.current_integrity_fingerprint(root)}
-    (root / "data" / "software_freeze_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    ED.freeze_manifest_path(root).write_text(json.dumps(manifest), encoding="utf-8")
     assert ED.check_formal_trial_allowed(root) == (True, [])
     manifest["oracles"]["D05"]["hash"] = "0" * 64  # un hash que no coincide invalida la congelacion
-    (root / "data" / "software_freeze_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    ED.freeze_manifest_path(root).write_text(json.dumps(manifest), encoding="utf-8")
     allowed, reasons = ED.check_formal_trial_allowed(root)
     assert not allowed and any("D05" in reason for reason in reasons)
 

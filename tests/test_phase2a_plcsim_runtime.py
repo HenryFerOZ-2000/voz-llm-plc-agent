@@ -203,7 +203,15 @@ def test_gui_shows_configured_target_without_claiming_connection(app):
     assert "RUN" not in app.plc_cpu_var.get()
 
 
-def test_gui_shows_run_only_when_runtime_confirms(app, monkeypatch):
+@pytest.fixture
+def simulated_normal_target(monkeypatch):
+    # These assertions concern PLCSIM; the operator's current destination may be a physical PLC.
+    target = {**_TIA_CONFIG['download_targets']['normal'], 'instance_name':'TESIS_PLC_SIM',
+              'target_address':'192.168.0.1'}
+    monkeypatch.setattr(gui.plc_targets, 'load_normal_target', lambda root: dict(target))
+
+
+def test_gui_shows_run_only_when_runtime_confirms(app, monkeypatch, simulated_normal_target):
     monkeypatch.setattr(gui.threading, "Thread", _SyncThread)
     reports = iter([
         _evaluate({"status": "PLCSIM_RUNTIME_UNAVAILABLE", "errors": ["x"]}),
@@ -226,7 +234,7 @@ def test_gui_shows_run_only_when_runtime_confirms(app, monkeypatch):
     assert app.refresh_runtime_button.cget("state") == "normal"
 
 
-def test_normal_download_auto_refreshes_runtime_and_fills_cpu_run_confirmed(pipeline, monkeypatch):
+def test_normal_download_auto_refreshes_runtime_and_fills_cpu_run_confirmed(pipeline, monkeypatch, simulated_normal_target):
     app = pipeline["app"]
     calls: list[int] = []
 

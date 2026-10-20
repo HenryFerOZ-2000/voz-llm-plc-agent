@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "freeze_id": "FORMAL_V1_1",
+  "freeze_id": "THESIS_DISCRETE_V2",
   "description": "Estimulos de voz PAREADOS para FORMAL: por celda (caso + variante) UNA locucion humana -> clean_stimulus.wav (VOICE_CLEAN) y noise_stimulus.wav derivado del MISMO clean (VOICE_NOISE). SNR y algoritmo congelados antes de cualquier resultado FORMAL; nunca se ajustan segun el desempeno del ASR.",
   "target_snr_db": 10.0,
   "snr_tolerance_db": 0.25,
@@ -14,7 +14,7 @@
   },
   "noise_offset": {
     "rule": "SHA256(case_id|variant|salt) mod longitud_del_master",
-    "salt": "FORMAL_V1_1",
+    "salt": "THESIS_DISCRETE_V2",
     "loop": "ciclico determinista si el master es mas corto que el comando (registrado)"
   },
   "clipping": {
@@ -92,7 +92,7 @@
     }
   },
   "corpus_roots": {
-    "FORMAL": "results/formal_audio",
+    "FORMAL": "results/formal_audio_discrete_v2",
     "DEVELOPMENT_VALIDATION": "results/development_audio",
     "BASELINE": "results/development_audio"
   },

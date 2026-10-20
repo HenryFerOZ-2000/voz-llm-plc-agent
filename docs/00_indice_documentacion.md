@@ -4,6 +4,9 @@ Este directorio concentra la documentacion tecnica y metodologica del proyecto `
 
 ## Estructura documental
 
+- [Campaña discreta de tesis — THESIS_DISCRETE_V2](31_campana_discreta_tesis.md)
+  Alcance vigente desde el 20 de octubre de 2026: 180 ensayos D01–D20; PID continúa para artículo.
+
 - `00_indice_documentacion.md`
   Orienta la lectura general de la carpeta `docs/`.
 

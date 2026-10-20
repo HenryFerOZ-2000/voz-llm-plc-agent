@@ -1,12 +1,12 @@
 """
-Diseno experimental formal v2 (fuente de verdad: data/experimental_design.json).
+Diseno experimental versionado (fuente de verdad: data/experimental_design.json).
 
   - una sola arquitectura evaluada; parser_mode es metadata tecnica, nunca un factor;
-  - factores: DOMAIN x COMPLEXITY x VARIANT x INPUT_MODE x CASE;
+  - factores y casos activos proceden del diseno; el catalogo completo se conserva;
   - modalidades formales: TEXT, VOICE_CLEAN, VOICE_NOISE;
-  - matriz formal: 32 casos x 3 variantes x 3 modalidades = 288 FORMAL_TRIALS;
+  - tesis discreta: 20 casos x 3 variantes x 3 modalidades = 180 FORMAL_TRIALS;
   - baseline de desarrollo: D01-D20 x V1-V3 x TEXT = 60 DEVELOPMENT_TRIALS;
-  - FORMAL_TRIAL solo con un software_freeze_manifest valido (hoy no existe: nada es formal).
+  - FORMAL_TRIAL solo con el manifiesto de congelacion activo valido.
 """
 from __future__ import annotations
 
@@ -77,6 +77,35 @@ def architecture_parser_mode(project_root: Path) -> str:
     return str(load_design(project_root)["architecture"]["parser_mode"])
 
 
+def formal_case_ids(project_root: Path) -> list[str]:
+    """Active campaign selection; the full benchmark remains available for development."""
+    order = [str(c['case_id']) for c in BC.load_catalog(project_root)['cases']]
+    campaign = load_design(project_root).get('formal_campaign')
+    if campaign is None:
+        return order
+    if not isinstance(campaign, dict) or not isinstance(campaign.get('id'), str) or not campaign['id'].strip():
+        raise ValueError('FORMAL_CAMPAIGN_INVALID: falta la identidad de campaña.')
+    cases = campaign.get('case_ids')
+    if (not isinstance(cases, list) or not cases or not all(isinstance(c, str) for c in cases)
+            or len(cases) != len(set(cases)) or set(cases) - set(order)):
+        raise ValueError('FORMAL_CAMPAIGN_INVALID: casos vacíos, duplicados o desconocidos.')
+    return [case for case in order if case in cases]
+
+
+def require_formal_cases(project_root: Path, case_ids: list[str]) -> None:
+    outside = sorted(set(case_ids) - set(formal_case_ids(project_root)))
+    if outside:
+        raise ValueError('FORMAL_CASE_OUT_OF_SCOPE: ' + ', '.join(outside))
+
+
+def campaign_reference(project_root: Path, phase: str) -> dict[str, str]:
+    campaign = load_design(project_root).get('formal_campaign')
+    if phase != PHASE_FORMAL or campaign is None:
+        return {}
+    formal_case_ids(project_root)  # Validate before recording an identity.
+    return {'campaign_id': campaign['id'], 'software_freeze_id': campaign.get('freeze_id', campaign['id'])}
+
+
 def domain_for_case(case_id: str) -> str:
     return DOMAIN_PID if str(case_id).startswith("P") else DOMAIN_DISCRETE
 
@@ -106,11 +135,12 @@ def _cell(case: dict[str, Any], variant: str, mode: str, kind: str, phase: str) 
 
 
 def formal_design_matrix(project_root: Path) -> list[dict[str, Any]]:
-    """32 casos x 3 variantes x 3 modalidades (orden estable: caso, variante, modalidad)."""
+    """Active formal cases x variants x modalities, in benchmark order."""
     design = load_design(project_root)
     modes = [m["id"] for m in design["formal_input_modes"]]
+    selected = set(formal_case_ids(project_root))
     return [_cell(case, variant, mode, TRIAL_KIND_FORMAL, PHASE_FORMAL)
-            for case in BC.load_catalog(project_root)["cases"]
+            for case in BC.load_catalog(project_root)["cases"] if case['case_id'] in selected
             for variant in design["formal_variants"]
             for mode in modes]
 
@@ -124,18 +154,20 @@ def baseline_matrix(project_root: Path) -> list[dict[str, Any]]:
             for mode in baseline["input_modes"]]
 
 
-def validate_formal_matrix(matrix: list[dict[str, Any]]) -> list[str]:
+def validate_formal_matrix(matrix: list[dict[str, Any]], project_root: Path | None = None) -> list[str]:
+    if project_root is None:
+        expected = {(c, v, m) for c in BC.CASE_IDS for v in ('V1', 'V2', 'V3')
+                    for m in ('TEXT', 'VOICE_CLEAN', 'VOICE_NOISE')}
+    else:
+        expected = {(c['case_id'], c['variant'], c['input_mode']) for c in formal_design_matrix(project_root)}
+    actual = [(c['case_id'], c['variant'], c['input_mode']) for c in matrix]
     errors = []
-    if len(matrix) != 288:
-        errors.append(f"La matriz formal tiene {len(matrix)} ensayos (esperado 288).")
-    per_case: dict[str, set] = {}
-    for cell in matrix:
-        per_case.setdefault(cell["case_id"], set()).add((cell["variant"], cell["input_mode"]))
-    for case_id, cells in per_case.items():
-        if len(cells) != 9:
-            errors.append(f"{case_id} tiene {len(cells)} combinaciones (esperado 3 variantes x 3 modalidades = 9).")
-    if len(per_case) != 32:
-        errors.append(f"La matriz formal cubre {len(per_case)} casos (esperado 32).")
+    if len(actual) != len(expected) or set(actual) != expected:
+        errors.append(f'Matriz formal incompleta o fuera de alcance: {len(actual)} ensayos; esperados {len(expected)}.')
+    if len(actual) != len(set(actual)):
+        errors.append('La matriz formal contiene celdas duplicadas.')
+    if project_root is not None and load_design(project_root)['formal_trial_count'] != len(expected):
+        errors.append('formal_trial_count no coincide con la campaña.')
     return errors
 
 
@@ -246,7 +278,9 @@ def classify_trial(record: dict[str, Any]) -> dict[str, Any]:
 FORMAL_BENCHMARK_VERSION = 3  # benchmark v3 (FORMAL); el v2 es historico DEVELOPMENT y nunca entra en lo formal
 
 
-def formal_statistics_records(records: list[dict[str, Any]], benchmark_version: int = FORMAL_BENCHMARK_VERSION) -> list[dict[str, Any]]:
+def formal_statistics_records(records: list[dict[str, Any]], benchmark_version: int = FORMAL_BENCHMARK_VERSION,
+                              *, campaign_id: str | None = None) -> list[dict[str, Any]]:
     """Solo FORMAL_TRIAL de la fase FORMAL del benchmark vigente entran en las estadisticas formales."""
     return [r for r in records if r.get("trial_kind") == TRIAL_KIND_FORMAL and r.get("experiment_phase") == PHASE_FORMAL
-            and r.get("benchmark_version") == benchmark_version]
+            and r.get("benchmark_version") == benchmark_version
+            and (campaign_id is None or r.get('campaign_id') == campaign_id)]

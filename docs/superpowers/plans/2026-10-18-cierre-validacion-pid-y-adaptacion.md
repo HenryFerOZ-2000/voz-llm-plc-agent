@@ -1,5 +1,10 @@
 # Cierre de validación PID y adaptación — Implementation Plan
 
+> Actualización de alcance, 20 de octubre de 2026: Henry y su tutor delimitan la tesis
+> a la evaluación discreta. Este plan PID se conserva para el artículo y sus pendientes
+> no bloquean la sustentación. La campaña vigente se describe en
+> [Campaña discreta de tesis](../../31_campana_discreta_tesis.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Completar la comprobación DEVELOPMENT de P01–P12, la evaluación nativa aislada, el guardado PID desde la GUI y la adaptación a mapas alternativos con evidencia reproducible.

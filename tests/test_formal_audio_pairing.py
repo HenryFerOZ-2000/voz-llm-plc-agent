@@ -141,10 +141,10 @@ def test_h_pair_is_immutable_after_use_and_rerecord_needs_a_human_decision(audio
 
 def test_l_noise_offsets_are_deterministic_per_cell_and_recorded(audio_env):
     salt, length = audio_env["config"]["noise_offset"]["salt"], 48000
-    assert salt == "FORMAL_V1_1"
+    assert salt == "THESIS_DISCRETE_V2"
     assert FA.noise_offset("D01", "V1", salt, length) == FA.noise_offset("D01", "V1", salt, length)
     offsets = {FA.noise_offset(case, variant, salt, 10 ** 9) for case, variant in FA.expected_cells(_ROOT)}
-    assert len(offsets) == 96  # cada celda su propio segmento del master
+    assert len(offsets) == 60  # cada celda formal discreta tiene su propio segmento
     manifest = _register(audio_env, DEV, "P03", "V2")
     assert manifest["noise_offset_samples"] == FA.noise_offset("P03", "V2", salt, manifest["noise_master_length_samples"])
     assert manifest["noise_segment_length"] == manifest["clean_format"]["frames"]
@@ -306,9 +306,9 @@ def test_r_backup_manifest_includes_audio_and_detects_damage(tmp_path):
     assert not RB.verify_backup(Path(result["target"]))["ok"]
 
 
-def test_noise_batch_preflight_lists_missing_pairs_and_requires_96_for_formal(audio_env):
+def test_noise_batch_preflight_lists_missing_pairs_and_requires_60_for_formal(audio_env):
     preflight = FA.noise_batch_preflight(_ROOT, FORMAL, cells=[("D01", "V1")])
-    assert preflight["total"] == 96 and preflight["pairs_ready"] == 0 and len(preflight["missing"]) == 96  # FORMAL ignora el subconjunto
+    assert preflight["total"] == 60 and preflight["pairs_ready"] == 0 and len(preflight["missing"]) == 60  # FORMAL exige toda la campaña
     _register(audio_env, FORMAL)
     FA.mark_used(_ROOT, FORMAL, "D01", "V1", CLEAN, "T1")
     preflight = FA.noise_batch_preflight(_ROOT, FORMAL)
@@ -462,7 +462,7 @@ def test_11_functional_fail_and_review_continue_and_are_never_retried(app, voice
 def test_7_8_9_10_13_noise_batch_requires_pairs_never_uses_the_mic_and_feeds_the_frozen_noisy(app, voice_batch, monkeypatch):
     root = voice_batch["root"]
     result = _run_voice(app, FORMAL, ["D01"], ("V1",), "VOICE_NOISE", expect_ok=False)  # 7: FORMAL exige 96/96
-    assert result["errors"][0] == "PAIRS READY: 0 / 96" and any(FA.ERROR_PAIR_MISSING in e for e in result["errors"])
+    assert result["errors"][0] == "PAIRS READY: 0 / 60" and any(FA.ERROR_PAIR_MISSING in e for e in result["errors"])
     assert app._text_batch is None  # no se creo el lote: abortado antes de cualquier ASR
     result = _run_voice(app, DEV, ["D01"], ("V1", "V2"), "VOICE_NOISE", expect_ok=False)
     assert result["errors"][0] == "PAIRS READY: 0 / 2"

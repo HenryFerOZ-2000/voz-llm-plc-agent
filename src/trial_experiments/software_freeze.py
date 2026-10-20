@@ -244,6 +244,10 @@ def build_manifest(project_root: Path, suite: dict[str, Any], readiness: dict[st
         "freeze_id": freeze_id,
         "parent_freeze": parent_freeze,
         "freeze_reason": freeze_reason,
+        **({'campaign': {**ED.campaign_reference(project_root, ED.PHASE_FORMAL),
+                         'case_ids': ED.formal_case_ids(project_root),
+                         'planned_trials': len(ED.formal_design_matrix(project_root))}}
+           if ED.load_design(project_root).get('formal_campaign') else {}),
         **({"audio": audio} if audio is not None else {}),
         "status": "FROZEN",
         "created_at": datetime.now().isoformat(timespec="seconds"),

@@ -74,7 +74,12 @@ def main(argv: list[str]) -> int:
     if SF.master_state(ROOT)["master_status"] != DE.MASTER_FORMAL_READY:
         print("El MASTER no esta FORMAL_READY.")
         return 1
-    audit = PR.run_audit(ROOT)
+    from trial_experiments import experimental_design as ED
+    expected_freeze = ED.campaign_reference(ROOT, ED.PHASE_FORMAL).get('software_freeze_id')
+    if expected_freeze and args.freeze_id != expected_freeze:
+        print(f'La campaña requiere --freeze-id {expected_freeze}.')
+        return 1
+    audit = PR.run_audit(ROOT, ED.formal_case_ids(ROOT))
     if not audit["all_evaluable"]:
         print(f"Auditoria pre-FORMAL incompleta: {audit['not_evaluable']}")
         return 1

@@ -311,11 +311,14 @@ def approve_noise_master(project_root: Path, approved_by: str, provenance: str, 
 # Corpus
 # ---------------------------------------------------------------------------------------------
 
-def expected_cells(project_root: Path) -> list[tuple[str, str]]:
+def expected_cells(project_root: Path, phase: str = 'FORMAL') -> list[tuple[str, str]]:
     from trial_experiments import benchmark_catalog as BC
     from trial_experiments import text_batch as TB
 
-    return [(case_id, variant) for case_id in BC.CASE_IDS for variant in TB.VARIANT_ORDER]
+    from trial_experiments import experimental_design as ED
+    cases = (ED.formal_case_ids(project_root) if phase == 'FORMAL' and ED.design_path(project_root).is_file()
+             else BC.CASE_IDS)
+    return [(case_id, variant) for case_id in cases for variant in TB.VARIANT_ORDER]
 
 
 def cell_dir(project_root: Path, phase: str, case_id: str, variant_id: str) -> Path:
@@ -326,7 +329,13 @@ def load_corpus(project_root: Path, phase: str) -> dict[str, Any]:
     root = corpus_root(project_root, phase)
     path = root / CORPUS_MANIFEST
     if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
+        corpus = json.loads(path.read_text(encoding="utf-8"))
+        config = load_config(project_root)
+        expected = {f'{c}_{v}' for c, v in expected_cells(project_root, phase)}
+        if phase == 'FORMAL' and (corpus.get('formal_freeze_id') != config['freeze_id']
+                or corpus.get('phase') != phase or set(corpus.get('cells', {})) != expected):
+            raise FormalAudioError('CORPUS_IDENTITY', 'El corpus pertenece a otra versión o alcance; se conserva sin modificar.')
+        return corpus
     config = load_config(project_root)
     from trial_experiments import benchmark_catalog as BC
 
@@ -335,7 +344,7 @@ def load_corpus(project_root: Path, phase: str) -> dict[str, Any]:
             "target_snr_db": config["target_snr_db"], "mixing_algorithm_version": config["mixing_algorithm_version"],
             "created_at": _now(),
             "cells": {f"{c}_{v}": {"case_id": c, "variant": v, "state": STATE_NOT_RECORDED, "uses": [], "attempts": []}
-                      for c, v in expected_cells(project_root)}}
+                      for c, v in expected_cells(project_root, phase)}}
 
 
 def save_corpus(project_root: Path, phase: str, corpus: dict[str, Any]) -> None:
@@ -533,10 +542,10 @@ def corpus_summary(project_root: Path, phase: str) -> dict[str, Any]:
 
 def noise_batch_preflight(project_root: Path, phase: str, cells: list[tuple[str, str]] | None = None) -> dict[str, Any]:
     """
-    Lote VOICE_NOISE: 96/96 parejas integras y con su clean ya usado en VOICE_CLEAN; si falta una, no se empieza.
-    cells limita la comprobacion a las celdas planificadas (solo DEVELOPMENT; FORMAL exige siempre las 96).
+    VOICE_NOISE exige todas las parejas de la campaña íntegras y con clean ya usado.
+    cells limita la comprobacion solo en DEVELOPMENT; FORMAL exige la campaña completa.
     """
-    cells = list(cells) if cells is not None and phase != "FORMAL" else expected_cells(project_root)
+    cells = list(cells) if cells is not None and phase != "FORMAL" else expected_cells(project_root, phase)
     missing: list[str] = []
     errors: list[str] = []
     master = noise_master_status(project_root, phase)

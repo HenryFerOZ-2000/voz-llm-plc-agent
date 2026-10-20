@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-BACKUP_SOURCES = ("results/formal_audio", "results/experiments", "results/batches")
+BACKUP_SOURCES = ("results/formal_audio", "results/formal_audio_discrete_v2", "results/experiments", "results/batches")
 BACKUP_MANIFEST = "backup_manifest.json"
 
 

@@ -285,6 +285,9 @@ def create_batch(
         raise ValueError(f"Fase de lote invalida: {phase!r} (esperado {BATCH_PHASES}).")
     if find_open_batch(project_root) is not None:
         raise ValueError(f"{ERROR_OPEN_BATCH}: ya existe un lote abierto; reanudelo o cancelelo primero.")
+    if phase == trial_model.PHASE_FORMAL:
+        case_ids = ED.formal_case_ids(project_root) if case_ids is None else case_ids
+        ED.require_formal_cases(project_root, case_ids)
     plan = build_plan(project_root, case_ids, variants, input_mode)
     batch_id = new_batch_id(project_root, phase, now, input_mode)
     catalog = BC.load_catalog(project_root)
@@ -294,6 +297,7 @@ def create_batch(
         "batch_id": batch_id,
         "phase": phase,
         "trial_kind": trial_model.trial_kind_for_phase(phase),
+        **ED.campaign_reference(project_root, phase),
         "input_mode": input_mode,
         "batch_kind": {trial_model.INPUT_MODE_TEXT: "AUTOMATIC", trial_model.INPUT_MODE_VOICE_CLEAN: "ASSISTED_HUMAN_VOICE",
                        trial_model.INPUT_MODE_VOICE_NOISE: "AUTOMATIC_FROZEN_STIMULI"}[input_mode],
@@ -490,6 +494,20 @@ def supersede_for_new_trial(manifest: dict[str, Any], entry: dict[str, Any], rea
     return previous
 
 
+def campaign_errors(project_root: Path, manifest: dict[str, Any]) -> list[str]:
+    """Shared guard for resume, retry and scheduling; does not modify the manifest."""
+    if manifest.get('phase') != trial_model.PHASE_FORMAL:
+        return []
+    reference = ED.campaign_reference(project_root, trial_model.PHASE_FORMAL)
+    if any(manifest.get(key) != value for key, value in reference.items()):
+        return ['CAMPAIGN_MISMATCH: el lote pertenece a otra campaña o versión congelada.']
+    try:
+        ED.require_formal_cases(project_root, [e['case_id'] for e in manifest['ordered_trial_plan']])
+    except ValueError as error:
+        return [str(error)]
+    return []
+
+
 def reconcile(project_root: Path, manifest: dict[str, Any]) -> list[str]:
     """
     Al REANUDAR (p.ej. tras cerrar la GUI o una caida): contrasta cada entrada en curso con el registro
@@ -497,6 +515,9 @@ def reconcile(project_root: Path, manifest: dict[str, Any]) -> list[str]:
     Devuelve las inconsistencias encontradas (si hay alguna, el lote debe quedar PAUSADO).
     """
     issues: list[str] = []
+    issues = campaign_errors(project_root, manifest)
+    if issues:
+        return issues
     for entry in manifest["ordered_trial_plan"]:
         if entry["status"] not in (ENTRY_GENERATING, ENTRY_EVALUATING):
             continue
@@ -620,6 +641,7 @@ def write_summaries(project_root: Path, batch_dir: Path, manifest: dict[str, Any
     if started and completed:
         duration = int((datetime.fromisoformat(completed) - datetime.fromisoformat(started)).total_seconds())
     payload = {"batch_id": manifest["batch_id"], "phase": manifest["phase"], "input_mode": manifest["input_mode"],
+               **{k: manifest[k] for k in ('campaign_id', 'software_freeze_id') if k in manifest},
                "benchmark_version": manifest.get("benchmark_version"), "status": manifest["status"],
                "git_commit": manifest.get("git_commit"), "host_id": manifest.get("host_id"),
                "started_at": started, "completed_at": completed, "duration_s": duration,
@@ -688,6 +710,11 @@ def formal_guards(
 
     allowed, reasons = ED.check_formal_trial_allowed(project_root)
     _check("software_frozen", allowed, "; ".join(reasons) or "software_freeze_manifest valido")
+    try:
+        ED.require_formal_cases(project_root, [e['case_id'] for e in plan])
+        _check('campaign_scope', True, 'Casos dentro de la campaña formal.')
+    except ValueError as error:
+        _check('campaign_scope', False, str(error))
     catalog = BC.load_catalog(project_root)
     consistency = BC.build_variant_consistency_report(project_root)
     # FORMAL usa el benchmark que fija el diseno experimental (v3); el v2 es historico DEVELOPMENT.
@@ -697,7 +724,7 @@ def formal_guards(
     oracles = batch_runner.integrity_snapshot(project_root)["oracles"]
     frozen = [c for c, e in oracles.items() if e["status"] == "FROZEN" and e["stored_hash"] == e["computed_hash"]]
     _check("oracles_frozen_hash", len(frozen) == 32, f"{len(frozen)}/32 FROZEN con hash integro")
-    design_errors = ED.validate_formal_matrix(ED.formal_design_matrix(project_root))
+    design_errors = ED.validate_formal_matrix(ED.formal_design_matrix(project_root), project_root)
     _check("experimental_design", not design_errors, "; ".join(design_errors) or "matriz formal valida")
     environment = DE.environment_precheck(project_root, trial_model.PHASE_FORMAL)
     _check("environment_master_plcsim_memory", environment["ok"], "; ".join(environment["errors"][:4]) or "MASTER FORMAL_READY, snapshot, PLCSIM, memoria")

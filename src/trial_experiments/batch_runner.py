@@ -200,8 +200,9 @@ def preflight(
     _check(checks, "design_baseline_scope", {c["case_id"] for c in matrix} == {f"D{i:02d}" for i in range(1, 21)}
            and {c["input_mode"] for c in matrix} == {"TEXT"} and {c["variant"] for c in matrix} == {"V1", "V2", "V3"},
            "D01-D20 x V1-V3 x TEXT")
-    formal_errors = ED.validate_formal_matrix(ED.formal_design_matrix(project_root))
-    _check(checks, "design_formal_288", not formal_errors, "; ".join(formal_errors) or "288")
+    formal_errors = ED.validate_formal_matrix(ED.formal_design_matrix(project_root), project_root)
+    _check(checks, "design_formal_288", not formal_errors,
+           "; ".join(formal_errors) or str(len(ED.formal_design_matrix(project_root))))  # legacy check ID
     catalog = BC.load_catalog(project_root)
     # El catalogo vivo debe ser la version que fija el diseno experimental (FORMAL: benchmark v3; el v2 es historico).
     _check(checks, "benchmark_version_matches_design", catalog.get("benchmark_version") == design.get("benchmark_version"),

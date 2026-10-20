@@ -169,6 +169,7 @@ def build_integrity_manifest(project_root: Path, trial_dir: Path, record: dict[s
         "input_mode": record.get("input_mode"),
         "trial_kind": record.get("trial_kind"),
         "experiment_phase": record.get("experiment_phase"),
+        **{k: record[k] for k in ('campaign_id', 'software_freeze_id') if k in record},
         "canonical_case_hash": record.get("canonical_case_hash"),
         "variant_hash": record.get("variant_hash"),
         "oracle": {**oracle_ref, "oracle_status": (oracle or {}).get("approval", {}).get("status")},
@@ -888,6 +889,13 @@ def precheck(project_root: Path, trial_dir: Path, retry_reason: str | None = Non
 
     # Formal
     if record.get("trial_kind") == trial_model.TRIAL_KIND_FORMAL:
+        try:
+            ED.require_formal_cases(project_root, [record['case_id']])
+            reference = ED.campaign_reference(project_root, trial_model.PHASE_FORMAL)
+            if any(record.get(k) != v for k, v in reference.items()):
+                errors.append('CAMPAIGN_MISMATCH: el ensayo pertenece a otra campaña o versión congelada.')
+        except ValueError as error:
+            errors.append(str(error))
         allowed, reasons = ED.check_formal_trial_allowed(project_root)
         if not allowed:
             errors.extend(reasons)
@@ -1758,6 +1766,7 @@ def list_trials(project_root: Path, phases: tuple[str, ...] = (trial_model.PHASE
             evaluation = record.get("evaluation") or {}
             rows.append({
                 "trial_id": record.get("trial_id"),
+                  "campaign_id": record.get('campaign_id'),
                 "trial_dir": str(path.parent),
                 "case_id": record.get("case_id"),
                 "variant_id": record.get("variant_id"),
