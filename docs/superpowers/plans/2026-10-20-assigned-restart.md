@@ -24,7 +24,7 @@
 - [x] Corregir la preparación compartida y probar nuevo programa, ampliación, reservas y conservación de señales de proceso.
 - [x] Ejecutar regresiones pertinentes y la suite completa; revisar diferencias.
 - [x] Respaldar y retirar el lote cancelado con validación de rutas y restauración documentada.
-- [ ] Integrar el cambio, preparar THESIS_DISCRETE_V3 y comprobar su freeze y runtime.
+- [x] Integrar el cambio, preparar THESIS_DISCRETE_V3 y comprobar su freeze y runtime.
 - [ ] Reiniciar GUI con código nuevo, ejecutar lote TEXT FORMAL de 60 y observar su inicio/persistencia.
 
 ## Decisiones y evidencia
@@ -38,3 +38,4 @@
 - Retirados 29 ensayos y el manifiesto del lote cancelado; 374 archivos verificados en `runtime/backups/assigned_restart_20261020_131002`. Los stubs ARCHIVED.json reservan los identificadores sin aportar trial.json o batch_manifest.json a las estadísticas activas.
 - Revisión final del sellado: sin observaciones pendientes. PLCSIM TESIS_PLC_SIM responde CONNECTED/RUN y el MASTER conserva FORMAL_READY/VALID.
 - Validación final: colección completa de 2.193 pruebas ejecutada en cinco procesos secuenciales; 2.185 PASS, 8 SKIP, 0 FAIL y 0 ERROR. Informe y JUnit por grupo en `runtime/assigned_restart_20261020/regression_groups/`. `git diff --check` sin observaciones.
+- Integrado en el programa principal en c5800c9. Freeze THESIS_DISCRETE_V3 validado: 391 archivos, 32 Oracles íntegros y maestro FORMAL_READY; se conserva el freeze THESIS_DISCRETE_V2. El lanzador operativo utiliza la función existente `VozLLMPLCGUI.start_text_batch` y espera a que se cierre la GUI anterior antes de arrancar otra instancia.
