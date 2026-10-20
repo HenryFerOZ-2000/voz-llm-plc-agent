@@ -2,10 +2,10 @@
   "schema_version": 1,
   "design_version": 3,
   "benchmark_version": 3,
-  "description": "Campaña de tesis THESIS_DISCRETE_V2: D01-D20 del benchmark v3, tres variantes y tres modalidades. El catálogo completo se conserva para desarrollo; PID queda fuera de esta campaña y continúa para un artículo.",
+  "description": "Campaña de tesis THESIS_DISCRETE_V3: D01-D20 del benchmark v3, tres variantes y tres modalidades. El catálogo completo se conserva para desarrollo; PID queda fuera de esta campaña y continúa para un artículo.",
   "formal_campaign": {
-    "id": "THESIS_DISCRETE_V2",
-    "freeze_id": "THESIS_DISCRETE_V2",
+    "id": "THESIS_DISCRETE_V3",
+    "freeze_id": "THESIS_DISCRETE_V3",
     "case_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13", "D14", "D15", "D16", "D17", "D18", "D19", "D20"],
     "purpose": "Sustentación y redacción de tesis: control discreto en PLCSIM Advanced.",
     "pid_scope": "Desarrollo independiente para un artículo; no integra los resultados de esta campaña."
@@ -179,7 +179,7 @@
     "ASR_FAILURE": "El ASR proceso un audio valido pero no devolvio texto utilizable (fallo del componente de voz, no de infraestructura)."
   },
   "formal_freeze": {
-    "manifest": "data/software_freeze_discrete_v2.json",
+    "manifest": "data/software_freeze_discrete_v3.json",
     "required_for_formal_trials": true,
     "status": "NOT_FROZEN",
     "freeze_after": [

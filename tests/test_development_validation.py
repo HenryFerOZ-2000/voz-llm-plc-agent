@@ -41,7 +41,7 @@ def test_generate_supervisor_preserves_map_and_freezes_product_identity(isolated
     record = trial_model.load_trial(directory)
     assert record['experiment_phase'] == trial_model.PHASE_DEVELOPMENT
     assert record['product_engine']['engine_id'] == 'PRODUCT_SHARED_V1'
-    assert record['io_map']['map_policy'] == 'PRODUCT_DECLARED_V1'
+    assert record['io_map']['map_policy'] == 'PRODUCT_DECLARED_V2'
     assert record['io_map']['frozen'] is True
     assert record['generation']['status'] == 'SUCCESS'
     contract = json.loads((directory/'product_contract.json').read_text(encoding='utf-8'))

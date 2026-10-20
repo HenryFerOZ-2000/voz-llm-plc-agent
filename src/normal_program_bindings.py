@@ -79,11 +79,19 @@ def assignment_source(variable: dict[str, Any], history: list[dict[str, Any]] | 
     return SOURCE_AUTO
 
 
+def _is_digital_channel(variable: dict[str, Any]) -> bool:
+    return (variable.get('type') == 'BOOL'
+            and bool(re.fullmatch(r'%[IQ]X\d+\.[0-7]', str(variable.get('location')), re.IGNORECASE)))
+
+
 def release_auto_bindings(io_map: dict[str, Any], *, strict_owner: bool = False,
-                          owner_program_id: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+                          owner_program_id: str | None = None,
+                          recycle_digital: bool = False) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """
     COPIA de trabajo para un programa NUEVO: los ASSIGNED automaticos del programa anterior vuelven a FREE
     (conservan su ultimo nombre y TODA su configuracion fisica). LOCKED, MANUAL y persistent no se tocan.
+    recycle_digital permite recuperar bindings digitales heredados sin propietario registrado
+    al empezar un programa nuevo. No altera reservas MANUAL/persistent ni dispositivos de proceso.
     Devuelve (mapa_de_trabajo, canales_liberados). El mapa recibido no se modifica.
     """
     working = copy.deepcopy(io_map)
@@ -94,8 +102,9 @@ def release_auto_bindings(io_map: dict[str, Any], *, strict_owner: bool = False,
             continue
         if assignment_source(variable, history) != SOURCE_AUTO:
             continue
-        if strict_owner and (not owner_program_id or variable.get('assignment_source') != SOURCE_AUTO or
-                             variable.get('owner_program_id') != owner_program_id):
+        digital_binding = recycle_digital and _is_digital_channel(variable)
+        if strict_owner and not digital_binding and (not owner_program_id or variable.get('assignment_source') != SOURCE_AUTO or
+                                                     variable.get('owner_program_id') != owner_program_id):
             continue
         released.append({"address": variable.get("location"), "name": variable.get("name"),
                          "owner_program_id": variable.get("owner_program_id")})
@@ -125,7 +134,10 @@ def stamp_program_bindings(io_map: dict[str, Any], used_names: list[str], progra
         if strict_owner:
             if variable.get('state') == STATE_LOCKED or variable.get('persistent') in (True, 'true', 'True', 1):
                 continue
-            allocated = variable['name'] in newly_assigned
+            # A recycled digital channel can be reused by its unchanged name, without
+            # an allocation proposal. Once used, it belongs to the new program too.
+            allocated = (variable['name'] in newly_assigned or
+                         (variable.get('state') == STATE_FREE and _is_digital_channel(variable)))
             owned = (previous_program_id and variable.get('assignment_source') == SOURCE_AUTO and
                      variable.get('owner_program_id') == previous_program_id)
             if not allocated and not owned:

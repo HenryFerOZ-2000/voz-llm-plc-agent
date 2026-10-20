@@ -362,7 +362,7 @@ def build_snapshot(
         "base_source_hash": io_map_ref.get("base_source_hash"),
         "base_map_hash": io_map_ref.get("base_map_hash"),
         **({'map_policy': io_map_ref['map_policy'], 'declared_variables': copy.deepcopy(working_map.get('variables', []))}
-           if io_map_ref.get('map_policy') == 'PRODUCT_DECLARED_V1' else {}),
+           if io_map_ref.get('map_policy') in {'PRODUCT_DECLARED_V1', 'PRODUCT_DECLARED_V2'} else {}),
         "frozen_at": datetime.now().isoformat(timespec="seconds"),
         "intent_id": semantic_output.get("intent_id"),
         "physical_channel_count": len(channels),

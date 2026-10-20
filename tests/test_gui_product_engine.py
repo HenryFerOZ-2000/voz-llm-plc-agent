@@ -36,6 +36,10 @@ def test_normal_and_experiment_share_product_request(pipeline,monkeypatch,intent
     contexts=[]
     for mode in ['Normal','Experimentacion']:
         app.work_mode_var.set(mode)
+        # A real experimental trial prepares its scoped map before process_command;
+        # this test calls the latter directly, so supply that same boundary here.
+        current_map = P.prepare_product_map(mapped())['io_map'] if mode == 'Experimentacion' else mapped()
+        monkeypatch.setattr(app, '_load_runtime_configuration', lambda: (copy.deepcopy(current_map), intents_catalog, safety_rules))
         assert app.process_command(),app.pending_semantic_output
         assert app.pending_semantic_output['product_engine']['engine_id']==P.ENGINE_ID
         contexts.append(client.contexts[-1])

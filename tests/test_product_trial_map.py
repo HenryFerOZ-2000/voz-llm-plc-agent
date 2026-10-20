@@ -26,24 +26,25 @@ def scenario():
 def test_product_map_preserves_analog_and_db_devices():
     value=scenario();before=copy.deepcopy(value)
     result=prepare(value)
-    assert result['io_map']==before and value==before
-    assert not result['released']
-    for v in value['variables']:
+    assert value==before
+    for v in [v for v in value['variables'] if v['type'] != 'BOOL' or not v.get('location', '').startswith(('%IX', '%QX'))]:
         assert next(x for x in result['io_map']['variables'] if x['name']==v['name'])==v
 
 
 def test_product_map_retains_unknown_ownership():
     value=scenario();result=prepare(value,previous_program_id='old')
-    assert result['io_map']==value
     assert 'AI_Reservoir' in result['retained_unknown']
+    assert 'AI_Reservoir' not in {v['name'] for v in result['released']}
+    assert all(v['name'] not in result['retained_unknown'] for v in result['released'])
 
 
-def test_product_map_releases_only_matching_auto_owner():
+def test_product_map_recycles_digital_bindings_but_keeps_manual_reservations():
     value=mapped();value['metadata']['current_program']={'program_id':'old'}
     for name,source,owner in [('Q_Digital_1','AUTO','old'),('Q_Digital_2','AUTO','other'),('Q_Digital_3','MANUAL','old')]:
         next(v for v in value['variables'] if v['name']==name).update(assignment_source=source,owner_program_id=owner)
     result=prepare(value)
-    assert [r['name'] for r in result['released']]==['Q_Digital_1']
+    assert {r['name'] for r in result['released']} >= {'Q_Digital_1', 'Q_Digital_2'}
+    assert 'Q_Digital_3' not in {r['name'] for r in result['released']}
     assert next(v for v in result['io_map']['variables'] if v['name']=='Q_Digital_1')['state']=='FREE'
     assert prepare(value,scope='EXTEND_PROGRAM')['io_map']==value
     with pytest.raises(ValueError):prepare(value,scope='other')

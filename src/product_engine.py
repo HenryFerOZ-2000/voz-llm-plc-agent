@@ -18,7 +18,7 @@ from project_packager import generate_project_package
 from semantic_validator import validate_semantic_output
 
 ENGINE_ID = 'PRODUCT_SHARED_V1'
-MAP_POLICY = 'PRODUCT_DECLARED_V1'
+MAP_POLICY = 'PRODUCT_DECLARED_V2'
 
 
 def prepare_product_map(io_map: dict, *, scope: str = 'NEW_PROGRAM',
@@ -27,9 +27,10 @@ def prepare_product_map(io_map: dict, *, scope: str = 'NEW_PROGRAM',
     if scope not in {SCOPE_NEW, SCOPE_EXTEND}:
         raise ValueError('Unknown product program scope: '+str(scope))
     previous_program_id = previous_program_id or ((io_map.get('metadata') or {}).get('current_program') or {}).get('program_id')
-    working, released = (release_auto_bindings(io_map, strict_owner=True, owner_program_id=previous_program_id)
+    working, released = (release_auto_bindings(io_map, strict_owner=True, owner_program_id=previous_program_id,
+                                              recycle_digital=True)
                          if scope == SCOPE_NEW else (copy.deepcopy(io_map), []))
-    unknown = [v['name'] for v in io_map.get('variables', []) if v.get('state') == 'ASSIGNED' and
+    unknown = [v['name'] for v in working.get('variables', []) if v.get('state') == 'ASSIGNED' and
                not (v.get('assignment_source') and v.get('owner_program_id'))]
     return {'io_map': working, 'released': released, 'retained_unknown': unknown}
 
