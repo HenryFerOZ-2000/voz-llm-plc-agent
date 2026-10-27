@@ -83,7 +83,15 @@ Nunca se mezclan: cada lote tiene una sola fase, y sus resúmenes solo contienen
 | Precheck de evaluación no superado por el entorno | BLOCKED | se pausa |
 | Ensayo cortado (cierre de la GUI o caída a mitad) | INTERRUPTED | se pausa y lo reporta |
 
-**Reintento: solo explícito** (REINTENTAR ESTE ENSAYO, con motivo obligatorio). Sigue la política de
+**Reintento técnico:** los lotes nuevos guardan la política de `config/batch_retry.json` en su manifiesto.
+Con la configuración habilitada, la GUI programa hasta dos reintentos adicionales por comando,
+tras 5 y 15 segundos. Se conservan el motivo automático, el presupuesto y todos los intentos.
+FAIL y REVIEW nunca activan esta recuperación. Integridad, credenciales/cuota y memoria insuficiente
+requieren atención. Pausar/Detener cancela la espera; cerrar la aplicación exige reanudación manual.
+Los lotes históricos sin política mantienen el comportamiento manual. El resumen JSON incluye
+política e historial; los intentos técnicos no añaden comandos al denominador.
+
+También existe el reintento explícito (REINTENTAR ESTE ENSAYO, con motivo obligatorio). Sigue la política de
 `deferred_evaluator`:
 - **INFRASTRUCTURE_ERROR en la evaluación:** nuevo intento del **mismo** ensayo (`attempt_002`, …). `attempt_001` se conserva.
 - **Ensayo bloqueado por el entorno:** se evalúa el mismo ensayo (seguía PENDING).

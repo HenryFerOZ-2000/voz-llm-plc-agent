@@ -403,6 +403,29 @@ def test_manifest_is_persisted_after_each_trial_and_survives_a_restart(app, batc
     assert [(e[1], e[2]) for e in batch["events"] if e[0] == "start"] == [("D01", "V1"), ("D01", "V2"), ("D01", "V3")]
 
 
+@pytest.mark.parametrize("terminal", [True, False])
+def test_reopening_running_batch_pauses_and_reconciles_without_starting_work(app, batch, terminal):
+    # A persisted RUNNING batch cannot represent a worker after application restart.
+    root = batch["root"]
+    directory, manifest = TB.create_batch(root, DEV, ["D03"], ["V1"], git=NO_GIT)
+    trial_dir = _make_trial(root, "D03", "V1", DEV)
+    if terminal:
+        trial_model.update_trial(trial_dir, {
+            "final_status": "INFRASTRUCTURE_ERROR", "final_verdict": "INFRASTRUCTURE_ERROR",
+            "failure_category": "INFRASTRUCTURE_ERROR", "infrastructure_error": True,
+            "generation": {"status": "FAILED"}, "evaluation": {"status": "NOT_APPLICABLE", "attempts": []},
+        })
+    TB.mark_started(manifest)
+    TB.begin_entry(manifest, manifest["ordered_trial_plan"][0], trial_dir, trial_dir.name)
+    TB.save_manifest(directory, manifest)
+    app._text_batch = None
+    reopened = app._load_open_text_batch()
+    assert reopened["status"] == TB.STATUS_PAUSED
+    assert reopened["ordered_trial_plan"][0]["status"] == (TB.ENTRY_INFRASTRUCTURE if terminal else TB.ENTRY_EVALUATING)
+    assert TB.load_manifest(directory)["status"] == TB.STATUS_PAUSED
+    assert batch["events"] == [] and batch["evaluated"] == []
+
+
 def test_summaries_have_one_row_per_trial_from_trial_stage_summary(app, batch, monkeypatch):
     calls = []
     original = DE.trial_stage_summary
@@ -553,3 +576,75 @@ def gui_module():
 def test_frozen_artifacts_unchanged():
     assert {name: B.file_hash(_ROOT / name) for name in _FROZEN} == _FROZEN_BEFORE
     assert B.integrity_differences(_INTEGRITY_BEFORE, B.integrity_snapshot(_ROOT)) == []
+
+
+def _enable_automatic_retry(root, delays=(1, 1)):
+    path = root / 'config/batch_retry.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({'enabled': True, 'max_retries': 2, 'backoff_ms': list(delays)}), encoding='utf-8')
+
+
+def _automatic_batch_finished(app):
+    m = app._text_batch['manifest']
+    return m['status'] != TB.STATUS_RUNNING and not app._tia_busy() and not m.get('automatic_retry_pending')
+
+
+def test_automatic_retry_recovers_same_program_and_preserves_first_attempt(app, batch):
+    _enable_automatic_retry(batch['root'])
+    batch['outcomes'] = {('D01', 'V1'): 'INFRA_ONCE', ('D01', 'V2'): 'FUNCTIONAL_FAIL'}
+    assert app.start_text_batch(DEV, ['D01'], ['V1', 'V2'])['ok']
+    _pump(app, lambda: _automatic_batch_finished(app))
+    m = app._text_batch['manifest']; first, second = m['ordered_trial_plan']
+    assert m['status'] == TB.STATUS_COMPLETED
+    assert first['result']['final_verdict'] == 'PASS' and second['result']['final_verdict'] == 'FAIL'
+    assert len(first['automatic_retries']) == 1 and not second.get('automatic_retries')
+    attempts = trial_model.load_trial(Path(first['trial_dir']))['evaluation']['attempts']
+    assert [a['final_status'] for a in attempts] == ['INFRASTRUCTURE_ERROR', 'PASS']
+    assert attempts[1]['retry_reason'].startswith('AUTO_INFRA_RETRY')
+    assert batch['max_active'] == 1 and len([e for e in batch['events'] if e[0] == 'start']) == 2
+    saved = TB.load_manifest(app._text_batch['dir'])
+    assert saved['ordered_trial_plan'][0]['automatic_retries'] == first['automatic_retries']
+    summary = json.loads((app._text_batch['dir'] / TB.SUMMARY_JSON).read_text(encoding='utf-8'))
+    assert summary['automatic_retry_policy']['max_retries'] == 2
+    assert len(summary['automatic_retry_history']) == 1
+
+
+def test_automatic_retry_pauses_after_two_retries_without_skipping_the_command(app, batch):
+    _enable_automatic_retry(batch['root'])
+    batch['outcomes'] = {('D01', 'V1'): 'INFRA'}
+    assert app.start_text_batch(DEV, ['D01'], ['V1', 'V2'])['ok']
+    _pump(app, lambda: _automatic_batch_finished(app))
+    m = app._text_batch['manifest']; first, second = m['ordered_trial_plan']
+    assert m['status'] == TB.STATUS_PAUSED and second['status'] == TB.ENTRY_PENDING
+    assert len(first['automatic_retries']) == 2 and len(batch['evaluated']) == 3
+    assert first['result']['attempts'] == 3
+
+
+def test_pause_during_automatic_retry_wait_cancels_the_timer(app, batch):
+    _enable_automatic_retry(batch['root'], delays=(5000, 15000))
+    batch['outcomes'] = {('D01', 'V1'): 'INFRA_ONCE'}
+    assert app.start_text_batch(DEV, ['D01'], ['V1'])['ok']
+    _pump(app, lambda: bool(app._text_batch['manifest'].get('automatic_retry_pending')))
+    dialog = app.open_text_batch_dialog()
+    assert dialog.pause_button.cget('state') == 'normal'
+    dialog.pause_button.invoke()
+    m = app._text_batch['manifest']
+    assert m['status'] == TB.STATUS_PAUSED and m['pause_reason'] == TB.PAUSE_USER
+    assert not m.get('automatic_retry_pending') and not app._text_batch.get('retry_after_id')
+    assert len(batch['evaluated']) == 1
+
+
+def test_user_pause_requested_before_infrastructure_error_prevents_automatic_retry(app, batch, monkeypatch):
+    _enable_automatic_retry(batch['root'])
+    batch['outcomes'] = {('D01', 'V1'): 'INFRA_ONCE'}
+    started = app._batch_on_started
+    def pause_when_started(entry, directory):
+        started(entry, directory)
+        app.request_text_batch_pause()
+    monkeypatch.setattr(app, '_batch_on_started', pause_when_started)
+    assert app.start_text_batch(DEV, ['D01'], ['V1'])['ok']
+    _pump(app, lambda: _automatic_batch_finished(app))
+    m = app._text_batch['manifest']
+    assert m['status'] == TB.STATUS_PAUSED
+    assert not m['ordered_trial_plan'][0].get('automatic_retries')
+    assert len(batch['evaluated']) == 1

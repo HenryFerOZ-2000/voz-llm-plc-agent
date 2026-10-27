@@ -450,6 +450,43 @@ def test_5_6_infrastructure_pause_and_retry_never_rerecord_and_reuse_the_same_wa
     assert stimulus["audio_sha256"] == sha and voice_batch["dialogs"] == 3
 
 
+@pytest.mark.parametrize('mode', ['VOICE_CLEAN', 'VOICE_NOISE'])
+def test_automatic_generation_retry_keeps_identical_voice_stimulus_and_original_trial(app, voice_batch, monkeypatch, mode):
+    from test_text_batch import _enable_automatic_retry, _automatic_batch_finished
+    _enable_automatic_retry(voice_batch['root'])
+    if mode == 'VOICE_NOISE':
+        capture = tone(voice_batch['root']/'tmpcap/V1.wav', lead_silence=0.2)
+        FA.register_capture(voice_batch['root'], DEV, 'D01', 'V1', capture, 'S01')
+        _forbid_microphone(monkeypatch, app)
+    original = app.run_complete_trial
+    generated = []
+
+    def complete_with_transport_failure(batch_trial=None):
+        args = dict(batch_trial)
+        def after_generation(directory, generation):
+            generated.append(directory)
+            if len(generated) == 1:
+                trial_model.update_trial(directory, {'final_status': 'INFRASTRUCTURE_ERROR',
+                    'final_verdict': 'INFRASTRUCTURE_ERROR', 'errors': ['Connection error'],
+                    'generation': {'status': 'FAILED'},
+                    'evaluation': {'status': 'NOT_REQUESTED', 'final_verdict': 'INFRASTRUCTURE_ERROR'}})
+                generation = 'FAILED'
+            batch_trial['on_generated'](directory, generation)
+        args['on_generated'] = after_generation
+        return original(args)
+
+    monkeypatch.setattr(app, 'run_complete_trial', complete_with_transport_failure)
+    assert app.start_text_batch(DEV, ['D01'], ['V1'], mode)['ok']
+    _pump(app, lambda: _automatic_batch_finished(app))
+    m = app._text_batch['manifest']; entry = m['ordered_trial_plan'][0]
+    assert m['status'] == TB.STATUS_COMPLETED and entry['result']['final_verdict'] == 'PASS'
+    assert len(generated) == 2 and generated[0] != generated[1]
+    assert trial_model.load_trial(generated[0])['final_status'] == 'INFRASTRUCTURE_ERROR'
+    assert entry['superseded'][0]['trial_id'] == generated[0].name
+    assert voice_batch['asr'][0]['sha'] == voice_batch['asr'][1]['sha']
+    assert voice_batch['dialogs'] == (1 if mode == 'VOICE_CLEAN' else 0)
+
+
 def test_11_functional_fail_and_review_continue_and_are_never_retried(app, voice_batch):
     voice_batch["outcomes"].update({("D01", "V1"): "FUNCTIONAL_FAIL", ("D01", "V2"): "SEMANTIC_FAIL"})
     manifest = _run_voice(app, DEV, ["D01"], ("V1", "V2", "V3"), "VOICE_CLEAN")

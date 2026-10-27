@@ -258,9 +258,11 @@ def verify_trial_integrity(trial_dir: Path) -> dict[str, Any]:
         return {"ok": False, "code": ERROR_LEGACY, "errors": [f"{ERROR_LEGACY}: el ensayo no tiene {MANIFEST_FILENAME}."]}
     manifest = _read_json(path)
     errors = []
+    trial_root = trial_dir.resolve()
     for name, expected in (manifest.get("files") or {}).items():
         target = trial_dir / name
-        if target.resolve().parent != trial_dir.resolve():
+        # Voice evidence lives in audio/: accept relative descendants, never escapes.
+        if Path(name).anchor or not target.resolve().is_relative_to(trial_root):
             errors.append(f"{ERROR_INTEGRITY}: ruta fuera del ensayo: {name}")
             continue
         actual = sha256_file(target) if target.exists() else None

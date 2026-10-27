@@ -9,7 +9,7 @@
   "temperature": 0,
   "max_retries": 2,
   "request_timeout_seconds": 45,
-  "allow_rule_fallback": true,
+  "allow_rule_fallback": false,
   "require_structured_output": true,
   "max_recording_seconds": 60,
   "silence_rms_threshold": 150,

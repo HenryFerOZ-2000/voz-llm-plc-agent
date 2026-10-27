@@ -43,7 +43,11 @@ def test_product_request_uses_current_normal_policy(intents_catalog,safety_rules
 
 
 @pytest.mark.parametrize('fallback',[False,True])
-def test_product_retry_and_rule_fallback_keep_control_constraints(fallback,intents_catalog,safety_rules):
+def test_product_retry_and_rule_fallback_keep_control_constraints(fallback,intents_catalog,safety_rules,monkeypatch):
+    import llm_parser
+    settings=llm_parser.load_parser_settings()
+    # Exercise both policies explicitly; the application default disables fallback.
+    monkeypatch.setattr(llm_parser,'load_parser_settings',lambda config_path=None:{**settings,'allow_rule_fallback':fallback})
     api=engine();value=semantic('Sin PID, llena hasta el 80 % y detén la bomba.',[request()])
     client=Client(RuntimeError('offline failure') if fallback else value)
     result=invoke(api,value,intents_catalog,safety_rules,llm_client=client)

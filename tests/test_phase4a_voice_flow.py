@@ -345,6 +345,8 @@ def test_voice_clean_complete_trial_feeds_frozen_asr_transcript_into_the_same_pi
     manifest = json.loads((trial_dir / DE.MANIFEST_FILENAME).read_text(encoding="utf-8"))
     assert {"audio/clean_audio.wav", "audio/reference.txt", "audio/asr_result.json"} <= set(manifest["files"])
     assert dict(DE.verdict_table(record))["Voice Capture"] == "PASS"
+    integrity = DE.verify_trial_integrity(trial_dir)
+    assert integrity["ok"], integrity["errors"]
     # Alterar el audio despues invalida la evaluacion (evidencia congelada).
     _tone(trial_dir / "audio" / VP.CLEAN_AUDIO_FILENAME, amplitude=10)
     assert DE.verify_trial_integrity(trial_dir)["ok"] is False
@@ -357,6 +359,50 @@ def test_cancel_before_recording_creates_no_trial(complete_flow, audio_env, monk
     assert app.run_complete_trial() is None
     assert DE.list_trials(app.project_root) == []
     assert FA.cell_entry(FA.load_corpus(app.project_root, trial_model.PHASE_DEVELOPMENT), "D03", "V1")["state"] == FA.STATE_NOT_RECORDED
+
+
+def test_batch_asr_outage_pauses_and_preserves_audio_for_explicit_retry(complete_flow, audio_env, monkeypatch):
+    # Missing terminal notification used to leave the batch GENERATING forever.
+    from trial_experiments import text_batch as TB
+
+    app, tmp = complete_flow["app"], complete_flow["tmp_path"]
+    root = _project(tmp / "batch_control")
+    monkeypatch.setattr(app, "project_root", root)
+    _set_mode(app, "VOICE_CLEAN")
+    source = _tone(tmp / "recorded.wav")
+    monkeypatch.setattr(app, "_capture_voice", lambda *a: {"path": str(source), "device": {"available": True, "name": "Mic"}})
+
+    def unavailable(path):
+        raise RuntimeError("429 insufficient_quota credit_balance_exhausted")
+
+    monkeypatch.setattr(app, "_experiment_asr", unavailable)
+    directory, manifest = TB.create_batch(root, trial_model.PHASE_DEVELOPMENT, ["D03"], ["V1"],
+                                           input_mode="VOICE_CLEAN")
+    TB.mark_started(manifest)
+    app._text_batch = {"dir": directory, "manifest": manifest, "dialogs": []}
+    entry = manifest["ordered_trial_plan"][0]
+    try:
+        trial_dir = app.run_complete_trial(batch_trial={
+            "batch_id": manifest["batch_id"], "index": 0, "repeat_reason": "test batch",
+            "on_started": lambda p: app._batch_on_started(entry, p),
+            "on_generated": lambda p, status: app._batch_on_generated(entry, p, status, []),
+        })
+        app.update()
+        record = trial_model.load_trial(trial_dir)
+        assert record["final_verdict"] == "INFRASTRUCTURE_ERROR"
+        assert manifest["status"] == TB.STATUS_PAUSED
+        assert entry["status"] == TB.ENTRY_INFRASTRUCTURE
+        assert TB.load_manifest(directory)["status"] == TB.STATUS_PAUSED
+        audio_hash = VP.sha256_file(trial_dir / "audio" / "clean_audio.wav")
+        assert audio_hash == record["audio_sha256"]
+        assert not complete_flow["pipeline"]["download_calls"]
+        monkeypatch.setattr(app, "after", lambda *a: None)  # never issue a retry API request
+        assert app.retry_text_batch_trial("Quota restored")["ok"]
+        assert entry["status"] == TB.ENTRY_PENDING
+        assert VP.sha256_file(trial_dir / "audio" / "clean_audio.wav") == audio_hash
+        assert app._batch_clean_capture(entry, manifest) is None  # reuse the frozen corpus recording
+    finally:
+        app._text_batch = None
 
 
 def test_formal_voice_noise_requires_paired_clean_and_never_records_again(complete_flow, audio_env, monkeypatch):

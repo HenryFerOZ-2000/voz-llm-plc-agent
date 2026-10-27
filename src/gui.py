@@ -1026,6 +1026,7 @@ class TextBatchDialog(ctk.CTkToplevel):
         status = (manifest or {}).get("status")
         open_batch = status in text_batch.OPEN_STATUSES
         running = status == text_batch.STATUS_RUNNING
+        waiting_retry = bool((manifest or {}).get('automatic_retry_pending'))
         paused = status in (text_batch.STATUS_PAUSED, text_batch.STATUS_CREATED)
         attention = paused and any(e["status"] in text_batch.ATTENTION_ENTRY_STATES for e in manifest["ordered_trial_plan"])
         for widget in self.setup_frame.winfo_children():
@@ -1033,9 +1034,9 @@ class TextBatchDialog(ctk.CTkToplevel):
                 widget.configure(state="disabled" if open_batch else "normal")
             except (tk.TclError, ValueError):
                 pass
-        self.resume_button.configure(state="normal" if paused and not attention else "disabled")
-        self.retry_button.configure(state="normal" if attention else "disabled")
-        self.pause_button.configure(state="normal" if running and not manifest.get("pause_requested") else "disabled")
+        self.resume_button.configure(state="normal" if paused and not attention and not waiting_retry else "disabled")
+        self.retry_button.configure(state="normal" if attention and not waiting_retry else "disabled")
+        self.pause_button.configure(state="normal" if (running or waiting_retry) and not manifest.get("pause_requested") else "disabled")
         self.stop_button.configure(state="normal" if open_batch else "disabled")
         lines = self.app.text_batch_progress_lines()
         if paused and not running and open_batch and status == text_batch.STATUS_PAUSED:
@@ -7122,7 +7123,8 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _text_batch_running(self) -> bool:
         state = getattr(self, "_text_batch", None)
-        return bool(state) and state["manifest"].get("status") == text_batch.STATUS_RUNNING
+        return bool(state) and (state["manifest"].get("status") == text_batch.STATUS_RUNNING
+                                or bool(state["manifest"].get("automatic_retry_pending")))
 
     def _text_batch_manifest(self) -> dict[str, Any] | None:
         state = getattr(self, "_text_batch", None)
@@ -7143,6 +7145,15 @@ class VozLLMPLCGUI(ctk.CTk):
         manifest = text_batch.find_open_batch(self.project_root)
         if manifest is not None:
             self._text_batch = {"dir": text_batch.batch_dir_for(self.project_root, manifest), "manifest": manifest, "dialogs": []}
+            if manifest.pop('automatic_retry_pending', None):
+                # El cierre de la aplicación cancela la programación, sin reiniciar su presupuesto.
+                manifest['pause_detail'] = 'Reintento automático cancelado al cerrar la aplicación; reanudación manual requerida.'
+                self._batch_save()
+            if manifest["status"] == text_batch.STATUS_RUNNING:
+                issues = text_batch.reconcile(self.project_root, manifest)
+                text_batch.pause(manifest, text_batch.PAUSE_INCONSISTENT if issues else text_batch.PAUSE_USER,
+                                 "; ".join(issues) or "Lote recuperado al reabrir la aplicacion; reanudacion explicita requerida.")
+                self._batch_save()
         return manifest
 
     def start_text_batch(self, phase: str, case_ids: list[str] | None, variants: list[str],
@@ -7178,8 +7189,11 @@ class VozLLMPLCGUI(ctk.CTk):
             if not guards["ok"]:
                 return {"ok": False, "errors": [f"{text_batch.ERROR_FORMAL_GUARD}: {c['id']}: {c['detail']}" for c in guards["checks"] if not c["ok"]],
                         "guards": guards}
-        batch_dir, manifest = text_batch.create_batch(self.project_root, phase, case_ids, variants,
-                                                      host_id=load_host_id(self.project_root), git=git, input_mode=input_mode)
+        try:
+            batch_dir, manifest = text_batch.create_batch(self.project_root, phase, case_ids, variants,
+                                                          host_id=load_host_id(self.project_root), git=git, input_mode=input_mode)
+        except ValueError as error:
+            return {'ok': False, 'errors': [str(error)]}
         self._text_batch = {"dir": batch_dir, "manifest": manifest, "dialogs": []}
         self._log(f"[BATCH] {manifest['batch_id']}: {manifest['total_trials']} ensayos {input_mode} ({phase}).")
         return self.resume_text_batch()
@@ -7189,6 +7203,8 @@ class VozLLMPLCGUI(ctk.CTk):
         manifest = self._load_open_text_batch()
         if manifest is None:
             return {"ok": False, "errors": ["No hay lote abierto."]}
+        if manifest.get('automatic_retry_pending'):
+            return {'ok': False, 'errors': ['Hay un reintento automático programado; puede pausarlo o detenerlo.']}
         if self._tia_busy() or self._voice_worker_active:
             return {"ok": False, "errors": ["Hay una operacion TIA/PLCSIM en curso."]}
         issues = text_batch.reconcile(self.project_root, manifest)
@@ -7206,6 +7222,11 @@ class VozLLMPLCGUI(ctk.CTk):
     def request_text_batch_pause(self) -> None:
         """PAUSAR DESPUES DEL ENSAYO ACTUAL: nunca interrumpe TIA."""
         manifest = self._text_batch_manifest()
+        if manifest and manifest.get('automatic_retry_pending'):
+            self._cancel_batch_automatic_retry('Pausa solicitada durante la espera.')
+            text_batch.pause(manifest, text_batch.PAUSE_USER, 'Reintento automático cancelado por el usuario.')
+            self._batch_save()
+            return
         if manifest and manifest["status"] == text_batch.STATUS_RUNNING:
             text_batch.request_pause(manifest)
             self._batch_save()
@@ -7216,6 +7237,8 @@ class VozLLMPLCGUI(ctk.CTk):
         manifest = self._text_batch_manifest()
         if not manifest:
             return
+        if manifest.get('automatic_retry_pending'):
+            self._cancel_batch_automatic_retry('Lote detenido por el usuario.')
         if manifest["status"] == text_batch.STATUS_RUNNING:
             manifest["stop_requested"] = True
             text_batch.request_pause(manifest)
@@ -7228,7 +7251,7 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def retry_text_batch_trial(self, reason: str) -> dict[str, Any]:
         """
-        REINTENTAR ESTE ENSAYO (solo explicito). Misma politica que deferred_evaluator:
+        REINTENTAR ESTE ENSAYO (manual o motivo automático persistido). Política de deferred_evaluator:
           INFRASTRUCTURE_ERROR de la evaluacion -> nuevo intento del MISMO ensayo (attempt_002, motivo);
           precheck bloqueado (ensayo generado, evaluacion PENDING) -> se evalua ese MISMO ensayo;
           generacion caida / ensayo interrumpido -> ensayo NUEVO para la celda (el anterior se conserva).
@@ -7239,11 +7262,14 @@ class VozLLMPLCGUI(ctk.CTk):
         campaign_errors = text_batch.campaign_errors(self.project_root, manifest)
         if campaign_errors:
             return {'ok': False, 'errors': campaign_errors}
+        if self._tia_busy() or self._voice_worker_active or self.active_trial is not None:
+            return {'ok': False, 'errors': ['Hay una operación en curso; el reintento permanece pausado.']}
         if not (reason or "").strip():
             return {"ok": False, "errors": [f"{deferred_evaluator.ERROR_RETRY_REASON}: indique el motivo del reintento."]}
         entry = text_batch.next_entry(manifest)
         if entry is None or entry["status"] not in text_batch.ATTENTION_ENTRY_STATES:
             return {"ok": False, "errors": ["No hay un ensayo pendiente de reintento: use REANUDAR."]}
+        self._cancel_batch_automatic_retry('Reintento solicitado.')
         record = trial_model.load_trial(Path(entry["trial_dir"])) if entry.get("trial_dir") and \
             (Path(entry["trial_dir"]) / trial_model.TRIAL_FILENAME).exists() else {}
         generation = (record.get("generation") or {}).get("status")
@@ -7462,14 +7488,64 @@ class VozLLMPLCGUI(ctk.CTk):
 
     def _batch_apply_decision(self, decision: str) -> None:
         manifest = self._text_batch["manifest"]
-        if decision == text_batch.DECISION_PAUSE and manifest.pop("stop_requested", False) and \
-                manifest.get("pause_reason") == text_batch.PAUSE_USER:
+        if decision == text_batch.DECISION_PAUSE and manifest.pop("stop_requested", False):
             text_batch.cancel(manifest, "detenido por el usuario tras el ensayo actual")
         self._batch_save()
         self._log(f"[BATCH] {manifest['batch_id']}: {decision} · {manifest['status']}"
                   + (f" ({manifest.get('pause_reason')}: {manifest.get('pause_detail')})" if manifest["status"] == text_batch.STATUS_PAUSED else ""))
         if decision == text_batch.DECISION_CONTINUE and manifest["status"] == text_batch.STATUS_RUNNING:
             self.after(self.BATCH_STEP_DELAY_MS, self._batch_run_next)
+        elif decision == text_batch.DECISION_PAUSE:
+            self._schedule_batch_automatic_retry()
+
+    def _cancel_batch_automatic_retry(self, detail: str) -> None:
+        state = getattr(self, '_text_batch', None)
+        if not state:
+            return
+        timer = state.pop('retry_after_id', None)
+        if timer is not None:
+            self.after_cancel(timer)
+        pending = state['manifest'].pop('automatic_retry_pending', None)
+        if pending:
+            text_batch._event(state['manifest'], 'AUTO_RETRY_CANCELLED', detail)
+
+    def _schedule_batch_automatic_retry(self) -> None:
+        from trial_experiments import batch_retry
+        state = self._text_batch
+        manifest = state['manifest']
+        entry = text_batch.next_entry(manifest)
+        if entry is None or not entry.get('trial_dir'):
+            return
+        try:
+            record = trial_model.load_trial(Path(entry['trial_dir']))
+        except (OSError, ValueError):
+            return  # falta evidencia: nunca inferir que es un fallo recuperable
+        pending = batch_retry.reserve(manifest, record)
+        if pending is None:
+            return
+        self._batch_save()  # persistir motivo y presupuesto ANTES del temporizador
+        self._log(f"[BATCH] {pending['reason']}; espera {pending['delay_ms'] / 1000:g} s.")
+
+        def retry() -> None:
+            if getattr(self, '_text_batch', None) is not state:
+                return
+            state.pop('retry_after_id', None)
+            if manifest.get('automatic_retry_pending') != pending:
+                return
+            manifest.pop('automatic_retry_pending')
+            self._batch_save()
+            current = text_batch.next_entry(manifest)
+            if (manifest['status'] != text_batch.STATUS_PAUSED
+                    or manifest.get('pause_reason') != text_batch.PAUSE_INFRASTRUCTURE
+                    or manifest.get('pause_requested') or manifest.get('stop_requested')
+                    or current is None or current['index'] != pending['index']
+                    or current.get('trial_id') != pending['trial_id']):
+                return
+            outcome = self.retry_text_batch_trial(pending['reason'])
+            if not outcome['ok']:
+                self._log('[BATCH] Reintento automático no iniciado; lote pausado: ' + '; '.join(outcome['errors']))
+
+        state['retry_after_id'] = self.after(pending['delay_ms'], retry)
 
     def open_text_batch_dialog(self, input_mode: str = trial_model.INPUT_MODE_TEXT) -> "TextBatchDialog":
         dialog = getattr(self, "_text_batch_dialog", None)
@@ -7549,6 +7625,10 @@ class VozLLMPLCGUI(ctk.CTk):
             lines.append(f"Tiempo del lote: {elapsed // 3600:d}h {elapsed % 3600 // 60:02d}m {elapsed % 60:02d}s")
         if manifest["status"] == text_batch.STATUS_PAUSED:
             lines += ["", f"Motivo: {manifest.get('pause_reason')}", f"Detalle: {manifest.get('pause_detail') or '-'}"]
+        pending_retry = manifest.get('automatic_retry_pending')
+        if pending_retry:
+            lines += [f"Reintento automático {pending_retry['number']}: espera {pending_retry['delay_ms'] / 1000:g} s.",
+                      'Puede pausar o detener el lote durante la espera.']
         if entry is not None:
             lines += ["", f"Ensayo actual: {entry['index'] + 1} / {manifest['total_trials']}", f"{text_batch.entry_label(entry)}  [{entry['status']}]",
                       f"Trial: {entry.get('trial_id') or '-'}"]
@@ -7687,7 +7767,10 @@ class VozLLMPLCGUI(ctk.CTk):
                                              else trial_model.FINAL_STATUS_FAIL, [failure["error"]])
                     deferred_evaluator.finalize_generation(self.project_root, new_dir, None)
                     self._log(f"[VOICE] {failure['error']}")
-                    self.show_trial_detail(new_dir)
+                    if batch_trial is not None:
+                        self.after(0, lambda: batch_trial["on_generated"](new_dir, deferred_evaluator.GENERATION_FAILED))
+                    else:
+                        self.show_trial_detail(new_dir)
                     return new_dir
                 effective = result["effective_input_text"]
                 self._log(f"[VOICE] Transcripcion congelada: {effective!r} · WER {voice.get('wer')}")

@@ -13,7 +13,7 @@ que hacer con su resultado, y lo deja todo persistido:
 Reglas (docs/text_batch_execution.md):
   * FAIL experimental (Semantic/IR/Compilation/Functional/Safety -> FINAL FAIL) o REVIEW: se registra y
     el lote CONTINUA. Nunca se reintenta.
-  * INFRASTRUCTURE_ERROR: se registra con toda su evidencia y el lote se PAUSA. Solo el usuario reintenta.
+  * INFRASTRUCTURE_ERROR: se registra y pausa; la GUI puede reintentar según la política congelada del lote.
   * Caso cuyo Oracle requiere capacidades que el Runtime ACTUAL no tiene (runtime_capability_check, no el
     runtime_support congelado): se genera (Semantic/IR son datos validos) y queda NOT_EVALUABLE
     (DEVELOPMENT); en FORMAL el lote no se permite.
@@ -66,7 +66,7 @@ ENTRY_PENDING = "PENDING"
 ENTRY_GENERATING = "GENERATING"
 ENTRY_EVALUATING = "EVALUATING"
 ENTRY_COMPLETED = "COMPLETED"                  # veredicto experimental persistido: PASS / FAIL / REVIEW
-ENTRY_INFRASTRUCTURE = "INFRASTRUCTURE_ERROR"  # pausa; reintento solo explicito
+ENTRY_INFRASTRUCTURE = "INFRASTRUCTURE_ERROR"  # pausa; política automática acotada o reintento manual
 ENTRY_NOT_EVALUABLE = "NOT_EVALUABLE"          # Oracle requiere extension del Runtime (generado, no evaluado)
 ENTRY_INTERRUPTED = "INTERRUPTED"              # caida/cierre a mitad del ensayo: pausa y reporte
 ENTRY_BLOCKED = "BLOCKED"                      # precheck del ensayo no superado (entorno): pausa
@@ -292,6 +292,8 @@ def create_batch(
     batch_id = new_batch_id(project_root, phase, now, input_mode)
     catalog = BC.load_catalog(project_root)
     git = git if git is not None else git_info(project_root)
+    from trial_experiments import batch_retry
+    retry_policy = batch_retry.load_policy(project_root)
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "batch_id": batch_id,
@@ -314,6 +316,7 @@ def create_batch(
         "git_commit": git.get("commit"),
         "git_dirty": git.get("dirty"),
         "host_id": host_id,
+        "automatic_retry_policy": retry_policy,
         "total_trials": len(plan),
         "ordered_trial_plan": plan,
         "events": [{"at": _now(), "event": "CREATED", "detail": f"{len(plan)} ensayos"}],
@@ -434,7 +437,9 @@ def outcome_for_record(record: dict[str, Any]) -> tuple[str, str | None]:
 
 def _after_entry(manifest: dict[str, Any], pause_reason: str | None, detail: str) -> str:
     if pause_reason:
+        user_pause = manifest.get('pause_requested', False)
         pause(manifest, pause_reason, detail)
+        manifest['pause_requested'] = user_pause  # una incidencia no revoca la pausa del operador
         return DECISION_PAUSE
     if _complete_if_done(manifest):
         return DECISION_COMPLETED
@@ -641,6 +646,9 @@ def write_summaries(project_root: Path, batch_dir: Path, manifest: dict[str, Any
     if started and completed:
         duration = int((datetime.fromisoformat(completed) - datetime.fromisoformat(started)).total_seconds())
     payload = {"batch_id": manifest["batch_id"], "phase": manifest["phase"], "input_mode": manifest["input_mode"],
+               "automatic_retry_policy": manifest.get("automatic_retry_policy"),
+               "automatic_retry_history": [dict(retry, case_id=e['case_id'], variant_id=e['variant_id'])
+                                           for e in manifest['ordered_trial_plan'] for retry in e.get('automatic_retries', [])],
                **{k: manifest[k] for k in ('campaign_id', 'software_freeze_id') if k in manifest},
                "benchmark_version": manifest.get("benchmark_version"), "status": manifest["status"],
                "git_commit": manifest.get("git_commit"), "host_id": manifest.get("host_id"),

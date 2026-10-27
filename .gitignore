@@ -9,6 +9,15 @@ __pycache__/
 .pytest_cache/
 .pytest_tmp/
 
+# --- Diagnosticos y carpetas locales de herramientas -------------------------
+/CrashDumps/
+/audit.json
+/.ncintegration/
+/.shared6/
+
+# Paquetes de transferencia a Overleaf: solo locales.
+/output/**/*.zip
+
 # --- Secretos (versionar solo .env.example) ----------------------------------
 .env
 *.env

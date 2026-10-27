@@ -91,6 +91,8 @@ def app(tmp_path_factory):
         real_load(instance)
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(gui.VozLLMPLCGUI, '_load_history_state', load_isolated_history)
+        # Startup recovery must never reconcile the user's real batch in GUI tests.
+        patch.setattr(gui.VozLLMPLCGUI, '_announce_open_text_batch', lambda self: None)
         instance = gui.VozLLMPLCGUI()
     instance.update_idletasks()
     yield instance

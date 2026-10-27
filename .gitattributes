@@ -1,0 +1,2 @@
+# Keep the reviewed manuscript's byte-level hash stable on Windows clones.
+output/**/*.tex text eol=lf
