@@ -281,7 +281,7 @@ La cadena comprende entrada, reconocimiento de voz cuando corresponde, interpret
 
 \label{sec:semantica}
 \label{sec:generacion}
-El LLM actúa como intérprete semántico: identifica intención, requisitos, parámetros, señales y posibles aclaraciones. Conforme a la metodología aprobada, el LLM se integró con un motor local de generación basado en reglas, plantillas y estructuras IEC 61131-3: el modelo produce la interpretación y el motor la transforma en IR y SCL. Esta generación determinista delimita las composiciones admitidas y permite comprobar su estructura. El contexto incluye el mapa autorizado, el catálogo, reglas, ejemplos y documentación técnica recuperada localmente. El esquema valida campos, tipos y solicitudes de aclaración. Se empleó el identificador remoto \texttt{gpt-5.6-terra}, con espera de 45 s, hasta dos reintentos del envoltorio y respaldo semántico desactivado en la versión final. La solicitud no envía temperatura, semilla ni límite explícito de salida; el prompt y la configuración detallada se conservan en el archivo experimental del proyecto.
+El LLM actúa como intérprete semántico: identifica intención, requisitos, parámetros, señales y posibles aclaraciones. Conforme a la metodología aprobada, el LLM se integró con un motor local de generación basado en reglas, plantillas y estructuras IEC 61131-3: el modelo produce la interpretación y el motor la transforma en IR y SCL. Esta generación determinista delimita las composiciones admitidas y permite comprobar su estructura. El contexto incluye el mapa autorizado, el catálogo, reglas, ejemplos y documentación técnica recuperada localmente. El esquema valida campos, tipos y solicitudes de aclaración. Se empleó el identificador remoto \texttt{gpt-5.6-terra}, con espera de 45 s, hasta dos reintentos del envoltorio y respaldo semántico desactivado en la versión final. La solicitud no envía temperatura, semilla ni límite explícito de salida.
 
 La IR conserva variables, tipos, direcciones, bloques, tarea e instancias; temporizadores, contadores y flancos mantienen estado en el FB. Las memorias internas se distinguen de los canales externos y los literales \texttt{T\#...} representan tiempos. El alcance de generación está delimitado por el catálogo y las composiciones implementadas.
 
@@ -351,7 +351,7 @@ La condición ruidosa utiliza SNR de $10\pm0{,}25$ dB. Cada derivado conserva la
 \begin{equation}
 y=x+\alpha n,\qquad \alpha=\sqrt{\frac{P_x}{P_n10^{10/10}}},
 \end{equation}
-donde $x$ es la voz limpia, $n$ el ruido y $P_x$ y $P_n$ sus potencias medidas. El ruido maestro procedía de un archivo ambiental de Pixabay convertido al formato canónico. Las potencias se midieron entre la primera y la última trama activa de voz: tramas de 20 ms, umbral relativo de $-30$ dB respecto del máximo RMS y mínimo de 50 unidades PCM16. Cada caso--variante recibió un segmento determinista del mismo ruido maestro. Tras cuantificar la mezcla se verificaron la ausencia de saturación y el SNR dentro de la tolerancia declarada. Los parámetros de mezcla y los manifiestos se conservan en el archivo experimental del proyecto.
+donde $x$ es la voz limpia, $n$ el ruido y $P_x$ y $P_n$ sus potencias medidas. El ruido maestro procedía de un archivo ambiental de Pixabay convertido al formato canónico. Las potencias se midieron entre la primera y la última trama activa de voz: tramas de 20 ms, umbral relativo de $-30$ dB respecto del máximo RMS y mínimo de 50 unidades PCM16. Cada caso--variante recibió un segmento determinista del mismo ruido maestro. Tras cuantificar la mezcla se verificaron la ausencia de saturación y el SNR dentro de la tolerancia declarada.
 
 \subsection{Casos y diseño experimental}
 \label{sec:casos}
@@ -362,7 +362,7 @@ La configuración empleó exclusivamente interpretación LLM, con el respaldo po
 
 El motor de interpretación y generación, el prompt, el mapa, las plantillas de prueba y los archivos de audio se identificaron mediante huellas antes de ejecutar la campaña. Cada comando utilizó un proyecto aislado y conservó los artefactos disponibles de sus etapas. El Apéndice~\ref{app:reproducibilidad} identifica la campaña y su documentación reproducible.
 
-Una campaña preliminar con la misma matriz identificó el respaldo por reglas activo y un mapa distinto del previsto en D05. Para la evaluación final se fijaron la interpretación LLM exclusiva y el mapa común y se ejecutaron nuevamente los 180 comandos, conservando el prompt, el reconocimiento de voz, los Oracles y los archivos de audio. Los resultados principales corresponden a esta campaña final; los registros preliminares permanecen en el archivo experimental. Las versiones de código y configuración se identifican por separado: no se presupone identidad del generador entre campañas.
+Una campaña preliminar con la misma matriz identificó el respaldo por reglas activo y un mapa distinto del previsto en D05. Para la evaluación final se fijaron la interpretación LLM exclusiva y el mapa común y se ejecutaron nuevamente los 180 comandos, conservando el prompt, el reconocimiento de voz, los Oracles y los archivos de audio. Los resultados principales corresponden a esta campaña final. Las versiones de código y configuración se identifican por separado: no se presupone identidad del generador entre campañas.
 
 \subsection{Oracles y conformidad experimental}
 \label{sec:oracles}
@@ -381,7 +381,7 @@ Aquí $M$ es el mapa autorizado y $P$ el programa. El veredicto $O_j$ combina la
 \caption{Evaluación experimental: estímulos definidos por el Oracle, adquisición de trazas y contraste con expectativas separadas del generador.}
 \label{fig:bancos}
 \end{figure*}
-Las señales de prueba son activas en TRUE; en D15, \texttt{MODE\_AUTO=TRUE} selecciona Automático y FALSE, Manual. Se solicitó adquisición cada 50 ms con reloj monótono. Las plantillas fijadas antes de la campaña establecen las tolerancias como convenciones experimentales: D01 y D17 admiten 4,7--5,7 s alrededor del nominal de 5 s, equivalentes a márgenes de $-300$ y $+700$ ms; D07 exige arranque retardado, con comprobaciones antes y después de 3 s. En D05, la comprobación del invariante excluye las muestras de los 100 ms posteriores a cada escritura de entradas como margen de propagación. Estos márgenes son criterios de aceptación del protocolo y no estimaciones de precisión del PLC. Las marcas reales de adquisición delimitan el tiempo observado y no identifican las transiciones con precisión de un ciclo PLC. Por ejemplo, D01 parte de entrada y salida desactivadas, aplica un pulso de arranque de 300 ms y comprueba que la salida se active, permanezca encendida al liberar el pulsador y se apague dentro de la ventana declarada. Las secuencias completas, los estados iniciales y las tolerancias por caso se conservan en el archivo experimental del proyecto.
+Las señales de prueba son activas en TRUE; en D15, \texttt{MODE\_AUTO=TRUE} selecciona Automático y FALSE, Manual. Se solicitó adquisición cada 50 ms con reloj monótono. Las plantillas fijadas antes de la campaña establecen las tolerancias como convenciones experimentales: D01 y D17 admiten 4,7--5,7 s alrededor del nominal de 5 s, equivalentes a márgenes de $-300$ y $+700$ ms; D07 exige arranque retardado, con comprobaciones antes y después de 3 s. En D05, la comprobación del invariante excluye las muestras de los 100 ms posteriores a cada escritura de entradas como margen de propagación. Estos márgenes son criterios de aceptación del protocolo y no estimaciones de precisión del PLC. Las marcas reales de adquisición delimitan el tiempo observado y no identifican las transiciones con precisión de un ciclo PLC. Por ejemplo, D01 parte de entrada y salida desactivadas, aplica un pulso de arranque de 300 ms y comprueba que la salida se active, permanezca encendida al liberar el pulsador y se apague dentro de la ventana declarada.
 
 \subsection{Métricas y análisis estadístico}
 \label{sec:metricas}
@@ -397,7 +397,7 @@ donde $S$ cuenta las sustituciones de palabras, $D$ las palabras omitidas, $I$ l
 
 Las duraciones se resumen con media, desviación estándar muestral, mediana y cuartiles inclusivos; los campos ausentes no se imputan. El total registrado incluye la instrumentación del ensayo, excluye captura previa y pausas entre comandos. Los hitos acumulados de semántica y generación no se suman como etapas independientes.
 
-Se calculó Wilson al 95\,\% como referencia binomial orientativa \citep{nistWilson}. Las diferencias de conformidad entre modalidades se estimaron mediante bootstrap exploratorio por caso para conservar la dependencia \citep{field2007bootstrapcluster}: veinte casos remuestreados con reposición, sus tres variantes juntas e índices compartidos entre modalidades; 20\,000 réplicas, semilla 20261026 y percentiles 2,5/97,5. El indicador pareado acredita exclusivamente PASS. Los scripts de cálculo y el contraste independiente de transcripciones, asignaciones y conteos se conservan en el archivo experimental del proyecto.
+Se calculó Wilson al 95\,\% como referencia binomial orientativa \citep{nistWilson}. Las diferencias de conformidad entre modalidades se estimaron mediante bootstrap exploratorio por caso para conservar la dependencia \citep{field2007bootstrapcluster}: veinte casos remuestreados con reposición, sus tres variantes juntas e índices compartidos entre modalidades; 20\,000 réplicas, semilla 20261026 y percentiles 2,5/97,5. El indicador pareado acredita exclusivamente PASS.
 Como análisis complementario, se compararon los veredictos PASS, FAIL y REVIEW de las mismas 180 celdas entre la campaña preliminar y la final. Se calcularon el acuerdo exacto y el kappa no ponderado de Cohen, $\kappa=(p_o-p_e)/(1-p_e)$, donde $p_o$ es la proporción de coincidencias y $p_e$ el acuerdo esperado a partir de las frecuencias marginales. Esta comparación no se incorpora a las tasas de la campaña final.
 \ifdefined\FloatBarrier\FloatBarrier\fi
 
@@ -580,7 +580,9 @@ Paul Andres Chasi Pesantez: Supervisión, Validación, Redacción -- revisión y
 Los autores declaran no tener conflictos de interés.
 \section*{Financiamiento}
 Esta investigación no recibió financiamiento específico de agencias públicas, comerciales ni sin fines de lucro.
-% Declaración de disponibilidad de datos omitida en esta versión para la maestría.
+
+\section*{Disponibilidad de datos}
+El código de la arquitectura, los Oracles, el prompt, los mapas I/O, los registros de la campaña y los scripts de análisis están disponibles en \url{https://github.com/HenryFerOZ-2000/voz-llm-plc-agent}.
 
 \section*{Declaración sobre el uso de inteligencia artificial generativa}
 Durante la preparación de este manuscrito se utilizaron ChatGPT y Codex (OpenAI) para apoyar la redacción y reorganización de secciones, mejorar la claridad y coherencia del texto, consultar y contrastar información bibliográfica y revisar la correspondencia de la descripción metodológica con el código y los registros del proyecto. También se emplearon para editar el código LaTeX y elaborar figuras a partir de los datos experimentales registrados. La responsabilidad por el contenido, la exactitud de las referencias y la interpretación de los resultados corresponde a los autores.
@@ -597,7 +599,7 @@ El primer autor agradece a su familia el apoyo constante, la comprensión y el a
 \appendix
 \section{Lista de casos de prueba}
 \label{app:casos}
-La Tabla~\ref{tab:catalogo_completo} presenta los casos D01--D20 y sus roles de entrada y salida. La asignación de cada rol a símbolos y direcciones se conserva en el mapa del ensayo. La Tabla~\ref{tab:variantes_textuales} reproduce las 60 variantes textuales, agrupadas por caso. El prompt completo y los mapas JSON se conservan en el archivo experimental del proyecto.
+La Tabla~\ref{tab:catalogo_completo} presenta los casos D01--D20 y sus roles de entrada y salida. La asignación de cada rol a símbolos y direcciones se conserva en el mapa del ensayo. La Tabla~\ref{tab:variantes_textuales} reproduce las 60 variantes textuales, agrupadas por caso.
 
 \begin{table*}[tp]
 \caption{Catálogo discreto y roles requeridos. Cada caso aporta nueve celdas evaluadas: tres variantes en tres modalidades.}
@@ -700,11 +702,7 @@ D20 & Con Start inicia un ciclo automático de 3 segundos; al terminar, detén l
 \FloatBarrier
 \section{Identificación del software y reproducibilidad}
 \label{app:reproducibilidad}
-La campaña analizada se identifica como:
-\par\smallskip
-\noindent\mbox{\footnotesize\path{THESIS_DISCRETE_LLM_180_20261026_R2}}.
-\par\smallskip
-\noindent La configuración, las huellas de los artefactos, los Oracles y la auditoría de clasificación y selección de intentos se conservan en el archivo experimental del proyecto. Ese archivo también conserva los registros por comando y los scripts necesarios para recalcular los resultados.
+La campaña analizada se identifica como \path{THESIS_DISCRETE_LLM_180_20261026_R2}. Su código y sus registros están en el repositorio indicado en la sección Disponibilidad de datos.
 
 \clearpage
 \addtocounter{page}{-1}
