@@ -1,0 +1,399 @@
+{
+  "selected_cells": 180,
+  "unit": "caso-variante-modalidad",
+  "independent_requirement_groups": 20,
+  "modes": {
+    "TEXT": {
+      "n": 60,
+      "pass": 55,
+      "fail": 3,
+      "review": 2,
+      "conformity_pct": 91.66666666666667,
+      "wilson_95_pct": [
+        81.93105798166557,
+        96.38795433982692
+      ],
+      "compile_pass": 58,
+      "clarifications": 0
+    },
+    "VOICE_CLEAN": {
+      "n": 60,
+      "pass": 55,
+      "fail": 1,
+      "review": 4,
+      "conformity_pct": 91.66666666666667,
+      "wilson_95_pct": [
+        81.93105798166557,
+        96.38795433982692
+      ],
+      "compile_pass": 59,
+      "clarifications": 1,
+      "pooled_wer": {
+        "S": 43,
+        "D": 4,
+        "I": 5,
+        "N": 1085,
+        "files": 60,
+        "WER": 0.047926267281105994
+      }
+    },
+    "VOICE_NOISE": {
+      "n": 60,
+      "pass": 55,
+      "fail": 3,
+      "review": 2,
+      "conformity_pct": 91.66666666666667,
+      "wilson_95_pct": [
+        81.93105798166557,
+        96.38795433982692
+      ],
+      "compile_pass": 57,
+      "clarifications": 2,
+      "pooled_wer": {
+        "S": 63,
+        "D": 0,
+        "I": 12,
+        "N": 1085,
+        "files": 60,
+        "WER": 0.06912442396313365
+      }
+    }
+  },
+  "paired": [
+    {
+      "first": "TEXT",
+      "second": "VOICE_CLEAN",
+      "direction": "second minus first",
+      "n_pairs": 60,
+      "n_clusters": 20,
+      "delta_pp": 0.0,
+      "cluster_bootstrap_95_pp": [
+        -10.0,
+        8.333333333333334
+      ],
+      "transitions_PASS_binary": {
+        "11": 52,
+        "00": 2,
+        "01": 3,
+        "10": 3
+      },
+      "pairs_without_REVIEW": 55,
+      "case_differences_counts": {
+        "D01": 0,
+        "D02": 0,
+        "D03": 0,
+        "D04": 0,
+        "D05": 0,
+        "D06": 0,
+        "D07": 1,
+        "D08": 0,
+        "D09": 0,
+        "D10": 0,
+        "D11": 0,
+        "D12": 0,
+        "D13": 0,
+        "D14": 1,
+        "D15": -1,
+        "D16": 0,
+        "D17": -2,
+        "D18": 0,
+        "D19": 0,
+        "D20": 1
+      }
+    },
+    {
+      "first": "TEXT",
+      "second": "VOICE_NOISE",
+      "direction": "second minus first",
+      "n_pairs": 60,
+      "n_clusters": 20,
+      "delta_pp": 0.0,
+      "cluster_bootstrap_95_pp": [
+        -6.666666666666667,
+        6.666666666666667
+      ],
+      "transitions_PASS_binary": {
+        "11": 52,
+        "00": 2,
+        "01": 3,
+        "10": 3
+      },
+      "pairs_without_REVIEW": 57,
+      "case_differences_counts": {
+        "D01": 0,
+        "D02": 0,
+        "D03": 0,
+        "D04": 0,
+        "D05": 0,
+        "D06": 0,
+        "D07": 1,
+        "D08": 0,
+        "D09": 0,
+        "D10": 0,
+        "D11": 0,
+        "D12": 0,
+        "D13": 0,
+        "D14": 1,
+        "D15": -1,
+        "D16": 0,
+        "D17": -1,
+        "D18": 0,
+        "D19": 0,
+        "D20": 0
+      }
+    },
+    {
+      "first": "VOICE_CLEAN",
+      "second": "VOICE_NOISE",
+      "direction": "second minus first",
+      "n_pairs": 60,
+      "n_clusters": 20,
+      "delta_pp": 0.0,
+      "cluster_bootstrap_95_pp": [
+        -5.0,
+        5.0
+      ],
+      "transitions_PASS_binary": {
+        "11": 53,
+        "00": 3,
+        "10": 2,
+        "01": 2
+      },
+      "pairs_without_REVIEW": 55,
+      "case_differences_counts": {
+        "D01": 0,
+        "D02": 0,
+        "D03": 0,
+        "D04": 0,
+        "D05": 0,
+        "D06": 0,
+        "D07": 0,
+        "D08": 0,
+        "D09": 0,
+        "D10": 0,
+        "D11": 0,
+        "D12": 0,
+        "D13": 0,
+        "D14": 0,
+        "D15": 0,
+        "D16": 0,
+        "D17": 1,
+        "D18": 0,
+        "D19": 0,
+        "D20": -1
+      }
+    }
+  ],
+  "timings": [
+    {
+      "mode": "TEXT",
+      "field": "semantic_ms",
+      "n": 59,
+      "mean_s": 5.42035593220339,
+      "sd_s": 3.393397507954243,
+      "median_s": 3.874,
+      "q1_s": 3.457,
+      "q3_s": 5.698
+    },
+    {
+      "mode": "TEXT",
+      "field": "generation_ms",
+      "n": 60,
+      "mean_s": 5.947066666666666,
+      "sd_s": 3.551978307054438,
+      "median_s": 4.2725,
+      "q1_s": 3.8810000000000002,
+      "q3_s": 6.1715
+    },
+    {
+      "mode": "TEXT",
+      "field": "compile_ms",
+      "n": 59,
+      "mean_s": 40.56315254237288,
+      "sd_s": 7.753312904402286,
+      "median_s": 39.565,
+      "q1_s": 37.0945,
+      "q3_s": 41.1
+    },
+    {
+      "mode": "TEXT",
+      "field": "total_ms",
+      "n": 59,
+      "mean_s": 55.18884745762712,
+      "sd_s": 9.938349246841334,
+      "median_s": 53.172,
+      "q1_s": 49.8425,
+      "q3_s": 56.917500000000004
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "field": "semantic_ms",
+      "n": 60,
+      "mean_s": 6.461666666666667,
+      "sd_s": 3.420352547329383,
+      "median_s": 5.2465,
+      "q1_s": 4.60975,
+      "q3_s": 6.11625
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "field": "generation_ms",
+      "n": 60,
+      "mean_s": 6.850966666666666,
+      "sd_s": 3.4132440107376087,
+      "median_s": 5.643,
+      "q1_s": 5.056,
+      "q3_s": 6.47975
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "field": "compile_ms",
+      "n": 59,
+      "mean_s": 37.29123728813559,
+      "sd_s": 1.1111307434008164,
+      "median_s": 36.622,
+      "q1_s": 36.57,
+      "q3_s": 38.5715
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "field": "total_ms",
+      "n": 59,
+      "mean_s": 52.22505084745763,
+      "sd_s": 5.86673539432495,
+      "median_s": 50.335,
+      "q1_s": 48.516000000000005,
+      "q3_s": 54.5145
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "field": "semantic_ms",
+      "n": 60,
+      "mean_s": 7.40415,
+      "sd_s": 5.817308987708541,
+      "median_s": 5.4185,
+      "q1_s": 4.68,
+      "q3_s": 7.17425
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "field": "generation_ms",
+      "n": 60,
+      "mean_s": 7.789316666666667,
+      "sd_s": 5.7723423512519165,
+      "median_s": 5.8035,
+      "q1_s": 5.1495,
+      "q3_s": 7.4465
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "field": "compile_ms",
+      "n": 58,
+      "mean_s": 37.051051724137935,
+      "sd_s": 1.9361481241581662,
+      "median_s": 36.59,
+      "q1_s": 36.2245,
+      "q3_s": 38.08425
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "field": "total_ms",
+      "n": 58,
+      "mean_s": 52.780224137931036,
+      "sd_s": 7.19601213646691,
+      "median_s": 50.4955,
+      "q1_s": 48.53325,
+      "q3_s": 55.16975
+    }
+  ],
+  "complexity": [
+    {
+      "mode": "TEXT",
+      "complexity": "LOW",
+      "n": 9,
+      "cases": 3,
+      "compile_pass": 9,
+      "PASS": 9
+    },
+    {
+      "mode": "TEXT",
+      "complexity": "MEDIUM",
+      "n": 30,
+      "cases": 10,
+      "compile_pass": 30,
+      "PASS": 28,
+      "REVIEW": 1,
+      "FAIL": 1
+    },
+    {
+      "mode": "TEXT",
+      "complexity": "HIGH",
+      "n": 21,
+      "cases": 7,
+      "compile_pass": 19,
+      "PASS": 18,
+      "FAIL": 2,
+      "REVIEW": 1
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "complexity": "LOW",
+      "n": 9,
+      "cases": 3,
+      "compile_pass": 9,
+      "PASS": 9
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "complexity": "MEDIUM",
+      "n": 30,
+      "cases": 10,
+      "compile_pass": 29,
+      "PASS": 29,
+      "FAIL": 1
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "complexity": "HIGH",
+      "n": 21,
+      "cases": 7,
+      "compile_pass": 21,
+      "PASS": 17,
+      "REVIEW": 4
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "complexity": "LOW",
+      "n": 9,
+      "cases": 3,
+      "compile_pass": 9,
+      "PASS": 9
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "complexity": "MEDIUM",
+      "n": 30,
+      "cases": 10,
+      "compile_pass": 29,
+      "PASS": 29,
+      "FAIL": 1
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "complexity": "HIGH",
+      "n": 21,
+      "cases": 7,
+      "compile_pass": 19,
+      "PASS": 17,
+      "REVIEW": 2,
+      "FAIL": 2
+    }
+  ],
+  "method_notes": [
+    "PASS acredita conformidad; FAIL y REVIEW permanecen separados. En el indicador binario de conformidad acreditada, ambos son no acreditados.",
+    "Wilson es descriptivo por modalidad; no representa independencia entre variantes. La comparación de modalidades preserva pareamiento y agrupa por los veinte casos.",
+    "Bootstrap percentil por caso: 20000 remuestras, semilla 20261026; las tres variantes de cada caso se mantienen juntas.",
+    "semantic_ms y generation_ms son hitos acumulados; no se interpretan como etapas independientes. No se imputan tiempos ausentes.",
+    "Una ejecución por celda y locutor único; las diferencias observadas no aíslan la variabilidad del servicio LLM respecto de la modalidad."
+  ]
+}

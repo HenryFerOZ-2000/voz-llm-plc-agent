@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "089f066a6b6bfe633cf70c8dc8686b4f1a76ad344eba0f400ef24f524d42d002",
+  "transcript_raw": "Quiero que la lámpara esté encendida solo mientras la entrada esté activa.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1071,
+  "frozen_at": "2026-10-26T20:36:04"
+}

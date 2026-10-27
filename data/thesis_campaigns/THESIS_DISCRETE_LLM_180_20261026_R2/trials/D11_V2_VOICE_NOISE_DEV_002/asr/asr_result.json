@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "7c0a906c61e6e6973792bc26ea27867780b2d39016f98fdbe9b736f06481625d",
+  "transcript_raw": "Quiero que el contactor se active con Start, quede enclavado y se desactive con Stop.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1505,
+  "frozen_at": "2026-10-26T21:53:55"
+}

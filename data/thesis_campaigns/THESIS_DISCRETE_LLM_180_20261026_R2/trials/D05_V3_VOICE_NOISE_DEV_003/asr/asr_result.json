@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "7cfd1ae0286f16f8e26d37f8116e42e804025eacb1cc2f5cbe7b37e34b80382c",
+  "transcript_raw": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancar. Sin emergencia, Start enciende el motor.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1606,
+  "frozen_at": "2026-10-26T21:37:25"
+}

@@ -1,0 +1,1207 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D10_V1_VOICE_NOISE_DEV_002",
+  "case_id": "D10",
+  "variant_id": "V1",
+  "input_mode": "VOICE_NOISE",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "75a6bb28c53e7986141bd0a8f0ab47e4c14109ce0f7f632fcc76d9c572f8ada8",
+    "variant_hash": "925b317169c0f6f2ca1c2425bc6a3bb8bd835664ce630f823b54c4427c0a3606"
+  },
+  "oracle": {
+    "oracle_id": "D10",
+    "oracle_version": 2,
+    "oracle_hash": "db41ac94ab24b36b180b845990e7db0c781ba28a0c90d3f93abbe41180a1da88",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": true,
+    "intent_expected": [
+      "INT_COUNTER_RESET",
+      "INT_COUNTER_PULSES"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": true,
+      "intent_id": "INT_COUNTER_PULSES",
+      "intent_expected": [
+        "INT_COUNTER_RESET",
+        "INT_COUNTER_PULSES"
+      ],
+      "intent_match": true,
+      "failed_checks": [],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_COUNTER_RESET",
+            "INT_COUNTER_PULSES"
+          ],
+          "actual": "INT_COUNTER_PULSES",
+          "passed": true
+        },
+        {
+          "check": "role:PULSE_INPUT",
+          "expected": "resuelto",
+          "actual": "I_Pulse_Input",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:RESET",
+          "expected": "resuelto",
+          "actual": "I_Reset",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:COUNT_OUTPUT",
+          "expected": "resuelto",
+          "actual": "Q_Count_Reached",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_COUNTER_PULSES"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "PASS",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "PASS",
+    "safety": "PASS",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "PASS",
+    "status": "PASS / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "PASS",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "RESOLVED",
+    "roles": {
+      "PULSE_INPUT": {
+        "role": "PULSE_INPUT",
+        "kind": "INPUT",
+        "functional_name": "I_Pulse_Input",
+        "address": "%IX16.4",
+        "matched_paths": [
+          "pulse_input"
+        ]
+      },
+      "RESET": {
+        "role": "RESET",
+        "kind": "INPUT",
+        "functional_name": "I_Reset",
+        "address": "%IX16.3",
+        "matched_paths": [
+          "reset_input"
+        ]
+      },
+      "COUNT_OUTPUT": {
+        "role": "COUNT_OUTPUT",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Count_Reached",
+        "address": "%QX8.0",
+        "matched_paths": [
+          "output"
+        ]
+      }
+    },
+    "issues": []
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Emergency",
+      "I_Reset",
+      "I_Pulse_Input"
+    ],
+    "bound_outputs": [
+      "Q_Count_Reached"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Emergency', 'I_Reset', 'I_Pulse_Input'] superan las esperadas (2)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": true,
+    "checks": [
+      {
+        "type": "expect",
+        "step_id": "pre_reset_off",
+        "role": "COUNT_OUTPUT",
+        "expected": false,
+        "actual": false,
+        "t_ms": 312.6,
+        "passed": true
+      }
+    ]
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 12,
+    "total_checks": 12,
+    "pass_rate": 1.0,
+    "failed_checks": [],
+    "major_invariant_violations": 0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 0,
+    "samples_checked": 134,
+    "violations": [],
+    "critical_violations": 0,
+    "major_violations": 0
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "PASS",
+  "oracle_verdict_reason": "ALL_CHECKS_PASSED",
+  "final_status": "PASS",
+  "steps": [
+    {
+      "step_id": "pre_reset_on",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Contador a cero.",
+      "started_at": "2026-10-26T21:51:05.6034183-05:00",
+      "completed_at": "2026-10-26T21:51:05.928",
+      "t_start_ms": 10.4,
+      "t_end_ms": 329.9,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": true,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "pre_reset_off",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Soltar RESET: salida apagada.",
+      "started_at": "2026-10-26T21:51:05.9234253-05:00",
+      "completed_at": "2026-10-26T21:51:06.236",
+      "t_start_ms": 330.8,
+      "t_end_ms": 643.5,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "pre_reset_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 312.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "a1_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 1: flanco de subida.",
+      "started_at": "2026-10-26T21:51:06.2369785-05:00",
+      "completed_at": "2026-10-26T21:51:06.438",
+      "t_start_ms": 645.0,
+      "t_end_ms": 846.2,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a1_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 1: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:06.4401541-05:00",
+      "completed_at": "2026-10-26T21:51:06.655",
+      "t_start_ms": 847.4,
+      "t_end_ms": 1061.6,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "a1_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 214.2,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a2_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 2: flanco de subida.",
+      "started_at": "2026-10-26T21:51:06.6550469-05:00",
+      "completed_at": "2026-10-26T21:51:06.857",
+      "t_start_ms": 1062.2,
+      "t_end_ms": 1264.1,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a2_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 2: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:06.8566802-05:00",
+      "completed_at": "2026-10-26T21:51:07.071",
+      "t_start_ms": 1264.7,
+      "t_end_ms": 1479.3,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "a2_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 214.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a3_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 3: flanco de subida.",
+      "started_at": "2026-10-26T21:51:07.0718609-05:00",
+      "completed_at": "2026-10-26T21:51:07.289",
+      "t_start_ms": 1479.9,
+      "t_end_ms": 1696.8,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a3_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 3: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:07.2899320-05:00",
+      "completed_at": "2026-10-26T21:51:07.505",
+      "t_start_ms": 1697.9,
+      "t_end_ms": 1912.3,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "a3_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 214.5,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a4_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 4: flanco de subida.",
+      "started_at": "2026-10-26T21:51:07.5057526-05:00",
+      "completed_at": "2026-10-26T21:51:07.723",
+      "t_start_ms": 1913.0,
+      "t_end_ms": 2130.2,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a4_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 4: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:07.7232567-05:00",
+      "completed_at": "2026-10-26T21:51:07.940",
+      "t_start_ms": 2130.8,
+      "t_end_ms": 2347.5,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "a4_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 216.7,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "a5_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Quinto pulso: estado contado (salida activa).",
+      "started_at": "2026-10-26T21:51:07.9403205-05:00",
+      "completed_at": "2026-10-26T21:51:08.255",
+      "t_start_ms": 2348.2,
+      "t_end_ms": 2662.9,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": true
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "a5_on",
+          "role": "COUNT_OUTPUT",
+          "expected": true,
+          "actual": true,
+          "t_ms": 314.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "a5_off",
+      "phase": "test",
+      "executed": true,
+      "description": "El estado contado se mantiene antes del reset.",
+      "started_at": "2026-10-26T21:51:08.2552934-05:00",
+      "completed_at": "2026-10-26T21:51:08.571",
+      "t_start_ms": 2663.2,
+      "t_end_ms": 2978.9,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": true
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "a5_off",
+          "role": "COUNT_OUTPUT",
+          "expected": true,
+          "actual": true,
+          "t_ms": 315.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "reset_on",
+      "phase": "test",
+      "executed": true,
+      "description": "RESET: la salida se desactiva.",
+      "started_at": "2026-10-26T21:51:08.5723875-05:00",
+      "completed_at": "2026-10-26T21:51:08.889",
+      "t_start_ms": 2979.7,
+      "t_end_ms": 3296.3,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": true,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "reset_on",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 316.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "reset_off",
+      "phase": "test",
+      "executed": true,
+      "description": "RESET soltado: estado inicial (salida apagada).",
+      "started_at": "2026-10-26T21:51:08.8919177-05:00",
+      "completed_at": "2026-10-26T21:51:09.205",
+      "t_start_ms": 3299.9,
+      "t_end_ms": 3610.8,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "reset_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 310.9,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "b1_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 1: flanco de subida.",
+      "started_at": "2026-10-26T21:51:09.2033621-05:00",
+      "completed_at": "2026-10-26T21:51:09.405",
+      "t_start_ms": 3611.3,
+      "t_end_ms": 3812.6,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "b1_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 1: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:09.4062538-05:00",
+      "completed_at": "2026-10-26T21:51:09.607",
+      "t_start_ms": 3813.2,
+      "t_end_ms": 4014.4,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "b1_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 201.3,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "b2_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 2: flanco de subida.",
+      "started_at": "2026-10-26T21:51:09.6068370-05:00",
+      "completed_at": "2026-10-26T21:51:09.822",
+      "t_start_ms": 4014.8,
+      "t_end_ms": 4230.1,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "b2_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 2: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:09.8231756-05:00",
+      "completed_at": "2026-10-26T21:51:10.038",
+      "t_start_ms": 4231.1,
+      "t_end_ms": 4445.9,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "b2_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 214.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "b3_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 3: flanco de subida.",
+      "started_at": "2026-10-26T21:51:10.0400752-05:00",
+      "completed_at": "2026-10-26T21:51:10.256",
+      "t_start_ms": 4447.5,
+      "t_end_ms": 4663.0,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "b3_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 3: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:10.2554813-05:00",
+      "completed_at": "2026-10-26T21:51:10.456",
+      "t_start_ms": 4663.5,
+      "t_end_ms": 4864.1,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "b3_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 200.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "b4_on",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 4: flanco de subida.",
+      "started_at": "2026-10-26T21:51:10.4565382-05:00",
+      "completed_at": "2026-10-26T21:51:10.671",
+      "t_start_ms": 4864.8,
+      "t_end_ms": 5078.9,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": true,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "b4_off",
+      "phase": "test",
+      "executed": true,
+      "description": "Pulso 4: flanco de bajada.",
+      "started_at": "2026-10-26T21:51:10.6723418-05:00",
+      "completed_at": "2026-10-26T21:51:10.890",
+      "t_start_ms": 5079.7,
+      "t_end_ms": 5296.9,
+      "inputs_applied": {
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "COUNT_OUTPUT": false
+      },
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "b4_off",
+          "role": "COUNT_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 217.3,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 5
+    },
+    {
+      "step_id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Contador a cero.",
+      "started_at": "2026-10-26T21:51:10.8897968-05:00",
+      "completed_at": "2026-10-26T21:51:11.205",
+      "t_start_ms": 5298.1,
+      "t_end_ms": 5612.7,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        "PULSE_INPUT": {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": true,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Entradas a OFF.",
+      "started_at": "2026-10-26T21:51:11.2052720-05:00",
+      "completed_at": "2026-10-26T21:51:11.409",
+      "t_start_ms": 5613.1,
+      "t_end_ms": 5816.8,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "PULSE_INPUT": false,
+        "RESET": false,
+        "COUNT_OUTPUT": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    }
+  ],
+  "cleanup": {
+    "performed": true,
+    "success": true,
+    "inputs": [
+      {
+        "name": "I_Reset",
+        "address": "%I16.3",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Pulse_Input",
+        "address": "%I16.4",
+        "readback": false,
+        "restored": true
+      }
+    ],
+    "process_variables": []
+  },
+  "sequence": {
+    "planned_ms": 5500,
+    "sample_period_ms": 50,
+    "watched": [
+      "I_Pulse_Input",
+      "I_Reset",
+      "Q_Count_Reached"
+    ],
+    "skipped_steps": [],
+    "bridge_status": "PLCSIM_IO_PASSED",
+    "failed_step": null,
+    "sequence_duration_ms": 5816.9386,
+    "cpu_state": "RUN"
+  },
+  "errors": [],
+  "warnings": [
+    "Entradas ligadas ['I_Emergency', 'I_Reset', 'I_Pulse_Input'] superan las esperadas (2)."
+  ],
+  "timings": {
+    "generation_ms": 11206,
+    "compile_ms": 40602,
+    "download_ms": null,
+    "functional_test_ms": 7800,
+    "end_to_end_ms": 61357,
+    "semantic_ms": 10740,
+    "runtime_ms": 860,
+    "oracle_ms": 7800,
+    "total_ms": 61357,
+    "generation_total_ms": 11206,
+    "evaluation_ms": 50151
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:51:12"
+}

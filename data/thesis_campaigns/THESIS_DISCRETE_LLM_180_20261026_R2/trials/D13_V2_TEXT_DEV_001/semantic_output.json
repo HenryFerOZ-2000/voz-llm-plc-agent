@@ -1,0 +1,357 @@
+{
+  "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+  "case_id": null,
+  "command_text": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.",
+  "normalized_command": "habilitar el variador con la orden de marcha solo sin alarma activa; deshabilitarlo inmediatamente si aparece una alarma activa.",
+  "parameters": {
+    "trigger_input": "I_Start",
+    "emergency_input": "I_Emergency",
+    "alarm_input": "I_Alarm_Active",
+    "motor_output": "Q_Motor_Enable"
+  },
+  "confidence": 0.99,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "La orden de marcha se reutiliza como I_Start.",
+    "Se propone I_Alarm_Active como nueva entrada funcional para la condición de alarma activa.",
+    "I_Emergency conserva prioridad sobre la habilitación del variador."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Alarm_Active",
+    "I_Emergency",
+    "Q_Motor_Enable"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "force_off",
+      "condition": "I_Alarm_Active OR I_Emergency",
+      "outputs": [
+        "Q_Motor_Enable"
+      ]
+    }
+  ],
+  "operation_type": "vfd_enable_with_alarm_inhibit",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "trigger_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "alarm_input": {
+      "source": "LLM"
+    },
+    "motor_output": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "alarm_input": "I_Alarm_Active",
+      "motor_output": "Q_Motor_Enable"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+    "case_id": null,
+    "command_text": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.",
+    "normalized_command": "quiero que el motor se habilite con la orden de start pero nunca mientras exista una alarma enciende ni siquiera si ya estaba funcionando",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "motor_output": "Q_Motor_Enable",
+      "alarm_input": "I_Alarm"
+    },
+    "confidence": 0.88,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Start",
+      "Q_Alarm",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "alarm_output": {
+        "source": "RULES"
+      },
+      "motor_output": {
+        "source": "RULES"
+      },
+      "alarm_input": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_VFD_ENABLE_NO_ALARM exige 'alarm_input' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "IO_ALLOCATION",
+        "address": null,
+        "state": null
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "defaulted_keys": [
+        "alarm_input"
+      ],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+    "case_id": null,
+    "command_text": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.",
+    "normalized_command": "habilitar el variador con la orden de marcha solo sin alarma activa; deshabilitarlo inmediatamente si aparece una alarma activa.",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "alarm_input": "I_Alarm_Active",
+      "motor_output": "Q_Motor_Enable"
+    },
+    "confidence": 0.99,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "La orden de marcha se reutiliza como I_Start.",
+      "Se propone I_Alarm_Active como nueva entrada funcional para la condición de alarma activa.",
+      "I_Emergency conserva prioridad sobre la habilitación del variador."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Alarm_Active",
+      "I_Emergency",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "force_off",
+        "condition": "I_Alarm_Active OR I_Emergency",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      }
+    ],
+    "operation_type": "vfd_enable_with_alarm_inhibit",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "alarm_input": "I_Alarm_Active",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0206d16ad5f3f9e3006adff8edd2e087d2bda7119ff988ef20",
+    "prompt_tokens": 19163,
+    "completion_tokens": 351,
+    "total_tokens": 19514,
+    "latency_ms": 3629.17,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "iec61131_rules.md",
+      "score": 15,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 12,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "README.md",
+      "score": 9,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "timer_counter_examples.md",
+      "score": 9,
+      "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "emergency_priority",
+      "enable_pid"
+    ],
+    "explicit_types": [
+      "force_off"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+    "case_id": null,
+    "command_text": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.",
+    "normalized_command": "habilitar el variador con la orden de marcha solo sin alarma activa; deshabilitarlo inmediatamente si aparece una alarma activa.",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "alarm_input": "I_Alarm_Active",
+      "motor_output": "Q_Motor_Enable"
+    },
+    "confidence": 0.99,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "La orden de marcha se reutiliza como I_Start.",
+      "Se propone I_Alarm_Active como nueva entrada funcional para la condición de alarma activa.",
+      "I_Emergency conserva prioridad sobre la habilitación del variador."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Alarm_Active",
+      "I_Emergency",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "force_off",
+        "condition": "I_Alarm_Active OR I_Emergency",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      }
+    ],
+    "operation_type": "vfd_enable_with_alarm_inhibit",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "alarm_input": "I_Alarm_Active",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

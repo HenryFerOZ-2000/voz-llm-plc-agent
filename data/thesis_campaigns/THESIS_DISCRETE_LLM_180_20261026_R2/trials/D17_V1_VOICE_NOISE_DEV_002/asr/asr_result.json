@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "bae03fcfe2f97082d197a63463975671d5c25493f017ad005847cfe7d5e90d2c",
+  "transcript_raw": "Tras activar Start, vigile el sensor y active una alarma si transcurren cinco segundos sin ningún cambio. Cada cambio reinicia la cuenta.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1312,
+  "frozen_at": "2026-10-26T22:09:15"
+}

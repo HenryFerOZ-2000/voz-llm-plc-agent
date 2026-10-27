@@ -1,0 +1,738 @@
+{
+  "schema_version": 1,
+  "trial_id": "D13_V3_VOICE_CLEAN_DEV_002",
+  "case_id": "D13",
+  "variant_id": "V3",
+  "input_mode": "VOICE_CLEAN",
+  "trial_number": 2,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "MEDIUM",
+  "command_text": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden.",
+  "created_at": "2026-10-26T21:06:00",
+  "semantic": {
+    "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+    "case_id": null,
+    "command_text": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+    "normalized_command": "el variador se habilita con la orden de marcha solo cuando no hay alarma activa; una alarma activa deshabilita el variador de inmediato.",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "alarm_input": "I_Alarm_Active",
+      "motor_output": "Q_Motor_Enable"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: La orden de marcha se representa mediante I_Start.",
+      "INFERRED: Se requiere una entrada funcional I_Alarm_Active para representar la condición de alarma activa.",
+      "Se incluye I_Emergency con prioridad de seguridad sobre la habilitación del variador."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Emergency",
+      "I_Alarm_Active",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "force_off",
+        "condition": "I_Alarm_Active OR I_Emergency",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      }
+    ],
+    "operation_type": "conditional_enable",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "alarm_input": "I_Alarm_Active",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+      "case_id": null,
+      "command_text": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+      "normalized_command": "mientras haya una alarma enciende el motor debe estar deshabilitado aunque tenga la orden de start sin alarma habilitalo con esa orden",
+      "parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "motor_output": "Q_Motor_Enable",
+        "alarm_input": "I_Alarm"
+      },
+      "confidence": 0.88,
+      "ambiguities": [
+        "El comando usa una referencia vaga para la accion o salida."
+      ],
+      "requires_clarification": true,
+      "clarification_question": "El comando requiere una aclaracion adicional antes de generar el paquete PLC.",
+      "assumptions": [],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Start",
+        "Q_Alarm",
+        "Q_Motor_Enable"
+      ],
+      "unrecognized_terms": [
+        "esa"
+      ],
+      "functional_requirements": [],
+      "parameter_provenance": {
+        "trigger_input": {
+          "source": "RULES"
+        },
+        "emergency_input": {
+          "source": "RULES"
+        },
+        "alarm_output": {
+          "source": "RULES"
+        },
+        "motor_output": {
+          "source": "RULES"
+        },
+        "alarm_input": {
+          "source": "DEFAULT",
+          "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+          "original_value": null,
+          "reason": "INT_VFD_ENABLE_NO_ALARM exige 'alarm_input' y el parser no lo dio: recurso unico del contrato del intent.",
+          "resolution": "IO_ALLOCATION",
+          "address": null,
+          "state": null
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+        "origin": "RULES",
+        "interpreted_parameters": {
+          "trigger_input": "I_Start",
+          "emergency_input": "I_Emergency",
+          "alarm_output": "Q_Alarm",
+          "motor_output": "Q_Motor_Enable"
+        },
+        "defaulted_keys": [
+          "alarm_input"
+        ],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+      "case_id": null,
+      "command_text": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+      "normalized_command": "el variador se habilita con la orden de marcha solo cuando no hay alarma activa; una alarma activa deshabilita el variador de inmediato.",
+      "parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "alarm_input": "I_Alarm_Active",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: La orden de marcha se representa mediante I_Start.",
+        "INFERRED: Se requiere una entrada funcional I_Alarm_Active para representar la condición de alarma activa.",
+        "Se incluye I_Emergency con prioridad de seguridad sobre la habilitación del variador."
+      ],
+      "recognized_tags": [
+        "I_Start",
+        "I_Emergency",
+        "I_Alarm_Active",
+        "Q_Motor_Enable"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "force_off",
+          "condition": "I_Alarm_Active OR I_Emergency",
+          "outputs": [
+            "Q_Motor_Enable"
+          ]
+        }
+      ],
+      "operation_type": "conditional_enable",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "trigger_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "alarm_input": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "trigger_input": "I_Start",
+          "emergency_input": "I_Emergency",
+          "alarm_input": "I_Alarm_Active",
+          "motor_output": "Q_Motor_Enable"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_02e5f7d7a665a629006ae0070af6e887d2b924b2f2404493ee",
+      "prompt_tokens": 19151,
+      "completion_tokens": 363,
+      "total_tokens": 19514,
+      "latency_ms": 2983.78,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "retrieved_context": [
+      {
+        "source": "iec61131_rules.md",
+        "score": 12,
+        "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 9,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      },
+      {
+        "source": "timer_counter_examples.md",
+        "score": 9,
+        "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+      },
+      {
+        "source": "README.md",
+        "score": 6,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "approved_templates.md",
+        "score": 6,
+        "excerpt": "# Plantillas aprobadas\n- `INT_MOTOR_START_STOP`\n- `INT_DELAYED_START`\n- `INT_DELAYED_STOP`\n- `INT_TIMED_PULSE`\n- `INT_COUNTER_PULSES`\nEstas intenciones cuentan con generación determinística de lógica ST dentro del proyecto."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [],
+      "covered_by_intent": [
+        "emergency_priority",
+        "enable_pid"
+      ],
+      "explicit_types": [
+        "force_off"
+      ],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+      "case_id": null,
+      "command_text": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+      "normalized_command": "el variador se habilita con la orden de marcha solo cuando no hay alarma activa; una alarma activa deshabilita el variador de inmediato.",
+      "parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "alarm_input": "I_Alarm_Active",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: La orden de marcha se representa mediante I_Start.",
+        "INFERRED: Se requiere una entrada funcional I_Alarm_Active para representar la condición de alarma activa.",
+        "Se incluye I_Emergency con prioridad de seguridad sobre la habilitación del variador."
+      ],
+      "recognized_tags": [
+        "I_Start",
+        "I_Emergency",
+        "I_Alarm_Active",
+        "Q_Motor_Enable"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "force_off",
+          "condition": "I_Alarm_Active OR I_Emergency",
+          "outputs": [
+            "Q_Motor_Enable"
+          ]
+        }
+      ],
+      "operation_type": "conditional_enable",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "trigger_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "alarm_input": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_VFD_ENABLE_NO_ALARM",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "trigger_input": "I_Start",
+          "emergency_input": "I_Emergency",
+          "alarm_input": "I_Alarm_Active",
+          "motor_output": "Q_Motor_Enable"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": null,
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D13\\V3\\D13_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D13\\V3\\D13_V3_VOICE_CLEAN_DEV_002\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D13\\V3\\D13_V3_VOICE_CLEAN_DEV_002\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T21:06:02",
+    "resolved_at": "2026-10-26T21:06:05",
+    "bound_channels": 4,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden.",
+  "generated_code_id": "2026-10-26_21-06-05_NOCASE_INT_VFD_ENABLE_NO_ALARM",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": "clean_audio.wav",
+    "asr_transcript": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+    "wer": 0.047619,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "SUCCESS",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "PASS",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "890a6ef716ea0927143c2e52728605a95b4d0ba82ae610e673c0cd6a45443ac6",
+  "variant_hash": "2bd27f6fe3cefec9da6ee08e6a7cab390c6f721e3d7910b6d4bd541664dde463",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "PASS",
+    "verdict_reason": "ALL_CHECKS_PASSED",
+    "roles": {
+      "RUN_REQUEST": "I_Start",
+      "ALARM_ACTIVE": "I_Alarm_Active",
+      "VFD_ENABLE": "Q_Motor_Enable"
+    },
+    "role_issues": [],
+    "preconditions_success": true,
+    "cleanup_success": true,
+    "duration_ms": 3831,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D13\\V3\\D13_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D13",
+    "oracle_version": 2,
+    "oracle_hash": "e1e7ec3301bc247f34311881d11a01f5124f5fb3f631e22f25c78701f502d09e",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 3,
+    "total_checks": 3,
+    "pass_rate": 1.0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "critical_violations": 0,
+    "samples_checked": 41
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": true,
+    "safety_success": true,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": true
+  },
+  "timing": {
+    "generation_ms": 5098,
+    "compile_ms": 36570,
+    "download_ms": null,
+    "functional_test_ms": 3831,
+    "end_to_end_ms": 47256,
+    "semantic_ms": 4823,
+    "runtime_ms": 866,
+    "oracle_ms": 3831,
+    "total_ms": 47256,
+    "generation_total_ms": 5098,
+    "evaluation_ms": 42158
+  },
+  "errors": [],
+  "final_status": "PASS",
+  "completed_at": "2026-10-26T21:06:47",
+  "canonical_command": "Con una orden de marcha, habilita el variador solo mientras no exista una alarma activa; si la alarma aparece con el variador habilitado, deshabilítalo.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden.",
+  "reference_text_hash": "2bd27f6fe3cefec9da6ee08e6a7cab390c6f721e3d7910b6d4bd541664dde463",
+  "speaker_id": "S01",
+  "repeat_of_trial_id": "D13_V3_VOICE_CLEAN_DEV_001",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "audio_condition": "VOICE_CLEAN",
+  "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D13\\V3\\clean_stimulus.wav",
+  "audio_sha256": "cfefa6972b967f6477ca5a5a996075c72141b0ec1065eed4e5618edf7bd8109d",
+  "paired_audio_sha256": "ed3d9a0e1a7b27a2b900a099b742191634b336cd428142e32c2593b42649a8ba",
+  "audio_source_clean_sha256": "cfefa6972b967f6477ca5a5a996075c72141b0ec1065eed4e5618edf7bd8109d",
+  "audio_manifest_sha256": "6f8b7c6691c1e7f4638a4628f49ec821136d706e67acea63dede08da001e14c7",
+  "target_snr_db": 10.0,
+  "measured_snr_db": 10.0,
+  "voice": {
+    "protocol_version": 2,
+    "reference_text": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden.",
+    "reference_text_hash": "2bd27f6fe3cefec9da6ee08e6a7cab390c6f721e3d7910b6d4bd541664dde463",
+    "transcript_review": "NONE",
+    "clean_source": "PAIRED_AUDIO_CORPUS",
+    "audio_condition": "VOICE_CLEAN",
+    "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D13\\V3\\clean_stimulus.wav",
+    "audio_sha256": "cfefa6972b967f6477ca5a5a996075c72141b0ec1065eed4e5618edf7bd8109d",
+    "paired_audio_sha256": "ed3d9a0e1a7b27a2b900a099b742191634b336cd428142e32c2593b42649a8ba",
+    "audio_source_clean_sha256": "cfefa6972b967f6477ca5a5a996075c72141b0ec1065eed4e5618edf7bd8109d",
+    "audio_manifest_sha256": "6f8b7c6691c1e7f4638a4628f49ec821136d706e67acea63dede08da001e14c7",
+    "audio_manifest_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D13\\V3\\audio_manifest.json",
+    "target_snr_db": 10.0,
+    "measured_snr_db": 10.0,
+    "noise_master_sha256": "965e43af9baa4372e7c7d6283452e6e2a673d08aea00467af8a0c1774ce73fb5",
+    "formal_freeze_id": "THESIS_DISCRETE_V4",
+    "audio_speaker_id": "S01",
+    "paired_clean_trial_id": "D13_V3_VOICE_CLEAN_DEV_001",
+    "clean_audio_hash": "cfefa6972b967f6477ca5a5a996075c72141b0ec1065eed4e5618edf7bd8109d",
+    "audio_capture_success": true,
+    "duration_ms": 7696,
+    "sample_rate": 16000,
+    "channels": 1,
+    "audio_peak": 31966,
+    "audio_rms": 2788.726,
+    "asr_audio": "clean_audio.wav",
+    "asr_audio_sha256": "cfefa6972b967f6477ca5a5a996075c72141b0ec1065eed4e5618edf7bd8109d",
+    "asr_success": true,
+    "asr_model": "gpt-4o-mini-transcribe",
+    "asr_language": "es",
+    "asr_latency_ms": 1675,
+    "asr_transcript_raw": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+    "asr_transcript_normalized": "mientras haya una alarma activa el variador debe estar deshabilitado aunque tenga la orden de marcha sin alarma habilítalo con esa orden",
+    "reference_word_count": 21,
+    "substitutions": 0,
+    "deletions": 0,
+    "insertions": 1,
+    "wer": 0.047619,
+    "exact_transcript_match": false,
+    "normalized_transcript_match": false
+  },
+  "paired_clean_trial_id": "D13_V3_VOICE_CLEAN_DEV_001",
+  "input_text": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+  "effective_input_text": "Mientras haya una alarma activa, el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+  "effective_input_text_hash": "81b0404072a94819001eacfd8e346d39164a8abdebff3fa8196e7c67cccf1d92",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Start",
+      "I_Emergency",
+      "I_Alarm_Active",
+      "Q_Motor_Enable"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T21:06:05",
+    "generated_code_id": "2026-10-26_21-06-05_NOCASE_INT_VFD_ENABLE_NO_ALARM"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D13\\V3\\D13_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0556",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0556",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T21:06:05",
+        "completed_at": "2026-10-26T21:06:47",
+        "retry_reason": null,
+        "final_status": "PASS",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "PASS",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 45987,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22555,
+          "commit_headroom_mb": 46628
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0556",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0556",
+          "timestamp": "2026-10-26T21:06:47",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 1
+        }
+      }
+    ],
+    "final_verdict": "PASS",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T21:06:05",
+    "tia_workspace_id": "T0556",
+    "completed_at": "2026-10-26T21:06:47"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "orchestration_amendment": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\enmienda_clasificacion.json",
+    "sha256": "00d59c4b38e881bda0e7192dbdac10fdc7c253c418cd5a719cab8dedbd749af7"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D13\\V3\\D13_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\tia\\D13_V3_VOICE_CLEAN_DEV_002.zap18",
+    "zap18_hash": "37ae1842362225b88de3c264ebeb490a6ac167a26204de2f113183709fdffeba",
+    "tia_workspace_id": "T0556",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": true,
+    "intent_actual": "INT_VFD_ENABLE_NO_ALARM",
+    "intent_expected": [
+      "INT_VFD_ENABLE_NO_ALARM"
+    ],
+    "intent_match": true,
+    "failed_checks": []
+  },
+  "system_failure": false
+}

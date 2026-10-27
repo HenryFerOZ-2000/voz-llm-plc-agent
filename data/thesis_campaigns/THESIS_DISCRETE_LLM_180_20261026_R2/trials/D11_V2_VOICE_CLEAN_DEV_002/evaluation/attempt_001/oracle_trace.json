@@ -1,0 +1,826 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 5.1527,
+      "t_done_ms": 8.8172,
+      "timestamp": "2026-10-26T21:00:49.0165009-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 522.7465,
+      "t_done_ms": 523.1979,
+      "timestamp": "2026-10-26T21:00:49.5310748-05:00",
+      "writes": [
+        {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 837.9517000000001,
+      "t_done_ms": 838.7119,
+      "timestamp": "2026-10-26T21:00:49.8467104-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1141.4369000000002,
+      "t_done_ms": 1142.3708000000001,
+      "timestamp": "2026-10-26T21:00:50.1502454-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1655.2831,
+      "t_done_ms": 1656.3295,
+      "timestamp": "2026-10-26T21:00:50.6643757-05:00",
+      "writes": [
+        {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1972.0402000000001,
+      "t_done_ms": 1972.7445,
+      "timestamp": "2026-10-26T21:00:50.9796472-05:00",
+      "writes": [
+        {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2473.6432,
+      "t_done_ms": 2474.3226,
+      "timestamp": "2026-10-26T21:00:51.4814840-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_release",
+      "phase": "cleanup",
+      "t_ms": 2788.0794,
+      "t_done_ms": 2788.6884,
+      "timestamp": "2026-10-26T21:00:51.7958827-05:00",
+      "writes": [
+        {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 10.8457,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 71.1122,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 121.67110000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 174.0548,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 222.4709,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 272.2697,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 322.6409,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 372.4664,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 421.7108,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 472.5885,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_stop",
+      "phase": "precondition",
+      "t_ms": 521.8018000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 523.3053,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 573.5179,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 639.3319,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 689.3488,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 739.1483000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 789.3583,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "phase": "precondition",
+      "t_ms": 837.8268,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 838.8643000000001,
+      "values": {
+        "I_Start": true,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 890.1743,
+      "values": {
+        "I_Start": true,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 940.0945,
+      "values": {
+        "I_Start": true,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 989.7198000000001,
+      "values": {
+        "I_Start": true,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1053.6598000000001,
+      "values": {
+        "I_Start": true,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1090.1525000000001,
+      "values": {
+        "I_Start": true,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1140.9978,
+      "values": {
+        "I_Start": true,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1142.4423000000002,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1205.6997000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1254.9564,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1305.0534,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1355.2524,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1393.6352000000002,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1454.9399,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1504.8845000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1555.2358000000002,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1604.7549000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1655.1786000000002,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1656.4126,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": true
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1721.5363,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1771.8678,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1822.0014,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1869.9846,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1920.5692000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1971.7433,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1972.8328000000001,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2022.9601,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2088.8810000000003,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2139.0849000000003,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2188.0019,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2238.7646,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2288.1666,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2338.6883000000003,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2387.8394000000003,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2439.0627,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 2473.5744,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2474.46,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2538.4091000000003,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2588.6354,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2638.7662,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2688.7429,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2739.0202,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_stop",
+      "phase": "cleanup",
+      "t_ms": 2787.9997000000003,
+      "values": {
+        "I_Start": false,
+        "I_Stop": true,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_release",
+      "phase": "cleanup",
+      "t_ms": 2788.838,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_release",
+      "phase": "cleanup",
+      "t_ms": 2839.9495,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_release",
+      "phase": "cleanup",
+      "t_ms": 2889.1855,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_release",
+      "phase": "cleanup",
+      "t_ms": 2939.8096,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    },
+    {
+      "id": "cleanup_release",
+      "phase": "cleanup",
+      "t_ms": 2989.7942000000003,
+      "values": {
+        "I_Start": false,
+        "I_Stop": false,
+        "Q_Contactor_Principal": false
+      }
+    }
+  ]
+}

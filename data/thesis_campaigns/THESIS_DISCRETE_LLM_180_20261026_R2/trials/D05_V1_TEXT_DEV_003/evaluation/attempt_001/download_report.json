@@ -1,0 +1,159 @@
+{
+  "status": "SUCCESS",
+  "timestamp": "2026-10-26T19:41:21",
+  "tia_version": "V18",
+  "errors": [],
+  "warnings": [],
+  "success": true,
+  "plc_name": "PLC_1",
+  "device_item_name": "PLC_1",
+  "device_type": "OrderNumber:6ES7 516-3AN01-0AB0/V2.6",
+  "target_type": "PLCSIM_ADVANCED",
+  "target_name": "PLCSIM Advanced - TESIS_PLC_SIM",
+  "require_simulation": true,
+  "download_scope": "SOFTWARE",
+  "start_module_requested": true,
+  "start_module_configuration_seen": true,
+  "cpu_run_requested": true,
+  "cpu_run_confirmed": null,
+  "available_connections": [
+    {
+      "mode": "PN/IE",
+      "pc_interface": "Siemens PLCSIM Virtual Ethernet Adapter",
+      "number": 1,
+      "target_interfaces": [
+        "1 X1",
+        "1 X2"
+      ]
+    },
+    {
+      "mode": "PN/IE",
+      "pc_interface": "Intel(R) Wi-Fi 7 BE200 320MHz",
+      "number": 1,
+      "target_interfaces": [
+        "1 X1",
+        "1 X2"
+      ]
+    },
+    {
+      "mode": "TeleService",
+      "pc_interface": "TeleService",
+      "number": 1,
+      "target_interfaces": [
+        "1 X1",
+        "1 X2",
+        "1 X3"
+      ]
+    },
+    {
+      "mode": "TeleService",
+      "pc_interface": "TeleService",
+      "number": 1,
+      "target_interfaces": [
+        "1 X1",
+        "1 X2",
+        "1 X3"
+      ]
+    }
+  ],
+  "configuration_mode": "PN/IE",
+  "pc_interface_name": "Siemens PLCSIM Virtual Ethernet Adapter",
+  "pc_interface_number": 1,
+  "target_interface_name": "1 X1",
+  "simulation_interface_confirmed": true,
+  "download_configurations": [
+    {
+      "type": "StopModules",
+      "message": "The modules are stopped for downloading to device.",
+      "selection": "StopAll",
+      "allowed": true
+    },
+    {
+      "type": "ConsistentBlocksDownload",
+      "message": "Download software to device",
+      "selection": "ConsistentDownload",
+      "allowed": true
+    },
+    {
+      "type": "AlarmTextLibrariesDownload",
+      "message": "Download all alarm texts and text list texts to device",
+      "selection": "ConsistentDownload",
+      "allowed": true
+    },
+    {
+      "type": "StartModules",
+      "message": "Start modules after downloading to device.",
+      "selection": "StartModule",
+      "allowed": true
+    }
+  ],
+  "requested_target_address": null,
+  "download_state": "Success",
+  "download_error_count": 0,
+  "download_warning_count": 0,
+  "download_messages": [
+    {
+      "state": "Success",
+      "message": "PLC_1",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:26"
+    },
+    {
+      "state": "Success",
+      "message": "PLC_1 stopped.",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:27"
+    },
+    {
+      "state": "Success",
+      "message": "'DB_PLC_PRG' was loaded successfully.",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:28"
+    },
+    {
+      "state": "Success",
+      "message": "'PLC_PRG' was loaded successfully.",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:28"
+    },
+    {
+      "state": "Success",
+      "message": "'Main' was loaded successfully.",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:28"
+    },
+    {
+      "state": "Success",
+      "message": "'Default tag table' was loaded successfully.",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:28"
+    },
+    {
+      "state": "Success",
+      "message": "'PLC_Agent_IO' was loaded successfully.",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:28"
+    },
+    {
+      "state": "Success",
+      "message": "PLC_1 started.",
+      "error_count": 0,
+      "warning_count": 0,
+      "date_time": "2026-10-27T00:41:29"
+    }
+  ],
+  "download_success": true,
+  "start_module_success": true,
+  "bridge_status": "TIA_DOWNLOAD_PASSED",
+  "purpose": "experiment",
+  "started_at": "2026-10-26T19:41:30",
+  "completed_at": "2026-10-26T19:41:30",
+  "duration_ms": 0
+}

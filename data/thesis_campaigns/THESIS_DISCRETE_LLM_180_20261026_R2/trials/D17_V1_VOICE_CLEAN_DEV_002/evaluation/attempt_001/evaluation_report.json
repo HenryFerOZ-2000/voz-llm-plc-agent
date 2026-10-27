@@ -1,0 +1,240 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D17_V1_VOICE_CLEAN_DEV_002",
+  "case_id": "D17",
+  "variant_id": "V1",
+  "input_mode": "VOICE_CLEAN",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "e28adc6244a07c72128c7387d0b403d6be32a7a0656774d999ab35e4ae5f7773",
+    "variant_hash": "c7fd3495aa2712d6b81913617ca4c2c7e9ddd3f155f9f19217daf220965376a8"
+  },
+  "oracle": {
+    "oracle_id": "D17",
+    "oracle_version": 2,
+    "oracle_hash": "f757df8d6f6c2f9c85a4d1f9f059138324e7c9bc3e816635ea56d754e0d36be1",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": false,
+    "intent_expected": [
+      "INT_SENSOR_TIMEOUT_ALARM"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": false,
+      "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+      "intent_expected": [
+        "INT_SENSOR_TIMEOUT_ALARM"
+      ],
+      "intent_match": true,
+      "failed_checks": [
+        "role:START"
+      ],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_SENSOR_TIMEOUT_ALARM"
+          ],
+          "actual": "INT_SENSOR_TIMEOUT_ALARM",
+          "passed": true
+        },
+        {
+          "check": "role:START",
+          "expected": "resuelto",
+          "actual": null,
+          "passed": false,
+          "provenance": []
+        },
+        {
+          "check": "role:SENSOR",
+          "expected": "resuelto",
+          "actual": "I_Piece_Sensor",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:ALARM",
+          "expected": "resuelto",
+          "actual": "Q_Alarm",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "parameter:timeout",
+          "expected": 5000,
+          "actual": 5000,
+          "passed": true
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_SENSOR_TIMEOUT_ALARM"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "FAIL",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "REVIEW",
+    "safety": "NOT_RUN",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "REVIEW",
+    "status": "REVIEW / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "REVIEW",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "REVIEW",
+    "roles": {
+      "SENSOR": {
+        "role": "SENSOR",
+        "kind": "INPUT",
+        "functional_name": "I_Piece_Sensor",
+        "address": "%IX16.6",
+        "matched_paths": [
+          "sensor_input"
+        ]
+      },
+      "ALARM": {
+        "role": "ALARM",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Alarm",
+        "address": "%QX8.3",
+        "matched_paths": [
+          "alarm_output"
+        ]
+      }
+    },
+    "issues": [
+      {
+        "code": "ORACLE_ROLE_NOT_FOUND",
+        "role": "START",
+        "candidates": [],
+        "detail": "START: ninguna ruta de ['start_input', 'trigger_input'] aparece en los bindings del ensayo."
+      }
+    ]
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Emergency",
+      "I_Piece_Sensor"
+    ],
+    "bound_outputs": [
+      "Q_Alarm"
+    ],
+    "warnings": []
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": null,
+    "checks": []
+  },
+  "functional": {
+    "evaluated": false,
+    "success": null
+  },
+  "safety": {
+    "evaluated": false,
+    "success": null
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "REVIEW",
+  "oracle_verdict_reason": "ORACLE_ROLE_NOT_FOUND",
+  "final_status": "REVIEW",
+  "steps": [],
+  "cleanup": {
+    "performed": false,
+    "success": null
+  },
+  "sequence": {},
+  "errors": [
+    "START: ninguna ruta de ['start_input', 'trigger_input'] aparece en los bindings del ensayo."
+  ],
+  "warnings": [],
+  "timings": {
+    "generation_ms": 10480,
+    "compile_ms": 36086,
+    "download_ms": null,
+    "functional_test_ms": 1,
+    "end_to_end_ms": 48347,
+    "semantic_ms": 10117,
+    "runtime_ms": 848,
+    "oracle_ms": 1,
+    "total_ms": 48347,
+    "generation_total_ms": 10480,
+    "evaluation_ms": 37867
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:15:56"
+}

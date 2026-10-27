@@ -1,0 +1,383 @@
+[
+  {
+    "case_id": "D05",
+    "variant_id": "V2",
+    "mode": "TEXT",
+    "trial_id": "D05_V2_TEXT_DEV_002",
+    "trial_dir": "results/development_validation_v2/D05/V2/D05_V2_TEXT_DEV_002",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_SEMANTIC_MISMATCH",
+    "role_issues": [],
+    "oracle_roles": {
+      "START_REQUEST": "I_Start",
+      "SAFETY_TRIP": "I_Emergency",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "asr_transcript_raw": null,
+    "failed_behavioral_checks": [],
+    "errors": []
+  },
+  {
+    "case_id": "D07",
+    "variant_id": "V2",
+    "mode": "TEXT",
+    "trial_id": "D07_V2_TEXT_DEV_001",
+    "trial_dir": "results/development_validation_v2/D07/V2/D07_V2_TEXT_DEV_001",
+    "verdict": "FAIL",
+    "failure_category": "FUNCTIONAL_FAILURE",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "FUNCTIONAL_FAILURE",
+    "role_issues": [],
+    "oracle_roles": {
+      "START": "I_Start",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "asr_transcript_raw": null,
+    "failed_behavioral_checks": [
+      {
+        "type": "expect",
+        "step_id": "step_1",
+        "role": "MOTOR_MAIN",
+        "expected": true,
+        "actual": false,
+        "t_ms": 4513.5,
+        "passed": false
+      },
+      {
+        "type": "timeline",
+        "step_id": "step_1",
+        "role": "MOTOR_MAIN",
+        "expected": false,
+        "expected_time": {
+          "from_ms": 0,
+          "to_ms": 2700
+        },
+        "samples_in_window": 54,
+        "passed": false,
+        "actual_observation_time": 64.3,
+        "actual": true
+      },
+      {
+        "type": "timeline",
+        "step_id": "step_1",
+        "role": "MOTOR_MAIN",
+        "expected": true,
+        "expected_time": {
+          "from_ms": 3700,
+          "to_ms": 4500
+        },
+        "samples_in_window": 16,
+        "passed": false,
+        "actual_observation_time": 3714.8,
+        "actual": false
+      },
+      {
+        "type": "transition",
+        "step_id": "step_1",
+        "role": "MOTOR_MAIN",
+        "expected": true,
+        "expected_time": {
+          "nominal_ms": 3000,
+          "from_ms": 2700,
+          "to_ms": 3700
+        },
+        "actual_observation_time": 64.3,
+        "tolerance": {
+          "early": 300,
+          "late": 700
+        },
+        "passed": false,
+        "sample_period_ms": 50
+      }
+    ],
+    "errors": []
+  },
+  {
+    "case_id": "D14",
+    "variant_id": "V3",
+    "mode": "TEXT",
+    "trial_id": "D14_V3_TEXT_DEV_001",
+    "trial_dir": "results/development_validation_v2/D14/V3/D14_V3_TEXT_DEV_001",
+    "verdict": "FAIL",
+    "failure_category": "IO_ALLOCATION_FAILURE",
+    "failure_stage": "io_allocation",
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": null,
+    "role_issues": null,
+    "oracle_roles": null,
+    "asr_transcript_raw": null,
+    "failed_behavioral_checks": null,
+    "errors": [
+      "IO_ASSIGNMENT_BLOCKED",
+      "IO_ASSIGNMENT_BLOCKED"
+    ]
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V3",
+    "mode": "TEXT",
+    "trial_id": "D15_V3_TEXT_DEV_001",
+    "trial_dir": "results/development_validation_v2/D15/V3/D15_V3_TEXT_DEV_001",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_ROLE_NOT_FOUND",
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "oracle_roles": {
+      "MANUAL_COMMAND": "I_Manual_Motor_Command",
+      "AUTO_COMMAND": "I_Automatic_Motor_Command",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "asr_transcript_raw": null,
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D20",
+    "variant_id": "V1",
+    "mode": "TEXT",
+    "trial_id": "D20_V1_TEXT_DEV_002",
+    "trial_dir": "results/development_validation_v2/D20/V1/D20_V1_TEXT_DEV_002",
+    "verdict": "FAIL",
+    "failure_category": "COMPILE_FAILURE",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": null,
+    "role_issues": null,
+    "oracle_roles": null,
+    "asr_transcript_raw": null,
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D05",
+    "variant_id": "V2",
+    "mode": "VOICE_CLEAN",
+    "trial_id": "D05_V2_VOICE_CLEAN_DEV_003",
+    "trial_dir": "results/development_validation_v2/D05/V2/D05_V2_VOICE_CLEAN_DEV_003",
+    "verdict": "FAIL",
+    "failure_category": "SEMANTIC_FAILURE",
+    "failure_stage": "semantic",
+    "clarification_requested": true,
+    "clarification_question": "Durante una emergencia, ¿el motor debe permanecer apagado y bloqueado hasta que la emergencia desaparezca, o debe permanecer arrancado?",
+    "oracle_reason": null,
+    "role_issues": null,
+    "oracle_roles": null,
+    "asr_transcript_raw": "Quiero que el motor arranque con Start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure.",
+    "failed_behavioral_checks": null,
+    "errors": [
+      "La intencion no tiene plantilla implementada: INT_UNKNOWN"
+    ]
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V2",
+    "mode": "VOICE_CLEAN",
+    "trial_id": "D15_V2_VOICE_CLEAN_DEV_002",
+    "trial_dir": "results/development_validation_v2/D15/V2/D15_V2_VOICE_CLEAN_DEV_002",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_ROLE_NOT_FOUND",
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "oracle_roles": {
+      "MANUAL_COMMAND": "I_Manual_Conveyor_Command",
+      "AUTO_COMMAND": "I_Start",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "asr_transcript_raw": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V3",
+    "mode": "VOICE_CLEAN",
+    "trial_id": "D15_V3_VOICE_CLEAN_DEV_002",
+    "trial_dir": "results/development_validation_v2/D15/V3/D15_V3_VOICE_CLEAN_DEV_002",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_ROLE_NOT_FOUND",
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "oracle_roles": {
+      "MANUAL_COMMAND": "I_Manual_Conveyor_Command",
+      "AUTO_COMMAND": "I_Start",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "asr_transcript_raw": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, ignora la del otro modo.",
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D17",
+    "variant_id": "V1",
+    "mode": "VOICE_CLEAN",
+    "trial_id": "D17_V1_VOICE_CLEAN_DEV_002",
+    "trial_dir": "results/development_validation_v2/D17/V1/D17_V1_VOICE_CLEAN_DEV_002",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_ROLE_NOT_FOUND",
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "oracle_roles": {
+      "SENSOR": "I_Piece_Sensor",
+      "ALARM": "Q_Alarm"
+    },
+    "asr_transcript_raw": "Desactivar Start, vigile el sensor y active una alarma si transcurren cinco segundos sin ningún cambio. Cada cambio reinicia la cuenta.",
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D17",
+    "variant_id": "V3",
+    "mode": "VOICE_CLEAN",
+    "trial_id": "D17_V3_VOICE_CLEAN_DEV_002",
+    "trial_dir": "results/development_validation_v2/D17/V3/D17_V3_VOICE_CLEAN_DEV_002",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_ROLE_NOT_FOUND",
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "oracle_roles": {
+      "SENSOR": "I_Piece_Sensor",
+      "ALARM": "Q_Alarm"
+    },
+    "asr_transcript_raw": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D05",
+    "variant_id": "V2",
+    "mode": "VOICE_NOISE",
+    "trial_id": "D05_V2_VOICE_NOISE_DEV_003",
+    "trial_dir": "results/development_validation_v2/D05/V2/D05_V2_VOICE_NOISE_DEV_003",
+    "verdict": "FAIL",
+    "failure_category": "SEMANTIC_FAILURE",
+    "failure_stage": "semantic",
+    "clarification_requested": true,
+    "clarification_question": "Durante una emergencia, ¿el motor debe permanecer apagado y bloqueado hasta que la emergencia se libere?",
+    "oracle_reason": null,
+    "role_issues": null,
+    "oracle_roles": null,
+    "asr_transcript_raw": "Quiero que el motor arranque con el start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure.",
+    "failed_behavioral_checks": null,
+    "errors": [
+      "La intencion no tiene plantilla implementada: INT_UNKNOWN"
+    ]
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V1",
+    "mode": "VOICE_NOISE",
+    "trial_id": "D15_V1_VOICE_NOISE_DEV_002",
+    "trial_dir": "results/development_validation_v2/D15/V1/D15_V1_VOICE_NOISE_DEV_002",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_ROLE_NOT_FOUND",
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "oracle_roles": {
+      "MANUAL_COMMAND": "I_Manual_Motor_Command",
+      "AUTO_COMMAND": "I_Automatic_Motor_Command",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "asr_transcript_raw": "con un selector manual-automático, en automático, el motor obedece la orden automática, en manual la orden manual, la otra orden se ignora.",
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V3",
+    "mode": "VOICE_NOISE",
+    "trial_id": "D15_V3_VOICE_NOISE_DEV_002",
+    "trial_dir": "results/development_validation_v2/D15/V3/D15_V3_VOICE_NOISE_DEV_002",
+    "verdict": "REVIEW",
+    "failure_category": "REVIEW",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": "ORACLE_ROLE_NOT_FOUND",
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND",
+      "ORACLE_ROLE_NOT_FOUND",
+      "ORACLE_ROLE_NOT_FOUND",
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "oracle_roles": {},
+    "asr_transcript_raw": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+    "failed_behavioral_checks": null,
+    "errors": []
+  },
+  {
+    "case_id": "D17",
+    "variant_id": "V3",
+    "mode": "VOICE_NOISE",
+    "trial_id": "D17_V3_VOICE_NOISE_DEV_002",
+    "trial_dir": "results/development_validation_v2/D17/V3/D17_V3_VOICE_NOISE_DEV_002",
+    "verdict": "FAIL",
+    "failure_category": "SEMANTIC_FAILURE",
+    "failure_stage": "semantic",
+    "clarification_requested": true,
+    "clarification_question": "¿La alarma debe activarse solo si el sensor permanece desactivado (FALSE) durante cinco segundos, o si permanece sin cambiar durante cinco segundos tanto activado como desactivado?",
+    "oracle_reason": null,
+    "role_issues": null,
+    "oracle_roles": null,
+    "asr_transcript_raw": "Al estar desactivado, si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma.",
+    "failed_behavioral_checks": null,
+    "errors": [
+      "La intencion no tiene plantilla implementada: INT_UNKNOWN"
+    ]
+  },
+  {
+    "case_id": "D20",
+    "variant_id": "V3",
+    "mode": "VOICE_NOISE",
+    "trial_id": "D20_V3_VOICE_NOISE_DEV_002",
+    "trial_dir": "results/development_validation_v2/D20/V3/D20_V3_VOICE_NOISE_DEV_002",
+    "verdict": "FAIL",
+    "failure_category": "COMPILE_FAILURE",
+    "failure_stage": null,
+    "clarification_requested": false,
+    "clarification_question": null,
+    "oracle_reason": null,
+    "role_issues": null,
+    "oracle_roles": null,
+    "asr_transcript_raw": "Un ciclo automático de tres segundos empieza al activar Start, cuando termina se detiene y se marca como finalizado, y Reset lo devuelve al estado inicial.",
+    "failed_behavioral_checks": null,
+    "errors": []
+  }
+]

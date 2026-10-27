@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "71c906306ee68dee63d97a23058a773d0d340549e57be9fde8b89540cb2e816d",
+  "transcript_raw": "Quiero que se cuenten los pulsos de la entrada y que cuando llegan a cinco se active la salida.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1292,
+  "frozen_at": "2026-10-26T21:48:28"
+}

@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "2abcde9b14d78f47e8d5f5a01dacd8cf7248a59b76506491c4baeff8cd94bcb3",
+  "transcript_raw": "Al presionar el pulsador, activa la salida digital durante cinco segundos.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2033,
+  "frozen_at": "2026-10-26T20:32:33"
+}

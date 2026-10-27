@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SemanticOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "intent_id",
+    "case_id",
+    "command_text",
+    "normalized_command",
+    "parameters",
+    "confidence",
+    "ambiguities",
+    "requires_clarification",
+    "clarification_question",
+    "assumptions",
+    "recognized_tags",
+    "unrecognized_terms"
+  ],
+  "properties": {
+    "intent_id": {
+      "type": "string",
+      "enum": [
+        "INT_TIMED_PULSE",
+        "INT_DIRECT_OUTPUT",
+        "INT_MOTOR_START_STOP",
+        "INT_MOTOR_LATCH",
+        "INT_EMERGENCY_PRIORITY",
+        "INT_SAFE_START_ALARM",
+        "INT_DELAYED_START",
+        "INT_DELAYED_STOP",
+        "INT_AUTO_STOP_TIMER",
+        "INT_COUNTER_PULSES",
+        "INT_COUNTER_RESET",
+        "INT_MUTUAL_INTERLOCK",
+        "INT_VFD_ENABLE_NO_ALARM",
+        "INT_MANUAL_AUTO_MODE",
+        "INT_SEQUENCE_THREE_STEPS",
+        "INT_SENSOR_TIMEOUT_ALARM",
+        "INT_MAINTENANCE_BLOCK",
+        "INT_STATUS_PILOTS",
+        "INT_CYCLIC_MOTOR",
+        "INT_AUTO_CYCLE",
+        "INT_PID_SUPERVISOR",
+        "INT_SPEED_SELECTION",
+        "INT_UNKNOWN"
+      ]
+    },
+    "case_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "command_text": {
+      "type": "string"
+    },
+    "normalized_command": {
+      "type": "string"
+    },
+    "parameters": {
+      "type": "object"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "ambiguities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_clarification": {
+      "type": "boolean"
+    },
+    "clarification_question": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recognized_tags": {
+      "type": "array",
+      "description": "Nombres de recursos PLC (fisicos I_/Q_/AI_/AO_ o internos M_/T_/C_/R_/F_) que el comando referencia. Antes era un enum cerrado; se cambio a un patron abierto porque el mapa fisico ahora soporta nombres funcionales dinamicos asignados por el usuario via MAP_CONFIG (docs/23_io_allocator.md) - un nombre nuevo como Q_Motor_2 nunca podria enumerarse por adelantado. La autorizacion real (existe en el mapa activo, no esta LOCKED para otro uso, etc.) la sigue verificando semantic_validator contra el mapa activo, no este schema.",
+      "items": {
+        "type": "string",
+        "pattern": "^(?:AI|AO|[IQMTCFR])_[A-Za-z0-9_]+$"
+      }
+    },
+    "unrecognized_terms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "functional_requirements": {
+      "type": "array",
+      "description": "Additional behaviors beyond intent_id (e.g. run_pilot, delayed_stop). Optional: [] when the single intent already fully represents the command.",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "motor_start_latch",
+              "delayed_start",
+              "delayed_stop",
+              "run_pilot",
+              "stop_pilot",
+              "fault_pilot",
+              "alarm_output",
+              "emergency_priority",
+              "reset_behavior",
+              "interlock",
+              "maintenance_inhibit",
+              "counter_requirement",
+              "automatic_mode",
+              "manual_mode",
+              "set_auto_mode",
+              "set_manual_mode",
+              "set_level_setpoint",
+              "enable_pid",
+              "disable_pid",
+              "high_level_alarm",
+              "low_level_alarm",
+              "sensor_range_fault",
+              "conditional_alarm_reset",
+              "safe_overfill_stop",
+              "manual_pump_limit",
+              "manual_pump_enable",
+              "enable_pump",
+              "reject_unsafe_setpoint",
+              "timed_sequence",
+              "never_together",
+              "sensor_timeout_alarm"
+            ]
+          }
+        }
+      }
+    },
+    "operation_type": {
+      "type": "string",
+      "description": "PROGRAM (logica PLC normal, default) o MAP_CONFIG (el comando pide (re)asignar un nombre funcional a un canal fisico). Recalculado deterministicamente por semantic_validator a partir de requested_io_assignments - nunca se confia en el valor que ponga el LLM.",
+      "enum": ["PROGRAM", "MAP_CONFIG"]
+    },
+    "requested_io_assignments": {
+      "type": "array",
+      "description": "Menciones crudas de direccion+rol extraidas por regex (io_allocator.extract_io_assignment_requests), NUNCA inventadas por el LLM. Cada entrada se valida y normaliza deterministicamente antes de proponerse - ver semantic_validation.io_assignment_proposals y docs/23_io_allocator.md.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address_text": {"type": "string"},
+          "address": {"type": ["string", "null"]},
+          "role_text": {"type": "string"},
+          "functional_name_hint": {"type": "string"}
+        }
+      }
+    }
+  }
+}

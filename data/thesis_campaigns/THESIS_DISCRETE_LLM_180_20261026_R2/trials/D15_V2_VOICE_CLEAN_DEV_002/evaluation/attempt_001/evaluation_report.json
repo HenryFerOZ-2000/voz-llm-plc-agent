@@ -1,0 +1,258 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D15_V2_VOICE_CLEAN_DEV_002",
+  "case_id": "D15",
+  "variant_id": "V2",
+  "input_mode": "VOICE_CLEAN",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "a0e142df907e6911bd38c986efb18ea9ffa95f06d0b34b7371455166587b7d95",
+    "variant_hash": "6ed02cd6db72ecd68f5579449290545023002563c9c7de3538bf58d33ac1d288"
+  },
+  "oracle": {
+    "oracle_id": "D15",
+    "oracle_version": 2,
+    "oracle_hash": "6cc504987db5c37e854bd2aa94ab26538986eae28f34a8922ab19cdfcf8998bd",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": false,
+    "intent_expected": [
+      "INT_MANUAL_AUTO_MODE"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": false,
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "intent_expected": [
+        "INT_MANUAL_AUTO_MODE"
+      ],
+      "intent_match": true,
+      "failed_checks": [
+        "role:MODE_AUTO"
+      ],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_MANUAL_AUTO_MODE"
+          ],
+          "actual": "INT_MANUAL_AUTO_MODE",
+          "passed": true
+        },
+        {
+          "check": "role:MODE_AUTO",
+          "expected": "resuelto",
+          "actual": null,
+          "passed": false,
+          "provenance": []
+        },
+        {
+          "check": "role:MANUAL_COMMAND",
+          "expected": "resuelto",
+          "actual": "I_Manual_Conveyor_Command",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:AUTO_COMMAND",
+          "expected": "resuelto",
+          "actual": "I_Start",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:MOTOR_MAIN",
+          "expected": "resuelto",
+          "actual": "Q_Motor_Enable",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_MANUAL_AUTO_MODE"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "FAIL",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "REVIEW",
+    "safety": "NOT_RUN",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "REVIEW",
+    "status": "REVIEW / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "REVIEW",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 3,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "REVIEW",
+    "roles": {
+      "MANUAL_COMMAND": {
+        "role": "MANUAL_COMMAND",
+        "kind": "INPUT",
+        "functional_name": "I_Manual_Conveyor_Command",
+        "address": "%IX16.4",
+        "matched_paths": [
+          "manual_command_input"
+        ]
+      },
+      "AUTO_COMMAND": {
+        "role": "AUTO_COMMAND",
+        "kind": "INPUT",
+        "functional_name": "I_Start",
+        "address": "%IX16.0",
+        "matched_paths": [
+          "auto_command_input"
+        ]
+      },
+      "MOTOR_MAIN": {
+        "role": "MOTOR_MAIN",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Motor_Enable",
+        "address": "%QX8.4",
+        "matched_paths": [
+          "motor_output"
+        ]
+      }
+    },
+    "issues": [
+      {
+        "code": "ORACLE_ROLE_NOT_FOUND",
+        "role": "MODE_AUTO",
+        "candidates": [],
+        "detail": "MODE_AUTO: ninguna ruta de ['mode_auto', 'auto_input', 'mode_auto_input'] aparece en los bindings del ensayo."
+      }
+    ]
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Start",
+      "I_Emergency",
+      "I_Manual_Conveyor_Command",
+      "I_Mode_Manual"
+    ],
+    "bound_outputs": [
+      "Q_Motor_Enable"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Manual_Conveyor_Command', 'I_Mode_Manual'] superan las esperadas (3)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": null,
+    "checks": []
+  },
+  "functional": {
+    "evaluated": false,
+    "success": null
+  },
+  "safety": {
+    "evaluated": false,
+    "success": null
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "REVIEW",
+  "oracle_verdict_reason": "ORACLE_ROLE_NOT_FOUND",
+  "final_status": "REVIEW",
+  "steps": [],
+  "cleanup": {
+    "performed": false,
+    "success": null
+  },
+  "sequence": {},
+  "errors": [
+    "MODE_AUTO: ninguna ruta de ['mode_auto', 'auto_input', 'mode_auto_input'] aparece en los bindings del ensayo."
+  ],
+  "warnings": [
+    "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Manual_Conveyor_Command', 'I_Mode_Manual'] superan las esperadas (3)."
+  ],
+  "timings": {
+    "generation_ms": 21354,
+    "compile_ms": 39103,
+    "download_ms": null,
+    "functional_test_ms": 1,
+    "end_to_end_ms": 62252,
+    "semantic_ms": 20871,
+    "runtime_ms": 861,
+    "oracle_ms": 1,
+    "total_ms": 62252,
+    "generation_total_ms": 21354,
+    "evaluation_ms": 40898
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:11:26"
+}

@@ -1,0 +1,690 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 5.046200000000001,
+      "t_done_ms": 11.748000000000001,
+      "timestamp": "2026-10-26T22:01:22.1601815-05:00",
+      "writes": [
+        {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 329.0491,
+      "t_done_ms": 329.6995,
+      "timestamp": "2026-10-26T22:01:22.4777903-05:00",
+      "writes": [
+        {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 646.311,
+      "t_done_ms": 647.3252,
+      "timestamp": "2026-10-26T22:01:22.7950341-05:00",
+      "writes": [
+        {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 962.5363000000001,
+      "t_done_ms": 963.7164,
+      "timestamp": "2026-10-26T22:01:23.1114542-05:00",
+      "writes": [
+        {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1265.9949000000001,
+      "t_done_ms": 1266.5410000000002,
+      "timestamp": "2026-10-26T22:01:23.4140846-05:00",
+      "writes": [
+        {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1578.2455,
+      "t_done_ms": 1581.3191000000002,
+      "timestamp": "2026-10-26T22:01:23.7279607-05:00",
+      "writes": [
+        {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 13.8436,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 78.1443,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 128.6873,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 178.2615,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 226.5909,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 278.4986,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 328.8759,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 329.87690000000003,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 395.726,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": true,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 445.00690000000003,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": true,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 495.62800000000004,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": true,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 545.6046,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": true,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 595.3304,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": true,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_low",
+      "phase": "test",
+      "t_ms": 645.7792000000001,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": true,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 647.4624,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": true,
+        "I_Speed_High": false,
+        "Q_Speed_Low": true,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 711.6639,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": true,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": true,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 762.0906,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": true,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": true,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 811.135,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": true,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": true,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 862.1294,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": true,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": true,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 910.8296,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": true,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": true,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_medium",
+      "phase": "test",
+      "t_ms": 962.3710000000001,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": true,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": true,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 963.9719,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": true,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 1028.4477,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 1079.2626,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 1128.9295,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 1177.4012,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 1224.5445,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "step_high",
+      "phase": "test",
+      "t_ms": 1265.9279000000001,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1266.6670000000001,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1329.5055,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1378.1953,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1429.1543000000001,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1477.554,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1528.6757,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "step_double",
+      "phase": "test",
+      "t_ms": 1578.1229,
+      "values": {
+        "I_Speed_Low": true,
+        "I_Speed_Medium": false,
+        "I_Speed_High": true,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1581.5026,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1644.605,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1696.0792000000001,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1744.6669000000002,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1795.698,
+      "values": {
+        "I_Speed_Low": false,
+        "I_Speed_Medium": false,
+        "I_Speed_High": false,
+        "Q_Speed_Low": false,
+        "Q_Speed_Medium": false,
+        "Q_Speed_High": false
+      }
+    }
+  ]
+}

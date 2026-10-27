@@ -1,0 +1,1794 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 5.0158000000000005,
+      "t_done_ms": 10.4329,
+      "timestamp": "2026-10-26T21:51:05.6034183-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 330.2108,
+      "t_done_ms": 330.8362,
+      "timestamp": "2026-10-26T21:51:05.9234253-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 644.7901,
+      "t_done_ms": 644.9816000000001,
+      "timestamp": "2026-10-26T21:51:06.2369785-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 846.3693000000001,
+      "t_done_ms": 847.4068000000001,
+      "timestamp": "2026-10-26T21:51:06.4401541-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1061.6896000000002,
+      "t_done_ms": 1062.1579000000002,
+      "timestamp": "2026-10-26T21:51:06.6550469-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1264.342,
+      "t_done_ms": 1264.6837,
+      "timestamp": "2026-10-26T21:51:06.8566802-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1479.4092,
+      "t_done_ms": 1479.9170000000001,
+      "timestamp": "2026-10-26T21:51:07.0718609-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1696.895,
+      "t_done_ms": 1697.8627000000001,
+      "timestamp": "2026-10-26T21:51:07.2899320-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 1912.4218,
+      "t_done_ms": 1912.9942,
+      "timestamp": "2026-10-26T21:51:07.5057526-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2130.2623000000003,
+      "t_done_ms": 2130.8058,
+      "timestamp": "2026-10-26T21:51:07.7232567-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2347.8225,
+      "t_done_ms": 2348.2233,
+      "timestamp": "2026-10-26T21:51:07.9403205-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2662.9433,
+      "t_done_ms": 2663.2379,
+      "timestamp": "2026-10-26T21:51:08.2552934-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 2978.9812,
+      "t_done_ms": 2979.6673,
+      "timestamp": "2026-10-26T21:51:08.5723875-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3296.7417,
+      "t_done_ms": 3299.9129000000003,
+      "timestamp": "2026-10-26T21:51:08.8919177-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3610.9498000000003,
+      "t_done_ms": 3611.3028000000004,
+      "timestamp": "2026-10-26T21:51:09.2033621-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3812.7236000000003,
+      "t_done_ms": 3813.1707,
+      "timestamp": "2026-10-26T21:51:09.4062538-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4014.4768000000004,
+      "t_done_ms": 4014.7756000000004,
+      "timestamp": "2026-10-26T21:51:09.6068370-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4230.5703,
+      "t_done_ms": 4231.1014000000005,
+      "timestamp": "2026-10-26T21:51:09.8231756-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4446.721500000001,
+      "t_done_ms": 4447.5232000000005,
+      "timestamp": "2026-10-26T21:51:10.0400752-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4663.064600000001,
+      "t_done_ms": 4663.4739,
+      "timestamp": "2026-10-26T21:51:10.2554813-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4864.1771,
+      "t_done_ms": 4864.846500000001,
+      "timestamp": "2026-10-26T21:51:10.4565382-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5079.0334,
+      "t_done_ms": 5079.6637,
+      "timestamp": "2026-10-26T21:51:10.6723418-05:00",
+      "writes": [
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5297.2246000000005,
+      "t_done_ms": 5298.067300000001,
+      "timestamp": "2026-10-26T21:51:10.8897968-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Pulse_Input",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5612.8103,
+      "t_done_ms": 5613.1398,
+      "timestamp": "2026-10-26T21:51:11.2052720-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 12.3473,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 77.3011,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 112.95270000000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 163.4125,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 229.67350000000002,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 264.0577,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 329.8893,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 330.9431,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 396.2806,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 446.0666,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 496.8586,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 545.1914,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 596.3917,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 643.4829000000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 645.0892,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 696.4272000000001,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 763.0144,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 796.9294,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 846.2205,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 847.6105,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 913.2978,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 962.2187,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 1012.868,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 1061.6021,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1062.507,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1112.8662000000002,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1176.8265000000001,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1213.1237,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1264.1461000000002,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1264.7888,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1330.2758000000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1378.0149000000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1429.7917,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1479.3295,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1480.1057,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1531.3175,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1592.6457,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1645.9483,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1696.8071,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1697.9566,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1761.3892,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1812.8291000000002,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1861.7598,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1912.3217000000002,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 1913.2246,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 1964.0785,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 2028.189,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 2076.176,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 2130.1748000000002,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2131.1609000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2196.5917,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2246.2024,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2297.2823000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2347.5002,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2348.451,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2413.1159000000002,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2463.444,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2513.8122000000003,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2549.8038,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2613.5939000000003,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2662.8516,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2663.3376000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2713.6689,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2764.2142000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2817.1910000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2877.0626,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2930.1591000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2978.8865,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 2979.8107,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3030.6285000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3080.8737,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3130.1315,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3194.0456000000004,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3230.4082000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3296.2666000000004,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3300.0225,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3363.5085000000004,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3411.8194000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3463.1309,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3512.6428,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3563.1380000000004,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3610.8160000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3611.5384000000004,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3662.9109000000003,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3712.5696000000003,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3763.4492,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3812.6219,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3813.8055000000004,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3863.9681,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3929.5478000000003,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3978.9143000000004,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 4014.4294,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4014.8701,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4078.8896,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4129.9218,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4178.9201,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4230.1401000000005,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4231.3548,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4296.7044000000005,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4345.9024,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4394.4656,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4445.8689,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4447.8903,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4512.5216,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4563.3258000000005,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4612.2851,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4662.962,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4663.7281,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4729.5794000000005,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4778.9017,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4829.805600000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4864.0771,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4864.9689,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4929.6953,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4979.911300000001,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 5028.7336000000005,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 5078.9424,
+      "values": {
+        "I_Pulse_Input": true,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5079.907700000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5143.737300000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5196.418900000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5244.7336000000005,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5296.918500000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5298.4269,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5361.2155,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5412.6059000000005,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5462.2432,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5512.3363,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5562.9491,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5612.713400000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5613.3313,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5676.8477,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5730.012000000001,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5778.8045,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5816.8444,
+      "values": {
+        "I_Pulse_Input": false,
+        "I_Reset": false,
+        "Q_Count_Reached": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,822 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 6.7138,
+      "t_done_ms": 11.7108,
+      "timestamp": "2026-10-26T21:03:21.7739240-05:00",
+      "writes": [
+        {
+          "name": "I_Contactor_A_Request",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Contactor_B_Request",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 516.0937,
+      "t_done_ms": 516.8547,
+      "timestamp": "2026-10-26T21:03:22.2865672-05:00",
+      "writes": [
+        {
+          "name": "I_Contactor_A_Request",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Contactor_B_Request",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1019.8240000000001,
+      "t_done_ms": 1020.7061,
+      "timestamp": "2026-10-26T21:03:22.7905401-05:00",
+      "writes": [
+        {
+          "name": "I_Contactor_A_Request",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Contactor_B_Request",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1535.5839,
+      "t_done_ms": 1536.8263000000002,
+      "timestamp": "2026-10-26T21:03:23.3074347-05:00",
+      "writes": [
+        {
+          "name": "I_Contactor_A_Request",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Contactor_B_Request",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2052.7437,
+      "t_done_ms": 2054.4503,
+      "timestamp": "2026-10-26T21:03:23.8248451-05:00",
+      "writes": [
+        {
+          "name": "I_Contactor_A_Request",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Contactor_B_Request",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2569.802,
+      "t_done_ms": 2571.8035,
+      "timestamp": "2026-10-26T21:03:24.3408344-05:00",
+      "writes": [
+        {
+          "name": "I_Contactor_A_Request",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Contactor_B_Request",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 14.4579,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 68.5848,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 118.93310000000001,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 168.6497,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 217.6936,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 268.6652,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 317.86990000000003,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 369.09380000000004,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 417.26820000000004,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 469.6189,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 515.9636,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 516.9628,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 569.5193,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 618.4939,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 669.6069,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 720.2239000000001,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 769.7825,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 819.0964,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 868.8154000000001,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 919.3574000000001,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 969.7063,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_1",
+      "phase": "test",
+      "t_ms": 1019.6701,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1020.9258000000001,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1085.0512,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1135.5274,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1185.4498,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1234.0792000000001,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1285.7059000000002,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1335.7195000000002,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1384.2977,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1431.0943,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1485.747,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_2",
+      "phase": "test",
+      "t_ms": 1535.4456,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1536.9336,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1601.9979,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1650.7445,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1701.91,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1752.9304000000002,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1800.0576,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1852.3543000000002,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1900.8627000000001,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 1937.1178,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 2002.1662000000001,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_3",
+      "phase": "test",
+      "t_ms": 2052.6135,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2054.9307,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2120.1040000000003,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2168.617,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2218.4612,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2269.9654,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2317.7559,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2367.6813,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2417.2364000000002,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2468.4897,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2519.2935,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "test_4",
+      "phase": "test",
+      "t_ms": 2569.6657,
+      "values": {
+        "I_Contactor_A_Request": true,
+        "I_Contactor_B_Request": true,
+        "Q_Contactor_A": true,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2571.9187,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2636.6509,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2685.4959000000003,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2735.141,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2785.4814,
+      "values": {
+        "I_Contactor_A_Request": false,
+        "I_Contactor_B_Request": false,
+        "Q_Contactor_A": false,
+        "Q_Contactor_B": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "d6874616d56ed82a25c751aa830dbe8ef9939db5240c5f70ee5ab3adbef7b1cb",
+  "transcript_raw": "Genera un pulso de salida de cinco segundos cada vez que se presione el pulsador.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1477,
+  "frozen_at": "2026-10-26T20:34:22"
+}

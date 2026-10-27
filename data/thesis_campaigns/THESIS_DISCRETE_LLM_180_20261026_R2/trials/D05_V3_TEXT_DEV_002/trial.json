@@ -1,0 +1,638 @@
+{
+  "schema_version": 1,
+  "trial_id": "D05_V3_TEXT_DEV_002",
+  "case_id": "D05",
+  "variant_id": "V3",
+  "input_mode": "TEXT",
+  "trial_number": 2,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "MEDIUM",
+  "command_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+  "created_at": "2026-10-26T19:42:49",
+  "semantic": {
+    "intent_id": "INT_EMERGENCY_PRIORITY",
+    "case_id": null,
+    "command_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+    "normalized_command": "mientras I_Emergency esté activa, Q_Motor_Enable debe estar apagado y I_Start queda bloqueado; sin emergencia, I_Start enciende el motor",
+    "parameters": {
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "trigger_input": "I_Start"
+    },
+    "confidence": 0.99,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "I_Emergency tiene prioridad absoluta sobre Q_Motor_Enable.",
+      "Al liberarse I_Emergency, el motor permanece apagado hasta una nueva orden de I_Start."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Start",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "PROGRAM",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "trigger_input": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_EMERGENCY_PRIORITY",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "trigger_input": "I_Start"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_EMERGENCY_PRIORITY",
+      "case_id": null,
+      "command_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+      "normalized_command": "mientras la condicion de emergency este enciende el motor debe estar apagado y start no puede arrancarlo sin emergency start enciende el motor",
+      "parameters": {
+        "emergency_input": "I_Emergency",
+        "affected_outputs": [
+          "Q_Motor_Enable",
+          "Q_Aux_Output"
+        ],
+        "alarm_output": "Q_Alarm",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Start",
+        "Q_Alarm",
+        "Q_Aux_Output",
+        "Q_Motor_Enable"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "parameter_provenance": {
+        "emergency_input": {
+          "source": "RULES"
+        },
+        "affected_outputs": {
+          "source": "RULES"
+        },
+        "alarm_output": {
+          "source": "RULES"
+        },
+        "motor_output": {
+          "source": "DEFAULT",
+          "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+          "original_value": null,
+          "reason": "INT_EMERGENCY_PRIORITY exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+          "resolution": "MAP_EXISTING",
+          "address": "%QX8.4",
+          "state": "FREE"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_EMERGENCY_PRIORITY",
+        "origin": "RULES",
+        "interpreted_parameters": {
+          "emergency_input": "I_Emergency",
+          "affected_outputs": [
+            "Q_Motor_Enable",
+            "Q_Aux_Output"
+          ],
+          "alarm_output": "Q_Alarm"
+        },
+        "defaulted_keys": [
+          "motor_output"
+        ],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_EMERGENCY_PRIORITY",
+      "case_id": null,
+      "command_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+      "normalized_command": "mientras I_Emergency esté activa, Q_Motor_Enable debe estar apagado y I_Start queda bloqueado; sin emergencia, I_Start enciende el motor",
+      "parameters": {
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "trigger_input": "I_Start"
+      },
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "I_Emergency tiene prioridad absoluta sobre Q_Motor_Enable.",
+        "Al liberarse I_Emergency, el motor permanece apagado hasta una nueva orden de I_Start."
+      ],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Start",
+        "Q_Motor_Enable"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "operation_type": "PROGRAM",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "LLM"
+        },
+        "trigger_input": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_EMERGENCY_PRIORITY",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "emergency_input": "I_Emergency",
+          "motor_output": "Q_Motor_Enable",
+          "trigger_input": "I_Start"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_0728cf4eca82d474006adff38ae80487d2bfd1b5030d29dc1b",
+      "prompt_tokens": 19177,
+      "completion_tokens": 546,
+      "total_tokens": 19723,
+      "latency_ms": 6428.25,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "retrieved_context": [
+      {
+        "source": "plc_safety_rules.md",
+        "score": 24,
+        "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+      },
+      {
+        "source": "iec61131_rules.md",
+        "score": 18,
+        "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+      },
+      {
+        "source": "README.md",
+        "score": 15,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "timer_counter_examples.md",
+        "score": 15,
+        "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 12,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [],
+      "covered_by_intent": [
+        "alarm_output",
+        "emergency_priority",
+        "enable_pid",
+        "high_level_alarm",
+        "low_level_alarm"
+      ],
+      "explicit_types": [],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_EMERGENCY_PRIORITY",
+      "case_id": null,
+      "command_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+      "normalized_command": "mientras I_Emergency esté activa, Q_Motor_Enable debe estar apagado y I_Start queda bloqueado; sin emergencia, I_Start enciende el motor",
+      "parameters": {
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "trigger_input": "I_Start"
+      },
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "I_Emergency tiene prioridad absoluta sobre Q_Motor_Enable.",
+        "Al liberarse I_Emergency, el motor permanece apagado hasta una nueva orden de I_Start."
+      ],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Start",
+        "Q_Motor_Enable"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "operation_type": "PROGRAM",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "LLM"
+        },
+        "trigger_input": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_EMERGENCY_PRIORITY",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "emergency_input": "I_Emergency",
+          "motor_output": "Q_Motor_Enable",
+          "trigger_input": "I_Start"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": null,
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D05\\V3\\D05_V3_TEXT_DEV_002\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D05\\V3\\D05_V3_TEXT_DEV_002\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D05\\V3\\D05_V3_TEXT_DEV_002\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T19:42:49",
+    "resolved_at": "2026-10-26T19:42:55",
+    "bound_channels": 3,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+  "generated_code_id": "2026-10-26_19-42-55_NOCASE_INT_EMERGENCY_PRIORITY",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": null,
+    "asr_transcript": null,
+    "wer": null,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "SUCCESS",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "PASS",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "25bf13f9ea095e7037abecb6e085ba3d3638194d6b1bdd0e035756a7223b42e1",
+  "variant_hash": "cf6c61bb67d00b55cfb5f19cc2fdc31f565302dbb0c49a9e85958f723776a31b",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "PASS",
+    "verdict_reason": "ALL_CHECKS_PASSED",
+    "roles": {
+      "START_REQUEST": "I_Start",
+      "SAFETY_TRIP": "I_Emergency",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "role_issues": [],
+    "preconditions_success": true,
+    "cleanup_success": true,
+    "duration_ms": 5176,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D05\\V3\\D05_V3_TEXT_DEV_002\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D05",
+    "oracle_version": 2,
+    "oracle_hash": "1928377b0e610748e735b3f7e516911666edf5486aeba9dd2b0b691d8ca4f3fb",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 4,
+    "total_checks": 4,
+    "pass_rate": 1.0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "critical_violations": 0,
+    "samples_checked": 70
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": true,
+    "safety_success": true,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": true
+  },
+  "timing": {
+    "generation_ms": 6944,
+    "compile_ms": 90467,
+    "download_ms": null,
+    "functional_test_ms": 5176,
+    "end_to_end_ms": 104529,
+    "semantic_ms": 6497,
+    "runtime_ms": 965,
+    "oracle_ms": 5176,
+    "total_ms": 104529,
+    "generation_total_ms": 6944,
+    "evaluation_ms": 97585
+  },
+  "errors": [],
+  "final_status": "PASS",
+  "completed_at": "2026-10-26T19:44:33",
+  "canonical_command": "Enciende un motor con Start solo si no hay una condición de emergencia activa. Si se activa la emergencia, apaga el motor y bloquea el arranque mientras permanezca activa.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+  "reference_text_hash": "cf6c61bb67d00b55cfb5f19cc2fdc31f565302dbb0c49a9e85958f723776a31b",
+  "speaker_id": null,
+  "repeat_of_trial_id": "D05_V3_TEXT_DEV_001",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "input_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+  "effective_input_text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+  "effective_input_text_hash": "cf6c61bb67d00b55cfb5f19cc2fdc31f565302dbb0c49a9e85958f723776a31b",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": [
+        "SAFETY_TRIP"
+      ]
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "I_Start"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T19:42:56",
+    "generated_code_id": "2026-10-26_19-42-55_NOCASE_INT_EMERGENCY_PRIORITY"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D05\\V3\\D05_V3_TEXT_DEV_002\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0473",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0473",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T19:42:56",
+        "completed_at": "2026-10-26T19:44:33",
+        "retry_reason": null,
+        "final_status": "PASS",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "PASS",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 46140,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22366,
+          "commit_headroom_mb": 46817
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0473",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0473",
+          "timestamp": "2026-10-26T19:44:33",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 1
+        }
+      }
+    ],
+    "final_verdict": "PASS",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T19:42:56",
+    "tia_workspace_id": "T0473",
+    "completed_at": "2026-10-26T19:44:33"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D05\\V3\\D05_V3_TEXT_DEV_002\\evaluation\\attempt_001\\tia\\D05_V3_TEXT_DEV_002.zap18",
+    "zap18_hash": "5749f409d02bdd31c028dbb9270899d4d96d0d361532277277a78af94aa1506e",
+    "tia_workspace_id": "T0473",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": true,
+    "intent_actual": "INT_EMERGENCY_PRIORITY",
+    "intent_expected": [
+      "INT_EMERGENCY_PRIORITY"
+    ],
+    "intent_match": true,
+    "failed_checks": []
+  },
+  "system_failure": false
+}

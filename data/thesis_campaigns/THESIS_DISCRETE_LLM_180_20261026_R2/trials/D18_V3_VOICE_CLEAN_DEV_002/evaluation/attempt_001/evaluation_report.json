@@ -1,0 +1,603 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D18_V3_VOICE_CLEAN_DEV_002",
+  "case_id": "D18",
+  "variant_id": "V3",
+  "input_mode": "VOICE_CLEAN",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "8d8082066e9869cf8ab75ba5c453c2f03f0a31f5189ef89f75f87a9e14515e58",
+    "variant_hash": "eb364a2bf97b8abb422d7622c3ddbcc265199ffd71ed139b213305d2d0ab5a39"
+  },
+  "oracle": {
+    "oracle_id": "D18",
+    "oracle_version": 2,
+    "oracle_hash": "a11e0bbec7329ec6d1d5979bdfd70ac980caf572722f34210395e3d4f8ed0960",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": true,
+    "intent_expected": [
+      "INT_MAINTENANCE_BLOCK"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": true,
+      "intent_id": "INT_MAINTENANCE_BLOCK",
+      "intent_expected": [
+        "INT_MAINTENANCE_BLOCK"
+      ],
+      "intent_match": true,
+      "failed_checks": [],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_MAINTENANCE_BLOCK"
+          ],
+          "actual": "INT_MAINTENANCE_BLOCK",
+          "passed": true
+        },
+        {
+          "check": "role:MAINTENANCE",
+          "expected": "resuelto",
+          "actual": "I_Maintenance",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:START",
+          "expected": "resuelto",
+          "actual": "I_Start",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:MOTOR_MAIN",
+          "expected": "resuelto",
+          "actual": "Q_Motor_Enable",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_MAINTENANCE_BLOCK"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "PASS",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "PASS",
+    "safety": "PASS",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "PASS",
+    "status": "PASS / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "PASS",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "RESOLVED",
+    "roles": {
+      "MAINTENANCE": {
+        "role": "MAINTENANCE",
+        "kind": "INPUT",
+        "functional_name": "I_Maintenance",
+        "address": "%IX16.3",
+        "matched_paths": [
+          "maintenance_input"
+        ]
+      },
+      "START": {
+        "role": "START",
+        "kind": "INPUT",
+        "functional_name": "I_Start",
+        "address": "%IX16.0",
+        "matched_paths": [
+          "trigger_input"
+        ]
+      },
+      "MOTOR_MAIN": {
+        "role": "MOTOR_MAIN",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Motor_Enable",
+        "address": "%QX8.4",
+        "matched_paths": [
+          "motor_output"
+        ]
+      }
+    },
+    "issues": []
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Start",
+      "I_Emergency",
+      "I_Maintenance"
+    ],
+    "bound_outputs": [
+      "Q_Motor_Enable"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Maintenance'] superan las esperadas (2)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": true,
+    "checks": []
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 5,
+    "total_checks": 5,
+    "pass_rate": 1.0,
+    "failed_checks": [],
+    "major_invariant_violations": 0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 0,
+    "samples_checked": 66,
+    "violations": [],
+    "critical_violations": 0,
+    "major_violations": 0
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "PASS",
+  "oracle_verdict_reason": "ALL_CHECKS_PASSED",
+  "final_status": "PASS",
+  "steps": [
+    {
+      "step_id": "pre_idle",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Sin ordenes (estado inicial).",
+      "started_at": "2026-10-26T21:20:20.1177816-05:00",
+      "completed_at": "2026-10-26T21:20:20.627",
+      "t_start_ms": 9.4,
+      "t_end_ms": 515.8,
+      "inputs_applied": {
+        "MAINTENANCE": {
+          "name": "I_Maintenance",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "MAINTENANCE": false,
+        "START": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "step_0",
+      "phase": "test",
+      "executed": true,
+      "description": "Sin orden de arranque: motor apagado.",
+      "started_at": null,
+      "completed_at": null,
+      "t_start_ms": 515.9,
+      "t_end_ms": 817.7,
+      "inputs_applied": {},
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "MAINTENANCE": false,
+        "START": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_0",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 301.9,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_1",
+      "phase": "test",
+      "executed": true,
+      "description": "Mantenimiento activo + START: el motor no arranca.",
+      "started_at": "2026-10-26T21:20:20.9279994-05:00",
+      "completed_at": "2026-10-26T21:20:21.443",
+      "t_start_ms": 819.5,
+      "t_end_ms": 1333.3,
+      "inputs_applied": {
+        "MAINTENANCE": {
+          "name": "I_Maintenance",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "MAINTENANCE": true,
+        "START": true,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_1",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 513.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "step_2",
+      "phase": "test",
+      "executed": true,
+      "description": "Soltar START.",
+      "started_at": "2026-10-26T21:20:21.4416663-05:00",
+      "completed_at": "2026-10-26T21:20:21.758",
+      "t_start_ms": 1334.0,
+      "t_end_ms": 1649.8,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "MAINTENANCE": true,
+        "START": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_2",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 315.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_3",
+      "phase": "test",
+      "executed": true,
+      "description": "Fin de mantenimiento sin orden: el motor no arranca solo.",
+      "started_at": "2026-10-26T21:20:21.7581627-05:00",
+      "completed_at": "2026-10-26T21:20:22.060",
+      "t_start_ms": 1650.4,
+      "t_end_ms": 1952.6,
+      "inputs_applied": {
+        "MAINTENANCE": {
+          "name": "I_Maintenance",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "MAINTENANCE": false,
+        "START": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_3",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 302.1,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_4",
+      "phase": "test",
+      "executed": true,
+      "description": "Fuera de mantenimiento, START arranca el motor.",
+      "started_at": "2026-10-26T21:20:22.0609904-05:00",
+      "completed_at": "2026-10-26T21:20:22.574",
+      "t_start_ms": 1953.1,
+      "t_end_ms": 2466.3,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": true
+      },
+      "actual_outputs": {
+        "MAINTENANCE": false,
+        "START": true,
+        "MOTOR_MAIN": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_4",
+          "role": "MOTOR_MAIN",
+          "expected": true,
+          "actual": true,
+          "t_ms": 513.3,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "step_5",
+      "phase": "test",
+      "executed": true,
+      "description": "Soltar START (memoria no definida).",
+      "started_at": "2026-10-26T21:20:22.5756801-05:00",
+      "completed_at": "2026-10-26T21:20:22.892",
+      "t_start_ms": 2467.2,
+      "t_end_ms": 2783.6,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "MAINTENANCE": false,
+        "START": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [
+        "MOTOR_MAIN"
+      ],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "cleanup_inputs",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Entradas a OFF.",
+      "started_at": "2026-10-26T21:20:22.8929411-05:00",
+      "completed_at": "2026-10-26T21:20:23.109",
+      "t_start_ms": 2784.8,
+      "t_end_ms": 2999.9,
+      "inputs_applied": {
+        "MAINTENANCE": {
+          "name": "I_Maintenance",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "MAINTENANCE": false,
+        "START": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    }
+  ],
+  "cleanup": {
+    "performed": true,
+    "success": true,
+    "inputs": [
+      {
+        "name": "I_Maintenance",
+        "address": "%I16.3",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Start",
+        "address": "%I16.0",
+        "readback": false,
+        "restored": true
+      }
+    ],
+    "process_variables": []
+  },
+  "sequence": {
+    "planned_ms": 2900,
+    "sample_period_ms": 50,
+    "watched": [
+      "I_Maintenance",
+      "I_Start",
+      "Q_Motor_Enable"
+    ],
+    "skipped_steps": [],
+    "bridge_status": "PLCSIM_IO_PASSED",
+    "failed_step": null,
+    "sequence_duration_ms": 3000.2251,
+    "cpu_state": "RUN"
+  },
+  "errors": [],
+  "warnings": [
+    "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Maintenance'] superan las esperadas (2)."
+  ],
+  "timings": {
+    "generation_ms": 5180,
+    "compile_ms": 38581,
+    "download_ms": null,
+    "functional_test_ms": 4968,
+    "end_to_end_ms": 50518,
+    "semantic_ms": 4726,
+    "runtime_ms": 884,
+    "oracle_ms": 4968,
+    "total_ms": 50518,
+    "generation_total_ms": 5180,
+    "evaluation_ms": 45338
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:20:24"
+}

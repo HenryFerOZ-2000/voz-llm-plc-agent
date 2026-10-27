@@ -1,0 +1,434 @@
+{
+  "intent_id": "INT_STATUS_PILOTS",
+  "case_id": null,
+  "command_text": "A partir de las señales de marcha y de falla, indique con tres pilotos si el sistema está detenido, en marcha o en falla, únicamente deben encenderse el de estado actual.",
+  "normalized_command": "a partir de las señales de marcha y falla, indicar con tres pilotos el estado detenido, marcha o falla, encendiendo únicamente el piloto del estado actual",
+  "parameters": {
+    "emergency_input": "I_Emergency",
+    "run_state_input": "I_Run_State",
+    "fault_input": "I_Fault",
+    "stop_indicator": "Q_Pilot_Stop",
+    "run_indicator": "Q_Pilot_Run",
+    "fault_indicator": "Q_Pilot_Fault",
+    "motor_output": "Q_Motor_Enable",
+    "alarm_output": "Q_Alarm"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: Se proponen I_Run_State e I_Fault como nuevas entradas funcionales para las señales de marcha y falla, ya que no existe una función equivalente en el mapa I/O.",
+    "INFERRED: La falla tiene prioridad sobre la indicación de marcha; si I_Fault está activa, solo se enciende Q_Pilot_Fault.",
+    "INFERRED: Cuando no hay falla ni señal de marcha, solo se enciende Q_Pilot_Stop.",
+    "Se utiliza I_Emergency como condición de seguridad disponible; durante emergencia los pilotos de marcha y detenido no deben indicar operación normal."
+  ],
+  "recognized_tags": [
+    "I_Emergency",
+    "I_Run_State",
+    "I_Fault",
+    "Q_Pilot_Stop",
+    "Q_Pilot_Run",
+    "Q_Pilot_Fault"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "never_together",
+      "outputs": [
+        "Q_Pilot_Stop",
+        "Q_Pilot_Run",
+        "Q_Pilot_Fault"
+      ]
+    }
+  ],
+  "operation_type": "status_indication",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "run_state_input": {
+      "source": "LLM"
+    },
+    "fault_input": {
+      "source": "LLM"
+    },
+    "stop_indicator": {
+      "source": "LLM"
+    },
+    "run_indicator": {
+      "source": "LLM"
+    },
+    "fault_indicator": {
+      "source": "LLM"
+    },
+    "motor_output": {
+      "source": "DEFAULT",
+      "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+      "original_value": null,
+      "reason": "INT_STATUS_PILOTS exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+      "resolution": "MAP_EXISTING",
+      "address": "%QX8.4",
+      "state": "FREE"
+    },
+    "alarm_output": {
+      "source": "DEFAULT",
+      "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+      "original_value": null,
+      "reason": "INT_STATUS_PILOTS exige 'alarm_output' y el parser no lo dio: recurso unico del contrato del intent.",
+      "resolution": "MAP_EXISTING",
+      "address": "%QX8.3",
+      "state": "FREE"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_STATUS_PILOTS",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "emergency_input": "I_Emergency",
+      "run_state_input": "I_Run_State",
+      "fault_input": "I_Fault",
+      "stop_indicator": "Q_Pilot_Stop",
+      "run_indicator": "Q_Pilot_Run",
+      "fault_indicator": "Q_Pilot_Fault"
+    },
+    "defaulted_keys": [
+      "motor_output",
+      "alarm_output"
+    ],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "A partir de las señales de marcha y de falla, indique con tres pilotos si el sistema está detenido, en marcha o en falla, únicamente deben encenderse el de estado actual.",
+    "normalized_command": "a partir de las senales de start y de falla indique con tres pilotos si el sistema esta detenido en start o en falla unicamente deben encenderse el de estado actual",
+    "parameters": {},
+    "confidence": 0.0,
+    "ambiguities": [
+      "No se reconoce el elemento industrial objetivo."
+    ],
+    "requires_clarification": true,
+    "clarification_question": "Aclare la accion industrial requerida, las variables involucradas y el tiempo si corresponde.",
+    "assumptions": [],
+    "recognized_tags": [
+      "I_Start"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {},
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "RULES",
+      "interpreted_parameters": {},
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_STATUS_PILOTS",
+    "case_id": null,
+    "command_text": "A partir de las señales de marcha y de falla, indique con tres pilotos si el sistema está detenido, en marcha o en falla, únicamente deben encenderse el de estado actual.",
+    "normalized_command": "a partir de las señales de marcha y falla, indicar con tres pilotos el estado detenido, marcha o falla, encendiendo únicamente el piloto del estado actual",
+    "parameters": {
+      "emergency_input": "I_Emergency",
+      "run_state_input": "I_Run_State",
+      "fault_input": "I_Fault",
+      "stop_indicator": "Q_Pilot_Stop",
+      "run_indicator": "Q_Pilot_Run",
+      "fault_indicator": "Q_Pilot_Fault",
+      "motor_output": "Q_Motor_Enable",
+      "alarm_output": "Q_Alarm"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: Se proponen I_Run_State e I_Fault como nuevas entradas funcionales para las señales de marcha y falla, ya que no existe una función equivalente en el mapa I/O.",
+      "INFERRED: La falla tiene prioridad sobre la indicación de marcha; si I_Fault está activa, solo se enciende Q_Pilot_Fault.",
+      "INFERRED: Cuando no hay falla ni señal de marcha, solo se enciende Q_Pilot_Stop.",
+      "Se utiliza I_Emergency como condición de seguridad disponible; durante emergencia los pilotos de marcha y detenido no deben indicar operación normal."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Run_State",
+      "I_Fault",
+      "Q_Pilot_Stop",
+      "Q_Pilot_Run",
+      "Q_Pilot_Fault"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "never_together",
+        "outputs": [
+          "Q_Pilot_Stop",
+          "Q_Pilot_Run",
+          "Q_Pilot_Fault"
+        ]
+      }
+    ],
+    "operation_type": "status_indication",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "run_state_input": {
+        "source": "LLM"
+      },
+      "fault_input": {
+        "source": "LLM"
+      },
+      "stop_indicator": {
+        "source": "LLM"
+      },
+      "run_indicator": {
+        "source": "LLM"
+      },
+      "fault_indicator": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_STATUS_PILOTS exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "MAP_EXISTING",
+        "address": "%QX8.4",
+        "state": "FREE"
+      },
+      "alarm_output": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_STATUS_PILOTS exige 'alarm_output' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "MAP_EXISTING",
+        "address": "%QX8.3",
+        "state": "FREE"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_STATUS_PILOTS",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "emergency_input": "I_Emergency",
+        "run_state_input": "I_Run_State",
+        "fault_input": "I_Fault",
+        "stop_indicator": "Q_Pilot_Stop",
+        "run_indicator": "Q_Pilot_Run",
+        "fault_indicator": "Q_Pilot_Fault"
+      },
+      "defaulted_keys": [
+        "motor_output",
+        "alarm_output"
+      ],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_01ccdc2400ae7d9b006ae01780b06887d2855b4f2288d13290",
+    "prompt_tokens": 19186,
+    "completion_tokens": 476,
+    "total_tokens": 19662,
+    "latency_ms": 3787.8,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "iec61131_rules.md",
+      "score": 24,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 18,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "structured_text_rules.md",
+      "score": 15,
+      "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+    },
+    {
+      "source": "README.md",
+      "score": 12,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "plc_safety_rules.md",
+      "score": 12,
+      "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "fault_pilot",
+      "run_pilot",
+      "stop_pilot"
+    ],
+    "explicit_types": [
+      "interlock",
+      "never_together"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_STATUS_PILOTS",
+    "case_id": null,
+    "command_text": "A partir de las señales de marcha y de falla, indique con tres pilotos si el sistema está detenido, en marcha o en falla, únicamente deben encenderse el de estado actual.",
+    "normalized_command": "a partir de las señales de marcha y falla, indicar con tres pilotos el estado detenido, marcha o falla, encendiendo únicamente el piloto del estado actual",
+    "parameters": {
+      "emergency_input": "I_Emergency",
+      "run_state_input": "I_Run_State",
+      "fault_input": "I_Fault",
+      "stop_indicator": "Q_Pilot_Stop",
+      "run_indicator": "Q_Pilot_Run",
+      "fault_indicator": "Q_Pilot_Fault",
+      "motor_output": "Q_Motor_Enable",
+      "alarm_output": "Q_Alarm"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: Se proponen I_Run_State e I_Fault como nuevas entradas funcionales para las señales de marcha y falla, ya que no existe una función equivalente en el mapa I/O.",
+      "INFERRED: La falla tiene prioridad sobre la indicación de marcha; si I_Fault está activa, solo se enciende Q_Pilot_Fault.",
+      "INFERRED: Cuando no hay falla ni señal de marcha, solo se enciende Q_Pilot_Stop.",
+      "Se utiliza I_Emergency como condición de seguridad disponible; durante emergencia los pilotos de marcha y detenido no deben indicar operación normal."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Run_State",
+      "I_Fault",
+      "Q_Pilot_Stop",
+      "Q_Pilot_Run",
+      "Q_Pilot_Fault"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "never_together",
+        "outputs": [
+          "Q_Pilot_Stop",
+          "Q_Pilot_Run",
+          "Q_Pilot_Fault"
+        ]
+      }
+    ],
+    "operation_type": "status_indication",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "run_state_input": {
+        "source": "LLM"
+      },
+      "fault_input": {
+        "source": "LLM"
+      },
+      "stop_indicator": {
+        "source": "LLM"
+      },
+      "run_indicator": {
+        "source": "LLM"
+      },
+      "fault_indicator": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_STATUS_PILOTS exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "MAP_EXISTING",
+        "address": "%QX8.4",
+        "state": "FREE"
+      },
+      "alarm_output": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_STATUS_PILOTS exige 'alarm_output' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "MAP_EXISTING",
+        "address": "%QX8.3",
+        "state": "FREE"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_STATUS_PILOTS",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "emergency_input": "I_Emergency",
+        "run_state_input": "I_Run_State",
+        "fault_input": "I_Fault",
+        "stop_indicator": "Q_Pilot_Stop",
+        "run_indicator": "Q_Pilot_Run",
+        "fault_indicator": "Q_Pilot_Fault"
+      },
+      "defaulted_keys": [
+        "motor_output",
+        "alarm_output"
+      ],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

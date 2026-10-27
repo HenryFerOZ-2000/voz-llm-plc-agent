@@ -1,0 +1,1209 @@
+{
+  "schema_version": 1,
+  "trial_id": "D19_V3_TEXT_DEV_001",
+  "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+  "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+  "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+  "map_policy": "PRODUCT_DECLARED_V2",
+  "declared_variables": [
+    {
+      "name": "I_Start",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.0",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [
+        "arranque motor 1"
+      ],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "LOCKED"
+    },
+    {
+      "name": "I_Stop",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.1",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "LOCKED"
+    },
+    {
+      "name": "I_Emergency",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.2",
+      "initial_value": "FALSE",
+      "description": "Condición lógica de emergencia simulada, activa TRUE. Entrada autorizada del ensayo D05 en PLCSIM.",
+      "aliases": [
+        "emergencia",
+        "condición de emergencia"
+      ],
+      "semantic_role": "SAFETY_TRIP",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "LOCKED"
+    },
+    {
+      "name": "I_Run_State",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.3",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [
+        "arranque motor 2"
+      ],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "ASSIGNED"
+    },
+    {
+      "name": "I_Fault",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.4",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [
+        "arranque motor 3",
+        "arranque motor 2"
+      ],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "ASSIGNED"
+    },
+    {
+      "name": "I_Manual_Pump_Command",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.5",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "I_Piece_Sensor",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.6",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "I_Mode_Manual",
+      "class": "input",
+      "type": "BOOL",
+      "location": "%IX16.7",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "Q_Pilot_Stop",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.0",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [
+        "motor 1"
+      ],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "ASSIGNED"
+    },
+    {
+      "name": "Q_Pump_Enable",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.1",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [
+        "motor 2"
+      ],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "Q_Motor_3",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.2",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [
+        "motor 3"
+      ],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "Q_Alarm",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.3",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "Q_Motor_Enable",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.4",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "Q_Pilot_Fault",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.5",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "Q_Pilot_Run",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.6",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "Q_Contactor_Principal",
+      "class": "output",
+      "type": "BOOL",
+      "location": "%QX8.7",
+      "initial_value": "FALSE",
+      "description": "",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": true,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AI_IW0",
+      "class": "input",
+      "type": "INT",
+      "location": "%IW0",
+      "initial_value": "0",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AI_IW2",
+      "class": "input",
+      "type": "INT",
+      "location": "%IW2",
+      "initial_value": "0",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AI_IW4",
+      "class": "input",
+      "type": "INT",
+      "location": "%IW4",
+      "initial_value": "0",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AI_IW6",
+      "class": "input",
+      "type": "INT",
+      "location": "%IW6",
+      "initial_value": "0",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AO_QW0",
+      "class": "output",
+      "type": "INT",
+      "location": "%QW0",
+      "initial_value": "0",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AO_QW2",
+      "class": "output",
+      "type": "INT",
+      "location": "%QW2",
+      "initial_value": "0",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AO_QW4",
+      "class": "output",
+      "type": "INT",
+      "location": "%QW4",
+      "initial_value": "0",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    },
+    {
+      "name": "AO_QW6",
+      "class": "output",
+      "type": "INT",
+      "location": "%QW6",
+      "initial_value": "0",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "semantic_role": "",
+      "llm_allowed": false,
+      "safety_level": "normal",
+      "unit": "",
+      "min": null,
+      "max": null,
+      "comments": "",
+      "state": "FREE"
+    }
+  ],
+  "frozen_at": "2026-10-26T20:29:20",
+  "intent_id": "INT_STATUS_PILOTS",
+  "physical_channel_count": 24,
+  "channels": [
+    {
+      "address": "%IX16.0",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "LOCKED",
+      "functional_name": "I_Start",
+      "description": "",
+      "aliases": [
+        "arranque motor 1"
+      ],
+      "bound": false
+    },
+    {
+      "address": "%IX16.1",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "LOCKED",
+      "functional_name": "I_Stop",
+      "description": "",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%IX16.2",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "LOCKED",
+      "functional_name": "I_Emergency",
+      "description": "Condición lógica de emergencia simulada, activa TRUE. Entrada autorizada del ensayo D05 en PLCSIM.",
+      "aliases": [
+        "emergencia",
+        "condición de emergencia"
+      ],
+      "bound": true
+    },
+    {
+      "address": "%IX16.3",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "ASSIGNED",
+      "functional_name": "I_Run_State",
+      "description": "",
+      "aliases": [
+        "arranque motor 2"
+      ],
+      "bound": true
+    },
+    {
+      "address": "%IX16.4",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "ASSIGNED",
+      "functional_name": "I_Fault",
+      "description": "",
+      "aliases": [
+        "arranque motor 3",
+        "arranque motor 2"
+      ],
+      "bound": true
+    },
+    {
+      "address": "%IX16.5",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "FREE",
+      "functional_name": "I_Manual_Pump_Command",
+      "description": "",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%IX16.6",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "FREE",
+      "functional_name": "I_Piece_Sensor",
+      "description": "",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%IX16.7",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "var_class": "input",
+      "state": "FREE",
+      "functional_name": "I_Mode_Manual",
+      "description": "",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%QX8.0",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "ASSIGNED",
+      "functional_name": "Q_Pilot_Stop",
+      "description": "",
+      "aliases": [
+        "motor 1"
+      ],
+      "bound": true
+    },
+    {
+      "address": "%QX8.1",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "Q_Pump_Enable",
+      "description": "",
+      "aliases": [
+        "motor 2"
+      ],
+      "bound": false
+    },
+    {
+      "address": "%QX8.2",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "Q_Motor_3",
+      "description": "",
+      "aliases": [
+        "motor 3"
+      ],
+      "bound": false
+    },
+    {
+      "address": "%QX8.3",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "Q_Alarm",
+      "description": "",
+      "aliases": [],
+      "bound": true
+    },
+    {
+      "address": "%QX8.4",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "Q_Motor_Enable",
+      "description": "",
+      "aliases": [],
+      "bound": true
+    },
+    {
+      "address": "%QX8.5",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "Q_Pilot_Fault",
+      "description": "",
+      "aliases": [],
+      "bound": true
+    },
+    {
+      "address": "%QX8.6",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "Q_Pilot_Run",
+      "description": "",
+      "aliases": [],
+      "bound": true
+    },
+    {
+      "address": "%QX8.7",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "Q_Contactor_Principal",
+      "description": "",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%IW0",
+      "signal": "AI",
+      "data_type": "INT",
+      "var_class": "input",
+      "state": "FREE",
+      "functional_name": "AI_IW0",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%IW2",
+      "signal": "AI",
+      "data_type": "INT",
+      "var_class": "input",
+      "state": "FREE",
+      "functional_name": "AI_IW2",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%IW4",
+      "signal": "AI",
+      "data_type": "INT",
+      "var_class": "input",
+      "state": "FREE",
+      "functional_name": "AI_IW4",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%IW6",
+      "signal": "AI",
+      "data_type": "INT",
+      "var_class": "input",
+      "state": "FREE",
+      "functional_name": "AI_IW6",
+      "description": "Entrada analogica.",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%QW0",
+      "signal": "AO",
+      "data_type": "INT",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "AO_QW0",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%QW2",
+      "signal": "AO",
+      "data_type": "INT",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "AO_QW2",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%QW4",
+      "signal": "AO",
+      "data_type": "INT",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "AO_QW4",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "bound": false
+    },
+    {
+      "address": "%QW6",
+      "signal": "AO",
+      "data_type": "INT",
+      "var_class": "output",
+      "state": "FREE",
+      "functional_name": "AO_QW6",
+      "description": "Salida analogica.",
+      "aliases": [],
+      "bound": false
+    }
+  ],
+  "bindings": [
+    {
+      "functional_name": "I_Emergency",
+      "address": "%IX16.2",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "state": "LOCKED",
+      "roles": [
+        "emergency_input"
+      ],
+      "aliases": [
+        "emergencia",
+        "condición de emergencia"
+      ]
+    },
+    {
+      "functional_name": "I_Run_State",
+      "address": "%IX16.3",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "state": "ASSIGNED",
+      "roles": [
+        "run_state_input"
+      ],
+      "aliases": [
+        "arranque motor 2"
+      ]
+    },
+    {
+      "functional_name": "I_Fault",
+      "address": "%IX16.4",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "state": "ASSIGNED",
+      "roles": [
+        "fault_input"
+      ],
+      "aliases": [
+        "arranque motor 3",
+        "arranque motor 2"
+      ]
+    },
+    {
+      "functional_name": "Q_Pilot_Stop",
+      "address": "%QX8.0",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "ASSIGNED",
+      "roles": [
+        "stop_indicator"
+      ],
+      "aliases": [
+        "motor 1"
+      ]
+    },
+    {
+      "functional_name": "Q_Alarm",
+      "address": "%QX8.3",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "roles": [
+        "alarm_output"
+      ],
+      "aliases": []
+    },
+    {
+      "functional_name": "Q_Motor_Enable",
+      "address": "%QX8.4",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "roles": [
+        "motor_output"
+      ],
+      "aliases": []
+    },
+    {
+      "functional_name": "Q_Pilot_Fault",
+      "address": "%QX8.5",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "roles": [
+        "fault_indicator"
+      ],
+      "aliases": []
+    },
+    {
+      "functional_name": "Q_Pilot_Run",
+      "address": "%QX8.6",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "roles": [
+        "run_indicator"
+      ],
+      "aliases": []
+    }
+  ],
+  "parameter_bindings": {
+    "emergency_input": {
+      "functional_name": "I_Emergency",
+      "name": "I_Emergency",
+      "address": "%IX16.2",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "state": "LOCKED",
+      "provenance": "LLM"
+    },
+    "run_state_input": {
+      "functional_name": "I_Run_State",
+      "name": "I_Run_State",
+      "address": "%IX16.3",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "state": "ASSIGNED",
+      "provenance": "LLM"
+    },
+    "fault_input": {
+      "functional_name": "I_Fault",
+      "name": "I_Fault",
+      "address": "%IX16.4",
+      "signal": "DI",
+      "data_type": "BOOL",
+      "state": "ASSIGNED",
+      "provenance": "LLM"
+    },
+    "stop_indicator": {
+      "functional_name": "Q_Pilot_Stop",
+      "name": "Q_Pilot_Stop",
+      "address": "%QX8.0",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "ASSIGNED",
+      "provenance": "LLM"
+    },
+    "run_indicator": {
+      "functional_name": "Q_Pilot_Run",
+      "name": "Q_Pilot_Run",
+      "address": "%QX8.6",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "provenance": "LLM"
+    },
+    "fault_indicator": {
+      "functional_name": "Q_Pilot_Fault",
+      "name": "Q_Pilot_Fault",
+      "address": "%QX8.5",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "provenance": "LLM"
+    },
+    "motor_output": {
+      "functional_name": "Q_Motor_Enable",
+      "name": "Q_Motor_Enable",
+      "address": "%QX8.4",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "provenance": "DEFAULT"
+    },
+    "alarm_output": {
+      "functional_name": "Q_Alarm",
+      "name": "Q_Alarm",
+      "address": "%QX8.3",
+      "signal": "DO",
+      "data_type": "BOOL",
+      "state": "FREE",
+      "provenance": "DEFAULT"
+    }
+  },
+  "parameter_provenance": {
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "run_state_input": {
+      "source": "LLM"
+    },
+    "fault_input": {
+      "source": "LLM"
+    },
+    "stop_indicator": {
+      "source": "LLM"
+    },
+    "run_indicator": {
+      "source": "LLM"
+    },
+    "fault_indicator": {
+      "source": "LLM"
+    },
+    "motor_output": {
+      "source": "DEFAULT",
+      "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+      "original_value": null,
+      "reason": "INT_STATUS_PILOTS exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+      "resolution": "MAP_EXISTING",
+      "address": "%QX8.4",
+      "state": "FREE"
+    },
+    "alarm_output": {
+      "source": "DEFAULT",
+      "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+      "original_value": null,
+      "reason": "INT_STATUS_PILOTS exige 'alarm_output' y el parser no lo dio: recurso unico del contrato del intent.",
+      "resolution": "MAP_EXISTING",
+      "address": "%QX8.3",
+      "state": "FREE"
+    }
+  },
+  "effective_semantics_status": "RESOLVED",
+  "internal_variables": [],
+  "generated_internal_variables": [
+    {
+      "name": "I_Emergency",
+      "var_class": null,
+      "data_type": null,
+      "location": "%IX16.2",
+      "description": "Condición lógica de emergencia simulada, activa TRUE. Entrada autorizada del ensayo D05 en PLCSIM."
+    },
+    {
+      "name": "Q_Motor_Enable",
+      "var_class": null,
+      "data_type": null,
+      "location": "%QX8.4",
+      "description": ""
+    },
+    {
+      "name": "Q_Alarm",
+      "var_class": null,
+      "data_type": null,
+      "location": "%QX8.3",
+      "description": ""
+    },
+    {
+      "name": "Q_Pilot_Run",
+      "var_class": null,
+      "data_type": null,
+      "location": "%QX8.6",
+      "description": ""
+    },
+    {
+      "name": "Q_Pilot_Fault",
+      "var_class": null,
+      "data_type": null,
+      "location": "%QX8.5",
+      "description": ""
+    },
+    {
+      "name": "I_Fault",
+      "var_class": null,
+      "data_type": null,
+      "location": "%IX16.4",
+      "description": ""
+    },
+    {
+      "name": "I_Run_State",
+      "var_class": null,
+      "data_type": null,
+      "location": "%IX16.3",
+      "description": ""
+    },
+    {
+      "name": "Q_Pilot_Stop",
+      "var_class": null,
+      "data_type": null,
+      "location": "%QX8.0",
+      "description": ""
+    }
+  ],
+  "allocation_history": [
+    {
+      "timestamp": "2026-09-10T16:27:25",
+      "address": "%IX16.4",
+      "old_name": "I_Free16_4",
+      "new_name": "I_Start_Motor_3",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T16:27:25",
+      "address": "%QX8.2",
+      "old_name": "Q_Free8_2",
+      "new_name": "Q_Motor_3",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T19:46:14",
+      "address": "%IX16.2",
+      "old_name": "I_Free16_2",
+      "new_name": "I_Reset",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T19:46:14",
+      "address": "%QX8.3",
+      "old_name": "Q_Free8_3",
+      "new_name": "Q_Alarm",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T19:46:14",
+      "address": "%QX8.4",
+      "old_name": "Q_Free8_4",
+      "new_name": "Q_Motor_Enable",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T19:46:14",
+      "address": "%QX8.5",
+      "old_name": "Q_Free8_5",
+      "new_name": "Q_Pilot_Fault",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T19:46:14",
+      "address": "%QX8.6",
+      "old_name": "Q_Free8_6",
+      "new_name": "Q_Pilot_Run",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T19:50:47",
+      "address": "%IX16.2",
+      "old_name": "I_Reset",
+      "new_name": "I_Select_Motor_1",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T19:50:47",
+      "address": "%IX16.3",
+      "old_name": "I_Start_Motor_2",
+      "new_name": "I_Select_Motor_2",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T22:34:01",
+      "address": "%IX16.4",
+      "old_name": "I_Start_Motor_3",
+      "new_name": "I_Start_Motor_1",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T22:34:01",
+      "address": "%IX16.5",
+      "old_name": "I_Free16_5",
+      "new_name": "I_Start_Motor_2",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T22:34:01",
+      "address": "%IX16.4",
+      "old_name": "I_Start_Motor_1",
+      "new_name": "I_Start_Motor_2",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-10T23:20:32",
+      "address": "%IX16.5",
+      "old_name": "I_Free16_5",
+      "new_name": "I_Start_Motor_1",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-09-22T16:49:57",
+      "address": "%IX16.6",
+      "old_name": "I_Free16_6",
+      "new_name": "I_Piece_Sensor",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T08:57:11",
+      "address": "%QX8.7",
+      "old_name": "Q_Free8_7",
+      "new_name": "Q_Contactor_Principal",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T08:57:11",
+      "address": "%QX8.0",
+      "old_name": "Q_Motor_1",
+      "new_name": "Q_Contactor_Star",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T08:57:11",
+      "address": "%QX8.1",
+      "old_name": "Q_Motor_2",
+      "new_name": "Q_Contactor_Delta",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T14:55:19",
+      "address": "%IX16.7",
+      "old_name": "I_Free16_7",
+      "new_name": "I_Mode_Manual",
+      "old_state": "FREE",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T14:55:19",
+      "address": "%IX16.2",
+      "old_name": "I_Select_Motor_1",
+      "new_name": "I_Mode_Auto",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T14:55:19",
+      "address": "%IX16.3",
+      "old_name": "I_Select_Motor_2",
+      "new_name": "I_Reset",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T14:55:19",
+      "address": "%IX16.4",
+      "old_name": "I_Start_Motor_2",
+      "new_name": "I_Manual_Conveyor_Command",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T14:55:19",
+      "address": "%IX16.5",
+      "old_name": "I_Start_Motor_1",
+      "new_name": "I_Manual_Pump_Command",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T14:55:19",
+      "address": "%QX8.0",
+      "old_name": "Q_Contactor_Star",
+      "new_name": "Q_Conveyor_Enable",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    },
+    {
+      "timestamp": "2026-10-02T14:55:19",
+      "address": "%QX8.1",
+      "old_name": "Q_Contactor_Delta",
+      "new_name": "Q_Pump_Enable",
+      "old_state": "ASSIGNED",
+      "new_state": "ASSIGNED",
+      "source": "AUTO_ALLOCATOR"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "c1b3d53138109a50bb8e9e04fb49ff17a7896044b446531ecc0f33feef7d2154",
+  "transcript_raw": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1582,
+  "frozen_at": "2026-10-26T22:05:11"
+}

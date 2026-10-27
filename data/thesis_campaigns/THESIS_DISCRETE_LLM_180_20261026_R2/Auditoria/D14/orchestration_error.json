@@ -1,0 +1,5 @@
+{
+  "type": "ValueError",
+  "error": "IO_ASSIGNMENT_BLOCKED",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\generacion_reutilizada.py\", line 68, in generate\n    if any(x.get('blocked') for x in proposals):raise ValueError('IO_ASSIGNMENT_BLOCKED')\n                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: IO_ASSIGNMENT_BLOCKED\n"
+}

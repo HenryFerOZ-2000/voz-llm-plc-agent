@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "c35910bab8f75688e351bd05a3120e12e698cc1ed37cf677abbdcd986dc9961d",
+  "transcript_raw": "Quiero que suene una alarma cuando alguien intente arrancar el sistema sin la condición de seguridad cumplida.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2211,
+  "frozen_at": "2026-10-26T21:39:17"
+}

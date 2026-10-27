@@ -1,0 +1,251 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D16",
+  "case_id": "D16",
+  "title": "D16 - Secuencia: arranque, espera de 3 s y salida auxiliar",
+  "description": "Al recibir Start (pulso) se activa la salida principal y, 3 s despues, la salida auxiliar.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "47dd88ea9664afff8f8ff7bc63eea77d0a8f8dacc01f6c913169d0c9e7de5b1a",
+    "previous_hash": "d5c2e360ca5a31f57dbb6f780ac3bf82fe7e0f59c8c494d687af632e1e6578fc",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Fase 3B-CLOSE: review_items cerrados con decisiones del investigador documentadas como experimental_conventions.",
+        "Benchmark v2: alineado con el comando canonico (START como pulso ('al recibir Start') con referencia temporal.).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "47dd88ea9664afff8f8ff7bc63eea77d0a8f8dacc01f6c913169d0c9e7de5b1a",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "APPROVED",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Secuencia: principal, espera 3 s, auxiliar",
+    "original_requirement": "Secuencia: arranque -> espera -> salida auxiliar.",
+    "canonical_command": "Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar.",
+    "canonical_case_hash": "4d28aa5daed2fda91d5a2e595d23d2a29bac5b5d77f3d082706f73fcf2ddd7ac",
+    "legacy_reference_intent": "INT_SEQUENCE_THREE_STEPS"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_SEQUENCE_THREE_STEPS"
+    ],
+    "required_functions": [
+      "start_wait_aux_sequence"
+    ],
+    "required_roles": [
+      "START",
+      "MAIN_OUTPUT",
+      "AUX_OUTPUT"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de inicio de la secuencia.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "MAIN_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida principal (paso de arranque).",
+      "semantic_paths": [
+        "main_output",
+        "motor_output"
+      ]
+    },
+    "AUX_OUTPUT": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Salida auxiliar (tras la espera).",
+      "semantic_paths": [
+        "aux_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 1,
+    "expected_bound_outputs": 2,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Secuencia: arranque -> espera -> salida auxiliar."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Al recibir Start, activa una salida principal y, después de 3 segundos, activa una salida auxiliar."
+    },
+    {
+      "id": "C-D16-WAIT",
+      "text": "Espera nominal de 3 s: CONVENCION experimental del benchmark v1 que el comando canonico v2 ya explicita ('despues de 3 segundos'); se mide con tolerancia -300/+700 ms."
+    },
+    {
+      "id": "C-D16-PULSE",
+      "text": "'Al recibir Start' = pulso de 300 ms; la espera de 3 s se cuenta desde Start."
+    },
+    {
+      "id": "C-TIMING",
+      "text": "Temporizaciones: transicion nominal con tolerancia -300 ms / +700 ms medida en el bridge (reloj monotono); las ventanas de evaluacion dejan libre esa banda."
+    },
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Sin orden de inicio.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "Start recibido (pulso): salida principal activa, auxiliar aun apagada.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "MAIN_OUTPUT": true,
+        "AUX_OUTPUT": false
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "Principal activa; auxiliar a los 3 s.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 4200,
+      "expect": {
+        "MAIN_OUTPUT": true,
+        "AUX_OUTPUT": true
+      },
+      "time_reference": "step_1",
+      "expect_timeline": [
+        {
+          "from_ms": 300,
+          "to_ms": 4500,
+          "expect": {
+            "MAIN_OUTPUT": true
+          },
+          "note": "Salida principal activa."
+        },
+        {
+          "from_ms": 300,
+          "to_ms": 2700,
+          "expect": {
+            "AUX_OUTPUT": false
+          },
+          "note": "Durante la espera."
+        },
+        {
+          "from_ms": 3700,
+          "to_ms": 4500,
+          "expect": {
+            "AUX_OUTPUT": true
+          },
+          "note": "Tras 3 s."
+        }
+      ],
+      "measure_transition": {
+        "role": "AUX_OUTPUT",
+        "to": true,
+        "nominal_ms": 3000,
+        "tolerance_ms": {
+          "early": 300,
+          "late": 700
+        }
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "START a OFF.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [
+    {
+      "id": "D16-R1",
+      "status": "RESOLVED",
+      "text": "El caso no define el contenido de cada paso ni la duracion de la 'espera' (el resumen del investigador habla de arranque -> espera -> salida auxiliar). El Oracle solo exige que la salida auxiliar NO este activa antes del inicio y SI al terminar (<= 10 s). No verifica la espera ni el motor. Definir pasos y tiempos para un Oracle mas estricto.",
+      "resolution": "Pasos arranque/espera/auxiliar con espera de 3 s por convencion (C-D16-WAIT) (Decision del investigador (Fase 3B-CLOSE).)"
+    }
+  ],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D16",
+      "expected_capability": "Salida principal al inicio y salida auxiliar tras una espera temporizada.",
+      "current_behavior": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Plantilla de secuencia con temporizador de espera y salida por paso.",
+      "text": "INT_SEQUENCE_THREE_STEPS no tiene espera ni salida principal: avanza un paso por ciclo de PLC."
+    }
+  ]
+}

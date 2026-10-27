@@ -1,0 +1,84 @@
+{
+  "status": "CONNECTED",
+  "bridge_status": "PLCSIM_RUNTIME_PASSED",
+  "checked_at": "2026-10-26T20:20:23",
+  "duration_ms": 863,
+  "connected": true,
+  "instance_name": "TESIS_PLC_SIM",
+  "instance_id": 0,
+  "instance_found": true,
+  "registered_instances": [
+    {
+      "id": 0,
+      "name": "TESIS_PLC_SIM"
+    }
+  ],
+  "cpu_state": "RUN",
+  "cpu_run": true,
+  "cpu_type": "CPU1516",
+  "controller_name": "PLC_1",
+  "controller_short_designation": "CPU 1516-3 PN/DP",
+  "communication_interface": "TCPIP",
+  "controller_ip": "192.168.0.1",
+  "controller_subnet_mask": "255.255.255.0",
+  "adapter_ip": "192.168.0.12",
+  "adapter_subnet_mask": "255.255.255.0",
+  "network_match": true,
+  "network_status": "MATCH",
+  "network_detail": "Controlador 192.168.0.1 y adaptador 192.168.0.12 en la misma subred 192.168.0.0/24.",
+  "network_sources": {
+    "download_configuration": {
+      "target_type": "PLCSIM_ADVANCED",
+      "target_name": "TESIS_PLC_SIM",
+      "configuration_mode": "PN/IE",
+      "pc_interface": "Siemens PLCSIM Virtual Ethernet Adapter",
+      "target_interface": "1 X1"
+    },
+    "runtime": {
+      "ip_suites": [
+        {
+          "index": 0,
+          "ip": "192.168.0.1",
+          "subnet_mask": "255.255.255.0",
+          "default_gateway": "192.168.0.1"
+        },
+        {
+          "index": 1,
+          "ip": "192.168.1.1",
+          "subnet_mask": "255.255.255.0",
+          "default_gateway": "192.168.1.1"
+        }
+      ],
+      "note": "Indices de ControllerIPSuite4; la API V5 no indica si corresponden a X1 o X2."
+    },
+    "windows": {
+      "match_pattern": "PLCSIM Virtual Ethernet Adapter",
+      "found": true,
+      "ambiguous": false,
+      "name": "Ethernet 3",
+      "description": "Siemens PLCSIM Virtual Ethernet Adapter",
+      "operational_status": "Up",
+      "ip": "192.168.0.12",
+      "subnet_mask": "255.255.255.0"
+    },
+    "project": {
+      "project_plc_ip": null,
+      "project_subnet_mask": null,
+      "status": "NOT_READ_PHASE_2A",
+      "note": "Openness V18 solo expone la IP del nodo X1 como atributo dinamico (Node.GetAttribute), no verificado."
+    }
+  },
+  "api": {
+    "dll_path": "C:\\Program Files (x86)\\Common Files\\Siemens\\PLCSIMADV\\API\\5.0\\Siemens.Simatic.Simulation.Runtime.Api.x64.dll",
+    "requested_dll_path": "C:/Program Files (x86)/Common Files/Siemens/PLCSIMADV/API/5.0/Siemens.Simatic.Simulation.Runtime.Api.x64.dll",
+    "assembly_version": "50.42.10.0",
+    "file_version": "50.42.10.00",
+    "clr_runtime": "v4.0.30319",
+    "process_is_64bit": true,
+    "runtime_manager_available": true,
+    "is_initialized": true,
+    "runtime_version": "0x50000"
+  },
+  "errors": [],
+  "warnings": []
+}

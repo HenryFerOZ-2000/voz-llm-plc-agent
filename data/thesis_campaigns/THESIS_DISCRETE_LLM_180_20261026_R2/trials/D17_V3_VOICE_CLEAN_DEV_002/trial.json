@@ -1,0 +1,779 @@
+{
+  "schema_version": 1,
+  "trial_id": "D17_V3_VOICE_CLEAN_DEV_002",
+  "case_id": "D17",
+  "variant_id": "V3",
+  "input_mode": "VOICE_CLEAN",
+  "trial_number": 2,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "HIGH",
+  "command_text": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma.",
+  "created_at": "2026-10-26T21:17:06",
+  "semantic": {
+    "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+    "case_id": null,
+    "command_text": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+    "normalized_command": "cuando el sensor esté desactivado y permanezca sin cambio durante cinco segundos seguidos, activa la alarma",
+    "parameters": {
+      "sensor_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "timer": "T_SensorTimeout",
+      "last_state_memory": "M_SensorLastState",
+      "supervision_memory": "M_SupervisionActive",
+      "timeout": "T#5s"
+    },
+    "confidence": 0.9,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: Se interpreta \"al estar desactivado\" como la condición lógica FALSE del sensor I_Piece_Sensor.",
+      "INFERRED: La supervisión del tiempo sin cambio se realiza sobre I_Piece_Sensor de forma continua."
+    ],
+    "recognized_tags": [
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm",
+      "T_SensorTimeout",
+      "M_SensorLastState",
+      "M_SupervisionActive"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "sensor_timeout_alarm",
+        "sensor_input": "I_Piece_Sensor",
+        "start_condition": "NOT I_Piece_Sensor",
+        "timeout": "T#5s",
+        "affected_outputs": [],
+        "alarm_output": "Q_Alarm"
+      }
+    ],
+    "operation_type": "sensor_timeout_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "sensor_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_output": {
+        "source": "LLM"
+      },
+      "timer": {
+        "source": "LLM"
+      },
+      "last_state_memory": {
+        "source": "LLM"
+      },
+      "supervision_memory": {
+        "source": "LLM"
+      },
+      "timeout": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "sensor_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "timer": "T_SensorTimeout",
+        "last_state_memory": "M_SensorLastState",
+        "supervision_memory": "M_SupervisionActive",
+        "timeout": "T#5s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_DIRECT_OUTPUT",
+      "case_id": null,
+      "command_text": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+      "normalized_command": "al estar desactivado si el sensor permanece sin cambio durante 5 segundos seguidos enciende la alarma",
+      "parameters": {
+        "trigger_input": "I_Sensor1",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Aux_Output"
+      },
+      "confidence": 0.82,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Se usa Q_Aux_Output como salida generica autorizada."
+      ],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Sensor1",
+        "Q_Alarm",
+        "Q_Aux_Output"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "alarm_output"
+        }
+      ],
+      "parameter_provenance": {
+        "trigger_input": {
+          "source": "RULES"
+        },
+        "emergency_input": {
+          "source": "RULES"
+        },
+        "output": {
+          "source": "RULES"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_DIRECT_OUTPUT",
+        "origin": "RULES",
+        "interpreted_parameters": {
+          "trigger_input": "I_Sensor1",
+          "emergency_input": "I_Emergency",
+          "output": "Q_Aux_Output"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+      "case_id": null,
+      "command_text": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+      "normalized_command": "cuando el sensor esté desactivado y permanezca sin cambio durante cinco segundos seguidos, activa la alarma",
+      "parameters": {
+        "sensor_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "timer": "T_SensorTimeout",
+        "last_state_memory": "M_SensorLastState",
+        "supervision_memory": "M_SupervisionActive",
+        "timeout": "T#5s"
+      },
+      "confidence": 0.9,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: Se interpreta \"al estar desactivado\" como la condición lógica FALSE del sensor I_Piece_Sensor.",
+        "INFERRED: La supervisión del tiempo sin cambio se realiza sobre I_Piece_Sensor de forma continua."
+      ],
+      "recognized_tags": [
+        "I_Piece_Sensor",
+        "I_Emergency",
+        "Q_Alarm",
+        "T_SensorTimeout",
+        "M_SensorLastState",
+        "M_SupervisionActive"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "sensor_timeout_alarm",
+          "sensor_input": "I_Piece_Sensor",
+          "start_condition": "NOT I_Piece_Sensor",
+          "timeout": "T#5s",
+          "affected_outputs": [],
+          "alarm_output": "Q_Alarm"
+        }
+      ],
+      "operation_type": "sensor_timeout_alarm",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "sensor_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "alarm_output": {
+          "source": "LLM"
+        },
+        "timer": {
+          "source": "LLM"
+        },
+        "last_state_memory": {
+          "source": "LLM"
+        },
+        "supervision_memory": {
+          "source": "LLM"
+        },
+        "timeout": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "sensor_input": "I_Piece_Sensor",
+          "emergency_input": "I_Emergency",
+          "alarm_output": "Q_Alarm",
+          "timer": "T_SensorTimeout",
+          "last_state_memory": "M_SensorLastState",
+          "supervision_memory": "M_SupervisionActive",
+          "timeout": "T#5s"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_0eb7d31a7ec3c037006ae009a5b11c87d2bc337cb970d2a2e9",
+      "prompt_tokens": 19147,
+      "completion_tokens": 412,
+      "total_tokens": 19559,
+      "latency_ms": 3029.73,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "retrieved_context": [
+      {
+        "source": "README.md",
+        "score": 6,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 6,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      },
+      {
+        "source": "iec61131_rules.md",
+        "score": 6,
+        "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+      },
+      {
+        "source": "timer_counter_examples.md",
+        "score": 6,
+        "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+      },
+      {
+        "source": "openplc_conventions.md",
+        "score": 3,
+        "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [
+        "alarm_output"
+      ],
+      "covered_by_intent": [
+        "alarm_output",
+        "high_level_alarm",
+        "low_level_alarm"
+      ],
+      "explicit_types": [
+        "sensor_timeout_alarm"
+      ],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+      "case_id": null,
+      "command_text": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+      "normalized_command": "cuando el sensor esté desactivado y permanezca sin cambio durante cinco segundos seguidos, activa la alarma",
+      "parameters": {
+        "sensor_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "timer": "T_SensorTimeout",
+        "last_state_memory": "M_SensorLastState",
+        "supervision_memory": "M_SupervisionActive",
+        "timeout": "T#5s"
+      },
+      "confidence": 0.9,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: Se interpreta \"al estar desactivado\" como la condición lógica FALSE del sensor I_Piece_Sensor.",
+        "INFERRED: La supervisión del tiempo sin cambio se realiza sobre I_Piece_Sensor de forma continua."
+      ],
+      "recognized_tags": [
+        "I_Piece_Sensor",
+        "I_Emergency",
+        "Q_Alarm",
+        "T_SensorTimeout",
+        "M_SensorLastState",
+        "M_SupervisionActive"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "sensor_timeout_alarm",
+          "sensor_input": "I_Piece_Sensor",
+          "start_condition": "NOT I_Piece_Sensor",
+          "timeout": "T#5s",
+          "affected_outputs": [],
+          "alarm_output": "Q_Alarm"
+        }
+      ],
+      "operation_type": "sensor_timeout_alarm",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "sensor_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "alarm_output": {
+          "source": "LLM"
+        },
+        "timer": {
+          "source": "LLM"
+        },
+        "last_state_memory": {
+          "source": "LLM"
+        },
+        "supervision_memory": {
+          "source": "LLM"
+        },
+        "timeout": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "sensor_input": "I_Piece_Sensor",
+          "emergency_input": "I_Emergency",
+          "alarm_output": "Q_Alarm",
+          "timer": "T_SensorTimeout",
+          "last_state_memory": "M_SensorLastState",
+          "supervision_memory": "M_SupervisionActive",
+          "timeout": "T#5s"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": null,
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D17\\V3\\D17_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D17\\V3\\D17_V3_VOICE_CLEAN_DEV_002\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D17\\V3\\D17_V3_VOICE_CLEAN_DEV_002\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T21:17:08",
+    "resolved_at": "2026-10-26T21:17:11",
+    "bound_channels": 3,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma.",
+  "generated_code_id": "2026-10-26_21-17-12_NOCASE_INT_SENSOR_TIMEOUT_ALARM",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": "clean_audio.wav",
+    "asr_transcript": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+    "wer": 0.3125,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "REVIEW",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "REVIEW",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "e28adc6244a07c72128c7387d0b403d6be32a7a0656774d999ab35e4ae5f7773",
+  "variant_hash": "1034b36b57f21a7ac6b5c3f1139fca2da1d22feb4294aaec31ef7e9167770c95",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "REVIEW",
+    "verdict_reason": "ORACLE_ROLE_NOT_FOUND",
+    "roles": {
+      "SENSOR": "I_Piece_Sensor",
+      "ALARM": "Q_Alarm"
+    },
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "preconditions_success": null,
+    "cleanup_success": null,
+    "duration_ms": 1,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D17\\V3\\D17_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D17",
+    "oracle_version": 2,
+    "oracle_hash": "f757df8d6f6c2f9c85a4d1f9f059138324e7c9bc3e816635ea56d754e0d36be1",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": false,
+    "success": null,
+    "passed_checks": null,
+    "total_checks": null,
+    "pass_rate": null
+  },
+  "safety": {
+    "evaluated": false,
+    "success": null,
+    "invariants_defined": null,
+    "critical_violations": null,
+    "samples_checked": null
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": null,
+    "safety_success": null,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": false
+  },
+  "timing": {
+    "generation_ms": 5425,
+    "compile_ms": 35597,
+    "download_ms": null,
+    "functional_test_ms": 1,
+    "end_to_end_ms": 42790,
+    "semantic_ms": 4973,
+    "runtime_ms": 854,
+    "oracle_ms": 1,
+    "total_ms": 42790,
+    "generation_total_ms": 5425,
+    "evaluation_ms": 37365
+  },
+  "errors": [],
+  "final_status": "REVIEW",
+  "completed_at": "2026-10-26T21:17:49",
+  "canonical_command": "Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma.",
+  "reference_text_hash": "1034b36b57f21a7ac6b5c3f1139fca2da1d22feb4294aaec31ef7e9167770c95",
+  "speaker_id": "S01",
+  "repeat_of_trial_id": "D17_V3_VOICE_CLEAN_DEV_001",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "audio_condition": "VOICE_CLEAN",
+  "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D17\\V3\\clean_stimulus.wav",
+  "audio_sha256": "f6c816ddd975e8336a7884d8b230fdf7d3a88cd7c04178caaeaebb1040dcae0a",
+  "paired_audio_sha256": "fe058537c06499ab24b0fc14e7d1fb0cbb1632bb5414dc11b50cfea90fe8d3ba",
+  "audio_source_clean_sha256": "f6c816ddd975e8336a7884d8b230fdf7d3a88cd7c04178caaeaebb1040dcae0a",
+  "audio_manifest_sha256": "3ff9d7886502cc0af9acd9b53f5b243f21755f0661ca41ec7357a498afa19d9d",
+  "target_snr_db": 10.0,
+  "measured_snr_db": 10.0,
+  "voice": {
+    "protocol_version": 2,
+    "reference_text": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma.",
+    "reference_text_hash": "1034b36b57f21a7ac6b5c3f1139fca2da1d22feb4294aaec31ef7e9167770c95",
+    "transcript_review": "NONE",
+    "clean_source": "PAIRED_AUDIO_CORPUS",
+    "audio_condition": "VOICE_CLEAN",
+    "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D17\\V3\\clean_stimulus.wav",
+    "audio_sha256": "f6c816ddd975e8336a7884d8b230fdf7d3a88cd7c04178caaeaebb1040dcae0a",
+    "paired_audio_sha256": "fe058537c06499ab24b0fc14e7d1fb0cbb1632bb5414dc11b50cfea90fe8d3ba",
+    "audio_source_clean_sha256": "f6c816ddd975e8336a7884d8b230fdf7d3a88cd7c04178caaeaebb1040dcae0a",
+    "audio_manifest_sha256": "3ff9d7886502cc0af9acd9b53f5b243f21755f0661ca41ec7357a498afa19d9d",
+    "audio_manifest_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D17\\V3\\audio_manifest.json",
+    "target_snr_db": 10.0,
+    "measured_snr_db": 10.0,
+    "noise_master_sha256": "965e43af9baa4372e7c7d6283452e6e2a673d08aea00467af8a0c1774ce73fb5",
+    "formal_freeze_id": "THESIS_DISCRETE_V4",
+    "audio_speaker_id": "S01",
+    "paired_clean_trial_id": "D17_V3_VOICE_CLEAN_DEV_001",
+    "clean_audio_hash": "f6c816ddd975e8336a7884d8b230fdf7d3a88cd7c04178caaeaebb1040dcae0a",
+    "audio_capture_success": true,
+    "duration_ms": 8736,
+    "sample_rate": 16000,
+    "channels": 1,
+    "audio_peak": 19763,
+    "audio_rms": 2107.748,
+    "asr_audio": "clean_audio.wav",
+    "asr_audio_sha256": "f6c816ddd975e8336a7884d8b230fdf7d3a88cd7c04178caaeaebb1040dcae0a",
+    "asr_success": true,
+    "asr_model": "gpt-4o-mini-transcribe",
+    "asr_language": "es",
+    "asr_latency_ms": 1825,
+    "asr_transcript_raw": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+    "asr_transcript_normalized": "al estar desactivado si el sensor permanece sin cambio durante cinco segundos seguidos activa la alarma",
+    "reference_word_count": 16,
+    "substitutions": 5,
+    "deletions": 0,
+    "insertions": 0,
+    "wer": 0.3125,
+    "exact_transcript_match": false,
+    "normalized_transcript_match": false
+  },
+  "paired_clean_trial_id": "D17_V3_VOICE_CLEAN_DEV_001",
+  "input_text": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+  "effective_input_text": "Al estar desactivado, si el sensor permanece sin cambio durante cinco segundos seguidos, activa la alarma.",
+  "effective_input_text_hash": "9949c132928617d3db9c45652612ccd5173058e54a054266487ef9c894345c5c",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T21:17:12",
+    "generated_code_id": "2026-10-26_21-17-12_NOCASE_INT_SENSOR_TIMEOUT_ALARM"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D17\\V3\\D17_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0568",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0568",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T21:17:12",
+        "completed_at": "2026-10-26T21:17:49",
+        "retry_reason": null,
+        "final_status": "REVIEW",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "REVIEW",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 45900,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22628,
+          "commit_headroom_mb": 46555
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0568",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0568",
+          "timestamp": "2026-10-26T21:17:51",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 2
+        }
+      }
+    ],
+    "final_verdict": "REVIEW",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T21:17:12",
+    "tia_workspace_id": "T0568",
+    "completed_at": "2026-10-26T21:17:49"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "orchestration_amendment": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\enmienda_clasificacion.json",
+    "sha256": "00d59c4b38e881bda0e7192dbdac10fdc7c253c418cd5a719cab8dedbd749af7"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D17\\V3\\D17_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\tia\\D17_V3_VOICE_CLEAN_DEV_002.zap18",
+    "zap18_hash": "a3126235148a2f6a36b0051379084aea6f2b9f4c8261daac05d1d2f17c323cc4",
+    "tia_workspace_id": "T0568",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": false,
+    "intent_actual": "INT_SENSOR_TIMEOUT_ALARM",
+    "intent_expected": [
+      "INT_SENSOR_TIMEOUT_ALARM"
+    ],
+    "intent_match": true,
+    "failed_checks": [
+      "role:START"
+    ]
+  },
+  "system_failure": false
+}

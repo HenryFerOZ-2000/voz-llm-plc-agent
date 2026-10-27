@@ -1,0 +1,897 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 8.1384,
+      "t_done_ms": 11.7436,
+      "timestamp": "2026-10-26T20:11:29.0549293-05:00",
+      "writes": [
+        {
+          "name": "I_Mode_Auto",
+          "address": "%I16.5",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Manual_Motor_Command",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Auto_Motor_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 325.9974,
+      "t_done_ms": 326.69620000000003,
+      "timestamp": "2026-10-26T20:11:29.3698335-05:00",
+      "writes": [
+        {
+          "name": "I_Manual_Motor_Command",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Auto_Motor_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 839.9738000000001,
+      "t_done_ms": 840.6343,
+      "timestamp": "2026-10-26T20:11:29.8831143-05:00",
+      "writes": [
+        {
+          "name": "I_Manual_Motor_Command",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Auto_Motor_Command",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1341.8919,
+      "t_done_ms": 1342.8446000000001,
+      "timestamp": "2026-10-26T20:11:30.3860144-05:00",
+      "writes": [
+        {
+          "name": "I_Mode_Auto",
+          "address": "%I16.5",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Auto_Motor_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1659.4728,
+      "t_done_ms": 1660.48,
+      "timestamp": "2026-10-26T20:11:30.7034065-05:00",
+      "writes": [
+        {
+          "name": "I_Auto_Motor_Command",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Manual_Motor_Command",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2176.205,
+      "t_done_ms": 2177.1091,
+      "timestamp": "2026-10-26T20:11:31.2194357-05:00",
+      "writes": [
+        {
+          "name": "I_Auto_Motor_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Manual_Motor_Command",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2691.3328,
+      "t_done_ms": 2692.5878000000002,
+      "timestamp": "2026-10-26T20:11:31.7364304-05:00",
+      "writes": [
+        {
+          "name": "I_Mode_Auto",
+          "address": "%I16.5",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Manual_Motor_Command",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Auto_Motor_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 13.6698,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 75.59490000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 124.94040000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 175.55790000000002,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 222.5303,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 275.4871,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 325.5351,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 326.8818,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 391.85060000000004,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 440.5319,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 491.3903,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 542.2126000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 591.8240000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 639.2026000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 691.7698,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 742.0282000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 791.3049000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_1",
+      "phase": "test",
+      "t_ms": 839.8862,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 840.7626,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 891.4849,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 941.9013,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 991.4504000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 1041.9157,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 1092.2993000000001,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 1156.0195,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 1208.727,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 1241.8243,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 1305.7065,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "man_2",
+      "phase": "test",
+      "t_ms": 1341.7886,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1342.9809,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1408.9512,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1458.7005000000001,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1508.4703000000002,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1559.0591000000002,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1609.3218000000002,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_0",
+      "phase": "test",
+      "t_ms": 1659.3219000000001,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1661.4097000000002,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1723.7355,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1775.1036000000001,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1825.4984000000002,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1875.5913,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1924.6219,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 1976.1772,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 2026.0387,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 2075.1763,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 2124.7081000000003,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_1",
+      "phase": "test",
+      "t_ms": 2176.0791,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2177.2489,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2242.0352000000003,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2291.4642,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2342.3585000000003,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2391.5173,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2442.5954,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2490.8277000000003,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2541.9414,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2591.4272,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2643.0587,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "aut_2",
+      "phase": "test",
+      "t_ms": 2691.1951,
+      "values": {
+        "I_Mode_Auto": true,
+        "I_Manual_Motor_Command": true,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2693.0737,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2757.905,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2808.6959,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2858.2871,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2908.7842,
+      "values": {
+        "I_Mode_Auto": false,
+        "I_Manual_Motor_Command": false,
+        "I_Auto_Motor_Command": false,
+        "Q_Motor_Enable": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-10-26T20:03:14",
+  "target_platform": "SIEMENS_SCL_V18",
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0007945a4c17e2a9006adff85029a487d29439dac48f801c43",
+    "prompt_tokens": 19145,
+    "completion_tokens": 383,
+    "total_tokens": 19528,
+    "latency_ms": 3427.24,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "agreement": false,
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context_count": 5,
+  "transcription": {},
+  "generation_mode": "CONTROLLED_DETERMINISTIC_POU",
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "generation_status": "GENERATED",
+  "semantic_status": "SEMANTIC_VALIDATED",
+  "verification_status": "STATICALLY_VERIFIED",
+  "compilation_status": "COMPILATION_NOT_EXECUTED",
+  "simulation_status": "SIMULATION_NOT_EXECUTED",
+  "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+  "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY",
+  "is_fully_validated": false
+}

@@ -1,0 +1,644 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D17_V1_VOICE_NOISE_DEV_002",
+  "case_id": "D17",
+  "variant_id": "V1",
+  "input_mode": "VOICE_NOISE",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "e28adc6244a07c72128c7387d0b403d6be32a7a0656774d999ab35e4ae5f7773",
+    "variant_hash": "c7fd3495aa2712d6b81913617ca4c2c7e9ddd3f155f9f19217daf220965376a8"
+  },
+  "oracle": {
+    "oracle_id": "D17",
+    "oracle_version": 2,
+    "oracle_hash": "f757df8d6f6c2f9c85a4d1f9f059138324e7c9bc3e816635ea56d754e0d36be1",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": true,
+    "intent_expected": [
+      "INT_SENSOR_TIMEOUT_ALARM"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": true,
+      "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+      "intent_expected": [
+        "INT_SENSOR_TIMEOUT_ALARM"
+      ],
+      "intent_match": true,
+      "failed_checks": [],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_SENSOR_TIMEOUT_ALARM"
+          ],
+          "actual": "INT_SENSOR_TIMEOUT_ALARM",
+          "passed": true
+        },
+        {
+          "check": "role:START",
+          "expected": "resuelto",
+          "actual": "I_Start",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:SENSOR",
+          "expected": "resuelto",
+          "actual": "I_Piece_Sensor",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:ALARM",
+          "expected": "resuelto",
+          "actual": "Q_Alarm",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "parameter:timeout",
+          "expected": 5000,
+          "actual": 5000,
+          "passed": true
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_SENSOR_TIMEOUT_ALARM"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "PASS",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "PASS",
+    "safety": "PASS",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "PASS",
+    "status": "PASS / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "PASS",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "RESOLVED",
+    "roles": {
+      "START": {
+        "role": "START",
+        "kind": "INPUT",
+        "functional_name": "I_Start",
+        "address": "%IX16.0",
+        "matched_paths": [
+          "trigger_input"
+        ]
+      },
+      "SENSOR": {
+        "role": "SENSOR",
+        "kind": "INPUT",
+        "functional_name": "I_Piece_Sensor",
+        "address": "%IX16.6",
+        "matched_paths": [
+          "sensor_input"
+        ]
+      },
+      "ALARM": {
+        "role": "ALARM",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Alarm",
+        "address": "%QX8.3",
+        "matched_paths": [
+          "alarm_output"
+        ]
+      }
+    },
+    "issues": []
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Start",
+      "I_Emergency",
+      "I_Piece_Sensor"
+    ],
+    "bound_outputs": [
+      "Q_Alarm"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Piece_Sensor'] superan las esperadas (2)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": true,
+    "checks": []
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 10,
+    "total_checks": 10,
+    "pass_rate": 1.0,
+    "failed_checks": [],
+    "major_invariant_violations": 0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 0,
+    "samples_checked": 363,
+    "violations": [],
+    "critical_violations": 0,
+    "major_violations": 0
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "PASS",
+  "oracle_verdict_reason": "ALL_CHECKS_PASSED",
+  "final_status": "PASS",
+  "steps": [
+    {
+      "step_id": "pre_idle",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Test harness: Start y sensor en OFF.",
+      "started_at": "2026-10-26T22:10:01.4275817-05:00",
+      "completed_at": "2026-10-26T22:10:01.742",
+      "t_start_ms": 12.3,
+      "t_end_ms": 320.2,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SENSOR": {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "START": false,
+        "SENSOR": false,
+        "ALARM": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "t0_idle",
+      "phase": "test",
+      "executed": true,
+      "description": "Sin Start: el sensor sin cambios durante 6 s NO genera alarma (no hay supervision).",
+      "started_at": null,
+      "completed_at": null,
+      "t_start_ms": 320.4,
+      "t_end_ms": 6337.2,
+      "inputs_applied": {},
+      "expected_outputs": {
+        "ALARM": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "SENSOR": false,
+        "ALARM": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "t0_idle",
+          "role": "ALARM",
+          "expected": false,
+          "actual": false,
+          "t_ms": 6016.8,
+          "passed": true
+        },
+        {
+          "type": "timeline",
+          "step_id": "t0_idle",
+          "role": "ALARM",
+          "expected": false,
+          "expected_time": {
+            "from_ms": 0,
+            "to_ms": 6000
+          },
+          "samples_in_window": 120,
+          "passed": true,
+          "actual_observation_time": 5951.1,
+          "actual": false
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 121
+    },
+    {
+      "step_id": "t1_start",
+      "phase": "test",
+      "executed": true,
+      "description": "Start activado (se mantiene durante la supervision).",
+      "started_at": "2026-10-26T22:10:07.7531556-05:00",
+      "completed_at": "2026-10-26T22:10:08.068",
+      "t_start_ms": 6338.0,
+      "t_end_ms": 6653.1,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "START": true,
+        "SENSOR": false,
+        "ALARM": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "t2_change",
+      "phase": "test",
+      "executed": true,
+      "description": "Cambio del sensor a ON; en 2 s no hay alarma.",
+      "started_at": "2026-10-26T22:10:08.0692963-05:00",
+      "completed_at": "2026-10-26T22:10:10.084",
+      "t_start_ms": 6654.1,
+      "t_end_ms": 8668.7,
+      "inputs_applied": {
+        "SENSOR": {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "ALARM": false
+      },
+      "actual_outputs": {
+        "START": true,
+        "SENSOR": true,
+        "ALARM": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "t2_change",
+          "role": "ALARM",
+          "expected": false,
+          "actual": false,
+          "t_ms": 2014.6,
+          "passed": true
+        },
+        {
+          "type": "timeline",
+          "step_id": "t2_change",
+          "role": "ALARM",
+          "expected": false,
+          "expected_time": {
+            "from_ms": 0,
+            "to_ms": 2000
+          },
+          "samples_in_window": 40,
+          "passed": true,
+          "actual_observation_time": 1950.7,
+          "actual": false
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 41
+    },
+    {
+      "step_id": "t3_change",
+      "phase": "test",
+      "executed": true,
+      "description": "Cambio del sensor a OFF; en 2 s no hay alarma.",
+      "started_at": "2026-10-26T22:10:10.0848538-05:00",
+      "completed_at": "2026-10-26T22:10:12.087",
+      "t_start_ms": 8669.6,
+      "t_end_ms": 10671.1,
+      "inputs_applied": {
+        "SENSOR": {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "ALARM": false
+      },
+      "actual_outputs": {
+        "START": true,
+        "SENSOR": false,
+        "ALARM": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "t3_change",
+          "role": "ALARM",
+          "expected": false,
+          "actual": false,
+          "t_ms": 2001.5,
+          "passed": true
+        },
+        {
+          "type": "timeline",
+          "step_id": "t3_change",
+          "role": "ALARM",
+          "expected": false,
+          "expected_time": {
+            "from_ms": 0,
+            "to_ms": 2000
+          },
+          "samples_in_window": 40,
+          "passed": true,
+          "actual_observation_time": 1951.0,
+          "actual": false
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 41
+    },
+    {
+      "step_id": "t4_timeout",
+      "phase": "test",
+      "executed": true,
+      "description": "Cambio a ON y sin mas cambios: alarma a los 5 s.",
+      "started_at": "2026-10-26T22:10:12.0863564-05:00",
+      "completed_at": "2026-10-26T22:10:19.099",
+      "t_start_ms": 10671.5,
+      "t_end_ms": 17683.8,
+      "inputs_applied": {
+        "SENSOR": {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "ALARM": true
+      },
+      "actual_outputs": {
+        "START": true,
+        "SENSOR": true,
+        "ALARM": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "t4_timeout",
+          "role": "ALARM",
+          "expected": true,
+          "actual": true,
+          "t_ms": 7012.4,
+          "passed": true
+        },
+        {
+          "type": "timeline",
+          "step_id": "t4_timeout",
+          "role": "ALARM",
+          "expected": false,
+          "expected_time": {
+            "from_ms": 0,
+            "to_ms": 4700
+          },
+          "samples_in_window": 94,
+          "passed": true,
+          "actual_observation_time": 4666.0,
+          "actual": false
+        },
+        {
+          "type": "timeline",
+          "step_id": "t4_timeout",
+          "role": "ALARM",
+          "expected": true,
+          "expected_time": {
+            "from_ms": 5700,
+            "to_ms": 7000
+          },
+          "samples_in_window": 26,
+          "passed": true,
+          "actual_observation_time": 6965.4,
+          "actual": true
+        },
+        {
+          "type": "transition",
+          "step_id": "t4_timeout",
+          "role": "ALARM",
+          "expected": true,
+          "expected_time": {
+            "nominal_ms": 5000,
+            "from_ms": 4700,
+            "to_ms": 5700
+          },
+          "actual_observation_time": 5212.0,
+          "tolerance": {
+            "early": 300,
+            "late": 700
+          },
+          "passed": true,
+          "sample_period_ms": 50
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 141
+    },
+    {
+      "step_id": "cleanup_inputs",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Start y sensor a OFF.",
+      "started_at": "2026-10-26T22:10:19.0998028-05:00",
+      "completed_at": "2026-10-26T22:10:19.302",
+      "t_start_ms": 17685.1,
+      "t_end_ms": 17886.9,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SENSOR": {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "START": false,
+        "SENSOR": false,
+        "ALARM": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    }
+  ],
+  "cleanup": {
+    "performed": true,
+    "success": true,
+    "inputs": [
+      {
+        "name": "I_Start",
+        "address": "%I16.0",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Piece_Sensor",
+        "address": "%I16.6",
+        "readback": false,
+        "restored": true
+      }
+    ],
+    "process_variables": []
+  },
+  "sequence": {
+    "planned_ms": 17800,
+    "sample_period_ms": 50,
+    "watched": [
+      "I_Start",
+      "I_Piece_Sensor",
+      "Q_Alarm"
+    ],
+    "skipped_steps": [],
+    "bridge_status": "PLCSIM_IO_PASSED",
+    "failed_step": null,
+    "sequence_duration_ms": 17886.9951,
+    "cpu_state": "RUN"
+  },
+  "errors": [],
+  "warnings": [
+    "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Piece_Sensor'] superan las esperadas (2)."
+  ],
+  "timings": {
+    "generation_ms": 4881,
+    "compile_ms": 40089,
+    "download_ms": null,
+    "functional_test_ms": 19866,
+    "end_to_end_ms": 66591,
+    "semantic_ms": 4594,
+    "runtime_ms": 861,
+    "oracle_ms": 19866,
+    "total_ms": 66591,
+    "generation_total_ms": 4881,
+    "evaluation_ms": 61710
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T22:10:20"
+}

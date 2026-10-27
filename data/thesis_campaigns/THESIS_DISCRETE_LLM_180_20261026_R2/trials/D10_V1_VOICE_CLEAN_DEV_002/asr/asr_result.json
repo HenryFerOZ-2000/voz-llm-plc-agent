@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "18f0175169336b21307487e964fb07c6d766941b336c42120448f5297004141d",
+  "transcript_raw": "Cuenta cinco pulsos y activa una salida al llegar a cinco. Con reset, pone el contador a cero y apaga la salida.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 3786,
+  "frozen_at": "2026-10-26T20:56:22"
+}

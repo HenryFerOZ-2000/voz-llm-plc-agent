@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "26cb513170703c5019453bf86a24fa0b4c1212d3521393e5dbc4e462d411639e",
+  "transcript_raw": "Cuenta cinco pulsos de la entrada digital y activa una salida al llegar al quinto.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2110,
+  "frozen_at": "2026-10-26T21:47:36"
+}

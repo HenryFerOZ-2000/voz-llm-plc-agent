@@ -1,0 +1,862 @@
+{
+  "schema_version": 1,
+  "trial_id": "D19_V3_TEXT_DEV_001",
+  "case_id": "D19",
+  "variant_id": "V3",
+  "input_mode": "TEXT",
+  "trial_number": 1,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "MEDIUM",
+  "command_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+  "created_at": "2026-10-26T20:29:06",
+  "semantic": {
+    "intent_id": "INT_STATUS_PILOTS",
+    "case_id": null,
+    "command_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+    "normalized_command": "indicar mediante pilotos los estados detenido, marcha o falla a partir de las señales de marcha y falla, con un unico piloto activo y prioridad de falla",
+    "parameters": {
+      "emergency_input": "I_Emergency",
+      "run_state_input": "I_Run_State",
+      "fault_input": "I_Fault",
+      "stop_indicator": "Q_Pilot_Stop",
+      "run_indicator": "Q_Pilot_Run",
+      "fault_indicator": "Q_Pilot_Fault",
+      "motor_output": "Q_Motor_Enable",
+      "alarm_output": "Q_Alarm"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "El estado detenido se indica cuando I_Run_State e I_Fault están desactivadas.",
+      "La condición de falla tiene prioridad sobre la condición de marcha cuando ambas señales están activas.",
+      "I_Emergency se considera en la lógica de seguridad asociada a la indicación de estado."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Run_State",
+      "I_Fault",
+      "Q_Pilot_Stop",
+      "Q_Pilot_Run",
+      "Q_Pilot_Fault"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "status_indication",
+    "requested_io_assignments": [
+      {
+        "name": "I_Run_State",
+        "class": "input",
+        "type": "BOOL",
+        "function": "Señal de estado de marcha del sistema."
+      },
+      {
+        "name": "I_Fault",
+        "class": "input",
+        "type": "BOOL",
+        "function": "Señal de condición de falla del sistema."
+      },
+      {
+        "name": "Q_Pilot_Stop",
+        "class": "output",
+        "type": "BOOL",
+        "function": "Piloto indicador de sistema detenido."
+      }
+    ],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "run_state_input": {
+        "source": "LLM"
+      },
+      "fault_input": {
+        "source": "LLM"
+      },
+      "stop_indicator": {
+        "source": "LLM"
+      },
+      "run_indicator": {
+        "source": "LLM"
+      },
+      "fault_indicator": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_STATUS_PILOTS exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "MAP_EXISTING",
+        "address": "%QX8.4",
+        "state": "FREE"
+      },
+      "alarm_output": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_STATUS_PILOTS exige 'alarm_output' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "MAP_EXISTING",
+        "address": "%QX8.3",
+        "state": "FREE"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_STATUS_PILOTS",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "emergency_input": "I_Emergency",
+        "run_state_input": "I_Run_State",
+        "fault_input": "I_Fault",
+        "stop_indicator": "Q_Pilot_Stop",
+        "run_indicator": "Q_Pilot_Run",
+        "fault_indicator": "Q_Pilot_Fault"
+      },
+      "defaulted_keys": [
+        "motor_output",
+        "alarm_output"
+      ],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_UNKNOWN",
+      "case_id": null,
+      "command_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+      "normalized_command": "a partir de las senales de start y de falla indica con tres pilotos si el sistema esta detenido en start o en falla unicamente debe encenderse el del estado actual",
+      "parameters": {},
+      "confidence": 0.0,
+      "ambiguities": [
+        "No se reconoce el elemento industrial objetivo."
+      ],
+      "requires_clarification": true,
+      "clarification_question": "Aclare la accion industrial requerida, las variables involucradas y el tiempo si corresponde.",
+      "assumptions": [],
+      "recognized_tags": [
+        "I_Start"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "parameter_provenance": {},
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "NOT_APPLICABLE",
+        "intent_id": "INT_UNKNOWN",
+        "origin": "RULES",
+        "interpreted_parameters": {},
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_STATUS_PILOTS",
+      "case_id": null,
+      "command_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+      "normalized_command": "indicar mediante pilotos los estados detenido, marcha o falla a partir de las señales de marcha y falla, con un unico piloto activo y prioridad de falla",
+      "parameters": {
+        "emergency_input": "I_Emergency",
+        "run_state_input": "I_Run_State",
+        "fault_input": "I_Fault",
+        "stop_indicator": "Q_Pilot_Stop",
+        "run_indicator": "Q_Pilot_Run",
+        "fault_indicator": "Q_Pilot_Fault",
+        "motor_output": "Q_Motor_Enable",
+        "alarm_output": "Q_Alarm"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "El estado detenido se indica cuando I_Run_State e I_Fault están desactivadas.",
+        "La condición de falla tiene prioridad sobre la condición de marcha cuando ambas señales están activas.",
+        "I_Emergency se considera en la lógica de seguridad asociada a la indicación de estado."
+      ],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Run_State",
+        "I_Fault",
+        "Q_Pilot_Stop",
+        "Q_Pilot_Run",
+        "Q_Pilot_Fault"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "operation_type": "status_indication",
+      "requested_io_assignments": [
+        {
+          "name": "I_Run_State",
+          "class": "input",
+          "type": "BOOL",
+          "function": "Señal de estado de marcha del sistema."
+        },
+        {
+          "name": "I_Fault",
+          "class": "input",
+          "type": "BOOL",
+          "function": "Señal de condición de falla del sistema."
+        },
+        {
+          "name": "Q_Pilot_Stop",
+          "class": "output",
+          "type": "BOOL",
+          "function": "Piloto indicador de sistema detenido."
+        }
+      ],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "run_state_input": {
+          "source": "LLM"
+        },
+        "fault_input": {
+          "source": "LLM"
+        },
+        "stop_indicator": {
+          "source": "LLM"
+        },
+        "run_indicator": {
+          "source": "LLM"
+        },
+        "fault_indicator": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "DEFAULT",
+          "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+          "original_value": null,
+          "reason": "INT_STATUS_PILOTS exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+          "resolution": "MAP_EXISTING",
+          "address": "%QX8.4",
+          "state": "FREE"
+        },
+        "alarm_output": {
+          "source": "DEFAULT",
+          "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+          "original_value": null,
+          "reason": "INT_STATUS_PILOTS exige 'alarm_output' y el parser no lo dio: recurso unico del contrato del intent.",
+          "resolution": "MAP_EXISTING",
+          "address": "%QX8.3",
+          "state": "FREE"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_STATUS_PILOTS",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "emergency_input": "I_Emergency",
+          "run_state_input": "I_Run_State",
+          "fault_input": "I_Fault",
+          "stop_indicator": "Q_Pilot_Stop",
+          "run_indicator": "Q_Pilot_Run",
+          "fault_indicator": "Q_Pilot_Fault"
+        },
+        "defaulted_keys": [
+          "motor_output",
+          "alarm_output"
+        ],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_08e48b601428989f006adffe63f54c87d28888940522f0e299",
+      "prompt_tokens": 19179,
+      "completion_tokens": 1410,
+      "total_tokens": 20589,
+      "latency_ms": 13938.74,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": [
+        {
+          "address": "%IX16.3",
+          "proposed_name": "I_Run_State",
+          "current_name": "I_Run_State",
+          "current_state": "ASSIGNED",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Ya existe esta asignacion, se reutiliza sin cambios.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%IX16.4",
+          "proposed_name": "I_Fault",
+          "current_name": "I_Fault",
+          "current_state": "ASSIGNED",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Ya existe esta asignacion, se reutiliza sin cambios.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.0",
+          "proposed_name": "Q_Pilot_Stop",
+          "current_name": "Q_Pilot_Stop",
+          "current_state": "ASSIGNED",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Ya existe esta asignacion, se reutiliza sin cambios.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        }
+      ]
+    },
+    "retrieved_context": [
+      {
+        "source": "iec61131_rules.md",
+        "score": 21,
+        "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+      },
+      {
+        "source": "openplc_conventions.md",
+        "score": 18,
+        "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+      },
+      {
+        "source": "README.md",
+        "score": 15,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "plc_safety_rules.md",
+        "score": 15,
+        "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 12,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [],
+      "covered_by_intent": [
+        "fault_pilot",
+        "run_pilot",
+        "stop_pilot"
+      ],
+      "explicit_types": [],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_STATUS_PILOTS",
+      "case_id": null,
+      "command_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+      "normalized_command": "indicar mediante pilotos los estados detenido, marcha o falla a partir de las señales de marcha y falla, con un unico piloto activo y prioridad de falla",
+      "parameters": {
+        "emergency_input": "I_Emergency",
+        "run_state_input": "I_Run_State",
+        "fault_input": "I_Fault",
+        "stop_indicator": "Q_Pilot_Stop",
+        "run_indicator": "Q_Pilot_Run",
+        "fault_indicator": "Q_Pilot_Fault",
+        "motor_output": "Q_Motor_Enable",
+        "alarm_output": "Q_Alarm"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "El estado detenido se indica cuando I_Run_State e I_Fault están desactivadas.",
+        "La condición de falla tiene prioridad sobre la condición de marcha cuando ambas señales están activas.",
+        "I_Emergency se considera en la lógica de seguridad asociada a la indicación de estado."
+      ],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Run_State",
+        "I_Fault",
+        "Q_Pilot_Stop",
+        "Q_Pilot_Run",
+        "Q_Pilot_Fault"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "operation_type": "status_indication",
+      "requested_io_assignments": [
+        {
+          "name": "I_Run_State",
+          "class": "input",
+          "type": "BOOL",
+          "function": "Señal de estado de marcha del sistema."
+        },
+        {
+          "name": "I_Fault",
+          "class": "input",
+          "type": "BOOL",
+          "function": "Señal de condición de falla del sistema."
+        },
+        {
+          "name": "Q_Pilot_Stop",
+          "class": "output",
+          "type": "BOOL",
+          "function": "Piloto indicador de sistema detenido."
+        }
+      ],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "run_state_input": {
+          "source": "LLM"
+        },
+        "fault_input": {
+          "source": "LLM"
+        },
+        "stop_indicator": {
+          "source": "LLM"
+        },
+        "run_indicator": {
+          "source": "LLM"
+        },
+        "fault_indicator": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "DEFAULT",
+          "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+          "original_value": null,
+          "reason": "INT_STATUS_PILOTS exige 'motor_output' y el parser no lo dio: recurso unico del contrato del intent.",
+          "resolution": "MAP_EXISTING",
+          "address": "%QX8.4",
+          "state": "FREE"
+        },
+        "alarm_output": {
+          "source": "DEFAULT",
+          "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+          "original_value": null,
+          "reason": "INT_STATUS_PILOTS exige 'alarm_output' y el parser no lo dio: recurso unico del contrato del intent.",
+          "resolution": "MAP_EXISTING",
+          "address": "%QX8.3",
+          "state": "FREE"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_STATUS_PILOTS",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "emergency_input": "I_Emergency",
+          "run_state_input": "I_Run_State",
+          "fault_input": "I_Fault",
+          "stop_indicator": "Q_Pilot_Stop",
+          "run_indicator": "Q_Pilot_Run",
+          "fault_indicator": "Q_Pilot_Fault"
+        },
+        "defaulted_keys": [
+          "motor_output",
+          "alarm_output"
+        ],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": null,
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": [
+        {
+          "address": "%IX16.3",
+          "proposed_name": "I_Run_State",
+          "current_name": "I_Run_State",
+          "current_state": "ASSIGNED",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Ya existe esta asignacion, se reutiliza sin cambios.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%IX16.4",
+          "proposed_name": "I_Fault",
+          "current_name": "I_Fault",
+          "current_state": "ASSIGNED",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Ya existe esta asignacion, se reutiliza sin cambios.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.0",
+          "proposed_name": "Q_Pilot_Stop",
+          "current_name": "Q_Pilot_Stop",
+          "current_state": "ASSIGNED",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Ya existe esta asignacion, se reutiliza sin cambios.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        }
+      ]
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D19\\V3\\D19_V3_TEXT_DEV_001\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D19\\V3\\D19_V3_TEXT_DEV_001\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D19\\V3\\D19_V3_TEXT_DEV_001\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T20:29:06",
+    "resolved_at": "2026-10-26T20:29:20",
+    "bound_channels": 8,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+  "generated_code_id": "2026-10-26_20-29-20_NOCASE_INT_STATUS_PILOTS",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": null,
+    "asr_transcript": null,
+    "wer": null,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "SUCCESS",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "PASS",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "94afd861298aaf19b20e50b227f56620f736134facf3434191b5be42e2b54358",
+  "variant_hash": "d6588ba51e58bb58b47a5df281b6319c1469eafa4f41607960abd6c93dfb66bd",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "PASS",
+    "verdict_reason": "ALL_CHECKS_PASSED",
+    "roles": {
+      "RUN_STATE": "I_Run_State",
+      "FAULT_ACTIVE": "I_Fault",
+      "PILOT_STOPPED": "Q_Pilot_Stop",
+      "PILOT_RUN": "Q_Pilot_Run",
+      "PILOT_FAULT": "Q_Pilot_Fault"
+    },
+    "role_issues": [],
+    "preconditions_success": true,
+    "cleanup_success": true,
+    "duration_ms": 3727,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D19\\V3\\D19_V3_TEXT_DEV_001\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D19",
+    "oracle_version": 2,
+    "oracle_hash": "101f21568dc5d57c0fb92d042f41046e64c242a8f62a84a5b1bb9076502dc382",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 9,
+    "total_checks": 9,
+    "pass_rate": 1.0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "critical_violations": 0,
+    "samples_checked": 40
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": true,
+    "safety_success": true,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": true
+  },
+  "timing": {
+    "generation_ms": 14380,
+    "compile_ms": 36071,
+    "download_ms": null,
+    "functional_test_ms": 3727,
+    "end_to_end_ms": 55982,
+    "semantic_ms": 13994,
+    "runtime_ms": 869,
+    "oracle_ms": 3727,
+    "total_ms": 55982,
+    "generation_total_ms": 14380,
+    "evaluation_ms": 41602
+  },
+  "errors": [],
+  "final_status": "PASS",
+  "completed_at": "2026-10-26T20:30:02",
+  "canonical_command": "Controla tres pilotos según las señales de marcha y de falla del sistema: detenido, marcha y falla, manteniendo activo únicamente el del estado actual.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+  "reference_text_hash": "d6588ba51e58bb58b47a5df281b6319c1469eafa4f41607960abd6c93dfb66bd",
+  "speaker_id": null,
+  "repeat_of_trial_id": "D19_V3_TEXT_003",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "input_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+  "effective_input_text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+  "effective_input_text_hash": "d6588ba51e58bb58b47a5df281b6319c1469eafa4f41607960abd6c93dfb66bd",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 3,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "Q_Alarm",
+      "Q_Pilot_Run",
+      "Q_Pilot_Fault",
+      "I_Fault",
+      "I_Run_State",
+      "Q_Pilot_Stop"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T20:29:20",
+    "generated_code_id": "2026-10-26_20-29-20_NOCASE_INT_STATUS_PILOTS"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D19\\V3\\D19_V3_TEXT_DEV_001\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0515",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0515",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T20:29:20",
+        "completed_at": "2026-10-26T20:30:02",
+        "retry_reason": null,
+        "final_status": "PASS",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "PASS",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 46145,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22330,
+          "commit_headroom_mb": 46853
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0515",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0515",
+          "timestamp": "2026-10-26T20:30:02",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 1
+        }
+      }
+    ],
+    "final_verdict": "PASS",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T20:29:20",
+    "tia_workspace_id": "T0515",
+    "completed_at": "2026-10-26T20:30:02"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "orchestration_amendment": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\enmienda_clasificacion.json",
+    "sha256": "00d59c4b38e881bda0e7192dbdac10fdc7c253c418cd5a719cab8dedbd749af7"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D19\\V3\\D19_V3_TEXT_DEV_001\\evaluation\\attempt_001\\tia\\D19_V3_TEXT_DEV_001.zap18",
+    "zap18_hash": "e261a481b8dd59e5b113e0b57e540497558950385f06ce002fcaf9266d30ebf2",
+    "tia_workspace_id": "T0515",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": true,
+    "intent_actual": "INT_STATUS_PILOTS",
+    "intent_expected": [],
+    "intent_match": null,
+    "failed_checks": []
+  },
+  "system_failure": false
+}

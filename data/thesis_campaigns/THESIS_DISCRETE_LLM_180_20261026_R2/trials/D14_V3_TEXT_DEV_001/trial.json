@@ -1,0 +1,896 @@
+{
+  "schema_version": 1,
+  "trial_id": "D14_V3_TEXT_DEV_001",
+  "case_id": "D14",
+  "variant_id": "V3",
+  "input_mode": "TEXT",
+  "trial_number": 1,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "HIGH",
+  "command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "created_at": "2026-10-26T20:09:18",
+  "semantic": {
+    "intent_id": "INT_SPEED_SELECTION",
+    "case_id": null,
+    "command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+    "normalized_command": "tres entradas digitales seleccionan velocidad baja, media o alta; solo se activa la salida de la velocidad seleccionada",
+    "parameters": {
+      "speed_low_input": "I_Speed_Low",
+      "speed_medium_input": "I_Speed_Medium",
+      "speed_high_input": "I_Speed_High",
+      "emergency_input": "I_Emergency",
+      "speed_low_output": "Q_Speed_Low",
+      "speed_medium_output": "Q_Speed_Medium",
+      "speed_high_output": "Q_Speed_High"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Las tres entradas de selección representan opciones mutuamente excluyentes.",
+      "I_Emergency tiene prioridad y desactiva todas las salidas de velocidad."
+    ],
+    "recognized_tags": [
+      "I_Speed_Low",
+      "I_Speed_Medium",
+      "I_Speed_High",
+      "I_Emergency",
+      "Q_Speed_Low",
+      "Q_Speed_Medium",
+      "Q_Speed_High"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "speed_selection",
+    "requested_io_assignments": [
+      {
+        "name": "I_Speed_Low",
+        "class": "input",
+        "type": "BOOL",
+        "function": "selección digital de velocidad baja"
+      },
+      {
+        "name": "I_Speed_Medium",
+        "class": "input",
+        "type": "BOOL",
+        "function": "selección digital de velocidad media"
+      },
+      {
+        "name": "I_Speed_High",
+        "class": "input",
+        "type": "BOOL",
+        "function": "selección digital de velocidad alta"
+      },
+      {
+        "name": "Q_Speed_Low",
+        "class": "output",
+        "type": "BOOL",
+        "function": "activación de velocidad baja"
+      },
+      {
+        "name": "Q_Speed_Medium",
+        "class": "output",
+        "type": "BOOL",
+        "function": "activación de velocidad media"
+      },
+      {
+        "name": "Q_Speed_High",
+        "class": "output",
+        "type": "BOOL",
+        "function": "activación de velocidad alta"
+      }
+    ],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "speed_low_input": {
+        "source": "LLM"
+      },
+      "speed_medium_input": {
+        "source": "LLM"
+      },
+      "speed_high_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "speed_low_output": {
+        "source": "LLM"
+      },
+      "speed_medium_output": {
+        "source": "LLM"
+      },
+      "speed_high_output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SPEED_SELECTION",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_UNKNOWN",
+      "case_id": null,
+      "command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+      "normalized_command": "tres entradas digitales eligen la velocidad baja media o alta unicamente debe activarse la seleccionada",
+      "parameters": {},
+      "confidence": 0.0,
+      "ambiguities": [
+        "No se reconocieron variables o senales autorizadas en el comando.",
+        "No se reconoce el elemento industrial objetivo."
+      ],
+      "requires_clarification": true,
+      "clarification_question": "Aclare la accion industrial requerida, las variables involucradas y el tiempo si corresponde.",
+      "assumptions": [],
+      "recognized_tags": [],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "parameter_provenance": {},
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "NOT_APPLICABLE",
+        "intent_id": "INT_UNKNOWN",
+        "origin": "RULES",
+        "interpreted_parameters": {},
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_SPEED_SELECTION",
+      "case_id": null,
+      "command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+      "normalized_command": "tres entradas digitales seleccionan velocidad baja, media o alta; solo se activa la salida de la velocidad seleccionada",
+      "parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Las tres entradas de selección representan opciones mutuamente excluyentes.",
+        "I_Emergency tiene prioridad y desactiva todas las salidas de velocidad."
+      ],
+      "recognized_tags": [
+        "I_Speed_Low",
+        "I_Speed_Medium",
+        "I_Speed_High",
+        "I_Emergency",
+        "Q_Speed_Low",
+        "Q_Speed_Medium",
+        "Q_Speed_High"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "operation_type": "speed_selection",
+      "requested_io_assignments": [
+        {
+          "name": "I_Speed_Low",
+          "class": "input",
+          "type": "BOOL",
+          "function": "selección digital de velocidad baja"
+        },
+        {
+          "name": "I_Speed_Medium",
+          "class": "input",
+          "type": "BOOL",
+          "function": "selección digital de velocidad media"
+        },
+        {
+          "name": "I_Speed_High",
+          "class": "input",
+          "type": "BOOL",
+          "function": "selección digital de velocidad alta"
+        },
+        {
+          "name": "Q_Speed_Low",
+          "class": "output",
+          "type": "BOOL",
+          "function": "activación de velocidad baja"
+        },
+        {
+          "name": "Q_Speed_Medium",
+          "class": "output",
+          "type": "BOOL",
+          "function": "activación de velocidad media"
+        },
+        {
+          "name": "Q_Speed_High",
+          "class": "output",
+          "type": "BOOL",
+          "function": "activación de velocidad alta"
+        }
+      ],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "speed_low_input": {
+          "source": "LLM"
+        },
+        "speed_medium_input": {
+          "source": "LLM"
+        },
+        "speed_high_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "speed_low_output": {
+          "source": "LLM"
+        },
+        "speed_medium_output": {
+          "source": "LLM"
+        },
+        "speed_high_output": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_SPEED_SELECTION",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "speed_low_input": "I_Speed_Low",
+          "speed_medium_input": "I_Speed_Medium",
+          "speed_high_input": "I_Speed_High",
+          "emergency_input": "I_Emergency",
+          "speed_low_output": "Q_Speed_Low",
+          "speed_medium_output": "Q_Speed_Medium",
+          "speed_high_output": "Q_Speed_High"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_055889f6eecf5331006adff9bf889487d2a8565a79123de9d3",
+      "prompt_tokens": 19147,
+      "completion_tokens": 877,
+      "total_tokens": 20024,
+      "latency_ms": 7218.32,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": false,
+      "errors": [
+        "Asignacion de mapa rechazada: No hay ningun canal compatible disponible para I_Speed_High (todo esta LOCKED o incompatible)."
+      ],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": [
+        {
+          "address": "%IX16.3",
+          "proposed_name": "I_Speed_Low",
+          "current_name": "I_Reset",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %IX16.3.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%IX16.4",
+          "proposed_name": "I_Speed_Medium",
+          "current_name": "I_Manual_Conveyor_Command",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %IX16.4.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%IX16.5",
+          "proposed_name": "I_Speed_High",
+          "current_name": "I_Manual_Pump_Command",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %IX16.5.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.0",
+          "proposed_name": "Q_Speed_Low",
+          "current_name": "Q_Conveyor_Enable",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %QX8.0.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.1",
+          "proposed_name": "Q_Speed_Medium",
+          "current_name": "Q_Pump_Enable",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %QX8.1.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.2",
+          "proposed_name": "Q_Speed_High",
+          "current_name": "Q_Motor_3",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %QX8.2.",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%IX16.3",
+          "proposed_name": "I_Speed_Low",
+          "current_name": "I_Reset",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %IX16.3.",
+          "duplicate_request_collapsed": true,
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%IX16.4",
+          "proposed_name": "I_Speed_Medium",
+          "current_name": "I_Manual_Conveyor_Command",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %IX16.4.",
+          "duplicate_request_collapsed": true,
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": null,
+          "proposed_name": "I_Speed_High",
+          "current_name": null,
+          "current_state": null,
+          "conflict": false,
+          "blocked": true,
+          "reason": "No hay ningun canal compatible disponible para I_Speed_High (todo esta LOCKED o incompatible).",
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.0",
+          "proposed_name": "Q_Speed_Low",
+          "current_name": "Q_Conveyor_Enable",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %QX8.0.",
+          "duplicate_request_collapsed": true,
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.1",
+          "proposed_name": "Q_Speed_Medium",
+          "current_name": "Q_Pump_Enable",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %QX8.1.",
+          "duplicate_request_collapsed": true,
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        },
+        {
+          "address": "%QX8.2",
+          "proposed_name": "Q_Speed_High",
+          "current_name": "Q_Motor_3",
+          "current_state": "FREE",
+          "conflict": false,
+          "blocked": false,
+          "reason": "Canal libre disponible en %QX8.2.",
+          "duplicate_request_collapsed": true,
+          "role_text": "",
+          "address_was_explicit": false,
+          "requires_confirmation": false
+        }
+      ]
+    },
+    "retrieved_context": [
+      {
+        "source": "openplc_conventions.md",
+        "score": 9,
+        "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+      },
+      {
+        "source": "plc_safety_rules.md",
+        "score": 9,
+        "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+      },
+      {
+        "source": "README.md",
+        "score": 6,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "iec61131_rules.md",
+        "score": 6,
+        "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 3,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [],
+      "covered_by_intent": [
+        "emergency_priority",
+        "enable_pid"
+      ],
+      "explicit_types": [],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_SPEED_SELECTION",
+      "case_id": null,
+      "command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+      "normalized_command": "tres entradas digitales seleccionan velocidad baja, media o alta; solo se activa la salida de la velocidad seleccionada",
+      "parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Las tres entradas de selección representan opciones mutuamente excluyentes.",
+        "I_Emergency tiene prioridad y desactiva todas las salidas de velocidad."
+      ],
+      "recognized_tags": [
+        "I_Speed_Low",
+        "I_Speed_Medium",
+        "I_Speed_High",
+        "I_Emergency",
+        "Q_Speed_Low",
+        "Q_Speed_Medium",
+        "Q_Speed_High"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "operation_type": "speed_selection",
+      "requested_io_assignments": [
+        {
+          "name": "I_Speed_Low",
+          "class": "input",
+          "type": "BOOL",
+          "function": "selección digital de velocidad baja"
+        },
+        {
+          "name": "I_Speed_Medium",
+          "class": "input",
+          "type": "BOOL",
+          "function": "selección digital de velocidad media"
+        },
+        {
+          "name": "I_Speed_High",
+          "class": "input",
+          "type": "BOOL",
+          "function": "selección digital de velocidad alta"
+        },
+        {
+          "name": "Q_Speed_Low",
+          "class": "output",
+          "type": "BOOL",
+          "function": "activación de velocidad baja"
+        },
+        {
+          "name": "Q_Speed_Medium",
+          "class": "output",
+          "type": "BOOL",
+          "function": "activación de velocidad media"
+        },
+        {
+          "name": "Q_Speed_High",
+          "class": "output",
+          "type": "BOOL",
+          "function": "activación de velocidad alta"
+        }
+      ],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "speed_low_input": {
+          "source": "LLM"
+        },
+        "speed_medium_input": {
+          "source": "LLM"
+        },
+        "speed_high_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "speed_low_output": {
+          "source": "LLM"
+        },
+        "speed_medium_output": {
+          "source": "LLM"
+        },
+        "speed_high_output": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_SPEED_SELECTION",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "speed_low_input": "I_Speed_Low",
+          "speed_medium_input": "I_Speed_Medium",
+          "speed_high_input": "I_Speed_High",
+          "emergency_input": "I_Emergency",
+          "speed_low_output": "Q_Speed_Low",
+          "speed_medium_output": "Q_Speed_Medium",
+          "speed_high_output": "Q_Speed_High"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": {
+      "intent_id": "INT_SPEED_SELECTION",
+      "case_id": null,
+      "command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+      "normalized_command": "tres entradas digitales seleccionan velocidad baja, media o alta; solo se activa la salida correspondiente a la velocidad seleccionada",
+      "parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "I_Emergency tiene prioridad y desactiva todas las salidas de velocidad mientras esté activa.",
+        "Las tres selecciones de velocidad son mutuamente excluyentes; si se presentan selecciones simultáneas, no debe activarse más de una salida."
+      ],
+      "recognized_tags": [
+        "I_Speed_Low",
+        "I_Speed_Medium",
+        "I_Speed_High",
+        "I_Emergency",
+        "Q_Speed_Low",
+        "Q_Speed_Medium",
+        "Q_Speed_High"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "never_together",
+          "outputs": [
+            "Q_Speed_Low",
+            "Q_Speed_Medium",
+            "Q_Speed_High"
+          ]
+        },
+        {
+          "type": "force_off",
+          "condition": "I_Emergency",
+          "outputs": [
+            "Q_Speed_Low",
+            "Q_Speed_Medium",
+            "Q_Speed_High"
+          ]
+        }
+      ],
+      "operation_type": "speed_selection",
+      "requested_io_assignments": [
+        {
+          "name": "I_Speed_Low",
+          "class": "input",
+          "type": "BOOL",
+          "functional_role": "seleccion_velocidad_baja"
+        },
+        {
+          "name": "I_Speed_Medium",
+          "class": "input",
+          "type": "BOOL",
+          "functional_role": "seleccion_velocidad_media"
+        },
+        {
+          "name": "I_Speed_High",
+          "class": "input",
+          "type": "BOOL",
+          "functional_role": "seleccion_velocidad_alta"
+        },
+        {
+          "name": "Q_Speed_Low",
+          "class": "output",
+          "type": "BOOL",
+          "functional_role": "salida_velocidad_baja"
+        },
+        {
+          "name": "Q_Speed_Medium",
+          "class": "output",
+          "type": "BOOL",
+          "functional_role": "salida_velocidad_media"
+        },
+        {
+          "name": "Q_Speed_High",
+          "class": "output",
+          "type": "BOOL",
+          "functional_role": "salida_velocidad_alta"
+        }
+      ],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "speed_low_input": {
+          "source": "LLM"
+        },
+        "speed_medium_input": {
+          "source": "LLM"
+        },
+        "speed_high_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "speed_low_output": {
+          "source": "LLM"
+        },
+        "speed_medium_output": {
+          "source": "LLM"
+        },
+        "speed_high_output": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_SPEED_SELECTION",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "speed_low_input": "I_Speed_Low",
+          "speed_medium_input": "I_Speed_Medium",
+          "speed_high_input": "I_Speed_High",
+          "emergency_input": "I_Emergency",
+          "speed_low_output": "Q_Speed_Low",
+          "speed_medium_output": "Q_Speed_Medium",
+          "speed_high_output": "Q_Speed_High"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {},
+  "compile": {},
+  "download": {},
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V3\\D14_V3_TEXT_DEV_001\\working_io_map.json",
+    "snapshot_path": null,
+    "frozen": false,
+    "created_at": "2026-10-26T20:09:18",
+    "resolved_at": null,
+    "bound_channels": null,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "PREPARING",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "generated_code_id": null,
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": null,
+    "asr_transcript": null,
+    "wer": null,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "IO_ALLOCATION_FAILURE",
+  "failure_stage": "io_allocation",
+  "infrastructure_error": null,
+  "final_verdict": null,
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "8d0538b64aa0d42d79079685a83d81685a274140e8e4e9ca9a2f2c68a68bebe2",
+  "variant_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67",
+  "runtime": null,
+  "runtime_io": null,
+  "oracle": null,
+  "oracle_reference": {
+    "oracle_id": null,
+    "oracle_version": null,
+    "oracle_hash": null
+  },
+  "functional": null,
+  "safety": null,
+  "stages": {
+    "semantic_success": false,
+    "verification_success": null,
+    "compile_success": null,
+    "download_success": null,
+    "start_module_success": null,
+    "runtime_connection_success": null,
+    "functional_success": null,
+    "safety_success": null,
+    "io_allocation_success": false
+  },
+  "timing": {
+    "generation_ms": 14340,
+    "compile_ms": null,
+    "download_ms": null,
+    "functional_test_ms": null,
+    "end_to_end_ms": null,
+    "semantic_ms": null,
+    "runtime_ms": null,
+    "oracle_ms": null,
+    "total_ms": null,
+    "generation_total_ms": 14340
+  },
+  "errors": [
+    "IO_ASSIGNMENT_BLOCKED",
+    "IO_ASSIGNMENT_BLOCKED"
+  ],
+  "final_status": "FAIL",
+  "completed_at": "2026-10-26T20:16:31",
+  "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "reference_text_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67",
+  "speaker_id": null,
+  "repeat_of_trial_id": "D14_V3_TEXT_003",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "input_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "effective_input_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "effective_input_text_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 3,
+      "digital_outputs": 3,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "generation": {
+    "status": "FAILED",
+    "completed_at": "2026-10-26T20:09:32",
+    "failure_category": "IO_ALLOCATION_FAILURE"
+  },
+  "evaluation": {
+    "status": "NOT_APPLICABLE",
+    "attempts": []
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "classification_amendment": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\enmienda_clasificacion.json",
+    "sha256": "00d59c4b38e881bda0e7192dbdac10fdc7c253c418cd5a719cab8dedbd749af7"
+  }
+}

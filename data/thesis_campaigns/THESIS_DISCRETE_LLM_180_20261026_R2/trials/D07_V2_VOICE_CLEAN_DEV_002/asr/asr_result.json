@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "514627c7f118b6298c6bb01ae70f780b6b0f546a3371756faff9ede5930667f0",
+  "transcript_raw": "Quiero que el motor arranque tres segundos después de activar Start, siempre que Start siga activo.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2629,
+  "frozen_at": "2026-10-26T20:48:22"
+}

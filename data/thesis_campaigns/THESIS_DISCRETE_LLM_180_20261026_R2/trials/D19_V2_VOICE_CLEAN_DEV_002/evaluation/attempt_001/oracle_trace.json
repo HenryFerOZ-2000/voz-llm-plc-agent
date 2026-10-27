@@ -1,0 +1,592 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 5.4729,
+      "t_done_ms": 8.9921,
+      "timestamp": "2026-10-26T21:22:07.7879400-05:00",
+      "writes": [
+        {
+          "name": "I_Run_State",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Fault",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 621.7082,
+      "t_done_ms": 622.3097,
+      "timestamp": "2026-10-26T21:22:08.4095417-05:00",
+      "writes": [
+        {
+          "name": "I_Run_State",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 933.0589,
+      "t_done_ms": 933.4348,
+      "timestamp": "2026-10-26T21:22:08.7212054-05:00",
+      "writes": [
+        {
+          "name": "I_Fault",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1248.9104,
+      "t_done_ms": 1249.3199,
+      "timestamp": "2026-10-26T21:22:09.0365188-05:00",
+      "writes": [
+        {
+          "name": "I_Run_State",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1565.6938,
+      "t_done_ms": 1567.0705,
+      "timestamp": "2026-10-26T21:22:09.3548788-05:00",
+      "writes": [
+        {
+          "name": "I_Run_State",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Fault",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 11.013200000000001,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 65.6892,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 116.16760000000001,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 166.01930000000002,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 216.5952,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 266.2285,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 315.5391,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t1_stopped",
+      "phase": "test",
+      "t_ms": 315.9972,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t1_stopped",
+      "phase": "test",
+      "t_ms": 366.3244,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t1_stopped",
+      "phase": "test",
+      "t_ms": 416.9594,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t1_stopped",
+      "phase": "test",
+      "t_ms": 467.1503,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t1_stopped",
+      "phase": "test",
+      "t_ms": 531.0628,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t1_stopped",
+      "phase": "test",
+      "t_ms": 578.244,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t1_stopped",
+      "phase": "test",
+      "t_ms": 621.5625,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 623.0808000000001,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 683.0899000000001,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": false,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": true,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 731.6807,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": false,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": true,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 783.0773,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": false,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": true,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 830.2544,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": false,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": true,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 883.3884,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": false,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": true,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t2_run",
+      "phase": "test",
+      "t_ms": 932.9037000000001,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": false,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": true,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 933.5422000000001,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": true,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 998.7067000000001,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 1048.7105000000001,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 1084.1536,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 1148.6577,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 1199.4701,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t3_fault_running",
+      "phase": "test",
+      "t_ms": 1248.6377,
+      "values": {
+        "I_Run_State": true,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1249.4751,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1300.5237,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1350.7449000000001,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1415.5744,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1465.8406,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1515.5388,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "t4_fault_stopped",
+      "phase": "test",
+      "t_ms": 1565.4546,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": true,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1567.201,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": false,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1633.4697,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1682.2674000000002,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1732.508,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1782.5071,
+      "values": {
+        "I_Run_State": false,
+        "I_Fault": false,
+        "Q_Pilot_Stop": true,
+        "Q_Pilot_Run": false,
+        "Q_Pilot_Fault": false
+      }
+    }
+  ]
+}

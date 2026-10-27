@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "87eb30b8696464919663b54a743127139939af6606726acf92422f6bf784de42",
+  "transcript_raw": "Haz que el motor arranque con Start, siga funcionando aunque se suelte y se detenga solo tras diez segundos.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 3009,
+  "frozen_at": "2026-10-26T21:45:11"
+}

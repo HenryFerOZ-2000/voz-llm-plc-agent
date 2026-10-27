@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "max_retries": 2,
+  "backoff_ms": [5000, 15000]
+}

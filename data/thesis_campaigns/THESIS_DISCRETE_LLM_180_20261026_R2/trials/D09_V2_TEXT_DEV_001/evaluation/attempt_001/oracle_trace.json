@@ -1,0 +1,816 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 5.2551000000000005,
+      "t_done_ms": 8.8431,
+      "timestamp": "2026-10-26T19:55:49.5037762-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p1_on",
+      "phase": "test",
+      "t_ms": 319.67510000000004,
+      "t_done_ms": 320.3749,
+      "timestamp": "2026-10-26T19:55:49.8149096-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p1_off",
+      "phase": "test",
+      "t_ms": 532.6314,
+      "t_done_ms": 533.1302000000001,
+      "timestamp": "2026-10-26T19:55:50.0284065-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p2_on",
+      "phase": "test",
+      "t_ms": 736.241,
+      "t_done_ms": 737.3818,
+      "timestamp": "2026-10-26T19:55:50.2305409-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p2_off",
+      "phase": "test",
+      "t_ms": 951.6751,
+      "t_done_ms": 952.8126000000001,
+      "timestamp": "2026-10-26T19:55:50.4462247-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p3_on",
+      "phase": "test",
+      "t_ms": 1167.3345000000002,
+      "t_done_ms": 1167.8434,
+      "timestamp": "2026-10-26T19:55:50.6619355-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p3_off",
+      "phase": "test",
+      "t_ms": 1383.5385,
+      "t_done_ms": 1384.3624,
+      "timestamp": "2026-10-26T19:55:50.8789681-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p4_on",
+      "phase": "test",
+      "t_ms": 1600.3220000000001,
+      "t_done_ms": 1600.6728,
+      "timestamp": "2026-10-26T19:55:51.0950081-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p4_off",
+      "phase": "test",
+      "t_ms": 1819.2058000000002,
+      "t_done_ms": 1819.7682,
+      "timestamp": "2026-10-26T19:55:51.3147342-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2034.8917000000001,
+      "t_done_ms": 2035.3834000000002,
+      "timestamp": "2026-10-26T19:55:51.5298262-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2350.0585,
+      "t_done_ms": 2350.9162,
+      "timestamp": "2026-10-26T19:55:51.8455878-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2665.4299,
+      "t_done_ms": 2666.1854000000003,
+      "timestamp": "2026-10-26T19:55:52.1609967-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 10.6823,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 67.6657,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 117.7102,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 167.4137,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 217.2067,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 268.5763,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 319.11510000000004,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_on",
+      "phase": "test",
+      "t_ms": 320.4863,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_on",
+      "phase": "test",
+      "t_ms": 384.2327,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_on",
+      "phase": "test",
+      "t_ms": 434.1367,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_on",
+      "phase": "test",
+      "t_ms": 485.23690000000005,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_on",
+      "phase": "test",
+      "t_ms": 532.5386,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_off",
+      "phase": "test",
+      "t_ms": 533.6865,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_off",
+      "phase": "test",
+      "t_ms": 584.6144,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_off",
+      "phase": "test",
+      "t_ms": 635.4142,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_off",
+      "phase": "test",
+      "t_ms": 685.5507,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p1_off",
+      "phase": "test",
+      "t_ms": 735.9405,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_on",
+      "phase": "test",
+      "t_ms": 737.4775000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_on",
+      "phase": "test",
+      "t_ms": 801.5227,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_on",
+      "phase": "test",
+      "t_ms": 849.0226,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_on",
+      "phase": "test",
+      "t_ms": 900.6203,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_on",
+      "phase": "test",
+      "t_ms": 951.5908000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_off",
+      "phase": "test",
+      "t_ms": 952.9177000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_off",
+      "phase": "test",
+      "t_ms": 1017.903,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_off",
+      "phase": "test",
+      "t_ms": 1067.9611,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_off",
+      "phase": "test",
+      "t_ms": 1118.4218,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p2_off",
+      "phase": "test",
+      "t_ms": 1167.2771,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_on",
+      "phase": "test",
+      "t_ms": 1167.9392,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_on",
+      "phase": "test",
+      "t_ms": 1218.8013,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_on",
+      "phase": "test",
+      "t_ms": 1284.7963,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_on",
+      "phase": "test",
+      "t_ms": 1319.0758,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_on",
+      "phase": "test",
+      "t_ms": 1383.3410000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_off",
+      "phase": "test",
+      "t_ms": 1384.4783,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_off",
+      "phase": "test",
+      "t_ms": 1435.303,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_off",
+      "phase": "test",
+      "t_ms": 1500.5768,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_off",
+      "phase": "test",
+      "t_ms": 1535.2454,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p3_off",
+      "phase": "test",
+      "t_ms": 1600.2597,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_on",
+      "phase": "test",
+      "t_ms": 1600.7718,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_on",
+      "phase": "test",
+      "t_ms": 1652.0383000000002,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_on",
+      "phase": "test",
+      "t_ms": 1714.9402,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_on",
+      "phase": "test",
+      "t_ms": 1752.0955000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_on",
+      "phase": "test",
+      "t_ms": 1818.6805000000002,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_off",
+      "phase": "test",
+      "t_ms": 1820.0921,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_off",
+      "phase": "test",
+      "t_ms": 1884.4273,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_off",
+      "phase": "test",
+      "t_ms": 1920.9049,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_off",
+      "phase": "test",
+      "t_ms": 1984.6208000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p4_off",
+      "phase": "test",
+      "t_ms": 2034.1034000000002,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2035.5837000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": false
+      }
+    },
+    {
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2098.2415,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2151.0809,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2201.5766000000003,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2236.0715,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2300.2883,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_on",
+      "phase": "test",
+      "t_ms": 2349.9844000000003,
+      "values": {
+        "I_Piece_Sensor": true,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2351.0080000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2417.5624000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2452.4414,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2502.0125000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2551.3015,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2602.4006,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "p5_off",
+      "phase": "test",
+      "t_ms": 2665.3354,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2666.3827,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2717.9812,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2767.492,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2818.5515,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2867.3991,
+      "values": {
+        "I_Piece_Sensor": false,
+        "Q_Count_Reached": true
+      }
+    }
+  ]
+}

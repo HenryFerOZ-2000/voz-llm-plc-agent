@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "969437ea125ea45ab3c7a00443a59f08d5e3742f5b5d0f8ddb5f4793bb488ed6",
+  "transcript_raw": "Quiero tres pilotos: detenido, marcha y falla, que según las señales de marcha y falla del sistema, dejen encendido solo el que corresponde al estado actual.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1425,
+  "frozen_at": "2026-10-26T22:15:26"
+}

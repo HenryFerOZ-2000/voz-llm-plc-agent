@@ -1,0 +1,1794 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 5.0625,
+      "t_done_ms": 8.7116,
+      "timestamp": "2026-10-26T21:51:58.6706428-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 321.2398,
+      "t_done_ms": 321.7413,
+      "timestamp": "2026-10-26T21:51:58.9839108-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 625.8996000000001,
+      "t_done_ms": 626.2342,
+      "timestamp": "2026-10-26T21:51:59.2883048-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 841.4958,
+      "t_done_ms": 841.9159000000001,
+      "timestamp": "2026-10-26T21:51:59.5041176-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1058.5125,
+      "t_done_ms": 1058.8758,
+      "timestamp": "2026-10-26T21:51:59.7209264-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1274.1284,
+      "t_done_ms": 1274.689,
+      "timestamp": "2026-10-26T21:51:59.9362776-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1475.8068,
+      "t_done_ms": 1476.0192000000002,
+      "timestamp": "2026-10-26T21:52:00.1380039-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1691.2053,
+      "t_done_ms": 1691.7401,
+      "timestamp": "2026-10-26T21:52:00.3541760-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 1906.2916,
+      "t_done_ms": 1907.0305,
+      "timestamp": "2026-10-26T21:52:00.5694707-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2123.6358,
+      "t_done_ms": 2124.0190000000002,
+      "timestamp": "2026-10-26T21:52:00.7863791-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2337.7549,
+      "t_done_ms": 2339.0831000000003,
+      "timestamp": "2026-10-26T21:52:01.0009887-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2640.6958,
+      "t_done_ms": 2641.0109,
+      "timestamp": "2026-10-26T21:52:01.3028455-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 2957.8835000000004,
+      "t_done_ms": 2958.7795,
+      "timestamp": "2026-10-26T21:52:01.6212053-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3273.8433,
+      "t_done_ms": 3274.8565000000003,
+      "timestamp": "2026-10-26T21:52:01.9371361-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3590.9754000000003,
+      "t_done_ms": 3591.8526,
+      "timestamp": "2026-10-26T21:52:02.2541335-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3806.9429,
+      "t_done_ms": 3807.2947000000004,
+      "timestamp": "2026-10-26T21:52:02.4691157-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4008.8421000000003,
+      "t_done_ms": 4009.3274,
+      "timestamp": "2026-10-26T21:52:02.6710852-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4224.816400000001,
+      "t_done_ms": 4225.4703,
+      "timestamp": "2026-10-26T21:52:02.8882577-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4441.2911,
+      "t_done_ms": 4441.6772,
+      "timestamp": "2026-10-26T21:52:03.1040024-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4658.334400000001,
+      "t_done_ms": 4658.8163,
+      "timestamp": "2026-10-26T21:52:03.3206963-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4872.6,
+      "t_done_ms": 4873.2659,
+      "timestamp": "2026-10-26T21:52:03.5347736-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5089.119900000001,
+      "t_done_ms": 5089.628000000001,
+      "timestamp": "2026-10-26T21:52:03.7511290-05:00",
+      "writes": [
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5290.9058,
+      "t_done_ms": 5291.6816,
+      "timestamp": "2026-10-26T21:52:03.9539023-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Piece_Sensor",
+          "address": "%I16.6",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5604.5034000000005,
+      "t_done_ms": 5605.0972,
+      "timestamp": "2026-10-26T21:52:04.2666878-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 10.976,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 73.73440000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 125.1568,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 174.49290000000002,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 224.6361,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 273.4365,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 321.0598,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 321.954,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 373.9416,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 424.7791,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 475.2398,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 524.5369000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 588.3717,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 624.8103,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 626.3505,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 691.3618,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 741.5047000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 789.9335000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_on",
+      "phase": "test",
+      "t_ms": 841.3992000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 842.1985000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 907.2905000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 957.4665,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 1007.1676,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a1_off",
+      "phase": "test",
+      "t_ms": 1058.3524,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1059.0734,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1123.6404,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1173.8264000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1224.2683,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_on",
+      "phase": "test",
+      "t_ms": 1274.0351,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1275.0209,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1339.1144000000002,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1391.0688,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1425.4189000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a2_off",
+      "phase": "test",
+      "t_ms": 1475.7494000000002,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1476.1795,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1540.5689,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1591.327,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1640.486,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_on",
+      "phase": "test",
+      "t_ms": 1691.0291,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1692.2183,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1745.106,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1806.9516,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1857.8432,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a3_off",
+      "phase": "test",
+      "t_ms": 1906.1933000000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 1907.241,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 1957.7277000000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 2022.4712000000002,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 2058.6366000000003,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_on",
+      "phase": "test",
+      "t_ms": 2123.5938,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2124.1255,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2175.1032,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2224.4418,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2275.9834,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a4_off",
+      "phase": "test",
+      "t_ms": 2337.6600000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2339.1792,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2390.4319,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2440.3360000000002,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2490.7423000000003,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2540.3269,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2590.9612,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_on",
+      "phase": "test",
+      "t_ms": 2640.6414,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2641.1106,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2691.9755,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2742.2686000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2791.806,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2855.6769,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2903.1979,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "a5_off",
+      "phase": "test",
+      "t_ms": 2957.7822,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 2959.0216,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3024.0903000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3074.2004,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3124.3433,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3173.7955,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3224.1633,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_on",
+      "phase": "test",
+      "t_ms": 3273.7608,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3274.9674,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3337.8990000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3379.8362,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3439.2175,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3490.7849,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3525.1490000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "reset_off",
+      "phase": "test",
+      "t_ms": 3590.5803,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3591.9526,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3657.1935000000003,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3706.9985,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3745.3433,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_on",
+      "phase": "test",
+      "t_ms": 3806.8488,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3807.4853000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3858.4885000000004,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3923.8968,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 3972.8077000000003,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b1_off",
+      "phase": "test",
+      "t_ms": 4008.4505000000004,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4009.5354,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4072.7802,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4125.4004,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4174.2388,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_on",
+      "phase": "test",
+      "t_ms": 4224.6539,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4226.0738,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4291.0546,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4341.3704,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4390.4035,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b2_off",
+      "phase": "test",
+      "t_ms": 4441.1664,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4441.9017,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4507.624400000001,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4558.1507,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4606.7259,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_on",
+      "phase": "test",
+      "t_ms": 4658.0368,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4658.9366,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4724.5288,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4773.8386,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4824.5226,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b3_off",
+      "phase": "test",
+      "t_ms": 4872.5051,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4873.4851,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4924.2473,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 4975.1583,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 5024.3991000000005,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_on",
+      "phase": "test",
+      "t_ms": 5088.9645,
+      "values": {
+        "I_Piece_Sensor": true,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5089.8608,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5140.3577000000005,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5191.6264,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5241.9957,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "b4_off",
+      "phase": "test",
+      "t_ms": 5290.569100000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5291.8606,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5357.2861,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5406.8229,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5457.3352,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5505.912600000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5557.6119,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_on",
+      "phase": "cleanup",
+      "t_ms": 5604.4057,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5605.3126,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5657.941400000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5707.681500000001,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5758.5352,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "cleanup_reset_off",
+      "phase": "cleanup",
+      "t_ms": 5807.0553,
+      "values": {
+        "I_Piece_Sensor": false,
+        "I_Reset": false,
+        "Q_Alarm": false
+      }
+    }
+  ]
+}

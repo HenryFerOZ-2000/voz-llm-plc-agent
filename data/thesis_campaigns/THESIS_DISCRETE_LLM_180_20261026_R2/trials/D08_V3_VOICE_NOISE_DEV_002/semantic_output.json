@@ -1,0 +1,408 @@
+{
+  "intent_id": "INT_AUTO_STOP_TIMER",
+  "case_id": null,
+  "command_text": "Cuando se active Start, mantén el motor funcionando 10 segundos aunque se suelte el pulsador y después apaga.",
+  "normalized_command": "al activar start, mantener el motor encendido durante 10 segundos aunque se suelte el pulsador y apagarlo después",
+  "parameters": {
+    "trigger_input": "I_Start",
+    "emergency_input": "I_Emergency",
+    "motor_output": "Q_Motor_Enable",
+    "run_latch": "M_RunLatch",
+    "timer": "T_OperationLimit",
+    "operation_time": "T#10s"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "Se reutiliza I_Start como disparo de arranque.",
+    "Se reutiliza Q_Motor_Enable como salida del motor.",
+    "I_Emergency tiene prioridad: desactiva el motor de inmediato y bloquea el arranque mientras esté activa.",
+    "Al vencer T#10s, el motor se apaga y queda listo para un nuevo disparo de Start."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Emergency",
+    "Q_Motor_Enable",
+    "M_RunLatch",
+    "T_OperationLimit"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "motor_start_latch",
+      "target": "Q_Motor_Enable"
+    },
+    {
+      "type": "emergency_priority"
+    }
+  ],
+  "operation_type": "timed_motor_operation",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "trigger_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "motor_output": {
+      "source": "LLM"
+    },
+    "run_latch": {
+      "source": "LLM"
+    },
+    "timer": {
+      "source": "LLM"
+    },
+    "operation_time": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_AUTO_STOP_TIMER",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch",
+      "timer": "T_OperationLimit",
+      "operation_time": "T#10s"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_DELAYED_STOP",
+    "case_id": null,
+    "command_text": "Cuando se active Start, mantén el motor funcionando 10 segundos aunque se suelte el pulsador y después apaga.",
+    "normalized_command": "cuando se active start manten el motor funcionando 10 segundos aunque se suelte el input y despues stop",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch",
+      "stop_delay_active": "M_StopDelayActive",
+      "stop_delay_time": "T#10s",
+      "timer": "T_StopDelay"
+    },
+    "confidence": 0.97,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se agrega I_Emergency por seguridad industrial obligatoria."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Start",
+      "I_Stop",
+      "M_RunLatch",
+      "M_StopDelayActive",
+      "Q_Motor_Enable",
+      "T_StopDelay"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "stop_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "motor_output": {
+        "source": "RULES"
+      },
+      "run_latch": {
+        "source": "RULES"
+      },
+      "stop_delay_active": {
+        "source": "RULES"
+      },
+      "stop_delay_time": {
+        "source": "RULES"
+      },
+      "timer": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_DELAYED_STOP",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "run_latch": "M_RunLatch",
+        "stop_delay_active": "M_StopDelayActive",
+        "stop_delay_time": "T#10s",
+        "timer": "T_StopDelay"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_AUTO_STOP_TIMER",
+    "case_id": null,
+    "command_text": "Cuando se active Start, mantén el motor funcionando 10 segundos aunque se suelte el pulsador y después apaga.",
+    "normalized_command": "al activar start, mantener el motor encendido durante 10 segundos aunque se suelte el pulsador y apagarlo después",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch",
+      "timer": "T_OperationLimit",
+      "operation_time": "T#10s"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se reutiliza I_Start como disparo de arranque.",
+      "Se reutiliza Q_Motor_Enable como salida del motor.",
+      "I_Emergency tiene prioridad: desactiva el motor de inmediato y bloquea el arranque mientras esté activa.",
+      "Al vencer T#10s, el motor se apaga y queda listo para un nuevo disparo de Start."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "M_RunLatch",
+      "T_OperationLimit"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "motor_start_latch",
+        "target": "Q_Motor_Enable"
+      },
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "timed_motor_operation",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "run_latch": {
+        "source": "LLM"
+      },
+      "timer": {
+        "source": "LLM"
+      },
+      "operation_time": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_AUTO_STOP_TIMER",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "run_latch": "M_RunLatch",
+        "timer": "T_OperationLimit",
+        "operation_time": "T#10s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0db97aab3cc9c21b006ae01080028c87d29e1be254c4cac5cb",
+    "prompt_tokens": 19153,
+    "completion_tokens": 389,
+    "total_tokens": 19542,
+    "latency_ms": 2997.44,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "codesys_conventions.md",
+      "score": 12,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "iec61131_rules.md",
+      "score": 12,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 12,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "timer_counter_examples.md",
+      "score": 9,
+      "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+    },
+    {
+      "source": "README.md",
+      "score": 6,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "emergency_priority",
+      "enable_pid",
+      "motor_start_latch"
+    ],
+    "explicit_types": [
+      "emergency_priority",
+      "motor_start_latch"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_AUTO_STOP_TIMER",
+    "case_id": null,
+    "command_text": "Cuando se active Start, mantén el motor funcionando 10 segundos aunque se suelte el pulsador y después apaga.",
+    "normalized_command": "al activar start, mantener el motor encendido durante 10 segundos aunque se suelte el pulsador y apagarlo después",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch",
+      "timer": "T_OperationLimit",
+      "operation_time": "T#10s"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se reutiliza I_Start como disparo de arranque.",
+      "Se reutiliza Q_Motor_Enable como salida del motor.",
+      "I_Emergency tiene prioridad: desactiva el motor de inmediato y bloquea el arranque mientras esté activa.",
+      "Al vencer T#10s, el motor se apaga y queda listo para un nuevo disparo de Start."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "M_RunLatch",
+      "T_OperationLimit"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "motor_start_latch",
+        "target": "Q_Motor_Enable"
+      },
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "timed_motor_operation",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "run_latch": {
+        "source": "LLM"
+      },
+      "timer": {
+        "source": "LLM"
+      },
+      "operation_time": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_AUTO_STOP_TIMER",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "run_latch": "M_RunLatch",
+        "timer": "T_OperationLimit",
+        "operation_time": "T#10s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

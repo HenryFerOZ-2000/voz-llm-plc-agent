@@ -1,0 +1,393 @@
+{
+  "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+  "case_id": null,
+  "command_text": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+  "normalized_command": "después de activar start, generar una alarma si el sensor no cambia de estado durante cinco segundos consecutivos",
+  "parameters": {
+    "sensor_input": "I_Piece_Sensor",
+    "emergency_input": "I_Emergency",
+    "alarm_output": "Q_Alarm",
+    "timer": "T_SensorTimeout",
+    "last_state_memory": "M_SensorLastState",
+    "supervision_memory": "M_SupervisionActive",
+    "trigger_input": "I_Start",
+    "timeout": "T#5s"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: Se supervisa I_Piece_Sensor como el sensor mencionado en el comando.",
+    "La supervisión comienza tras activar I_Start.",
+    "I_Emergency tiene prioridad sobre la supervisión y la salida de alarma."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Piece_Sensor",
+    "I_Emergency",
+    "Q_Alarm",
+    "T_SensorTimeout",
+    "M_SensorLastState",
+    "M_SupervisionActive"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [],
+  "operation_type": "sensor_timeout_alarm",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "sensor_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "alarm_output": {
+      "source": "LLM"
+    },
+    "timer": {
+      "source": "LLM"
+    },
+    "last_state_memory": {
+      "source": "LLM"
+    },
+    "supervision_memory": {
+      "source": "LLM"
+    },
+    "trigger_input": {
+      "source": "LLM"
+    },
+    "timeout": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "sensor_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "timer": "T_SensorTimeout",
+      "last_state_memory": "M_SensorLastState",
+      "supervision_memory": "M_SupervisionActive",
+      "trigger_input": "I_Start",
+      "timeout": "T#5s"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_DIRECT_OUTPUT",
+    "case_id": null,
+    "command_text": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+    "normalized_command": "quiero que despues de dar start salte una alarma si el sensor pasa 5 segundos seguidos sin cambiar de estado",
+    "parameters": {
+      "trigger_input": "I_Sensor1",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Aux_Output"
+    },
+    "confidence": 0.82,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se usa Q_Aux_Output como salida generica autorizada."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Sensor1",
+      "I_Start",
+      "Q_Alarm",
+      "Q_Aux_Output"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "alarm_output"
+      }
+    ],
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "output": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_DIRECT_OUTPUT",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "trigger_input": "I_Sensor1",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Aux_Output"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+    "case_id": null,
+    "command_text": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+    "normalized_command": "después de activar start, generar una alarma si el sensor no cambia de estado durante cinco segundos consecutivos",
+    "parameters": {
+      "sensor_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "timer": "T_SensorTimeout",
+      "last_state_memory": "M_SensorLastState",
+      "supervision_memory": "M_SupervisionActive",
+      "trigger_input": "I_Start",
+      "timeout": "T#5s"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: Se supervisa I_Piece_Sensor como el sensor mencionado en el comando.",
+      "La supervisión comienza tras activar I_Start.",
+      "I_Emergency tiene prioridad sobre la supervisión y la salida de alarma."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm",
+      "T_SensorTimeout",
+      "M_SensorLastState",
+      "M_SupervisionActive"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "sensor_timeout_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "sensor_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_output": {
+        "source": "LLM"
+      },
+      "timer": {
+        "source": "LLM"
+      },
+      "last_state_memory": {
+        "source": "LLM"
+      },
+      "supervision_memory": {
+        "source": "LLM"
+      },
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "timeout": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "sensor_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "timer": "T_SensorTimeout",
+        "last_state_memory": "M_SensorLastState",
+        "supervision_memory": "M_SupervisionActive",
+        "trigger_input": "I_Start",
+        "timeout": "T#5s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_00de506e9be6b735006adffcdf632887d2a0608ea1e8b703e1",
+    "prompt_tokens": 19139,
+    "completion_tokens": 362,
+    "total_tokens": 19501,
+    "latency_ms": 3842.08,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "codesys_conventions.md",
+      "score": 6,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "iec61131_rules.md",
+      "score": 6,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "timer_counter_examples.md",
+      "score": 6,
+      "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+    },
+    {
+      "source": "README.md",
+      "score": 3,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "approved_templates.md",
+      "score": 3,
+      "excerpt": "# Plantillas aprobadas\n- `INT_MOTOR_START_STOP`\n- `INT_DELAYED_START`\n- `INT_DELAYED_STOP`\n- `INT_TIMED_PULSE`\n- `INT_COUNTER_PULSES`\nEstas intenciones cuentan con generación determinística de lógica ST dentro del proyecto."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [
+      "alarm_output"
+    ],
+    "covered_by_intent": [
+      "alarm_output",
+      "high_level_alarm",
+      "low_level_alarm"
+    ],
+    "explicit_types": [],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+    "case_id": null,
+    "command_text": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+    "normalized_command": "después de activar start, generar una alarma si el sensor no cambia de estado durante cinco segundos consecutivos",
+    "parameters": {
+      "sensor_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "timer": "T_SensorTimeout",
+      "last_state_memory": "M_SensorLastState",
+      "supervision_memory": "M_SupervisionActive",
+      "trigger_input": "I_Start",
+      "timeout": "T#5s"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: Se supervisa I_Piece_Sensor como el sensor mencionado en el comando.",
+      "La supervisión comienza tras activar I_Start.",
+      "I_Emergency tiene prioridad sobre la supervisión y la salida de alarma."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm",
+      "T_SensorTimeout",
+      "M_SensorLastState",
+      "M_SupervisionActive"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "sensor_timeout_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "sensor_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_output": {
+        "source": "LLM"
+      },
+      "timer": {
+        "source": "LLM"
+      },
+      "last_state_memory": {
+        "source": "LLM"
+      },
+      "supervision_memory": {
+        "source": "LLM"
+      },
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "timeout": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SENSOR_TIMEOUT_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "sensor_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "timer": "T_SensorTimeout",
+        "last_state_memory": "M_SensorLastState",
+        "supervision_memory": "M_SupervisionActive",
+        "trigger_input": "I_Start",
+        "timeout": "T#5s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

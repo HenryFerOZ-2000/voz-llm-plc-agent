@@ -1,0 +1,435 @@
+{
+  "intent_id": "INT_AUTO_CYCLE",
+  "case_id": null,
+  "command_text": "Con Start inicia un ciclo automático de tres segundos. Al terminar, detiene la ejecución y marcha del ciclo como finalizado. Reset lo devuelve al estado inicial.",
+  "normalized_command": "con start inicia un ciclo automatico de tres segundos; al terminar detiene la ejecucion y marca el ciclo como finalizado; reset lo devuelve al estado inicial",
+  "parameters": {
+    "trigger_input": "I_Start",
+    "reset_input": "I_Reset",
+    "emergency_input": "I_Emergency",
+    "run_output": "Q_Motor_Enable",
+    "complete_output": "Q_Cycle_Complete",
+    "step_memory": "M_Step",
+    "timer": "T_Cycle",
+    "cycle_time": "T#3s"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "La salida Q_Motor_Enable representa la ejecución o marcha activa del ciclo.",
+    "Al finalizar T#3s, Q_Motor_Enable se desactiva y Q_Cycle_Complete permanece activa hasta recibir I_Reset.",
+    "I_Emergency tiene prioridad: detiene la ejecución del ciclo y bloquea un nuevo arranque mientras permanezca activa."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Reset",
+    "I_Emergency",
+    "Q_Motor_Enable",
+    "Q_Cycle_Complete",
+    "M_Step",
+    "T_Cycle"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [],
+  "operation_type": "automatic_timed_cycle",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "trigger_input": {
+      "source": "LLM"
+    },
+    "reset_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "run_output": {
+      "source": "LLM"
+    },
+    "complete_output": {
+      "source": "LLM"
+    },
+    "step_memory": {
+      "source": "LLM"
+    },
+    "timer": {
+      "source": "LLM"
+    },
+    "cycle_time": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_AUTO_CYCLE",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "trigger_input": "I_Start",
+      "reset_input": "I_Reset",
+      "emergency_input": "I_Emergency",
+      "run_output": "Q_Motor_Enable",
+      "complete_output": "Q_Cycle_Complete",
+      "step_memory": "M_Step",
+      "timer": "T_Cycle",
+      "cycle_time": "T#3s"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_AUTO_CYCLE",
+    "case_id": null,
+    "command_text": "Con Start inicia un ciclo automático de tres segundos. Al terminar, detiene la ejecución y marcha del ciclo como finalizado. Reset lo devuelve al estado inicial.",
+    "normalized_command": "con start inicia un ciclo auto de 3 segundos al terminar stop la ejecucion y start del ciclo como finalizado reset lo devuelve al estado inicial",
+    "parameters": {
+      "auto_input": "I_Mode_Auto",
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "reset_input": "I_Reset",
+      "emergency_input": "I_Emergency",
+      "step_memory": "M_Step",
+      "motor_output": "Q_Motor_Enable",
+      "complete_output": "Q_Cycle_Complete"
+    },
+    "confidence": 0.89,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se agrega I_Emergency por seguridad industrial obligatoria."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Mode_Auto",
+      "I_Reset",
+      "I_Start",
+      "I_Stop",
+      "M_Step",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {
+      "auto_input": {
+        "source": "RULES"
+      },
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "stop_input": {
+        "source": "RULES"
+      },
+      "reset_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "step_memory": {
+        "source": "RULES"
+      },
+      "motor_output": {
+        "source": "RULES"
+      },
+      "complete_output": {
+        "source": "DEFAULT",
+        "category": "EXTERNAL_FUNCTIONAL_RESOURCE",
+        "original_value": null,
+        "reason": "INT_AUTO_CYCLE exige 'complete_output' y el parser no lo dio: recurso unico del contrato del intent.",
+        "resolution": "IO_ALLOCATION",
+        "address": null,
+        "state": null
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "UNRESOLVED",
+      "intent_id": "INT_AUTO_CYCLE",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "auto_input": "I_Mode_Auto",
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "reset_input": "I_Reset",
+        "emergency_input": "I_Emergency",
+        "step_memory": "M_Step",
+        "motor_output": "Q_Motor_Enable"
+      },
+      "defaulted_keys": [
+        "complete_output"
+      ],
+      "internal_technical_defaults": {
+        "timer": "T_Cycle"
+      },
+      "functional_value_defaults": {
+        "cycle_time": "T#3s"
+      },
+      "errors": [
+        {
+          "code": "AMBIGUOUS_FUNCTIONAL_RESOURCE",
+          "key": "run_output",
+          "candidates": [
+            "Q_Motor_Enable"
+          ],
+          "detail": "run_output: el recurso por defecto Q_Motor_Enable ya cumple otro rol (motor_output); no se adivina."
+        }
+      ]
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_AUTO_CYCLE",
+    "case_id": null,
+    "command_text": "Con Start inicia un ciclo automático de tres segundos. Al terminar, detiene la ejecución y marcha del ciclo como finalizado. Reset lo devuelve al estado inicial.",
+    "normalized_command": "con start inicia un ciclo automatico de tres segundos; al terminar detiene la ejecucion y marca el ciclo como finalizado; reset lo devuelve al estado inicial",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "reset_input": "I_Reset",
+      "emergency_input": "I_Emergency",
+      "run_output": "Q_Motor_Enable",
+      "complete_output": "Q_Cycle_Complete",
+      "step_memory": "M_Step",
+      "timer": "T_Cycle",
+      "cycle_time": "T#3s"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "La salida Q_Motor_Enable representa la ejecución o marcha activa del ciclo.",
+      "Al finalizar T#3s, Q_Motor_Enable se desactiva y Q_Cycle_Complete permanece activa hasta recibir I_Reset.",
+      "I_Emergency tiene prioridad: detiene la ejecución del ciclo y bloquea un nuevo arranque mientras permanezca activa."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Reset",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "Q_Cycle_Complete",
+      "M_Step",
+      "T_Cycle"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "automatic_timed_cycle",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "reset_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "run_output": {
+        "source": "LLM"
+      },
+      "complete_output": {
+        "source": "LLM"
+      },
+      "step_memory": {
+        "source": "LLM"
+      },
+      "timer": {
+        "source": "LLM"
+      },
+      "cycle_time": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_AUTO_CYCLE",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "reset_input": "I_Reset",
+        "emergency_input": "I_Emergency",
+        "run_output": "Q_Motor_Enable",
+        "complete_output": "Q_Cycle_Complete",
+        "step_memory": "M_Step",
+        "timer": "T_Cycle",
+        "cycle_time": "T#3s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0f104774cd14f4dc006ae00b0a7ee887d29e3255efedb9e829",
+    "prompt_tokens": 19169,
+    "completion_tokens": 772,
+    "total_tokens": 19941,
+    "latency_ms": 7300.54,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "README.md",
+      "score": 21,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "iec61131_rules.md",
+      "score": 18,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 15,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 15,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "plc_safety_rules.md",
+      "score": 15,
+      "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "conditional_alarm_reset",
+      "emergency_priority",
+      "enable_pid",
+      "reset_behavior"
+    ],
+    "explicit_types": [],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_AUTO_CYCLE",
+    "case_id": null,
+    "command_text": "Con Start inicia un ciclo automático de tres segundos. Al terminar, detiene la ejecución y marcha del ciclo como finalizado. Reset lo devuelve al estado inicial.",
+    "normalized_command": "con start inicia un ciclo automatico de tres segundos; al terminar detiene la ejecucion y marca el ciclo como finalizado; reset lo devuelve al estado inicial",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "reset_input": "I_Reset",
+      "emergency_input": "I_Emergency",
+      "run_output": "Q_Motor_Enable",
+      "complete_output": "Q_Cycle_Complete",
+      "step_memory": "M_Step",
+      "timer": "T_Cycle",
+      "cycle_time": "T#3s"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "La salida Q_Motor_Enable representa la ejecución o marcha activa del ciclo.",
+      "Al finalizar T#3s, Q_Motor_Enable se desactiva y Q_Cycle_Complete permanece activa hasta recibir I_Reset.",
+      "I_Emergency tiene prioridad: detiene la ejecución del ciclo y bloquea un nuevo arranque mientras permanezca activa."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Reset",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "Q_Cycle_Complete",
+      "M_Step",
+      "T_Cycle"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "automatic_timed_cycle",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "reset_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "run_output": {
+        "source": "LLM"
+      },
+      "complete_output": {
+        "source": "LLM"
+      },
+      "step_memory": {
+        "source": "LLM"
+      },
+      "timer": {
+        "source": "LLM"
+      },
+      "cycle_time": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_AUTO_CYCLE",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "reset_input": "I_Reset",
+        "emergency_input": "I_Emergency",
+        "run_output": "Q_Motor_Enable",
+        "complete_output": "Q_Cycle_Complete",
+        "step_memory": "M_Step",
+        "timer": "T_Cycle",
+        "cycle_time": "T#3s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

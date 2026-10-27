@@ -1,0 +1,1633 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 7.5333000000000006,
+      "t_done_ms": 10.922600000000001,
+      "timestamp": "2026-10-26T21:25:47.6059039-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 315.6455,
+      "t_done_ms": 315.9257,
+      "timestamp": "2026-10-26T21:25:47.9109596-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 631.4447,
+      "t_done_ms": 631.8573,
+      "timestamp": "2026-10-26T21:25:48.2263030-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 947.5894000000001,
+      "t_done_ms": 948.0103,
+      "timestamp": "2026-10-26T21:25:48.5425301-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5449.6393,
+      "t_done_ms": 5450.0338,
+      "timestamp": "2026-10-26T21:25:53.0443923-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 5764.8637,
+      "t_done_ms": 5765.5154,
+      "timestamp": "2026-10-26T21:25:53.3597311-05:00",
+      "writes": [
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 6281.094700000001,
+      "t_done_ms": 6282.276800000001,
+      "timestamp": "2026-10-26T21:25:53.8771808-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 12.7896,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 64.6516,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 116.55080000000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 164.7946,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 214.4422,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 264.6741,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_on",
+      "phase": "precondition",
+      "t_ms": 315.54130000000004,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 316.00870000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 381.99920000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 432.01390000000004,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 482.4562,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 531.5261,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 580.8041000000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "pre_reset_off",
+      "phase": "precondition",
+      "t_ms": 630.3596,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 632.0500000000001,
+      "values": {
+        "I_Start": true,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 682.7907,
+      "values": {
+        "I_Start": true,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 747.4394000000001,
+      "values": {
+        "I_Start": true,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 798.0394,
+      "values": {
+        "I_Start": true,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 832.9045,
+      "values": {
+        "I_Start": true,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 895.5697,
+      "values": {
+        "I_Start": true,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s1_start",
+      "phase": "test",
+      "t_ms": 947.4767,
+      "values": {
+        "I_Start": true,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 948.3957,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 998.5881,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1048.8581000000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1113.9329,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1149.6573,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1215.0835,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1263.0434,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1313.0973000000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1364.9556,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1414.813,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1449.1563,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1512.7636,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1550.8252,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1614.5166000000002,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1664.3114,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1699.6068,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1763.1896000000002,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1801.5959,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1863.6748,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1911.0424,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1949.4688,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 1999.3909,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2049.7845,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2099.52,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2149.2445000000002,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2204.7962,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2249.3853,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2299.3956000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2362.4234,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2399.3061000000002,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2464.9855000000002,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2500.3741,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2549.3146,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2599.5015000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2649.308,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2715.2468000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2749.1336,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2798.8909000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2848.9117,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2914.9319,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2964.7419,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 2999.5558,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3064.2189000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3114.817,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3165.4483,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3199.6535000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3250.1847000000002,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3311.7598000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3350.7002,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3412.5117,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3449.1048,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3514.0127,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3564.9929,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3614.4179000000004,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3665.2497000000003,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3699.7232000000004,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": true,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3765.0962,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3813.1171000000004,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3859.9496000000004,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3914.4449,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 3949.0792,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4013.7927,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4065.1383,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4099.3205,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4148.9148000000005,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4199.3986,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4264.5657,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4299.2372000000005,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4364.7664,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4412.9164,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4464.8004,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4511.6129,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4549.169,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4599.4385,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4649.2325,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4707.2763,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4764.8446,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4814.662200000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4865.2973,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4899.2171,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 4965.1832,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5014.3846,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5049.3244,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5099.3395,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5161.0783,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5199.2846,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5264.9785,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5299.8104,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5364.9888,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5399.5905,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s2_run",
+      "phase": "test",
+      "t_ms": 5449.3391,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5450.2576,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": true
+      }
+    },
+    {
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5514.606900000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5565.0549,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5612.0685,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5664.0486,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5711.9159,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s3_reset",
+      "phase": "test",
+      "t_ms": 5764.744000000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": true,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 5765.7207,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 5819.702700000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 5880.9415,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 5930.838900000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 5981.2655,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 6032.1857,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 6081.0881,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 6131.4923,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 6180.852,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 6231.8669,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "s4_idle",
+      "phase": "test",
+      "t_ms": 6280.9691,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 6282.4278,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 6347.7934000000005,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 6395.8761,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 6447.830400000001,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 6485.0740000000005,
+      "values": {
+        "I_Start": false,
+        "I_Reset": false,
+        "Q_Motor_Enable": false,
+        "Q_Cycle_Complete": false
+      }
+    }
+  ]
+}

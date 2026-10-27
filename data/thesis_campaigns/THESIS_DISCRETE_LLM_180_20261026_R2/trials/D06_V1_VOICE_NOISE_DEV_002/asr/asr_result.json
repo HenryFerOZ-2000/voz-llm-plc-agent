@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "d31322ff352cedc4e4f8f5e5b0d91b137ec083eaed7249123513ad05b1f4ad43",
+  "transcript_raw": "Activo una alarma si se intenta arrancar sin que se cumpla la condición de seguridad.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1219,
+  "frozen_at": "2026-10-26T21:38:19"
+}

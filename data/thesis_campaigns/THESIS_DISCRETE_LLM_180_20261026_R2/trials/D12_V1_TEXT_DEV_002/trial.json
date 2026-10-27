@@ -1,0 +1,701 @@
+{
+  "schema_version": 1,
+  "trial_id": "D12_V1_TEXT_DEV_002",
+  "case_id": "D12",
+  "variant_id": "V1",
+  "input_mode": "TEXT",
+  "trial_number": 2,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "HIGH",
+  "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+  "created_at": "2026-10-26T20:02:16",
+  "semantic": {
+    "intent_id": "INT_MUTUAL_INTERLOCK",
+    "case_id": null,
+    "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+    "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+    "parameters": {
+      "request_a": "I_Contactor_A_Request",
+      "request_b": "I_Contactor_B_Request",
+      "emergency_input": "I_Emergency",
+      "contactor_a": "Q_Contactor_A",
+      "contactor_b": "Q_Contactor_B"
+    },
+    "confidence": 0.99,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se proponen órdenes independientes para cada contactor porque el mapa no contiene funciones equivalentes ya asignadas.",
+      "I_Emergency tiene prioridad absoluta y desactiva ambos contactores; al liberarse no debe producirse un autoarranque."
+    ],
+    "recognized_tags": [
+      "I_Contactor_A_Request",
+      "I_Contactor_B_Request",
+      "I_Emergency",
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "never_together",
+        "outputs": [
+          "Q_Contactor_A",
+          "Q_Contactor_B"
+        ]
+      },
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "mutual_interlock",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "request_a": {
+        "source": "LLM"
+      },
+      "request_b": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "contactor_a": {
+        "source": "LLM"
+      },
+      "contactor_b": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "request_a": "I_Contactor_A_Request",
+        "request_b": "I_Contactor_B_Request",
+        "emergency_input": "I_Emergency",
+        "contactor_a": "Q_Contactor_A",
+        "contactor_b": "Q_Contactor_B"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "case_id": null,
+      "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+      "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+      "parameters": {
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "emergency_input": "I_Emergency",
+        "contactor_a": "Q_Contactor_A",
+        "contactor_b": "Q_Contactor_B"
+      },
+      "confidence": 0.94,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Start",
+        "I_Stop",
+        "Q_Contactor_A",
+        "Q_Contactor_B"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "parameter_provenance": {
+        "trigger_input": {
+          "source": "RULES"
+        },
+        "stop_input": {
+          "source": "RULES"
+        },
+        "emergency_input": {
+          "source": "RULES"
+        },
+        "contactor_a": {
+          "source": "RULES"
+        },
+        "contactor_b": {
+          "source": "RULES"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_MUTUAL_INTERLOCK",
+        "origin": "RULES",
+        "interpreted_parameters": {
+          "trigger_input": "I_Start",
+          "stop_input": "I_Stop",
+          "emergency_input": "I_Emergency",
+          "contactor_a": "Q_Contactor_A",
+          "contactor_b": "Q_Contactor_B"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "case_id": null,
+      "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+      "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+      "parameters": {
+        "request_a": "I_Contactor_A_Request",
+        "request_b": "I_Contactor_B_Request",
+        "emergency_input": "I_Emergency",
+        "contactor_a": "Q_Contactor_A",
+        "contactor_b": "Q_Contactor_B"
+      },
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Se proponen órdenes independientes para cada contactor porque el mapa no contiene funciones equivalentes ya asignadas.",
+        "I_Emergency tiene prioridad absoluta y desactiva ambos contactores; al liberarse no debe producirse un autoarranque."
+      ],
+      "recognized_tags": [
+        "I_Contactor_A_Request",
+        "I_Contactor_B_Request",
+        "I_Emergency",
+        "Q_Contactor_A",
+        "Q_Contactor_B"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "never_together",
+          "outputs": [
+            "Q_Contactor_A",
+            "Q_Contactor_B"
+          ]
+        },
+        {
+          "type": "emergency_priority"
+        }
+      ],
+      "operation_type": "mutual_interlock",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "request_a": {
+          "source": "LLM"
+        },
+        "request_b": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "contactor_a": {
+          "source": "LLM"
+        },
+        "contactor_b": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_MUTUAL_INTERLOCK",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "request_a": "I_Contactor_A_Request",
+          "request_b": "I_Contactor_B_Request",
+          "emergency_input": "I_Emergency",
+          "contactor_a": "Q_Contactor_A",
+          "contactor_b": "Q_Contactor_B"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_0bf4b3779320b9d6006adff81a1e3887d299d722af0de4b40d",
+      "prompt_tokens": 19125,
+      "completion_tokens": 372,
+      "total_tokens": 19497,
+      "latency_ms": 3853.9,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "retrieved_context": [
+      {
+        "source": "README.md",
+        "score": 12,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "iec61131_rules.md",
+        "score": 12,
+        "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 9,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      },
+      {
+        "source": "openplc_conventions.md",
+        "score": 9,
+        "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+      },
+      {
+        "source": "structured_text_rules.md",
+        "score": 9,
+        "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [],
+      "covered_by_intent": [
+        "emergency_priority",
+        "enable_pid"
+      ],
+      "explicit_types": [
+        "emergency_priority",
+        "interlock",
+        "never_together"
+      ],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "case_id": null,
+      "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+      "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+      "parameters": {
+        "request_a": "I_Contactor_A_Request",
+        "request_b": "I_Contactor_B_Request",
+        "emergency_input": "I_Emergency",
+        "contactor_a": "Q_Contactor_A",
+        "contactor_b": "Q_Contactor_B"
+      },
+      "confidence": 0.99,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Se proponen órdenes independientes para cada contactor porque el mapa no contiene funciones equivalentes ya asignadas.",
+        "I_Emergency tiene prioridad absoluta y desactiva ambos contactores; al liberarse no debe producirse un autoarranque."
+      ],
+      "recognized_tags": [
+        "I_Contactor_A_Request",
+        "I_Contactor_B_Request",
+        "I_Emergency",
+        "Q_Contactor_A",
+        "Q_Contactor_B"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "never_together",
+          "outputs": [
+            "Q_Contactor_A",
+            "Q_Contactor_B"
+          ]
+        },
+        {
+          "type": "emergency_priority"
+        }
+      ],
+      "operation_type": "mutual_interlock",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "request_a": {
+          "source": "LLM"
+        },
+        "request_b": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "contactor_a": {
+          "source": "LLM"
+        },
+        "contactor_b": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_MUTUAL_INTERLOCK",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "request_a": "I_Contactor_A_Request",
+          "request_b": "I_Contactor_B_Request",
+          "emergency_input": "I_Emergency",
+          "contactor_a": "Q_Contactor_A",
+          "contactor_b": "Q_Contactor_B"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": null,
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 3,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D12\\V1\\D12_V1_TEXT_DEV_002\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D12\\V1\\D12_V1_TEXT_DEV_002\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D12\\V1\\D12_V1_TEXT_DEV_002\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T20:02:16",
+    "resolved_at": "2026-10-26T20:02:20",
+    "bound_channels": 5,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+  "generated_code_id": "2026-10-26_20-02-20_NOCASE_INT_MUTUAL_INTERLOCK",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": null,
+    "asr_transcript": null,
+    "wer": null,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "SUCCESS",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "PASS",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "8849681b2c2b34bd15e2a8c52e5684f15fe444710b5cf23ad1044b92c4d61adf",
+  "variant_hash": "e82008e6ef6f90d2bf068d7608f35a9f5a75433a0e15a7232183d578f72d3c21",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "PASS",
+    "verdict_reason": "ALL_CHECKS_PASSED",
+    "roles": {
+      "REQUEST_A": "I_Contactor_A_Request",
+      "REQUEST_B": "I_Contactor_B_Request",
+      "CONTACTOR_A": "Q_Contactor_A",
+      "CONTACTOR_B": "Q_Contactor_B"
+    },
+    "role_issues": [],
+    "preconditions_success": true,
+    "cleanup_success": true,
+    "duration_ms": 4718,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D12\\V1\\D12_V1_TEXT_DEV_002\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D12",
+    "oracle_version": 3,
+    "oracle_hash": "71cb20e92b7d8e613ec364bc5ac5b333d688b6b8f6b95d9466175ccaf603d6a3",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 6,
+    "total_checks": 6,
+    "pass_rate": 1.0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "critical_violations": 0,
+    "samples_checked": 60
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": true,
+    "safety_success": true,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": true
+  },
+  "timing": {
+    "generation_ms": 4348,
+    "compile_ms": 41607,
+    "download_ms": null,
+    "functional_test_ms": 4718,
+    "end_to_end_ms": 52427,
+    "semantic_ms": 3916,
+    "runtime_ms": 858,
+    "oracle_ms": 4718,
+    "total_ms": 52427,
+    "generation_total_ms": 4348,
+    "evaluation_ms": 48079
+  },
+  "errors": [],
+  "final_status": "PASS",
+  "completed_at": "2026-10-26T20:03:09",
+  "canonical_command": "Controla dos contactores con órdenes independientes e impide que ambos estén activos al mismo tiempo.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+  "reference_text_hash": "e82008e6ef6f90d2bf068d7608f35a9f5a75433a0e15a7232183d578f72d3c21",
+  "speaker_id": null,
+  "repeat_of_trial_id": "D12_V1_TEXT_003",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "input_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+  "effective_input_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+  "effective_input_text_hash": "e82008e6ef6f90d2bf068d7608f35a9f5a75433a0e15a7232183d578f72d3c21",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 2,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Contactor_A_Request",
+      "I_Contactor_B_Request",
+      "I_Emergency",
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T20:02:21",
+    "generated_code_id": "2026-10-26_20-02-20_NOCASE_INT_MUTUAL_INTERLOCK"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D12\\V1\\D12_V1_TEXT_DEV_002\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0492",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0492",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T20:02:21",
+        "completed_at": "2026-10-26T20:03:09",
+        "retry_reason": null,
+        "final_status": "PASS",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "PASS",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 46076,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22422,
+          "commit_headroom_mb": 46761
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0492",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0492",
+          "timestamp": "2026-10-26T20:03:09",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 1
+        }
+      }
+    ],
+    "final_verdict": "PASS",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T20:02:21",
+    "tia_workspace_id": "T0492",
+    "completed_at": "2026-10-26T20:03:09"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D12\\V1\\D12_V1_TEXT_DEV_002\\evaluation\\attempt_001\\tia\\D12_V1_TEXT_DEV_002.zap18",
+    "zap18_hash": "ffd50bdcad77127fb2017e0a72bf50a6e58ce7dd0c36292b3229884f9d2511e6",
+    "tia_workspace_id": "T0492",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": true,
+    "intent_actual": "INT_MUTUAL_INTERLOCK",
+    "intent_expected": [
+      "INT_MUTUAL_INTERLOCK"
+    ],
+    "intent_match": true,
+    "failed_checks": []
+  },
+  "system_failure": false
+}

@@ -1,0 +1,223 @@
+{
+  "status": "PASSED",
+  "campaign": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "selected_cells": 180,
+  "same_map_all_cells": true,
+  "map_inputs": 8,
+  "map_outputs": 8,
+  "routes": {
+    "llm": 180
+  },
+  "verified_program_snapshots": 176,
+  "protected_source_and_audio_files": 287,
+  "additional_attempt_records": 1,
+  "excluded_unplanned_retries": 1,
+  "technical_attempts_recorded": 0,
+  "classification_amendment": "CLASSIFICATION_CORRECTION_20261026_01",
+  "modes": {
+    "TEXT": {
+      "n": 60,
+      "PASS": 55,
+      "FAIL": 3,
+      "REVIEW": 2,
+      "compilation_PASS": 58,
+      "stage_counts": {
+        "semantic": {
+          "PASS": 59,
+          "FAIL": 1
+        },
+        "semantic_benchmark": {
+          "PASS": 56,
+          "FAIL": 2,
+          "-": 2
+        },
+        "io_allocation": {
+          "PASS": 59,
+          "FAIL": 1
+        },
+        "ir": {
+          "PASS": 59,
+          "-": 1
+        },
+        "compilation": {
+          "PASS": 58,
+          "-": 1,
+          "FAIL": 1
+        },
+        "tia_archive": {
+          "PASS": 59,
+          "-": 1
+        },
+        "download": {
+          "PASS": 58,
+          "-": 1,
+          "NOT_RUN": 1
+        },
+        "runtime": {
+          "PASS": 58,
+          "-": 1,
+          "NOT_RUN": 1
+        },
+        "functional": {
+          "PASS": 56,
+          "FAIL": 1,
+          "-": 1,
+          "REVIEW": 1,
+          "NOT_RUN": 1
+        },
+        "safety": {
+          "PASS": 57,
+          "-": 1,
+          "NOT_RUN": 2
+        },
+        "final_verdict": {
+          "PASS": 55,
+          "REVIEW": 2,
+          "FAIL": 3
+        }
+      },
+      "wer": {
+        "S": 0,
+        "D": 0,
+        "I": 0,
+        "N": 0,
+        "WER": null
+      },
+      "conformity_pct": 91.66666666666667
+    },
+    "VOICE_CLEAN": {
+      "n": 60,
+      "PASS": 55,
+      "FAIL": 1,
+      "REVIEW": 4,
+      "compilation_PASS": 59,
+      "stage_counts": {
+        "semantic": {
+          "PASS": 59,
+          "FAIL": 1
+        },
+        "semantic_benchmark": {
+          "PASS": 55,
+          "-": 1,
+          "FAIL": 4
+        },
+        "io_allocation": {
+          "PASS": 59,
+          "-": 1
+        },
+        "ir": {
+          "PASS": 59,
+          "-": 1
+        },
+        "compilation": {
+          "PASS": 59,
+          "-": 1
+        },
+        "tia_archive": {
+          "PASS": 59,
+          "-": 1
+        },
+        "download": {
+          "PASS": 59,
+          "-": 1
+        },
+        "runtime": {
+          "PASS": 59,
+          "-": 1
+        },
+        "functional": {
+          "PASS": 55,
+          "-": 1,
+          "REVIEW": 4
+        },
+        "safety": {
+          "PASS": 55,
+          "-": 1,
+          "NOT_RUN": 4
+        },
+        "final_verdict": {
+          "PASS": 55,
+          "FAIL": 1,
+          "REVIEW": 4
+        }
+      },
+      "wer": {
+        "S": 43,
+        "D": 4,
+        "I": 5,
+        "N": 1085,
+        "WER": 0.047926267281105994
+      },
+      "conformity_pct": 91.66666666666667
+    },
+    "VOICE_NOISE": {
+      "n": 60,
+      "PASS": 55,
+      "FAIL": 3,
+      "REVIEW": 2,
+      "compilation_PASS": 57,
+      "stage_counts": {
+        "semantic": {
+          "PASS": 58,
+          "FAIL": 2
+        },
+        "semantic_benchmark": {
+          "PASS": 55,
+          "-": 3,
+          "FAIL": 2
+        },
+        "io_allocation": {
+          "PASS": 58,
+          "-": 2
+        },
+        "ir": {
+          "PASS": 58,
+          "-": 2
+        },
+        "compilation": {
+          "PASS": 57,
+          "-": 2,
+          "FAIL": 1
+        },
+        "tia_archive": {
+          "PASS": 58,
+          "-": 2
+        },
+        "download": {
+          "PASS": 57,
+          "-": 2,
+          "NOT_RUN": 1
+        },
+        "runtime": {
+          "PASS": 57,
+          "-": 2,
+          "NOT_RUN": 1
+        },
+        "functional": {
+          "PASS": 55,
+          "-": 2,
+          "REVIEW": 2,
+          "NOT_RUN": 1
+        },
+        "safety": {
+          "PASS": 55,
+          "-": 2,
+          "NOT_RUN": 3
+        },
+        "final_verdict": {
+          "PASS": 55,
+          "FAIL": 3,
+          "REVIEW": 2
+        }
+      },
+      "wer": {
+        "S": 63,
+        "D": 0,
+        "I": 12,
+        "N": 1085,
+        "WER": 0.06912442396313365
+      },
+      "conformity_pct": 91.66666666666667
+    }
+  }
+}

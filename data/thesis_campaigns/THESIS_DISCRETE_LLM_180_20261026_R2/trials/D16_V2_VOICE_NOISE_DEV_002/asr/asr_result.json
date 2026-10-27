@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "beaad5cc309186b01d75869736ce067d8d0324dea1b92842ffb145b176097177",
+  "transcript_raw": "Quiero que al dar Start se encienda la salida principal y que tres segundos más tarde se encienda el auxiliar.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1197,
+  "frozen_at": "2026-10-26T22:07:11"
+}

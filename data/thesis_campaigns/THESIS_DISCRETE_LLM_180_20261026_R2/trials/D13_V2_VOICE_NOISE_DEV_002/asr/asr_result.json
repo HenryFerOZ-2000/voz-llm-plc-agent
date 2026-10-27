@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "61d242b9a9d5a0794666468f74bd3cc5cf43b28d5961f4f5e6bfc47c16359a41",
+  "transcript_raw": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya está funcionando.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2323,
+  "frozen_at": "2026-10-26T21:58:58"
+}

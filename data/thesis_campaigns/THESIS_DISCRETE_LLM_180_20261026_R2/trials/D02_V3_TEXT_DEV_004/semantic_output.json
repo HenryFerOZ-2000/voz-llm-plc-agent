@@ -1,0 +1,301 @@
+{
+  "intent_id": "INT_DIRECT_OUTPUT",
+  "case_id": null,
+  "command_text": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive.",
+  "normalized_command": "encender la lámpara mientras la entrada digital esté activa y apagarla cuando se desactive",
+  "parameters": {
+    "trigger_input": "I_Lamp_Control",
+    "emergency_input": "I_Emergency",
+    "output": "Q_Lamp"
+  },
+  "confidence": 0.95,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "Se propone I_Lamp_Control como nueva entrada digital de control, porque ninguna entrada existente representa explícitamente esta función.",
+    "Se propone Q_Lamp como nueva salida para la lámpara, porque ninguna salida existente representa explícitamente esta función.",
+    "I_Emergency tiene prioridad: con emergencia activa la lámpara queda apagada."
+  ],
+  "recognized_tags": [
+    "I_Lamp_Control",
+    "I_Emergency",
+    "Q_Lamp"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "force_off",
+      "condition": "I_Emergency",
+      "outputs": [
+        "Q_Lamp"
+      ]
+    }
+  ],
+  "operation_type": "direct_digital_output",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "trigger_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "output": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_DIRECT_OUTPUT",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "trigger_input": "I_Lamp_Control",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Lamp"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive.",
+    "normalized_command": "haz que la salida se encienda con la entrada digital enciende y se apague cuando se desactive",
+    "parameters": {},
+    "confidence": 0.0,
+    "ambiguities": [],
+    "requires_clarification": true,
+    "clarification_question": "Aclare la accion industrial requerida, las variables involucradas y el tiempo si corresponde.",
+    "assumptions": [],
+    "recognized_tags": [
+      "Q_Aux_Output"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {},
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "RULES",
+      "interpreted_parameters": {},
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_DIRECT_OUTPUT",
+    "case_id": null,
+    "command_text": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive.",
+    "normalized_command": "encender la lámpara mientras la entrada digital esté activa y apagarla cuando se desactive",
+    "parameters": {
+      "trigger_input": "I_Lamp_Control",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Lamp"
+    },
+    "confidence": 0.95,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se propone I_Lamp_Control como nueva entrada digital de control, porque ninguna entrada existente representa explícitamente esta función.",
+      "Se propone Q_Lamp como nueva salida para la lámpara, porque ninguna salida existente representa explícitamente esta función.",
+      "I_Emergency tiene prioridad: con emergencia activa la lámpara queda apagada."
+    ],
+    "recognized_tags": [
+      "I_Lamp_Control",
+      "I_Emergency",
+      "Q_Lamp"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Lamp"
+        ]
+      }
+    ],
+    "operation_type": "direct_digital_output",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_DIRECT_OUTPUT",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Lamp_Control",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Lamp"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_00a057604e658f8e006adff1b32d5c87d2ad387e8786f54a85",
+    "prompt_tokens": 19123,
+    "completion_tokens": 324,
+    "total_tokens": 19447,
+    "latency_ms": 3522.21,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "iec61131_rules.md",
+      "score": 15,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "README.md",
+      "score": 6,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "approved_templates.md",
+      "score": 6,
+      "excerpt": "# Plantillas aprobadas\n- `INT_MOTOR_START_STOP`\n- `INT_DELAYED_START`\n- `INT_DELAYED_STOP`\n- `INT_TIMED_PULSE`\n- `INT_COUNTER_PULSES`\nEstas intenciones cuentan con generación determinística de lógica ST dentro del proyecto."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "emergency_priority",
+      "enable_pid"
+    ],
+    "explicit_types": [
+      "force_off"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_DIRECT_OUTPUT",
+    "case_id": null,
+    "command_text": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive.",
+    "normalized_command": "encender la lámpara mientras la entrada digital esté activa y apagarla cuando se desactive",
+    "parameters": {
+      "trigger_input": "I_Lamp_Control",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Lamp"
+    },
+    "confidence": 0.95,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se propone I_Lamp_Control como nueva entrada digital de control, porque ninguna entrada existente representa explícitamente esta función.",
+      "Se propone Q_Lamp como nueva salida para la lámpara, porque ninguna salida existente representa explícitamente esta función.",
+      "I_Emergency tiene prioridad: con emergencia activa la lámpara queda apagada."
+    ],
+    "recognized_tags": [
+      "I_Lamp_Control",
+      "I_Emergency",
+      "Q_Lamp"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Lamp"
+        ]
+      }
+    ],
+    "operation_type": "direct_digital_output",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_DIRECT_OUTPUT",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Lamp_Control",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Lamp"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

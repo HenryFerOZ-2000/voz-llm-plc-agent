@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "857e11dd2235f4c8429f8553a6a642188c3d0284d892a804efaac6a1ff2a34cd",
+  "transcript_raw": "Arranca el motor con el start únicamente si no hay emergencia activa. Si se activa, apágalo y bloquea el arranque mientras sigue activo.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1764,
+  "frozen_at": "2026-10-26T21:36:25"
+}

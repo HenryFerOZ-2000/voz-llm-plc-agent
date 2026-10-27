@@ -1,0 +1,381 @@
+{
+  "intent_id": "INT_UNKNOWN",
+  "case_id": null,
+  "command_text": "Al estar desactivado, si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma.",
+  "normalized_command": "si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma cuando esté desactivado",
+  "parameters": {
+    "sensor_input": "I_Piece_Sensor",
+    "emergency_input": "I_Emergency",
+    "alarm_output": "Q_Alarm",
+    "timeout": "T#5s"
+  },
+  "confidence": 0.58,
+  "ambiguities": [
+    "No está claro si «al estar desactivado» se refiere al sensor o a la supervisión. Esto determina si la alarma debe activarse únicamente cuando el sensor permanezca en FALSE durante T#5s, o ante cualquier estado del sensor que no cambie durante T#5s."
+  ],
+  "requires_clarification": true,
+  "clarification_question": "¿La alarma debe activarse solo si el sensor permanece desactivado (FALSE) durante cinco segundos, o si permanece sin cambiar durante cinco segundos tanto activado como desactivado?",
+  "assumptions": [
+    "Se identifica I_Piece_Sensor como el sensor mencionado.",
+    "Se identifica Q_Alarm como la salida de alarma solicitada.",
+    "I_Emergency debe considerarse en la supervisión de seguridad."
+  ],
+  "recognized_tags": [
+    "I_Piece_Sensor",
+    "I_Emergency",
+    "Q_Alarm"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "alarm_output",
+      "target": "Q_Alarm"
+    }
+  ],
+  "operation_type": "sensor_timeout_alarm",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "sensor_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "alarm_output": {
+      "source": "LLM"
+    },
+    "timeout": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "NOT_APPLICABLE",
+    "intent_id": "INT_UNKNOWN",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "sensor_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "timeout": "T#5s"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_DIRECT_OUTPUT",
+    "case_id": null,
+    "command_text": "Al estar desactivado, si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma.",
+    "normalized_command": "al estar desactivado si el sensor permanece sin cambios durante 5 segundos seguidos enciende la alarma",
+    "parameters": {
+      "trigger_input": "I_Sensor1",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Aux_Output"
+    },
+    "confidence": 0.82,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se usa Q_Aux_Output como salida generica autorizada."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Sensor1",
+      "Q_Alarm",
+      "Q_Aux_Output"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "alarm_output"
+      }
+    ],
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "output": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_DIRECT_OUTPUT",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "trigger_input": "I_Sensor1",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Aux_Output"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "Al estar desactivado, si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma.",
+    "normalized_command": "si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma cuando esté desactivado",
+    "parameters": {
+      "sensor_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "timeout": "T#5s"
+    },
+    "confidence": 0.58,
+    "ambiguities": [
+      "No está claro si «al estar desactivado» se refiere al sensor o a la supervisión. Esto determina si la alarma debe activarse únicamente cuando el sensor permanezca en FALSE durante T#5s, o ante cualquier estado del sensor que no cambie durante T#5s."
+    ],
+    "requires_clarification": true,
+    "clarification_question": "¿La alarma debe activarse solo si el sensor permanece desactivado (FALSE) durante cinco segundos, o si permanece sin cambiar durante cinco segundos tanto activado como desactivado?",
+    "assumptions": [
+      "Se identifica I_Piece_Sensor como el sensor mencionado.",
+      "Se identifica Q_Alarm como la salida de alarma solicitada.",
+      "I_Emergency debe considerarse en la supervisión de seguridad."
+    ],
+    "recognized_tags": [
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "alarm_output",
+        "target": "Q_Alarm"
+      }
+    ],
+    "operation_type": "sensor_timeout_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "sensor_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_output": {
+        "source": "LLM"
+      },
+      "timeout": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "sensor_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "timeout": "T#5s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_06c61c6058cc212a006ae0166b241487d2bccbcd91a260eaef",
+    "prompt_tokens": 19201,
+    "completion_tokens": 2987,
+    "total_tokens": 22188,
+    "latency_ms": 30102.42,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": false,
+    "errors": [
+      "La intencion no tiene plantilla implementada: INT_UNKNOWN"
+    ],
+    "warnings": [
+      "La intencion es INT_UNKNOWN."
+    ],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": true,
+    "clarification_question": "¿La alarma debe activarse solo si el sensor permanece desactivado (FALSE) durante cinco segundos, o si permanece sin cambiar durante cinco segundos tanto activado como desactivado?",
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "README.md",
+      "score": 6,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 6,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "iec61131_rules.md",
+      "score": 6,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "timer_counter_examples.md",
+      "score": 6,
+      "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 3,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [
+      "alarm_output"
+    ],
+    "covered_by_intent": [],
+    "explicit_types": [
+      "alarm_output"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "Al estar desactivado, si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma.",
+    "normalized_command": "si el sensor permanece sin cambios durante cinco segundos seguidos mientras está desactivado, activa la alarma",
+    "parameters": {},
+    "confidence": 0.56,
+    "ambiguities": [
+      "No se identifica qué señal, equipo o condición debe estar desactivada para habilitar la supervisión del sensor."
+    ],
+    "requires_clarification": true,
+    "clarification_question": "¿Qué señal o equipo debe estar desactivado para que se supervise que el sensor no cambie durante 5 segundos?",
+    "assumptions": [
+      "La alarma requerida corresponde a Q_Alarm.",
+      "I_Emergency debe conservar prioridad sobre la activación de la alarma."
+    ],
+    "recognized_tags": [
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "sensor_timeout_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {},
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "LLM",
+      "interpreted_parameters": {},
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "Al estar desactivado, si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma.",
+    "normalized_command": "si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma cuando esté desactivado",
+    "parameters": {
+      "sensor_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "alarm_output": "Q_Alarm",
+      "timeout": "T#5s"
+    },
+    "confidence": 0.58,
+    "ambiguities": [
+      "No está claro si «al estar desactivado» se refiere al sensor o a la supervisión. Esto determina si la alarma debe activarse únicamente cuando el sensor permanezca en FALSE durante T#5s, o ante cualquier estado del sensor que no cambie durante T#5s."
+    ],
+    "requires_clarification": true,
+    "clarification_question": "¿La alarma debe activarse solo si el sensor permanece desactivado (FALSE) durante cinco segundos, o si permanece sin cambiar durante cinco segundos tanto activado como desactivado?",
+    "assumptions": [
+      "Se identifica I_Piece_Sensor como el sensor mencionado.",
+      "Se identifica Q_Alarm como la salida de alarma solicitada.",
+      "I_Emergency debe considerarse en la supervisión de seguridad."
+    ],
+    "recognized_tags": [
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "alarm_output",
+        "target": "Q_Alarm"
+      }
+    ],
+    "operation_type": "sensor_timeout_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "sensor_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "alarm_output": {
+        "source": "LLM"
+      },
+      "timeout": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "sensor_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "alarm_output": "Q_Alarm",
+        "timeout": "T#5s"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "reason_for_retry": "semantic_coverage_incomplete: alarm_output",
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

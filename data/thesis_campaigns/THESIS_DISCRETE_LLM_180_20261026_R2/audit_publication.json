@@ -1,0 +1,23 @@
+{
+  "scanner": "Gitleaks 8.30.1, default rules, full redaction",
+  "audited_commit": "cd1bb186faf7157a452a6f17c2b2c08e6aa696e7",
+  "history_commits": 142,
+  "history_unique_blobs": 1703,
+  "tracked_snapshot_files": 686,
+  "gitleaks_detections": 0,
+  "historical_env_files": 0,
+  "confirmed_secrets": 0,
+  "additional_pattern_triage": [
+    {
+      "file": "scripts/check_environment.py",
+      "commit": "cd1bb186faf7157a452a6f17c2b2c08e6aa696e7",
+      "reason": "Comprobacion de presencia de una variable de entorno; el patron literal no es una credencial."
+    },
+    {
+      "file": "tests/test_evaluation_persistence.py",
+      "commit": "cd1bb186faf7157a452a6f17c2b2c08e6aa696e7",
+      "reason": "Marcadores sinteticos para comprobar que los errores ocultan credenciales; utilizados con monkeypatch y aserciones negativas."
+    }
+  ],
+  "limitations": "Pattern-based local audit; not a guarantee that every possible secret is detectable. No credential was tested against a service."
+}

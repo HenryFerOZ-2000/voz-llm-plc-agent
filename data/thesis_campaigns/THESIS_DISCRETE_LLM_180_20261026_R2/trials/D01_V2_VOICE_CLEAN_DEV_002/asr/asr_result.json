@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "fa484249fbaa1abf2ca6f0f263105a3f1a4237b5055cb726e194587d42fc85e7",
+  "transcript_raw": "Cuando se presiona el pulsador, quiero que la salida se encienda durante cinco segundos.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1098,
+  "frozen_at": "2026-10-26T20:33:29"
+}

@@ -1,0 +1,403 @@
+{
+  "intent_id": "INT_SPEED_SELECTION",
+  "case_id": null,
+  "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que sólo quede activa la que elija.",
+  "normalized_command": "seleccionar velocidad baja, media o alta mediante tres entradas, con una única salida de velocidad activa",
+  "parameters": {
+    "speed_low_input": "I_Speed_Low",
+    "speed_medium_input": "I_Speed_Medium",
+    "speed_high_input": "I_Speed_High",
+    "emergency_input": "I_Emergency",
+    "speed_low_output": "Q_Speed_Low",
+    "speed_medium_output": "Q_Speed_Medium",
+    "speed_high_output": "Q_Speed_High"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "La emergencia I_Emergency tiene prioridad y desactiva las tres salidas de selección de velocidad.",
+    "Si se activan simultáneamente dos o tres entradas de velocidad, se mantendrá la exclusión mutua y no quedarán activas dos salidas de velocidad a la vez."
+  ],
+  "recognized_tags": [
+    "I_Speed_Low",
+    "I_Speed_Medium",
+    "I_Speed_High",
+    "I_Emergency",
+    "Q_Speed_Low",
+    "Q_Speed_Medium",
+    "Q_Speed_High"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "never_together",
+      "outputs": [
+        "Q_Speed_Low",
+        "Q_Speed_Medium",
+        "Q_Speed_High"
+      ]
+    },
+    {
+      "type": "force_off",
+      "condition": "I_Emergency",
+      "outputs": [
+        "Q_Speed_Low",
+        "Q_Speed_Medium",
+        "Q_Speed_High"
+      ]
+    }
+  ],
+  "operation_type": "speed_selection",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "speed_low_input": {
+      "source": "LLM"
+    },
+    "speed_medium_input": {
+      "source": "LLM"
+    },
+    "speed_high_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "speed_low_output": {
+      "source": "LLM"
+    },
+    "speed_medium_output": {
+      "source": "LLM"
+    },
+    "speed_high_output": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_SPEED_SELECTION",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "speed_low_input": "I_Speed_Low",
+      "speed_medium_input": "I_Speed_Medium",
+      "speed_high_input": "I_Speed_High",
+      "emergency_input": "I_Emergency",
+      "speed_low_output": "Q_Speed_Low",
+      "speed_medium_output": "Q_Speed_Medium",
+      "speed_high_output": "Q_Speed_High"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que sólo quede activa la que elija.",
+    "normalized_command": "quiero elegir entre velocidad baja media y alta con tres entradas y que solo quede enciende la que elija",
+    "parameters": {},
+    "confidence": 0.0,
+    "ambiguities": [
+      "No se reconocieron variables o senales autorizadas en el comando.",
+      "No se reconoce el elemento industrial objetivo."
+    ],
+    "requires_clarification": true,
+    "clarification_question": "Aclare la accion industrial requerida, las variables involucradas y el tiempo si corresponde.",
+    "assumptions": [],
+    "recognized_tags": [],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {},
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "RULES",
+      "interpreted_parameters": {},
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_SPEED_SELECTION",
+    "case_id": null,
+    "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que sólo quede activa la que elija.",
+    "normalized_command": "seleccionar velocidad baja, media o alta mediante tres entradas, con una única salida de velocidad activa",
+    "parameters": {
+      "speed_low_input": "I_Speed_Low",
+      "speed_medium_input": "I_Speed_Medium",
+      "speed_high_input": "I_Speed_High",
+      "emergency_input": "I_Emergency",
+      "speed_low_output": "Q_Speed_Low",
+      "speed_medium_output": "Q_Speed_Medium",
+      "speed_high_output": "Q_Speed_High"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "La emergencia I_Emergency tiene prioridad y desactiva las tres salidas de selección de velocidad.",
+      "Si se activan simultáneamente dos o tres entradas de velocidad, se mantendrá la exclusión mutua y no quedarán activas dos salidas de velocidad a la vez."
+    ],
+    "recognized_tags": [
+      "I_Speed_Low",
+      "I_Speed_Medium",
+      "I_Speed_High",
+      "I_Emergency",
+      "Q_Speed_Low",
+      "Q_Speed_Medium",
+      "Q_Speed_High"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "never_together",
+        "outputs": [
+          "Q_Speed_Low",
+          "Q_Speed_Medium",
+          "Q_Speed_High"
+        ]
+      },
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Speed_Low",
+          "Q_Speed_Medium",
+          "Q_Speed_High"
+        ]
+      }
+    ],
+    "operation_type": "speed_selection",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "speed_low_input": {
+        "source": "LLM"
+      },
+      "speed_medium_input": {
+        "source": "LLM"
+      },
+      "speed_high_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "speed_low_output": {
+        "source": "LLM"
+      },
+      "speed_medium_output": {
+        "source": "LLM"
+      },
+      "speed_high_output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SPEED_SELECTION",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_07ef648756a3d1f6006ae01408fa4487d29e4e0a7379558df2",
+    "prompt_tokens": 19137,
+    "completion_tokens": 472,
+    "total_tokens": 19609,
+    "latency_ms": 3665.24,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "iec61131_rules.md",
+      "score": 9,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "README.md",
+      "score": 6,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 6,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "structured_text_rules.md",
+      "score": 6,
+      "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "emergency_priority",
+      "enable_pid"
+    ],
+    "explicit_types": [
+      "force_off",
+      "interlock",
+      "never_together"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_SPEED_SELECTION",
+    "case_id": null,
+    "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que sólo quede activa la que elija.",
+    "normalized_command": "seleccionar velocidad baja, media o alta mediante tres entradas, con una única salida de velocidad activa",
+    "parameters": {
+      "speed_low_input": "I_Speed_Low",
+      "speed_medium_input": "I_Speed_Medium",
+      "speed_high_input": "I_Speed_High",
+      "emergency_input": "I_Emergency",
+      "speed_low_output": "Q_Speed_Low",
+      "speed_medium_output": "Q_Speed_Medium",
+      "speed_high_output": "Q_Speed_High"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "La emergencia I_Emergency tiene prioridad y desactiva las tres salidas de selección de velocidad.",
+      "Si se activan simultáneamente dos o tres entradas de velocidad, se mantendrá la exclusión mutua y no quedarán activas dos salidas de velocidad a la vez."
+    ],
+    "recognized_tags": [
+      "I_Speed_Low",
+      "I_Speed_Medium",
+      "I_Speed_High",
+      "I_Emergency",
+      "Q_Speed_Low",
+      "Q_Speed_Medium",
+      "Q_Speed_High"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "never_together",
+        "outputs": [
+          "Q_Speed_Low",
+          "Q_Speed_Medium",
+          "Q_Speed_High"
+        ]
+      },
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Speed_Low",
+          "Q_Speed_Medium",
+          "Q_Speed_High"
+        ]
+      }
+    ],
+    "operation_type": "speed_selection",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "speed_low_input": {
+        "source": "LLM"
+      },
+      "speed_medium_input": {
+        "source": "LLM"
+      },
+      "speed_high_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "speed_low_output": {
+        "source": "LLM"
+      },
+      "speed_medium_output": {
+        "source": "LLM"
+      },
+      "speed_high_output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SPEED_SELECTION",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

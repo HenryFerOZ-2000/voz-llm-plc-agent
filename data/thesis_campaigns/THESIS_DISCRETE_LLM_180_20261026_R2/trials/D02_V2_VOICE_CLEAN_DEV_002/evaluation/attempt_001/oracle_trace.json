@@ -1,0 +1,537 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 5.0107,
+      "t_done_ms": 8.6167,
+      "timestamp": "2026-10-26T20:36:46.7612499-05:00",
+      "writes": [
+        {
+          "name": "I_Lamp_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 626.0938,
+      "t_done_ms": 627.0701,
+      "timestamp": "2026-10-26T20:36:47.3794363-05:00",
+      "writes": [
+        {
+          "name": "I_Lamp_Command",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 929.1585,
+      "t_done_ms": 929.5843000000001,
+      "timestamp": "2026-10-26T20:36:47.6818075-05:00",
+      "writes": [
+        {
+          "name": "I_Lamp_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1244.7105000000001,
+      "t_done_ms": 1245.1473,
+      "timestamp": "2026-10-26T20:36:47.9982397-05:00",
+      "writes": [
+        {
+          "name": "I_Lamp_Command",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1561.2306,
+      "t_done_ms": 1562.6566,
+      "timestamp": "2026-10-26T20:36:48.3156436-05:00",
+      "writes": [
+        {
+          "name": "I_Lamp_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1878.1524000000002,
+      "t_done_ms": 1878.7448000000002,
+      "timestamp": "2026-10-26T20:36:48.6310253-05:00",
+      "writes": [
+        {
+          "name": "I_Lamp_Command",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 10.4482,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 61.6781,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 127.6877,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 161.0824,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 212.9867,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 262.4751,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 310.9257,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 311.10360000000003,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 361.64090000000004,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 427.9116,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 462.35630000000003,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 516.7065,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 562.5886,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 625.9859,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 627.1398,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 678.9896,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 728.3962,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 779.2436,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 842.2117000000001,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 894.0219000000001,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 928.9546,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 929.6416,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 992.1555000000001,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1041.6462000000001,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1080.1267,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1144.3731,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1194.8579,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1244.3106,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1245.2769,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1310.563,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1361.0031000000001,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1401.4339,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1461.5321000000001,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1502.1166,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1561.0695,
+      "values": {
+        "I_Lamp_Command": true,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1562.8083000000001,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1613.6112,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1664.3487,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1713.6013,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1779.0127,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1828.2981,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1878.0423,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1878.894,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1929.4678000000001,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1994.114,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2044.7211000000002,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2094.4102000000003,
+      "values": {
+        "I_Lamp_Command": false,
+        "Q_Lamp": false
+      }
+    }
+  ]
+}

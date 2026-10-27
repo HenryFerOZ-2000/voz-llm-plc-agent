@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "60d4e110dc21a49d62bb57fed6de2fb10c38a8d9c318dd08be912d8fb4e2a84e",
+  "transcript_raw": "Un ciclo automático de tres segundos empieza al activar Start, cuando termina se detiene y se marca como finalizado, y Reset lo devuelve al estado inicial.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1242,
+  "frozen_at": "2026-10-26T22:18:59"
+}

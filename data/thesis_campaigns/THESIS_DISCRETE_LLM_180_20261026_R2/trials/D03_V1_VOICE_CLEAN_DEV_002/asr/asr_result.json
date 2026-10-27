@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "2e4e80369035f237714df7197d07e6e9e2c4ba642a914974c1a47fc16fef8b39",
+  "transcript_raw": "Arranca el motor con Start y manténlo en marcha al soltar el pulsador y deténlo con Stop.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1476,
+  "frozen_at": "2026-10-26T20:37:44"
+}

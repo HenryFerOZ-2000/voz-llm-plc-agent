@@ -1,2 +1,4 @@
 # Keep the reviewed manuscript's byte-level hash stable on Windows clones.
 output/**/*.tex text eol=lf
+# Preserve original experiment bytes and SHA-256 values on every platform.
+data/thesis_campaigns/** -text

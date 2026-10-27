@@ -1,0 +1,797 @@
+{
+  "schema_version": 1,
+  "trial_id": "D10_V3_VOICE_CLEAN_DEV_002",
+  "case_id": "D10",
+  "variant_id": "V3",
+  "input_mode": "VOICE_CLEAN",
+  "trial_number": 2,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "MEDIUM",
+  "command_text": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida.",
+  "created_at": "2026-10-26T20:58:12",
+  "semantic": {
+    "intent_id": "INT_COUNTER_PULSES",
+    "case_id": null,
+    "command_text": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+    "normalized_command": "reset inicia a cero un contador de cinco pulsos; al completar los cinco pulsos activa una salida y reset la apaga.",
+    "parameters": {
+      "pulse_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Alarm",
+      "counter": "C_PulseCount",
+      "edge_detector": "R_SensorPulse",
+      "reset_input": "I_Reset",
+      "preset": 5
+    },
+    "confidence": 0.96,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: I_Piece_Sensor es la entrada de pulsos del contador.",
+      "INFERRED: Q_Alarm es la salida que se activa al alcanzar cinco pulsos.",
+      "Reset reinicia el contador a cero y apaga la salida asociada al conteo completado.",
+      "I_Emergency tiene prioridad sobre la salida."
+    ],
+    "recognized_tags": [
+      "I_Piece_Sensor",
+      "I_Reset",
+      "I_Emergency",
+      "Q_Alarm",
+      "C_PulseCount",
+      "R_SensorPulse"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "counter_requirement"
+      },
+      {
+        "type": "reset_behavior",
+        "target": "Q_Alarm"
+      },
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "pulse_counting",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "pulse_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "output": {
+        "source": "LLM"
+      },
+      "counter": {
+        "source": "LLM"
+      },
+      "edge_detector": {
+        "source": "LLM"
+      },
+      "reset_input": {
+        "source": "LLM"
+      },
+      "preset": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_COUNTER_PULSES",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "pulse_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Alarm",
+        "counter": "C_PulseCount",
+        "edge_detector": "R_SensorPulse",
+        "reset_input": "I_Reset",
+        "preset": 5
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_COUNTER_RESET",
+      "case_id": null,
+      "command_text": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+      "normalized_command": "reset debe iniciar a cero un contador de 5 pulsos que enciende 1 salida al completarse apagando esa salida",
+      "parameters": {
+        "reset_input": "I_Reset",
+        "counter": "C_PulseCount"
+      },
+      "confidence": 0.93,
+      "ambiguities": [
+        "El comando usa una referencia vaga para la accion o salida."
+      ],
+      "requires_clarification": true,
+      "clarification_question": "El comando requiere una aclaracion adicional antes de generar el paquete PLC.",
+      "assumptions": [],
+      "recognized_tags": [
+        "C_PulseCount",
+        "I_Reset",
+        "Q_Aux_Output"
+      ],
+      "unrecognized_terms": [
+        "esa"
+      ],
+      "functional_requirements": [
+        {
+          "type": "counter_requirement"
+        }
+      ],
+      "parameter_provenance": {
+        "reset_input": {
+          "source": "RULES"
+        },
+        "counter": {
+          "source": "RULES"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_COUNTER_RESET",
+        "origin": "RULES",
+        "interpreted_parameters": {
+          "reset_input": "I_Reset",
+          "counter": "C_PulseCount"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_COUNTER_PULSES",
+      "case_id": null,
+      "command_text": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+      "normalized_command": "reset inicia a cero un contador de cinco pulsos; al completar los cinco pulsos activa una salida y reset la apaga.",
+      "parameters": {
+        "pulse_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Alarm",
+        "counter": "C_PulseCount",
+        "edge_detector": "R_SensorPulse",
+        "reset_input": "I_Reset",
+        "preset": 5
+      },
+      "confidence": 0.96,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: I_Piece_Sensor es la entrada de pulsos del contador.",
+        "INFERRED: Q_Alarm es la salida que se activa al alcanzar cinco pulsos.",
+        "Reset reinicia el contador a cero y apaga la salida asociada al conteo completado.",
+        "I_Emergency tiene prioridad sobre la salida."
+      ],
+      "recognized_tags": [
+        "I_Piece_Sensor",
+        "I_Reset",
+        "I_Emergency",
+        "Q_Alarm",
+        "C_PulseCount",
+        "R_SensorPulse"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "counter_requirement"
+        },
+        {
+          "type": "reset_behavior",
+          "target": "Q_Alarm"
+        },
+        {
+          "type": "emergency_priority"
+        }
+      ],
+      "operation_type": "pulse_counting",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "pulse_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "output": {
+          "source": "LLM"
+        },
+        "counter": {
+          "source": "LLM"
+        },
+        "edge_detector": {
+          "source": "LLM"
+        },
+        "reset_input": {
+          "source": "LLM"
+        },
+        "preset": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_COUNTER_PULSES",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "pulse_input": "I_Piece_Sensor",
+          "emergency_input": "I_Emergency",
+          "output": "Q_Alarm",
+          "counter": "C_PulseCount",
+          "edge_detector": "R_SensorPulse",
+          "reset_input": "I_Reset",
+          "preset": 5
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_0adf10778a68dfe1006ae005381d9c87d28b2f0cfa94aa8799",
+      "prompt_tokens": 19139,
+      "completion_tokens": 408,
+      "total_tokens": 19547,
+      "latency_ms": 3061.52,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "retrieved_context": [
+      {
+        "source": "timer_counter_examples.md",
+        "score": 15,
+        "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+      },
+      {
+        "source": "README.md",
+        "score": 9,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "plc_safety_rules.md",
+        "score": 9,
+        "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 6,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      },
+      {
+        "source": "structured_text_rules.md",
+        "score": 6,
+        "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [
+        "counter_requirement"
+      ],
+      "covered_by_intent": [
+        "alarm_output",
+        "conditional_alarm_reset",
+        "counter_requirement",
+        "emergency_priority",
+        "enable_pid",
+        "high_level_alarm",
+        "low_level_alarm",
+        "reset_behavior"
+      ],
+      "explicit_types": [
+        "counter_requirement",
+        "emergency_priority",
+        "reset_behavior"
+      ],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_COUNTER_PULSES",
+      "case_id": null,
+      "command_text": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+      "normalized_command": "reset inicia a cero un contador de cinco pulsos; al completar los cinco pulsos activa una salida y reset la apaga.",
+      "parameters": {
+        "pulse_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Alarm",
+        "counter": "C_PulseCount",
+        "edge_detector": "R_SensorPulse",
+        "reset_input": "I_Reset",
+        "preset": 5
+      },
+      "confidence": 0.96,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: I_Piece_Sensor es la entrada de pulsos del contador.",
+        "INFERRED: Q_Alarm es la salida que se activa al alcanzar cinco pulsos.",
+        "Reset reinicia el contador a cero y apaga la salida asociada al conteo completado.",
+        "I_Emergency tiene prioridad sobre la salida."
+      ],
+      "recognized_tags": [
+        "I_Piece_Sensor",
+        "I_Reset",
+        "I_Emergency",
+        "Q_Alarm",
+        "C_PulseCount",
+        "R_SensorPulse"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "counter_requirement"
+        },
+        {
+          "type": "reset_behavior",
+          "target": "Q_Alarm"
+        },
+        {
+          "type": "emergency_priority"
+        }
+      ],
+      "operation_type": "pulse_counting",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "pulse_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "output": {
+          "source": "LLM"
+        },
+        "counter": {
+          "source": "LLM"
+        },
+        "edge_detector": {
+          "source": "LLM"
+        },
+        "reset_input": {
+          "source": "LLM"
+        },
+        "preset": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_COUNTER_PULSES",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "pulse_input": "I_Piece_Sensor",
+          "emergency_input": "I_Emergency",
+          "output": "Q_Alarm",
+          "counter": "C_PulseCount",
+          "edge_detector": "R_SensorPulse",
+          "reset_input": "I_Reset",
+          "preset": 5
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": null,
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [
+        "COMPOSITION_UNANALYZABLE: Parametro de salida en llamada no soportado: Q =>"
+      ],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [
+      "COMPOSITION_UNANALYZABLE: Parametro de salida en llamada no soportado: Q =>"
+    ],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D10\\V3\\D10_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D10\\V3\\D10_V3_VOICE_CLEAN_DEV_002\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D10\\V3\\D10_V3_VOICE_CLEAN_DEV_002\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T20:58:15",
+    "resolved_at": "2026-10-26T20:58:18",
+    "bound_channels": 4,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida.",
+  "generated_code_id": "2026-10-26_20-58-18_NOCASE_INT_COUNTER_PULSES",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": "clean_audio.wav",
+    "asr_transcript": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+    "wer": 0.105263,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "SUCCESS",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "PASS",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "75a6bb28c53e7986141bd0a8f0ab47e4c14109ce0f7f632fcc76d9c572f8ada8",
+  "variant_hash": "390c3923efad3d9882e69fa0609750af958bb6fbaf97f58812b4c8a419fb6fe4",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "PASS",
+    "verdict_reason": "ALL_CHECKS_PASSED",
+    "roles": {
+      "PULSE_INPUT": "I_Piece_Sensor",
+      "RESET": "I_Reset",
+      "COUNT_OUTPUT": "Q_Alarm"
+    },
+    "role_issues": [],
+    "preconditions_success": true,
+    "cleanup_success": true,
+    "duration_ms": 7733,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D10\\V3\\D10_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D10",
+    "oracle_version": 2,
+    "oracle_hash": "db41ac94ab24b36b180b845990e7db0c781ba28a0c90d3f93abbe41180a1da88",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 12,
+    "total_checks": 12,
+    "pass_rate": 1.0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 0,
+    "critical_violations": 0,
+    "samples_checked": 134
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": true,
+    "safety_success": true,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": true
+  },
+  "timing": {
+    "generation_ms": 5844,
+    "compile_ms": 38097,
+    "download_ms": null,
+    "functional_test_ms": 7733,
+    "end_to_end_ms": 53465,
+    "semantic_ms": 5381,
+    "runtime_ms": 878,
+    "oracle_ms": 7733,
+    "total_ms": 53465,
+    "generation_total_ms": 5844,
+    "evaluation_ms": 47621
+  },
+  "errors": [],
+  "final_status": "PASS",
+  "completed_at": "2026-10-26T20:59:06",
+  "canonical_command": "Cuenta 5 pulsos y activa una salida; al presionar Reset, reinicia el contador a cero y apaga la salida.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida.",
+  "reference_text_hash": "390c3923efad3d9882e69fa0609750af958bb6fbaf97f58812b4c8a419fb6fe4",
+  "speaker_id": "S01",
+  "repeat_of_trial_id": "D10_V3_VOICE_CLEAN_DEV_001",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "audio_condition": "VOICE_CLEAN",
+  "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D10\\V3\\clean_stimulus.wav",
+  "audio_sha256": "f613c88766392a791dc476c3976d58f10f0634ca72e92d090536a42461abf95a",
+  "paired_audio_sha256": "0b1a7032da74140f7c5e6fcac9498637f2716f3907b5216063c758ab2db782a2",
+  "audio_source_clean_sha256": "f613c88766392a791dc476c3976d58f10f0634ca72e92d090536a42461abf95a",
+  "audio_manifest_sha256": "71351e80f3bd1c37f142a5679803d7b5684382178d9e67be631910ec5cb97552",
+  "target_snr_db": 10.0,
+  "measured_snr_db": 10.0,
+  "voice": {
+    "protocol_version": 2,
+    "reference_text": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida.",
+    "reference_text_hash": "390c3923efad3d9882e69fa0609750af958bb6fbaf97f58812b4c8a419fb6fe4",
+    "transcript_review": "NONE",
+    "clean_source": "PAIRED_AUDIO_CORPUS",
+    "audio_condition": "VOICE_CLEAN",
+    "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D10\\V3\\clean_stimulus.wav",
+    "audio_sha256": "f613c88766392a791dc476c3976d58f10f0634ca72e92d090536a42461abf95a",
+    "paired_audio_sha256": "0b1a7032da74140f7c5e6fcac9498637f2716f3907b5216063c758ab2db782a2",
+    "audio_source_clean_sha256": "f613c88766392a791dc476c3976d58f10f0634ca72e92d090536a42461abf95a",
+    "audio_manifest_sha256": "71351e80f3bd1c37f142a5679803d7b5684382178d9e67be631910ec5cb97552",
+    "audio_manifest_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D10\\V3\\audio_manifest.json",
+    "target_snr_db": 10.0,
+    "measured_snr_db": 10.0,
+    "noise_master_sha256": "965e43af9baa4372e7c7d6283452e6e2a673d08aea00467af8a0c1774ce73fb5",
+    "formal_freeze_id": "THESIS_DISCRETE_V4",
+    "audio_speaker_id": "S01",
+    "paired_clean_trial_id": "D10_V3_VOICE_CLEAN_DEV_001",
+    "clean_audio_hash": "f613c88766392a791dc476c3976d58f10f0634ca72e92d090536a42461abf95a",
+    "audio_capture_success": true,
+    "duration_ms": 7332,
+    "sample_rate": 16000,
+    "channels": 1,
+    "audio_peak": 31315,
+    "audio_rms": 2430.552,
+    "asr_audio": "clean_audio.wav",
+    "asr_audio_sha256": "f613c88766392a791dc476c3976d58f10f0634ca72e92d090536a42461abf95a",
+    "asr_success": true,
+    "asr_model": "gpt-4o-mini-transcribe",
+    "asr_language": "es",
+    "asr_latency_ms": 2244,
+    "asr_transcript_raw": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+    "asr_transcript_normalized": "reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse apagando esa salida",
+    "reference_word_count": 19,
+    "substitutions": 2,
+    "deletions": 0,
+    "insertions": 0,
+    "wer": 0.105263,
+    "exact_transcript_match": false,
+    "normalized_transcript_match": false
+  },
+  "paired_clean_trial_id": "D10_V3_VOICE_CLEAN_DEV_001",
+  "input_text": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+  "effective_input_text": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+  "effective_input_text_hash": "beab9143745ff96445a46f279ea86636e14bc7b4a3b8313eaf71bb10793a8186",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Piece_Sensor",
+      "I_Emergency",
+      "Q_Alarm",
+      "I_Reset"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T20:58:18",
+    "generated_code_id": "2026-10-26_20-58-18_NOCASE_INT_COUNTER_PULSES"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D10\\V3\\D10_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0547",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0547",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T20:58:18",
+        "completed_at": "2026-10-26T20:59:06",
+        "retry_reason": null,
+        "final_status": "PASS",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "PASS",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 45895,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22678,
+          "commit_headroom_mb": 46505
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0547",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0547",
+          "timestamp": "2026-10-26T20:59:06",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 1
+        }
+      }
+    ],
+    "final_verdict": "PASS",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T20:58:18",
+    "tia_workspace_id": "T0547",
+    "completed_at": "2026-10-26T20:59:06"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "orchestration_amendment": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\enmienda_clasificacion.json",
+    "sha256": "00d59c4b38e881bda0e7192dbdac10fdc7c253c418cd5a719cab8dedbd749af7"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D10\\V3\\D10_V3_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\tia\\D10_V3_VOICE_CLEAN_DEV_002.zap18",
+    "zap18_hash": "0a30a34492a5c3950fdb8dd59c69b39b7c07963a8001e9b8c35a515924678646",
+    "tia_workspace_id": "T0547",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": true,
+    "intent_actual": "INT_COUNTER_PULSES",
+    "intent_expected": [
+      "INT_COUNTER_RESET",
+      "INT_COUNTER_PULSES"
+    ],
+    "intent_match": true,
+    "failed_checks": []
+  },
+  "system_failure": false
+}

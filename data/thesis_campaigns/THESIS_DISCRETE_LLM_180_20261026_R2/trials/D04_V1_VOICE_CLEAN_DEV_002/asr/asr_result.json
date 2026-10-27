@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "4683aff40924e72f06d0fd3d29b1bdd46fe50101a736ce89e4bf314a0e8c1ce0",
+  "transcript_raw": "Enclava el motor con Start para que siga encendido al soltar el pulsador y apágalo con Stop.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1339,
+  "frozen_at": "2026-10-26T20:40:14"
+}

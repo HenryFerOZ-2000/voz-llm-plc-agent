@@ -1,0 +1,607 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D12_V3_VOICE_NOISE_DEV_002",
+  "case_id": "D12",
+  "variant_id": "V3",
+  "input_mode": "VOICE_NOISE",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "8849681b2c2b34bd15e2a8c52e5684f15fe444710b5cf23ad1044b92c4d61adf",
+    "variant_hash": "dff78ed24f2defe44d58a3a1ce6c3a2b5a4c3a6735b5016f10e6352b4ee0bc7c"
+  },
+  "oracle": {
+    "oracle_id": "D12",
+    "oracle_version": 3,
+    "oracle_hash": "71cb20e92b7d8e613ec364bc5ac5b333d688b6b8f6b95d9466175ccaf603d6a3",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": true,
+    "intent_expected": [
+      "INT_MUTUAL_INTERLOCK"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": true,
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "intent_expected": [
+        "INT_MUTUAL_INTERLOCK"
+      ],
+      "intent_match": true,
+      "failed_checks": [],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_MUTUAL_INTERLOCK"
+          ],
+          "actual": "INT_MUTUAL_INTERLOCK",
+          "passed": true
+        },
+        {
+          "check": "role:REQUEST_A",
+          "expected": "resuelto",
+          "actual": "I_Request_Contactor_A",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:REQUEST_B",
+          "expected": "resuelto",
+          "actual": "I_Request_Contactor_B",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:CONTACTOR_A",
+          "expected": "resuelto",
+          "actual": "Q_Contactor_A",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:CONTACTOR_B",
+          "expected": "resuelto",
+          "actual": "Q_Contactor_B",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_MUTUAL_INTERLOCK"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "PASS",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "PASS",
+    "safety": "PASS",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "PASS",
+    "status": "PASS / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "PASS",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 2,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "RESOLVED",
+    "roles": {
+      "REQUEST_A": {
+        "role": "REQUEST_A",
+        "kind": "INPUT",
+        "functional_name": "I_Request_Contactor_A",
+        "address": "%IX16.3",
+        "matched_paths": [
+          "request_a"
+        ]
+      },
+      "REQUEST_B": {
+        "role": "REQUEST_B",
+        "kind": "INPUT",
+        "functional_name": "I_Request_Contactor_B",
+        "address": "%IX16.4",
+        "matched_paths": [
+          "request_b"
+        ]
+      },
+      "CONTACTOR_A": {
+        "role": "CONTACTOR_A",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Contactor_A",
+        "address": "%QX8.0",
+        "matched_paths": [
+          "contactor_a"
+        ]
+      },
+      "CONTACTOR_B": {
+        "role": "CONTACTOR_B",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Contactor_B",
+        "address": "%QX8.1",
+        "matched_paths": [
+          "contactor_b"
+        ]
+      }
+    },
+    "issues": []
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Emergency",
+      "I_Request_Contactor_A",
+      "I_Request_Contactor_B"
+    ],
+    "bound_outputs": [
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Emergency', 'I_Request_Contactor_A', 'I_Request_Contactor_B'] superan las esperadas (2)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 3
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": true,
+    "checks": []
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 6,
+    "total_checks": 6,
+    "pass_rate": 1.0,
+    "failed_checks": [],
+    "major_invariant_violations": 0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "samples_checked": 60,
+    "violations": [],
+    "critical_violations": 0,
+    "major_violations": 0
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "PASS",
+  "oracle_verdict_reason": "ALL_CHECKS_PASSED",
+  "final_status": "PASS",
+  "steps": [
+    {
+      "step_id": "pre_idle",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Sin solicitudes (estado inicial).",
+      "started_at": "2026-10-26T21:57:59.5218535-05:00",
+      "completed_at": "2026-10-26T21:58:00.040",
+      "t_start_ms": 9.1,
+      "t_end_ms": 523.7,
+      "inputs_applied": {
+        "REQUEST_A": {
+          "name": "I_Request_Contactor_A",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "REQUEST_B": {
+          "name": "I_Request_Contactor_B",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "REQUEST_A": false,
+        "REQUEST_B": false,
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "test_1",
+      "phase": "test",
+      "executed": true,
+      "description": "Solo A solicitado: A activo, B inactivo.",
+      "started_at": "2026-10-26T21:58:00.0371289-05:00",
+      "completed_at": "2026-10-26T21:58:00.553",
+      "t_start_ms": 524.6,
+      "t_end_ms": 1040.3,
+      "inputs_applied": {
+        "REQUEST_A": {
+          "name": "I_Request_Contactor_A",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        "REQUEST_B": {
+          "name": "I_Request_Contactor_B",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "CONTACTOR_A": true,
+        "CONTACTOR_B": false
+      },
+      "actual_outputs": {
+        "REQUEST_A": true,
+        "REQUEST_B": false,
+        "CONTACTOR_A": true,
+        "CONTACTOR_B": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "test_1",
+          "role": "CONTACTOR_A",
+          "expected": true,
+          "actual": true,
+          "t_ms": 515.7,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "test_1",
+          "role": "CONTACTOR_B",
+          "expected": false,
+          "actual": false,
+          "t_ms": 515.7,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "test_2",
+      "phase": "test",
+      "executed": true,
+      "description": "Solo B solicitado: A inactivo, B activo.",
+      "started_at": "2026-10-26T21:58:00.5546819-05:00",
+      "completed_at": "2026-10-26T21:58:01.070",
+      "t_start_ms": 1041.9,
+      "t_end_ms": 1556.5,
+      "inputs_applied": {
+        "REQUEST_A": {
+          "name": "I_Request_Contactor_A",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "REQUEST_B": {
+          "name": "I_Request_Contactor_B",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": true
+      },
+      "actual_outputs": {
+        "REQUEST_A": false,
+        "REQUEST_B": true,
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "test_2",
+          "role": "CONTACTOR_A",
+          "expected": false,
+          "actual": false,
+          "t_ms": 514.7,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "test_2",
+          "role": "CONTACTOR_B",
+          "expected": true,
+          "actual": true,
+          "t_ms": 514.7,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "test_3",
+      "phase": "test",
+      "executed": true,
+      "description": "Ninguna solicitud: ambos inactivos.",
+      "started_at": "2026-10-26T21:58:01.0689690-05:00",
+      "completed_at": "2026-10-26T21:58:01.585",
+      "t_start_ms": 1557.3,
+      "t_end_ms": 2073.5,
+      "inputs_applied": {
+        "REQUEST_A": {
+          "name": "I_Request_Contactor_A",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "REQUEST_B": {
+          "name": "I_Request_Contactor_B",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": false
+      },
+      "actual_outputs": {
+        "REQUEST_A": false,
+        "REQUEST_B": false,
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "test_3",
+          "role": "CONTACTOR_A",
+          "expected": false,
+          "actual": false,
+          "t_ms": 516.2,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "test_3",
+          "role": "CONTACTOR_B",
+          "expected": false,
+          "actual": false,
+          "t_ms": 516.2,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "test_4",
+      "phase": "test",
+      "executed": true,
+      "description": "Ambas solicitudes a la vez: no se define cual gana; solo se exige la invariante.",
+      "started_at": "2026-10-26T21:58:01.5871021-05:00",
+      "completed_at": "2026-10-26T21:58:02.104",
+      "t_start_ms": 2074.2,
+      "t_end_ms": 2591.4,
+      "inputs_applied": {
+        "REQUEST_A": {
+          "name": "I_Request_Contactor_A",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        "REQUEST_B": {
+          "name": "I_Request_Contactor_B",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "REQUEST_A": true,
+        "REQUEST_B": true,
+        "CONTACTOR_A": true,
+        "CONTACTOR_B": false
+      },
+      "unspecified": [
+        "CONTACTOR_A",
+        "CONTACTOR_B"
+      ],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "cleanup_inputs",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Solicitudes a OFF.",
+      "started_at": "2026-10-26T21:58:02.1043298-05:00",
+      "completed_at": "2026-10-26T21:58:02.317",
+      "t_start_ms": 2592.4,
+      "t_end_ms": 2804.6,
+      "inputs_applied": {
+        "REQUEST_A": {
+          "name": "I_Request_Contactor_A",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "REQUEST_B": {
+          "name": "I_Request_Contactor_B",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "REQUEST_A": false,
+        "REQUEST_B": false,
+        "CONTACTOR_A": false,
+        "CONTACTOR_B": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    }
+  ],
+  "cleanup": {
+    "performed": true,
+    "success": true,
+    "inputs": [
+      {
+        "name": "I_Request_Contactor_A",
+        "address": "%I16.3",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Request_Contactor_B",
+        "address": "%I16.4",
+        "readback": false,
+        "restored": true
+      }
+    ],
+    "process_variables": []
+  },
+  "sequence": {
+    "planned_ms": 2700,
+    "sample_period_ms": 50,
+    "watched": [
+      "I_Request_Contactor_A",
+      "I_Request_Contactor_B",
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "skipped_steps": [],
+    "bridge_status": "PLCSIM_IO_PASSED",
+    "failed_step": null,
+    "sequence_duration_ms": 2804.7237,
+    "cpu_state": "RUN"
+  },
+  "errors": [],
+  "warnings": [
+    "Entradas ligadas ['I_Emergency', 'I_Request_Contactor_A', 'I_Request_Contactor_B'] superan las esperadas (2)."
+  ],
+  "timings": {
+    "generation_ms": 5115,
+    "compile_ms": 38094,
+    "download_ms": null,
+    "functional_test_ms": 4767,
+    "end_to_end_ms": 49746,
+    "semantic_ms": 4834,
+    "runtime_ms": 861,
+    "oracle_ms": 4767,
+    "total_ms": 49746,
+    "generation_total_ms": 5115,
+    "evaluation_ms": 44631
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:58:03"
+}

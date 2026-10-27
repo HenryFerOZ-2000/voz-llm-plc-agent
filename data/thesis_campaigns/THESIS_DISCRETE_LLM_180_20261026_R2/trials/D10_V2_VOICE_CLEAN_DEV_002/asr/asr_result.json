@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "4f1e0133ba4fbfc105a01cf8b4e8333c1af4ec7e5ec3535666ce495f7466c6f9",
+  "transcript_raw": "Quiero contar cinco pulsos para activar la salida y que, al pulsar reset, el contador vuelva a cero y la salida se apague.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2406,
+  "frozen_at": "2026-10-26T20:57:19"
+}

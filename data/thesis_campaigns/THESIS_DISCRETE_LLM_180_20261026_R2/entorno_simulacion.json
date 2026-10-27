@@ -1,0 +1,16 @@
+{
+  "representative_trial": "D05_V1_TEXT_DEV_003",
+  "tia_version": "V18",
+  "CPU": "CPU 1516-3 PN/DP",
+  "device_order_and_firmware": "OrderNumber:6ES7 516-3AN01-0AB0/V2.6",
+  "target_type": "PLCSIM_ADVANCED",
+  "simulation_required": true,
+  "instance": "TESIS_PLC_SIM",
+  "IP": "192.168.0.1",
+  "runtime_reported_version": null,
+  "python": "3.13.15",
+  "source_hashes": {
+    "download_report.json": "d3d5b3a1705f566ecb351d8691292f8606b7fb444b7b0a6936852083f4be417e",
+    "runtime_report.json": "f84ed1e6e129973462738c261051cb2758f86c5c1d90ecc979593389d460418a"
+  }
+}

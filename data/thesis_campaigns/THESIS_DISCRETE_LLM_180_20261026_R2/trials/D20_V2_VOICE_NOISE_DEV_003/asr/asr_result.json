@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "d60ee6c62f7dba69575b9146720c376c584dc77a5974a916f36456ca0be7749d",
+  "transcript_raw": "Quiero que Start arranque un ciclo de tres segundos, que al acabar se detenga y quede marcado como finalizado, y que Reset lo deje en estado de inicio.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1800,
+  "frozen_at": "2026-10-26T22:18:02"
+}

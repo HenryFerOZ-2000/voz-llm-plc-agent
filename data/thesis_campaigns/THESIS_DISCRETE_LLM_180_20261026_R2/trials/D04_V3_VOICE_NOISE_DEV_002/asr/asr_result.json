@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "cef7e8383427d12db5bc23421e132af810b099a3e08ca0d291deb82bf78042bf",
+  "transcript_raw": "con el stop se apaga el motor, con el start se enciende y queda enclavado aunque se suelte el pulsador.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1366,
+  "frozen_at": "2026-10-26T21:35:34"
+}

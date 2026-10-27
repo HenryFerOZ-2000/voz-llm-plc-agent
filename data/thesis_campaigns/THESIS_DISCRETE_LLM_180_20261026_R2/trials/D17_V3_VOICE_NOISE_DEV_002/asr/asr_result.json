@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "fe058537c06499ab24b0fc14e7d1fb0cbb1632bb5414dc11b50cfea90fe8d3ba",
+  "transcript_raw": "Al estar desactivado, si el sensor permanece sin cambios durante cinco segundos seguidos, activa la alarma.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2249,
+  "frozen_at": "2026-10-26T22:11:30"
+}

@@ -1,0 +1,354 @@
+{
+  "intent_id": "INT_MUTUAL_INTERLOCK",
+  "case_id": null,
+  "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+  "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+  "parameters": {
+    "request_a": "I_Contactor_A_Request",
+    "request_b": "I_Contactor_B_Request",
+    "emergency_input": "I_Emergency",
+    "contactor_a": "Q_Contactor_A",
+    "contactor_b": "Q_Contactor_B"
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "Se requieren dos órdenes físicas independientes, una para cada contactor.",
+    "I_Emergency tiene prioridad sobre ambas salidas de contactor."
+  ],
+  "recognized_tags": [
+    "I_Contactor_A_Request",
+    "I_Contactor_B_Request",
+    "I_Emergency",
+    "Q_Contactor_A",
+    "Q_Contactor_B"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "emergency_priority"
+    }
+  ],
+  "operation_type": "mutual_interlock",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "request_a": {
+      "source": "LLM"
+    },
+    "request_b": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "contactor_a": {
+      "source": "LLM"
+    },
+    "contactor_b": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_MUTUAL_INTERLOCK",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "request_a": "I_Contactor_A_Request",
+      "request_b": "I_Contactor_B_Request",
+      "emergency_input": "I_Emergency",
+      "contactor_a": "Q_Contactor_A",
+      "contactor_b": "Q_Contactor_B"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_MUTUAL_INTERLOCK",
+    "case_id": null,
+    "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+    "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "emergency_input": "I_Emergency",
+      "contactor_a": "Q_Contactor_A",
+      "contactor_b": "Q_Contactor_B"
+    },
+    "confidence": 0.94,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Start",
+      "I_Stop",
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "stop_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "contactor_a": {
+        "source": "RULES"
+      },
+      "contactor_b": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "emergency_input": "I_Emergency",
+        "contactor_a": "Q_Contactor_A",
+        "contactor_b": "Q_Contactor_B"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_MUTUAL_INTERLOCK",
+    "case_id": null,
+    "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+    "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+    "parameters": {
+      "request_a": "I_Contactor_A_Request",
+      "request_b": "I_Contactor_B_Request",
+      "emergency_input": "I_Emergency",
+      "contactor_a": "Q_Contactor_A",
+      "contactor_b": "Q_Contactor_B"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se requieren dos órdenes físicas independientes, una para cada contactor.",
+      "I_Emergency tiene prioridad sobre ambas salidas de contactor."
+    ],
+    "recognized_tags": [
+      "I_Contactor_A_Request",
+      "I_Contactor_B_Request",
+      "I_Emergency",
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "mutual_interlock",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "request_a": {
+        "source": "LLM"
+      },
+      "request_b": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "contactor_a": {
+        "source": "LLM"
+      },
+      "contactor_b": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "request_a": "I_Contactor_A_Request",
+        "request_b": "I_Contactor_B_Request",
+        "emergency_input": "I_Emergency",
+        "contactor_a": "Q_Contactor_A",
+        "contactor_b": "Q_Contactor_B"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_01a58bbe48245b18006ae012a7bdf887d290d3cfa70a25f690",
+    "prompt_tokens": 19125,
+    "completion_tokens": 315,
+    "total_tokens": 19440,
+    "latency_ms": 3263.82,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "README.md",
+      "score": 12,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "iec61131_rules.md",
+      "score": 12,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "structured_text_rules.md",
+      "score": 9,
+      "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "emergency_priority",
+      "enable_pid"
+    ],
+    "explicit_types": [
+      "emergency_priority"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_MUTUAL_INTERLOCK",
+    "case_id": null,
+    "command_text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+    "normalized_command": "controla dos contactores con ordenes independientes y evita que ambos esten activos a la vez",
+    "parameters": {
+      "request_a": "I_Contactor_A_Request",
+      "request_b": "I_Contactor_B_Request",
+      "emergency_input": "I_Emergency",
+      "contactor_a": "Q_Contactor_A",
+      "contactor_b": "Q_Contactor_B"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se requieren dos órdenes físicas independientes, una para cada contactor.",
+      "I_Emergency tiene prioridad sobre ambas salidas de contactor."
+    ],
+    "recognized_tags": [
+      "I_Contactor_A_Request",
+      "I_Contactor_B_Request",
+      "I_Emergency",
+      "Q_Contactor_A",
+      "Q_Contactor_B"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "mutual_interlock",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "request_a": {
+        "source": "LLM"
+      },
+      "request_b": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "contactor_a": {
+        "source": "LLM"
+      },
+      "contactor_b": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MUTUAL_INTERLOCK",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "request_a": "I_Contactor_A_Request",
+        "request_b": "I_Contactor_B_Request",
+        "emergency_input": "I_Emergency",
+        "contactor_a": "Q_Contactor_A",
+        "contactor_b": "Q_Contactor_B"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

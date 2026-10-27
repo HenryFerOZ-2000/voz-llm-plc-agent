@@ -1,0 +1,362 @@
+[
+  {
+    "case_id": "D01",
+    "variant_id": "V1",
+    "text": "Al presionar el pulsador, activa la salida digital durante 5 segundos.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D01",
+    "variant_id": "V2",
+    "text": "Cuando se presione el pulsador, quiero que la salida se encienda durante cinco segundos.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D01",
+    "variant_id": "V3",
+    "text": "Genera un pulso de salida de 5 segundos cada vez que se presione el pulsador.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D02",
+    "variant_id": "V1",
+    "text": "Enciende la lámpara mientras la entrada digital esté activa.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D02",
+    "variant_id": "V2",
+    "text": "Quiero que la lámpara esté encendida solo mientras la entrada esté activa.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D02",
+    "variant_id": "V3",
+    "text": "Haz que la lámpara se encienda con la entrada digital activa y se apague cuando se desactive.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D03",
+    "variant_id": "V1",
+    "text": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D03",
+    "variant_id": "V2",
+    "text": "Quiero encender el motor con Start y que siga encendido aunque suelte el botón; con Stop se apaga.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D03",
+    "variant_id": "V3",
+    "text": "Con memoria de marcha: Start enciende el motor, que permanece encendido al soltar el pulsador, y Stop lo apaga.",
+    "complexity": "LOW"
+  },
+  {
+    "case_id": "D04",
+    "variant_id": "V1",
+    "text": "Enclava el motor con Start para que siga encendido al soltar el pulsador y apágalo con Stop.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D04",
+    "variant_id": "V2",
+    "text": "Haz un enclavamiento: el motor arranca con Start, se queda encendido aunque se suelte el botón y se apaga con Stop.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D04",
+    "variant_id": "V3",
+    "text": "Con Stop se apaga el motor; con Start se enciende y queda enclavado aunque se suelte el pulsador.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D05",
+    "variant_id": "V1",
+    "text": "Arranca el motor con Start únicamente si no hay emergencia activa; si se activa, apágalo y bloquea el arranque mientras siga activa.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D05",
+    "variant_id": "V2",
+    "text": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D05",
+    "variant_id": "V3",
+    "text": "Mientras la condición de emergencia esté activa, el motor debe estar apagado y Start no puede arrancarlo; sin emergencia, Start enciende el motor.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D06",
+    "variant_id": "V1",
+    "text": "Activa una alarma si se intenta arrancar sin que se cumpla la condición de seguridad.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D06",
+    "variant_id": "V2",
+    "text": "Quiero que suene una alarma cuando alguien intente arrancar el sistema sin la condición de seguridad cumplida.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D06",
+    "variant_id": "V3",
+    "text": "Un intento de arranque sin la condición de seguridad debe activar la alarma.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D07",
+    "variant_id": "V1",
+    "text": "Con Start activo, espera 3 segundos y luego enciende el motor.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D07",
+    "variant_id": "V2",
+    "text": "Quiero que el motor arranque tres segundos después de activar Start, siempre que Start siga activo.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D07",
+    "variant_id": "V3",
+    "text": "Retarda 3 segundos el encendido del motor mientras se mantenga activo Start.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D08",
+    "variant_id": "V1",
+    "text": "Enciende el motor con Start, que siga en marcha aunque se suelte el pulsador, y apágalo automáticamente tras 10 segundos de funcionamiento.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D08",
+    "variant_id": "V2",
+    "text": "Haz que el motor arranque con Start, siga funcionando aunque se suelte y se detenga solo tras 10 segundos.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D08",
+    "variant_id": "V3",
+    "text": "Cuando se active Start, mantén el motor funcionando 10 segundos, aunque se suelte el pulsador, y después apágalo.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D09",
+    "variant_id": "V1",
+    "text": "Cuenta 5 pulsos de la entrada digital y activa una salida al llegar al quinto.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D09",
+    "variant_id": "V2",
+    "text": "Quiero que se cuenten los pulsos de la entrada y que, cuando lleguen a cinco, se active la salida.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D09",
+    "variant_id": "V3",
+    "text": "Al recibir el quinto pulso de la entrada digital, activa la salida.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D10",
+    "variant_id": "V1",
+    "text": "Cuenta 5 pulsos y activa una salida al llegar a cinco; con Reset, pon el contador a cero y apaga la salida.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D10",
+    "variant_id": "V2",
+    "text": "Quiero contar cinco pulsos para activar la salida, y que al pulsar Reset el contador vuelva a cero y la salida se apague.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D10",
+    "variant_id": "V3",
+    "text": "Reset debe reiniciar a cero un contador de 5 pulsos que activa una salida al completarse, apagando esa salida.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D11",
+    "variant_id": "V1",
+    "text": "Controla el contactor con Start y Stop con enclavamiento de marcha.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D11",
+    "variant_id": "V2",
+    "text": "Quiero que el contactor se active con Start, quede enclavado y se desactive con Stop.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D11",
+    "variant_id": "V3",
+    "text": "Usa un enclavamiento de marcha para que Start conecte el contactor y Stop lo desconecte.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D12",
+    "variant_id": "V1",
+    "text": "Controla dos contactores con órdenes independientes y evita que ambos estén activos a la vez.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D12",
+    "variant_id": "V2",
+    "text": "Cada uno de los dos contactores tiene su propia orden, pero nunca pueden estar los dos encendidos al mismo tiempo.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D12",
+    "variant_id": "V3",
+    "text": "Con dos órdenes independientes maneja dos contactores, impidiendo que se activen simultáneamente.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D13",
+    "variant_id": "V1",
+    "text": "Habilita el variador con la orden de marcha únicamente mientras no haya alarma activa; si aparece una alarma, deshabilítalo.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D13",
+    "variant_id": "V2",
+    "text": "Quiero que el variador se habilite con la orden de marcha, pero nunca mientras exista una alarma activa, ni siquiera si ya estaba funcionando.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D13",
+    "variant_id": "V3",
+    "text": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga orden de marcha; sin alarma, habilítalo con esa orden.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D14",
+    "variant_id": "V1",
+    "text": "Selecciona velocidad baja, media o alta con tres entradas digitales y activa solo la velocidad seleccionada.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D14",
+    "variant_id": "V2",
+    "text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D14",
+    "variant_id": "V3",
+    "text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V1",
+    "text": "Con un selector Manual/Automático: en Automático, el motor obedece la orden automática; en Manual, la orden manual; la otra orden se ignora.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V2",
+    "text": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D15",
+    "variant_id": "V3",
+    "text": "Según la posición del selector, Manual o Automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D16",
+    "variant_id": "V1",
+    "text": "Con Start activa la salida principal y, 3 segundos después, la salida auxiliar.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D16",
+    "variant_id": "V2",
+    "text": "Quiero que al dar Start se encienda la salida principal y que tres segundos más tarde se encienda la auxiliar.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D16",
+    "variant_id": "V3",
+    "text": "Tras recibir Start, activa la salida principal, espera 3 segundos y luego activa la salida auxiliar.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D17",
+    "variant_id": "V1",
+    "text": "Tras activar Start, vigila el sensor y activa una alarma si transcurren 5 segundos sin ningún cambio; cada cambio reinicia la cuenta.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D17",
+    "variant_id": "V2",
+    "text": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D17",
+    "variant_id": "V3",
+    "text": "Con Start activado, si el sensor permanece sin cambios durante 5 segundos seguidos, activa la alarma.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D18",
+    "variant_id": "V1",
+    "text": "Bloquea el arranque del motor mientras esté activo el modo mantenimiento.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D18",
+    "variant_id": "V2",
+    "text": "Quiero que el motor no pueda arrancar mientras el sistema esté en mantenimiento.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D18",
+    "variant_id": "V3",
+    "text": "En modo mantenimiento, impide que el motor arranque.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D19",
+    "variant_id": "V1",
+    "text": "Con las señales de marcha y falla del sistema, controla tres pilotos (detenido, marcha y falla) y deja encendido solo el del estado actual.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D19",
+    "variant_id": "V2",
+    "text": "Quiero tres pilotos, detenido, marcha y falla, que según las señales de marcha y falla del sistema dejen encendido solo el que corresponde al estado actual.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D19",
+    "variant_id": "V3",
+    "text": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla; únicamente debe encenderse el del estado actual.",
+    "complexity": "MEDIUM"
+  },
+  {
+    "case_id": "D20",
+    "variant_id": "V1",
+    "text": "Con Start inicia un ciclo automático de 3 segundos; al terminar, detén la ejecución y marca el ciclo como finalizado. Reset lo devuelve al estado inicial.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D20",
+    "variant_id": "V2",
+    "text": "Quiero que Start arranque un ciclo de tres segundos que al acabar se detenga y quede marcado como finalizado, y que Reset lo deje en el estado inicial.",
+    "complexity": "HIGH"
+  },
+  {
+    "case_id": "D20",
+    "variant_id": "V3",
+    "text": "Un ciclo automático de 3 segundos empieza al activar Start; cuando termina se detiene y se marca como finalizado, y Reset lo devuelve al estado inicial.",
+    "complexity": "HIGH"
+  }
+]

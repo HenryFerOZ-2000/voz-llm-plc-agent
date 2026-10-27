@@ -1,0 +1,378 @@
+{
+  "intent_id": "INT_SAFE_START_ALARM",
+  "case_id": null,
+  "command_text": "Un intento de arranque sin la condición de seguridad debe activar la alarma.",
+  "normalized_command": "un intento de arranque sin la condicion de seguridad activa la alarma",
+  "parameters": {
+    "trigger_input": "I_Start",
+    "emergency_input": "I_Emergency",
+    "safety_input": "I_Safety_Condition",
+    "alarm_output": "Q_Alarm",
+    "motor_output": "Q_Motor_Enable",
+    "fault_latch": "M_FaultLatch"
+  },
+  "confidence": 0.95,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: I_Safety_Condition es TRUE cuando la condición de seguridad está presente y habilita el arranque.",
+    "INFERRED: El intento de arranque se realiza mediante I_Start y corresponde al accionamiento genérico Q_Motor_Enable.",
+    "Se utiliza I_Emergency con prioridad de seguridad sobre el arranque."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Emergency",
+    "I_Safety_Condition",
+    "Q_Alarm",
+    "Q_Motor_Enable",
+    "M_FaultLatch"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [],
+  "operation_type": "safe_start_alarm",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "trigger_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "safety_input": {
+      "source": "LLM"
+    },
+    "alarm_output": {
+      "source": "LLM"
+    },
+    "motor_output": {
+      "source": "LLM"
+    },
+    "fault_latch": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_SAFE_START_ALARM",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "safety_input": "I_Safety_Condition",
+      "alarm_output": "Q_Alarm",
+      "motor_output": "Q_Motor_Enable",
+      "fault_latch": "M_FaultLatch"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_SAFE_START_ALARM",
+    "case_id": null,
+    "command_text": "Un intento de arranque sin la condición de seguridad debe activar la alarma.",
+    "normalized_command": "un intento de start sin la condicion de seguridad debe enciende la alarma",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "reset_input": "I_Reset",
+      "emergency_input": "I_Emergency",
+      "safety_input": "I_Sensor1",
+      "alarm_output": "Q_Alarm",
+      "motor_output": "Q_Motor_Enable",
+      "fault_latch": "M_FaultLatch"
+    },
+    "confidence": 0.87,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Reset",
+      "I_Sensor1",
+      "I_Start",
+      "M_FaultLatch",
+      "Q_Alarm",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "reset_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "safety_input": {
+        "source": "RULES"
+      },
+      "alarm_output": {
+        "source": "RULES"
+      },
+      "motor_output": {
+        "source": "RULES"
+      },
+      "fault_latch": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SAFE_START_ALARM",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "reset_input": "I_Reset",
+        "emergency_input": "I_Emergency",
+        "safety_input": "I_Sensor1",
+        "alarm_output": "Q_Alarm",
+        "motor_output": "Q_Motor_Enable",
+        "fault_latch": "M_FaultLatch"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_SAFE_START_ALARM",
+    "case_id": null,
+    "command_text": "Un intento de arranque sin la condición de seguridad debe activar la alarma.",
+    "normalized_command": "un intento de arranque sin la condicion de seguridad activa la alarma",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "safety_input": "I_Safety_Condition",
+      "alarm_output": "Q_Alarm",
+      "motor_output": "Q_Motor_Enable",
+      "fault_latch": "M_FaultLatch"
+    },
+    "confidence": 0.95,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: I_Safety_Condition es TRUE cuando la condición de seguridad está presente y habilita el arranque.",
+      "INFERRED: El intento de arranque se realiza mediante I_Start y corresponde al accionamiento genérico Q_Motor_Enable.",
+      "Se utiliza I_Emergency con prioridad de seguridad sobre el arranque."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Emergency",
+      "I_Safety_Condition",
+      "Q_Alarm",
+      "Q_Motor_Enable",
+      "M_FaultLatch"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "safe_start_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "safety_input": {
+        "source": "LLM"
+      },
+      "alarm_output": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "fault_latch": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SAFE_START_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "safety_input": "I_Safety_Condition",
+        "alarm_output": "Q_Alarm",
+        "motor_output": "Q_Motor_Enable",
+        "fault_latch": "M_FaultLatch"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0aea662035243654006ae00f08cda887d2b5c64817370fdb48",
+    "prompt_tokens": 19131,
+    "completion_tokens": 1766,
+    "total_tokens": 20897,
+    "latency_ms": 17402.68,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "iec61131_rules.md",
+      "score": 12,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "plc_safety_rules.md",
+      "score": 12,
+      "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+    },
+    {
+      "source": "structured_text_rules.md",
+      "score": 12,
+      "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+    },
+    {
+      "source": "README.md",
+      "score": 9,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "alarm_output",
+      "conditional_alarm_reset",
+      "emergency_priority",
+      "enable_pid",
+      "high_level_alarm",
+      "low_level_alarm",
+      "reset_behavior"
+    ],
+    "explicit_types": [],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_SAFE_START_ALARM",
+    "case_id": null,
+    "command_text": "Un intento de arranque sin la condición de seguridad debe activar la alarma.",
+    "normalized_command": "un intento de arranque sin la condicion de seguridad activa la alarma",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "emergency_input": "I_Emergency",
+      "safety_input": "I_Safety_Condition",
+      "alarm_output": "Q_Alarm",
+      "motor_output": "Q_Motor_Enable",
+      "fault_latch": "M_FaultLatch"
+    },
+    "confidence": 0.95,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: I_Safety_Condition es TRUE cuando la condición de seguridad está presente y habilita el arranque.",
+      "INFERRED: El intento de arranque se realiza mediante I_Start y corresponde al accionamiento genérico Q_Motor_Enable.",
+      "Se utiliza I_Emergency con prioridad de seguridad sobre el arranque."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Emergency",
+      "I_Safety_Condition",
+      "Q_Alarm",
+      "Q_Motor_Enable",
+      "M_FaultLatch"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "safe_start_alarm",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "safety_input": {
+        "source": "LLM"
+      },
+      "alarm_output": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "fault_latch": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SAFE_START_ALARM",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "safety_input": "I_Safety_Condition",
+        "alarm_output": "Q_Alarm",
+        "motor_output": "Q_Motor_Enable",
+        "fault_latch": "M_FaultLatch"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

@@ -1,0 +1,512 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 7.2229,
+      "t_done_ms": 10.8057,
+      "timestamp": "2026-10-26T21:05:55.6171579-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 630.0251000000001,
+      "t_done_ms": 630.6291,
+      "timestamp": "2026-10-26T21:05:56.2499804-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1146.0755000000001,
+      "t_done_ms": 1146.4498,
+      "timestamp": "2026-10-26T21:05:56.7655666-05:00",
+      "writes": [
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1662.7289,
+      "t_done_ms": 1664.7288,
+      "timestamp": "2026-10-26T21:05:57.2836794-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 12.6487,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 63.1865,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 114.1135,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 164.1224,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 214.0291,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 273.38030000000003,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 313.9133,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 313.9836,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 378.9031,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 414.28520000000003,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 478.44,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 530.0016,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 579.1538,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 629.6061000000001,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 630.7566,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 695.9437,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 745.9923,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 783.3476,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 844.7576,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 896.0147000000001,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 945.5406,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 996.0846,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1044.9078,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1095.7582,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1145.9751,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1146.5759,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1212.4322,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1262.7759,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1297.2664,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1360.305,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1412.3707000000002,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1461.3056000000001,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1512.2498,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1562.6102,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1597.0171,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1662.6213,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1664.8392000000001,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1725.221,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1772.5727000000002,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1829.9239,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1879.2517,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_Motor_Enable": false
+      }
+    }
+  ]
+}

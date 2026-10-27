@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "trial_id": "D14_V3_TEXT_DEV_001",
+  "case_id": "D14",
+  "variant_id": "V3",
+  "input_mode": "TEXT",
+  "trial_number": 1,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "HIGH",
+  "command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "created_at": "2026-10-26T20:09:18",
+  "semantic": {},
+  "io": {},
+  "verification": {},
+  "compile": {},
+  "download": {},
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V3\\D14_V3_TEXT_DEV_001\\working_io_map.json",
+    "snapshot_path": null,
+    "frozen": false,
+    "created_at": "2026-10-26T20:09:18",
+    "resolved_at": null,
+    "bound_channels": null,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "PREPARING",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "generated_code_id": null,
+  "parser_mode": "llm",
+  "model": {
+    "provider": null,
+    "model": null
+  },
+  "asr": {
+    "audio_reference": null,
+    "asr_transcript": null,
+    "wer": null,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "GENERATION_EXCEPTION",
+  "failure_stage": "generation",
+  "infrastructure_error": null,
+  "final_verdict": null,
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "8d0538b64aa0d42d79079685a83d81685a274140e8e4e9ca9a2f2c68a68bebe2",
+  "variant_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67",
+  "runtime": null,
+  "runtime_io": null,
+  "oracle": null,
+  "oracle_reference": {
+    "oracle_id": null,
+    "oracle_version": null,
+    "oracle_hash": null
+  },
+  "functional": null,
+  "safety": null,
+  "stages": {
+    "semantic_success": null,
+    "verification_success": null,
+    "compile_success": null,
+    "download_success": null,
+    "start_module_success": null,
+    "runtime_connection_success": null,
+    "functional_success": null,
+    "safety_success": null
+  },
+  "timing": {
+    "generation_ms": 14340,
+    "compile_ms": null,
+    "download_ms": null,
+    "functional_test_ms": null,
+    "end_to_end_ms": null,
+    "semantic_ms": null,
+    "runtime_ms": null,
+    "oracle_ms": null,
+    "total_ms": null,
+    "generation_total_ms": 14340
+  },
+  "errors": [
+    "IO_ASSIGNMENT_BLOCKED"
+  ],
+  "final_status": "INFRASTRUCTURE_ERROR",
+  "completed_at": "2026-10-26T20:09:32",
+  "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "reference_text_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67",
+  "speaker_id": null,
+  "repeat_of_trial_id": "D14_V3_TEXT_003",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "input_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "effective_input_text": "Tres entradas digitales eligen la velocidad baja, media o alta; únicamente debe activarse la seleccionada.",
+  "effective_input_text_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 3,
+      "digital_outputs": 3,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "generation": {
+    "status": "FAILED",
+    "completed_at": "2026-10-26T20:09:32",
+    "failure_category": "GENERATION_EXCEPTION"
+  },
+  "evaluation": {
+    "status": "NOT_APPLICABLE",
+    "attempts": []
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  }
+}

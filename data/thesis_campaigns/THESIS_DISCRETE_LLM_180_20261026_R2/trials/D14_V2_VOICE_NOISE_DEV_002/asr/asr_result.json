@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "f1d900f123bad3029d2d1c89b08cb91810db70eef677501391dfb84dbf0e2fc8",
+  "transcript_raw": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que sólo quede activa la que elija.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1265,
+  "frozen_at": "2026-10-26T22:01:28"
+}

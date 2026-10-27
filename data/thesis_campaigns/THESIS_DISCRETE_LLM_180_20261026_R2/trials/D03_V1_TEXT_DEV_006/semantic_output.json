@@ -1,0 +1,349 @@
+{
+  "intent_id": "INT_MOTOR_LATCH",
+  "case_id": null,
+  "command_text": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop.",
+  "normalized_command": "arranca el motor con start, mantenlo en marcha al soltar el pulsador y detenlo con stop",
+  "parameters": {
+    "trigger_input": "I_Start",
+    "stop_input": "I_Stop",
+    "emergency_input": "I_Emergency",
+    "motor_output": "Q_Motor_Enable",
+    "run_latch": "M_RunLatch"
+  },
+  "confidence": 0.99,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "Se utiliza I_Emergency con prioridad de parada sobre Q_Motor_Enable.",
+    "I_Stop tiene prioridad sobre I_Start y la liberación de I_Emergency no provoca rearranque automático."
+  ],
+  "recognized_tags": [
+    "I_Start",
+    "I_Stop",
+    "I_Emergency",
+    "Q_Motor_Enable",
+    "M_RunLatch"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [],
+  "operation_type": "motor_start_stop_latched",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "trigger_input": {
+      "source": "LLM"
+    },
+    "stop_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "motor_output": {
+      "source": "LLM"
+    },
+    "run_latch": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_MOTOR_LATCH",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch"
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_MOTOR_START_STOP",
+    "case_id": null,
+    "command_text": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop.",
+    "normalized_command": "start el motor con start mantenlo en start al soltar el input y detenlo con stop",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch",
+      "fault_latch": "M_FaultLatch"
+    },
+    "confidence": 0.97,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se agrega I_Emergency por seguridad industrial obligatoria."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Start",
+      "I_Stop",
+      "M_FaultLatch",
+      "M_RunLatch",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "stop_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "motor_output": {
+        "source": "RULES"
+      },
+      "run_latch": {
+        "source": "RULES"
+      },
+      "fault_latch": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MOTOR_START_STOP",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "run_latch": "M_RunLatch",
+        "fault_latch": "M_FaultLatch"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_MOTOR_LATCH",
+    "case_id": null,
+    "command_text": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop.",
+    "normalized_command": "arranca el motor con start, mantenlo en marcha al soltar el pulsador y detenlo con stop",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch"
+    },
+    "confidence": 0.99,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se utiliza I_Emergency con prioridad de parada sobre Q_Motor_Enable.",
+      "I_Stop tiene prioridad sobre I_Start y la liberación de I_Emergency no provoca rearranque automático."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Stop",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "M_RunLatch"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "motor_start_stop_latched",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "stop_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "run_latch": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MOTOR_LATCH",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "run_latch": "M_RunLatch"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0b4f8e3c935d9900006adff1e332d087d28f10b57c69e63379",
+    "prompt_tokens": 19149,
+    "completion_tokens": 297,
+    "total_tokens": 19446,
+    "latency_ms": 3881.16,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "iec61131_rules.md",
+      "score": 9,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 9,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "timer_counter_examples.md",
+      "score": 9,
+      "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+    },
+    {
+      "source": "README.md",
+      "score": 6,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 6,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "emergency_priority",
+      "enable_pid",
+      "motor_start_latch"
+    ],
+    "explicit_types": [],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_MOTOR_LATCH",
+    "case_id": null,
+    "command_text": "Arranca el motor con Start, mantenlo en marcha al soltar el pulsador y detenlo con Stop.",
+    "normalized_command": "arranca el motor con start, mantenlo en marcha al soltar el pulsador y detenlo con stop",
+    "parameters": {
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "run_latch": "M_RunLatch"
+    },
+    "confidence": 0.99,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se utiliza I_Emergency con prioridad de parada sobre Q_Motor_Enable.",
+      "I_Stop tiene prioridad sobre I_Start y la liberación de I_Emergency no provoca rearranque automático."
+    ],
+    "recognized_tags": [
+      "I_Start",
+      "I_Stop",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "M_RunLatch"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "operation_type": "motor_start_stop_latched",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "trigger_input": {
+        "source": "LLM"
+      },
+      "stop_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "run_latch": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MOTOR_LATCH",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "run_latch": "M_RunLatch"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

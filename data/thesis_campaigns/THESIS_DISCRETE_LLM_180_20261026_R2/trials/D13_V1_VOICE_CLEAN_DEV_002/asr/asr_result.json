@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "b1280ad20d8fa1fdccbeaebc641d0337920ac11b0ebb4dd78983e35363b29515",
+  "transcript_raw": "Habilita el variador con la orden de marcha únicamente mientras no haya alarma activa. Si aparece una alarma, deshabilítalo.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1426,
+  "frozen_at": "2026-10-26T21:04:22"
+}

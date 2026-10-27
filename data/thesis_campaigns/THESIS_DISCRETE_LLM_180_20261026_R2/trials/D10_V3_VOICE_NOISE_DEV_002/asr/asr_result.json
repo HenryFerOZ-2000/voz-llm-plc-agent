@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "0b1a7032da74140f7c5e6fcac9498637f2716f3907b5216063c758ab2db782a2",
+  "transcript_raw": "Reset debe iniciar a cero un contador de cinco pulsos que activa una salida al completarse, apagando esa salida.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2056,
+  "frozen_at": "2026-10-26T21:52:09"
+}

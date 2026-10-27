@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "ed3d9a0e1a7b27a2b900a099b742191634b336cd428142e32c2593b42649a8ba",
+  "transcript_raw": "Mientras haya una alarma activa el variador debe estar deshabilitado, aunque tenga la orden de marcha. Sin alarma, habilítalo con esa orden.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1547,
+  "frozen_at": "2026-10-26T21:59:47"
+}

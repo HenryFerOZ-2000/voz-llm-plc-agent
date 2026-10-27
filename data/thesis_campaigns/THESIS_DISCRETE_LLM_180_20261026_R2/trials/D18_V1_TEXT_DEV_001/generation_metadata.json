@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-10-26T20:24:54",
+  "target_platform": "SIEMENS_SCL_V18",
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0b3d1946b5f7fff3006adffd62423487d2aa1fb9f914036f24",
+    "prompt_tokens": 19117,
+    "completion_tokens": 521,
+    "total_tokens": 19638,
+    "latency_ms": 5258.09,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "agreement": true,
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": [
+      {
+        "address": "%IX16.3",
+        "proposed_name": "I_Maintenance",
+        "current_name": "I_Maintenance",
+        "current_state": "ASSIGNED",
+        "conflict": false,
+        "blocked": false,
+        "reason": "Ya existe esta asignacion, se reutiliza sin cambios.",
+        "role_text": "",
+        "address_was_explicit": false,
+        "requires_confirmation": false
+      }
+    ]
+  },
+  "retrieved_context_count": 5,
+  "transcription": {},
+  "generation_mode": "CONTROLLED_DETERMINISTIC_POU",
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "generation_status": "GENERATED",
+  "semantic_status": "SEMANTIC_VALIDATED",
+  "verification_status": "STATICALLY_VERIFIED",
+  "compilation_status": "COMPILATION_NOT_EXECUTED",
+  "simulation_status": "SIMULATION_NOT_EXECUTED",
+  "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+  "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY",
+  "is_fully_validated": false
+}

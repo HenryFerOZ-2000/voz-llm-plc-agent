@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "15bec310992b737f5c77a284c9a9ae135b9cf4926f20fff308f5fd9c1c0b8faf",
+  "transcript_raw": "A partir de las señales de marcha y de falla, indica con tres pilotos si el sistema está detenido, en marcha o en falla, únicamente debe encenderse el de estado actual.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2188,
+  "frozen_at": "2026-10-26T21:22:14"
+}

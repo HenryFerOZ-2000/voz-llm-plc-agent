@@ -1,0 +1,610 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 5.1042000000000005,
+      "t_done_ms": 8.6089,
+      "timestamp": "2026-10-26T21:39:10.8356424-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Safety_Condition",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 313.1221,
+      "t_done_ms": 313.41110000000003,
+      "timestamp": "2026-10-26T21:39:11.1401145-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 829.142,
+      "t_done_ms": 829.4933000000001,
+      "timestamp": "2026-10-26T21:39:11.6566994-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1146.1184,
+      "t_done_ms": 1146.7586000000001,
+      "timestamp": "2026-10-26T21:39:11.9737462-05:00",
+      "writes": [
+        {
+          "name": "I_Safety_Condition",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1463.2256,
+      "t_done_ms": 1463.8616000000002,
+      "timestamp": "2026-10-26T21:39:12.2907762-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1977.5286,
+      "t_done_ms": 1978.8481000000002,
+      "timestamp": "2026-10-26T21:39:12.8053550-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Safety_Condition",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 10.483,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 62.4861,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 111.48490000000001,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 162.9806,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 211.45620000000002,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 262.6775,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 313.0248,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 313.4885,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 378.5093,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 428.8142,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 478.4348,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 529.1658,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 578.2425000000001,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 627.8607000000001,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 678.0995,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 728.9661,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 777.8232,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 828.8192,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 829.7026000000001,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 880.1461,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 945.8406,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 995.9362000000001,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1044.7734,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1080.5576,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1145.8782,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": true,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1146.9186,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1212.5354,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1261.9506000000001,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1313.3996,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1362.2218,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1411.8347,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_3",
+      "phase": "test",
+      "t_ms": 1462.9927,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1464.1025,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": false
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1529.4024000000002,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1578.5256000000002,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1629.1390000000001,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1679.8113,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1722.1235000000001,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1779.0372,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1827.3726000000001,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1878.3261,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1927.6358,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "step_4",
+      "phase": "test",
+      "t_ms": 1977.4034000000001,
+      "values": {
+        "I_Start": true,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1979.1562000000001,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2031.6260000000002,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2080.7336,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2144.655,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 2195.8142000000003,
+      "values": {
+        "I_Start": false,
+        "I_Safety_Condition": false,
+        "Q_Alarm": true
+      }
+    }
+  ]
+}

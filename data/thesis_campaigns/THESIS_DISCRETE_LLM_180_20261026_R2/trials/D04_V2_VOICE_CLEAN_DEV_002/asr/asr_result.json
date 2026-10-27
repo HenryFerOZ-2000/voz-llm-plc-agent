@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "d041b3ebd3dad23ce20d5136ea43b820547d784b062c02b02276f561176711b6",
+  "transcript_raw": "Haz un enclavamiento: el motor arranca con Start, se queda encendido aunque se suelte el botón y se apaga con Stop.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2299,
+  "frozen_at": "2026-10-26T20:41:07"
+}

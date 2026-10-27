@@ -1,0 +1,287 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D17",
+  "case_id": "D17",
+  "title": "D17 - Supervision de sensor 5 s tras Start",
+  "description": "Tras activar Start se supervisa el sensor: si no cambia de estado durante 5 s se activa la alarma; antes de Start no hay supervision.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "f757df8d6f6c2f9c85a4d1f9f059138324e7c9bc3e816635ea56d754e0d36be1",
+    "previous_hash": "3c701f0d4bbc45c284993a465cfc08073bc5b4cf2a2b0f4ec0421ff25116532a",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Benchmark v2: alineado con el comando canonico (Anadido START (el comando canonico habilita la supervision con Start); eliminado RESET; nuevo gap.).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "f757df8d6f6c2f9c85a4d1f9f059138324e7c9bc3e816635ea56d754e0d36be1",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "APPROVED",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Supervision de sensor 5 s tras Start",
+    "original_requirement": "Alarma si el sensor no cambia de estado en 5 s.",
+    "canonical_command": "Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos.",
+    "canonical_case_hash": "e28adc6244a07c72128c7387d0b403d6be32a7a0656774d999ab35e4ae5f7773",
+    "legacy_reference_intent": "INT_SENSOR_TIMEOUT_ALARM"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {
+      "timeout": {
+        "type": "DURATION",
+        "value_ms": 5000,
+        "tolerance_ms": 0,
+        "if_missing": "NOT_EVALUABLE"
+      }
+    },
+    "accepted_intents": [
+      "INT_SENSOR_TIMEOUT_ALARM"
+    ],
+    "required_functions": [
+      "sensor_timeout_alarm"
+    ],
+    "required_roles": [
+      "START",
+      "SENSOR",
+      "ALARM"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Start: habilita la supervision.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "SENSOR": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Sensor supervisado.",
+      "semantic_paths": [
+        "sensor_input"
+      ]
+    },
+    "ALARM": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Alarma de sensor sin cambio.",
+      "semantic_paths": [
+        "alarm_output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 2,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Alarma si el sensor no cambia de estado en 5 s."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Al activar Start, supervisa un sensor: si pasan 5 segundos sin que cambie de estado, activa una alarma; cada cambio del sensor vuelve a contar los 5 segundos."
+    },
+    {
+      "id": "C-D17-START",
+      "text": "Start se mantiene activo durante la supervision (valido tanto si la supervision arranca con el flanco como con el nivel de Start)."
+    },
+    {
+      "id": "C-D17-CHANGES",
+      "text": "Cambios cada 2 s (< 5 s) no generan alarma; no se evalua el borrado de la alarma."
+    },
+    {
+      "id": "C-TIMING",
+      "text": "Temporizaciones: transicion nominal con tolerancia -300 ms / +700 ms medida en el bridge (reloj monotono); las ventanas de evaluacion dejan libre esa banda."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_idle",
+      "description": "Test harness: Start y sensor en OFF.",
+      "set": {
+        "START": false,
+        "SENSOR": false
+      },
+      "wait_ms": 300
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "t0_idle",
+      "description": "Sin Start: el sensor sin cambios durante 6 s NO genera alarma (no hay supervision).",
+      "wait_ms": 6000,
+      "expect": {
+        "ALARM": false
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 0,
+          "to_ms": 6000,
+          "expect": {
+            "ALARM": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "t1_start",
+      "description": "Start activado (se mantiene durante la supervision).",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "t2_change",
+      "description": "Cambio del sensor a ON; en 2 s no hay alarma.",
+      "set": {
+        "SENSOR": true
+      },
+      "wait_ms": 2000,
+      "expect": {
+        "ALARM": false
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 0,
+          "to_ms": 2000,
+          "expect": {
+            "ALARM": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "t3_change",
+      "description": "Cambio del sensor a OFF; en 2 s no hay alarma.",
+      "set": {
+        "SENSOR": false
+      },
+      "wait_ms": 2000,
+      "expect": {
+        "ALARM": false
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 0,
+          "to_ms": 2000,
+          "expect": {
+            "ALARM": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "t4_timeout",
+      "description": "Cambio a ON y sin mas cambios: alarma a los 5 s.",
+      "set": {
+        "SENSOR": true
+      },
+      "wait_ms": 7000,
+      "expect": {
+        "ALARM": true
+      },
+      "expect_timeline": [
+        {
+          "from_ms": 0,
+          "to_ms": 4700,
+          "expect": {
+            "ALARM": false
+          }
+        },
+        {
+          "from_ms": 5700,
+          "to_ms": 7000,
+          "expect": {
+            "ALARM": true
+          }
+        }
+      ],
+      "measure_transition": {
+        "role": "ALARM",
+        "to": true,
+        "nominal_ms": 5000,
+        "tolerance_ms": {
+          "early": 300,
+          "late": 700
+        }
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_inputs",
+      "description": "Start y sensor a OFF.",
+      "set": {
+        "START": false,
+        "SENSOR": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": [
+    {
+      "id": "GAP-D17",
+      "expected_capability": "Supervision del sensor habilitada por Start.",
+      "current_behavior": "INT_SENSOR_TIMEOUT_ALARM supervisa desde el arranque del PLC sin Start: t0_idle generaria alarma.",
+      "severity": "HIGH",
+      "recommended_future_fix": "Condicionar el temporizador de supervision a Start en la plantilla.",
+      "text": "INT_SENSOR_TIMEOUT_ALARM supervisa desde el arranque del PLC sin Start: t0_idle generaria alarma."
+    }
+  ]
+}

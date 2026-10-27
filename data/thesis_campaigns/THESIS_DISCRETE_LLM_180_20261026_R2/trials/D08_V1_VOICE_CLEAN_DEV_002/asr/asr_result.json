@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "51e2a19e6ab0711f2fa646527bdbc7b6dc3359a88ef19af31cd16eb41c9beaf1",
+  "transcript_raw": "Enciende el motor con el start, que siga en marcha aunque se suelte el pulsador y apague automáticamente tras 10 segundos de funcionamiento.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1459,
+  "frozen_at": "2026-10-26T20:50:09"
+}

@@ -2,6 +2,12 @@
 
 `voz_llm_plc_agent` es un proyecto de tesis en Python para programacion automatica de PLC a partir de texto o voz, con interpretacion controlada por reglas y LLM, validacion semantica estricta y generacion deterministica de paquetes PLC.
 
+## Datos de la campaña final de tesis
+
+La evaluación final empleó interpretación LLM exclusiva, un mapa I/O común y 180 comandos: 165 PASS, siete FAIL y ocho REVIEW. El [archivo de la campaña final](data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/README.md) incluye los veinte Oracles, el prompt, los mapas y la configuración, los registros originales disponibles por etapa, el código conservado de la campaña y los scripts para recalcular las estadísticas. La comparación preliminar se conserva por separado.
+
+Las grabaciones y los proyectos binarios TIA permanecen locales. Los modos y las tareas históricas descritos en otras secciones de este README no implican que se utilizaran en los resultados de la campaña final.
+
 ## Objetivo
 
 Demostrar una arquitectura segura donde el modelo de lenguaje solo interpreta el requerimiento y nunca genera ni despliega directamente el codigo final del PLC.

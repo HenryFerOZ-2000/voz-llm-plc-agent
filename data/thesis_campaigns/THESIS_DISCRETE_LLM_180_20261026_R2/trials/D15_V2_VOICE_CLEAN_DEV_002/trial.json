@@ -1,0 +1,989 @@
+{
+  "schema_version": 1,
+  "trial_id": "D15_V2_VOICE_CLEAN_DEV_002",
+  "case_id": "D15",
+  "variant_id": "V2",
+  "input_mode": "VOICE_CLEAN",
+  "trial_number": 2,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "HIGH",
+  "command_text": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.",
+  "created_at": "2026-10-26T21:10:23",
+  "semantic": {
+    "intent_id": "INT_MANUAL_AUTO_MODE",
+    "case_id": null,
+    "command_text": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+    "normalized_command": "selector manual-automatico: en automatico el motor sigue la orden automatica y en manual sigue exclusivamente la orden manual",
+    "parameters": {
+      "manual_input": "I_Mode_Manual",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "manual_mode_memory": "M_ManualMode",
+      "auto_mode_memory": "M_AutoMode",
+      "auto_command_input": "I_Start",
+      "manual_command_input": "I_Manual_Conveyor_Command"
+    },
+    "confidence": 0.94,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: I_Mode_Manual activo selecciona el modo Manual; inactivo selecciona el modo Automático.",
+      "INFERRED: I_Start se utiliza como orden automática del motor.",
+      "INFERRED: I_Manual_Conveyor_Command se reutiliza como orden manual del motor.",
+      "La emergencia I_Emergency tiene prioridad y deshabilita Q_Motor_Enable sin autoarranque al liberarse."
+    ],
+    "recognized_tags": [
+      "I_Mode_Manual",
+      "I_Start",
+      "I_Manual_Conveyor_Command",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "M_ManualMode",
+      "M_AutoMode"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "automatic_mode",
+        "mode_input": "I_Mode_Manual"
+      },
+      {
+        "type": "manual_mode",
+        "mode_input": "I_Mode_Manual",
+        "commands": [
+          {
+            "input": "I_Manual_Conveyor_Command",
+            "output": "Q_Motor_Enable",
+            "behavior": "maintained",
+            "enable_condition": "M_ManualMode"
+          }
+        ]
+      },
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      }
+    ],
+    "operation_type": "PROGRAM",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "manual_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "manual_mode_memory": {
+        "source": "LLM"
+      },
+      "auto_mode_memory": {
+        "source": "LLM"
+      },
+      "auto_command_input": {
+        "source": "LLM"
+      },
+      "manual_command_input": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "manual_input": "I_Mode_Manual",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "manual_mode_memory": "M_ManualMode",
+        "auto_mode_memory": "M_AutoMode",
+        "auto_command_input": "I_Start",
+        "manual_command_input": "I_Manual_Conveyor_Command"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "case_id": null,
+      "command_text": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+      "normalized_command": "quiero 1 selector manual auto en auto el motor responde a la orden auto y en manual a la orden manual sin que la otra orden haga nada",
+      "parameters": {
+        "manual_input": "I_Mode_Manual",
+        "auto_input": "I_Mode_Auto",
+        "emergency_input": "I_Emergency",
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "motor_output": "Q_Motor_Enable",
+        "manual_mode_memory": "M_ManualMode",
+        "auto_mode_memory": "M_AutoMode"
+      },
+      "confidence": 0.93,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Se agrega I_Emergency por seguridad industrial obligatoria."
+      ],
+      "recognized_tags": [
+        "I_Emergency",
+        "I_Mode_Auto",
+        "I_Mode_Manual",
+        "I_Start",
+        "I_Stop",
+        "M_AutoMode",
+        "M_ManualMode",
+        "Q_Motor_Enable"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "parameter_provenance": {
+        "manual_input": {
+          "source": "RULES"
+        },
+        "auto_input": {
+          "source": "RULES"
+        },
+        "emergency_input": {
+          "source": "RULES"
+        },
+        "trigger_input": {
+          "source": "RULES"
+        },
+        "stop_input": {
+          "source": "RULES"
+        },
+        "motor_output": {
+          "source": "RULES"
+        },
+        "manual_mode_memory": {
+          "source": "RULES"
+        },
+        "auto_mode_memory": {
+          "source": "RULES"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_MANUAL_AUTO_MODE",
+        "origin": "RULES",
+        "interpreted_parameters": {
+          "manual_input": "I_Mode_Manual",
+          "auto_input": "I_Mode_Auto",
+          "emergency_input": "I_Emergency",
+          "trigger_input": "I_Start",
+          "stop_input": "I_Stop",
+          "motor_output": "Q_Motor_Enable",
+          "manual_mode_memory": "M_ManualMode",
+          "auto_mode_memory": "M_AutoMode"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "case_id": null,
+      "command_text": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+      "normalized_command": "selector manual-automatico: en automatico el motor sigue la orden automatica y en manual sigue exclusivamente la orden manual",
+      "parameters": {
+        "manual_input": "I_Mode_Manual",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "manual_mode_memory": "M_ManualMode",
+        "auto_mode_memory": "M_AutoMode",
+        "auto_command_input": "I_Start",
+        "manual_command_input": "I_Manual_Conveyor_Command"
+      },
+      "confidence": 0.94,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: I_Mode_Manual activo selecciona el modo Manual; inactivo selecciona el modo Automático.",
+        "INFERRED: I_Start se utiliza como orden automática del motor.",
+        "INFERRED: I_Manual_Conveyor_Command se reutiliza como orden manual del motor.",
+        "La emergencia I_Emergency tiene prioridad y deshabilita Q_Motor_Enable sin autoarranque al liberarse."
+      ],
+      "recognized_tags": [
+        "I_Mode_Manual",
+        "I_Start",
+        "I_Manual_Conveyor_Command",
+        "I_Emergency",
+        "Q_Motor_Enable",
+        "M_ManualMode",
+        "M_AutoMode"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "automatic_mode",
+          "mode_input": "I_Mode_Manual"
+        },
+        {
+          "type": "manual_mode",
+          "mode_input": "I_Mode_Manual",
+          "commands": [
+            {
+              "input": "I_Manual_Conveyor_Command",
+              "output": "Q_Motor_Enable",
+              "behavior": "maintained",
+              "enable_condition": "M_ManualMode"
+            }
+          ]
+        },
+        {
+          "type": "force_off",
+          "condition": "I_Emergency",
+          "outputs": [
+            "Q_Motor_Enable"
+          ]
+        }
+      ],
+      "operation_type": "PROGRAM",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "manual_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "LLM"
+        },
+        "manual_mode_memory": {
+          "source": "LLM"
+        },
+        "auto_mode_memory": {
+          "source": "LLM"
+        },
+        "auto_command_input": {
+          "source": "LLM"
+        },
+        "manual_command_input": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "NOT_APPLICABLE",
+        "intent_id": "INT_MANUAL_AUTO_MODE",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "manual_input": "I_Mode_Manual",
+          "emergency_input": "I_Emergency",
+          "motor_output": "Q_Motor_Enable",
+          "manual_mode_memory": "M_ManualMode",
+          "auto_mode_memory": "M_AutoMode",
+          "auto_command_input": "I_Start",
+          "manual_command_input": "I_Manual_Conveyor_Command"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_0226ee43e93e7b5b006ae00816fda087d28133039822a8c69d",
+      "prompt_tokens": 19254,
+      "completion_tokens": 1562,
+      "total_tokens": 20816,
+      "latency_ms": 14640.86,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "retrieved_context": [
+      {
+        "source": "openplc_conventions.md",
+        "score": 15,
+        "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 12,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      },
+      {
+        "source": "structured_text_rules.md",
+        "score": 12,
+        "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+      },
+      {
+        "source": "timer_counter_examples.md",
+        "score": 12,
+        "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+      },
+      {
+        "source": "README.md",
+        "score": 9,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [],
+      "covered_by_intent": [
+        "automatic_mode",
+        "emergency_priority",
+        "enable_pid"
+      ],
+      "explicit_types": [
+        "automatic_mode",
+        "conditional_output",
+        "force_off",
+        "manual_mode"
+      ],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "case_id": null,
+      "command_text": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+      "normalized_command": "selector manual-automático: en automático el motor responde solo a la orden automática y en manual responde solo a la orden manual.",
+      "parameters": {
+        "auto_input": "I_Mode_Auto",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "manual_mode_memory": "M_ManualMode",
+        "auto_mode_memory": "M_AutoMode",
+        "auto_command_input": "I_Auto_Motor_Command",
+        "manual_command_input": "I_Manual_Motor_Command"
+      },
+      "confidence": 0.96,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: I_Mode_Auto es TRUE cuando el selector está en modo Automático y FALSE cuando está en modo Manual.",
+        "INFERRED: Las órdenes automática y manual son mantenidas; Q_Motor_Enable permanece activa únicamente mientras esté activa la orden correspondiente al modo seleccionado.",
+        "La emergencia I_Emergency tiene prioridad y deshabilita Q_Motor_Enable."
+      ],
+      "recognized_tags": [
+        "I_Mode_Auto",
+        "I_Emergency",
+        "I_Auto_Motor_Command",
+        "I_Manual_Motor_Command",
+        "Q_Motor_Enable",
+        "M_ManualMode",
+        "M_AutoMode"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "automatic_mode",
+          "mode_input": "I_Mode_Auto"
+        },
+        {
+          "type": "manual_mode",
+          "mode_input": "I_Mode_Auto",
+          "commands": [
+            {
+              "input": "I_Manual_Motor_Command",
+              "output": "Q_Motor_Enable",
+              "behavior": "maintained"
+            }
+          ]
+        },
+        {
+          "type": "conditional_output",
+          "condition": "I_Mode_Auto AND I_Auto_Motor_Command",
+          "outputs": [
+            "Q_Motor_Enable"
+          ]
+        },
+        {
+          "type": "force_off",
+          "condition": "I_Emergency",
+          "outputs": [
+            "Q_Motor_Enable"
+          ]
+        }
+      ],
+      "operation_type": "manual_automatic_mode_selection",
+      "requested_io_assignments": [
+        {
+          "name": "I_Mode_Auto",
+          "class": "input",
+          "type": "BOOL",
+          "functional_role": "selector de modo, TRUE para Automático y FALSE para Manual"
+        },
+        {
+          "name": "I_Auto_Motor_Command",
+          "class": "input",
+          "type": "BOOL",
+          "functional_role": "orden automática del motor"
+        },
+        {
+          "name": "I_Manual_Motor_Command",
+          "class": "input",
+          "type": "BOOL",
+          "functional_role": "orden manual del motor"
+        }
+      ],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "auto_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "LLM"
+        },
+        "manual_mode_memory": {
+          "source": "LLM"
+        },
+        "auto_mode_memory": {
+          "source": "LLM"
+        },
+        "auto_command_input": {
+          "source": "LLM"
+        },
+        "manual_command_input": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "NOT_APPLICABLE",
+        "intent_id": "INT_MANUAL_AUTO_MODE",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "auto_input": "I_Mode_Auto",
+          "emergency_input": "I_Emergency",
+          "motor_output": "Q_Motor_Enable",
+          "manual_mode_memory": "M_ManualMode",
+          "auto_mode_memory": "M_AutoMode",
+          "auto_command_input": "I_Auto_Motor_Command",
+          "manual_command_input": "I_Manual_Motor_Command"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": {
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "case_id": null,
+      "command_text": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+      "normalized_command": "selector manual-automatico: en automatico el motor sigue la orden automatica y en manual sigue exclusivamente la orden manual",
+      "parameters": {
+        "manual_input": "I_Mode_Manual",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "manual_mode_memory": "M_ManualMode",
+        "auto_mode_memory": "M_AutoMode",
+        "auto_command_input": "I_Start",
+        "manual_command_input": "I_Manual_Conveyor_Command"
+      },
+      "confidence": 0.94,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "INFERRED: I_Mode_Manual activo selecciona el modo Manual; inactivo selecciona el modo Automático.",
+        "INFERRED: I_Start se utiliza como orden automática del motor.",
+        "INFERRED: I_Manual_Conveyor_Command se reutiliza como orden manual del motor.",
+        "La emergencia I_Emergency tiene prioridad y deshabilita Q_Motor_Enable sin autoarranque al liberarse."
+      ],
+      "recognized_tags": [
+        "I_Mode_Manual",
+        "I_Start",
+        "I_Manual_Conveyor_Command",
+        "I_Emergency",
+        "Q_Motor_Enable",
+        "M_ManualMode",
+        "M_AutoMode"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "automatic_mode",
+          "mode_input": "I_Mode_Manual"
+        },
+        {
+          "type": "manual_mode",
+          "mode_input": "I_Mode_Manual",
+          "commands": [
+            {
+              "input": "I_Manual_Conveyor_Command",
+              "output": "Q_Motor_Enable",
+              "behavior": "maintained",
+              "enable_condition": "M_ManualMode"
+            }
+          ]
+        },
+        {
+          "type": "force_off",
+          "condition": "I_Emergency",
+          "outputs": [
+            "Q_Motor_Enable"
+          ]
+        }
+      ],
+      "operation_type": "PROGRAM",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "manual_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "motor_output": {
+          "source": "LLM"
+        },
+        "manual_mode_memory": {
+          "source": "LLM"
+        },
+        "auto_mode_memory": {
+          "source": "LLM"
+        },
+        "auto_command_input": {
+          "source": "LLM"
+        },
+        "manual_command_input": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "NOT_APPLICABLE",
+        "intent_id": "INT_MANUAL_AUTO_MODE",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "manual_input": "I_Mode_Manual",
+          "emergency_input": "I_Emergency",
+          "motor_output": "Q_Motor_Enable",
+          "manual_mode_memory": "M_ManualMode",
+          "auto_mode_memory": "M_AutoMode",
+          "auto_command_input": "I_Start",
+          "manual_command_input": "I_Manual_Conveyor_Command"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "reason_for_retry": "normal_invalid_interpretation: ",
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D15\\V2\\D15_V2_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D15\\V2\\D15_V2_VOICE_CLEAN_DEV_002\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D15\\V2\\D15_V2_VOICE_CLEAN_DEV_002\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T21:10:25",
+    "resolved_at": "2026-10-26T21:10:44",
+    "bound_channels": 5,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.",
+  "generated_code_id": "2026-10-26_21-10-45_NOCASE_INT_MANUAL_AUTO_MODE",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": "clean_audio.wav",
+    "asr_transcript": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+    "wer": 0.0,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "REVIEW",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "REVIEW",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "a0e142df907e6911bd38c986efb18ea9ffa95f06d0b34b7371455166587b7d95",
+  "variant_hash": "6ed02cd6db72ecd68f5579449290545023002563c9c7de3538bf58d33ac1d288",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "REVIEW",
+    "verdict_reason": "ORACLE_ROLE_NOT_FOUND",
+    "roles": {
+      "MANUAL_COMMAND": "I_Manual_Conveyor_Command",
+      "AUTO_COMMAND": "I_Start",
+      "MOTOR_MAIN": "Q_Motor_Enable"
+    },
+    "role_issues": [
+      "ORACLE_ROLE_NOT_FOUND"
+    ],
+    "preconditions_success": null,
+    "cleanup_success": null,
+    "duration_ms": 1,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D15\\V2\\D15_V2_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D15",
+    "oracle_version": 2,
+    "oracle_hash": "6cc504987db5c37e854bd2aa94ab26538986eae28f34a8922ab19cdfcf8998bd",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": false,
+    "success": null,
+    "passed_checks": null,
+    "total_checks": null,
+    "pass_rate": null
+  },
+  "safety": {
+    "evaluated": false,
+    "success": null,
+    "invariants_defined": null,
+    "critical_violations": null,
+    "samples_checked": null
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": null,
+    "safety_success": null,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": false
+  },
+  "timing": {
+    "generation_ms": 21354,
+    "compile_ms": 39103,
+    "download_ms": null,
+    "functional_test_ms": 1,
+    "end_to_end_ms": 62252,
+    "semantic_ms": 20871,
+    "runtime_ms": 861,
+    "oracle_ms": 1,
+    "total_ms": 62252,
+    "generation_total_ms": 21354,
+    "evaluation_ms": 40898
+  },
+  "errors": [],
+  "final_status": "REVIEW",
+  "completed_at": "2026-10-26T21:11:26",
+  "canonical_command": "El operador elige el modo del motor con un selector Manual/Automático: en Automático el motor sigue la orden automática y en Manual sigue la orden manual; la orden del otro modo no tiene efecto.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.",
+  "reference_text_hash": "6ed02cd6db72ecd68f5579449290545023002563c9c7de3538bf58d33ac1d288",
+  "speaker_id": "S01",
+  "repeat_of_trial_id": "D15_V2_VOICE_CLEAN_DEV_001",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "audio_condition": "VOICE_CLEAN",
+  "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D15\\V2\\clean_stimulus.wav",
+  "audio_sha256": "d75d35c1576008a7e62e93234eeac651211bcece98c1d811667f0a1a65d60b0b",
+  "paired_audio_sha256": "69f0e0b535459ab7bc93a5b48c6151a9841384b25151282bfba914fdd7d0a0aa",
+  "audio_source_clean_sha256": "d75d35c1576008a7e62e93234eeac651211bcece98c1d811667f0a1a65d60b0b",
+  "audio_manifest_sha256": "340cb41d532e55893f0146bbebb9ae7a0f0cc9a8905143c269ec31d3b312648a",
+  "target_snr_db": 10.0,
+  "measured_snr_db": 10.0,
+  "voice": {
+    "protocol_version": 2,
+    "reference_text": "Quiero un selector Manual/Automático: en Automático el motor responde a la orden automática y en Manual a la orden manual, sin que la otra orden haga nada.",
+    "reference_text_hash": "6ed02cd6db72ecd68f5579449290545023002563c9c7de3538bf58d33ac1d288",
+    "transcript_review": "NONE",
+    "clean_source": "PAIRED_AUDIO_CORPUS",
+    "audio_condition": "VOICE_CLEAN",
+    "audio_source_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D15\\V2\\clean_stimulus.wav",
+    "audio_sha256": "d75d35c1576008a7e62e93234eeac651211bcece98c1d811667f0a1a65d60b0b",
+    "paired_audio_sha256": "69f0e0b535459ab7bc93a5b48c6151a9841384b25151282bfba914fdd7d0a0aa",
+    "audio_source_clean_sha256": "d75d35c1576008a7e62e93234eeac651211bcece98c1d811667f0a1a65d60b0b",
+    "audio_manifest_sha256": "340cb41d532e55893f0146bbebb9ae7a0f0cc9a8905143c269ec31d3b312648a",
+    "audio_manifest_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_audio\\D15\\V2\\audio_manifest.json",
+    "target_snr_db": 10.0,
+    "measured_snr_db": 10.0,
+    "noise_master_sha256": "965e43af9baa4372e7c7d6283452e6e2a673d08aea00467af8a0c1774ce73fb5",
+    "formal_freeze_id": "THESIS_DISCRETE_V4",
+    "audio_speaker_id": "S01",
+    "paired_clean_trial_id": "D15_V2_VOICE_CLEAN_DEV_001",
+    "clean_audio_hash": "d75d35c1576008a7e62e93234eeac651211bcece98c1d811667f0a1a65d60b0b",
+    "audio_capture_success": true,
+    "duration_ms": 10504,
+    "sample_rate": 16000,
+    "channels": 1,
+    "audio_peak": 32090,
+    "audio_rms": 2545.868,
+    "asr_audio": "clean_audio.wav",
+    "asr_audio_sha256": "d75d35c1576008a7e62e93234eeac651211bcece98c1d811667f0a1a65d60b0b",
+    "asr_success": true,
+    "asr_model": "gpt-4o-mini-transcribe",
+    "asr_language": "es",
+    "asr_latency_ms": 1498,
+    "asr_transcript_raw": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+    "asr_transcript_normalized": "quiero un selector manual automático en automático el motor responde a la orden automática y en manual a la orden manual sin que la otra orden haga nada",
+    "reference_word_count": 28,
+    "substitutions": 0,
+    "deletions": 0,
+    "insertions": 0,
+    "wer": 0.0,
+    "exact_transcript_match": false,
+    "normalized_transcript_match": true
+  },
+  "paired_clean_trial_id": "D15_V2_VOICE_CLEAN_DEV_001",
+  "input_text": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+  "effective_input_text": "Quiero un selector manual-automático en automático, el motor responde a la orden automática y en manual a la orden manual, sin que la otra orden haga nada.",
+  "effective_input_text_hash": "75d3988b7e85194715bb61aa2fd63f6303c7659b044e265a1b15ed08cf56d00b",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 3,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "I_Mode_Manual",
+      "I_Manual_Conveyor_Command"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T21:10:45",
+    "generated_code_id": "2026-10-26_21-10-45_NOCASE_INT_MANUAL_AUTO_MODE"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D15\\V2\\D15_V2_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0561",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0561",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T21:10:45",
+        "completed_at": "2026-10-26T21:11:26",
+        "retry_reason": null,
+        "final_status": "REVIEW",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "REVIEW",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 45968,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22526,
+          "commit_headroom_mb": 46658
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0561",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0561",
+          "timestamp": "2026-10-26T21:11:28",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 2
+        }
+      }
+    ],
+    "final_verdict": "REVIEW",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T21:10:45",
+    "tia_workspace_id": "T0561",
+    "completed_at": "2026-10-26T21:11:26"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "orchestration_amendment": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\enmienda_clasificacion.json",
+    "sha256": "00d59c4b38e881bda0e7192dbdac10fdc7c253c418cd5a719cab8dedbd749af7"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D15\\V2\\D15_V2_VOICE_CLEAN_DEV_002\\evaluation\\attempt_001\\tia\\D15_V2_VOICE_CLEAN_DEV_002.zap18",
+    "zap18_hash": "3d63a101b789fbadbcca4283be8d880e4de9984914945c07ac7a58787e426d33",
+    "tia_workspace_id": "T0561",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": false,
+    "intent_actual": "INT_MANUAL_AUTO_MODE",
+    "intent_expected": [
+      "INT_MANUAL_AUTO_MODE"
+    ],
+    "intent_match": true,
+    "failed_checks": [
+      "role:MODE_AUTO"
+    ]
+  },
+  "system_failure": false
+}

@@ -1,0 +1,741 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D20_V1_VOICE_CLEAN_DEV_002",
+  "case_id": "D20",
+  "variant_id": "V1",
+  "input_mode": "VOICE_CLEAN",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "c5ae458401098ce03dd08209fcdb88bb630d09f147435e2c6cacdfbe27c4569c",
+    "variant_hash": "cca1451a1c6ff451084af6bbb7f18cd796728898e3d2082924dda5b1ac17e38b"
+  },
+  "oracle": {
+    "oracle_id": "D20",
+    "oracle_version": 2,
+    "oracle_hash": "9cbe97bddbb6a934dc3a4c38b8528f918bb7821116a0ba7296923f9293762d93",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": true,
+    "intent_expected": [
+      "INT_AUTO_CYCLE"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": true,
+      "intent_id": "INT_AUTO_CYCLE",
+      "intent_expected": [
+        "INT_AUTO_CYCLE"
+      ],
+      "intent_match": true,
+      "failed_checks": [],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_AUTO_CYCLE"
+          ],
+          "actual": "INT_AUTO_CYCLE",
+          "passed": true
+        },
+        {
+          "check": "role:START",
+          "expected": "resuelto",
+          "actual": "I_Start",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:RESET",
+          "expected": "resuelto",
+          "actual": "I_Reset",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:RUN_OUTPUT",
+          "expected": "resuelto",
+          "actual": "Q_Motor_Enable",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:COMPLETE_STATE",
+          "expected": "resuelto",
+          "actual": "Q_Cycle_Complete",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_AUTO_CYCLE"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "PASS",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "PASS",
+    "safety": "PASS",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "PASS",
+    "status": "PASS / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "PASS",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 2,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "RESOLVED",
+    "roles": {
+      "START": {
+        "role": "START",
+        "kind": "INPUT",
+        "functional_name": "I_Start",
+        "address": "%IX16.0",
+        "matched_paths": [
+          "trigger_input"
+        ]
+      },
+      "RESET": {
+        "role": "RESET",
+        "kind": "INPUT",
+        "functional_name": "I_Reset",
+        "address": "%IX16.3",
+        "matched_paths": [
+          "reset_input"
+        ]
+      },
+      "RUN_OUTPUT": {
+        "role": "RUN_OUTPUT",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Motor_Enable",
+        "address": "%QX8.4",
+        "matched_paths": [
+          "run_output"
+        ]
+      },
+      "COMPLETE_STATE": {
+        "role": "COMPLETE_STATE",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Cycle_Complete",
+        "address": "%QX8.0",
+        "matched_paths": [
+          "complete_output"
+        ]
+      }
+    },
+    "issues": []
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Start",
+      "I_Emergency",
+      "I_Reset"
+    ],
+    "bound_outputs": [
+      "Q_Cycle_Complete",
+      "Q_Motor_Enable"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Reset'] superan las esperadas (2)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": true,
+    "checks": [
+      {
+        "type": "expect",
+        "step_id": "pre_reset_off",
+        "role": "RUN_OUTPUT",
+        "expected": false,
+        "actual": false,
+        "t_ms": 316.3,
+        "passed": true
+      },
+      {
+        "type": "expect",
+        "step_id": "pre_reset_off",
+        "role": "COMPLETE_STATE",
+        "expected": false,
+        "actual": false,
+        "t_ms": 316.3,
+        "passed": true
+      }
+    ]
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 13,
+    "total_checks": 13,
+    "pass_rate": 1.0,
+    "failed_checks": [],
+    "major_invariant_violations": 0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "samples_checked": 135,
+    "violations": [],
+    "critical_violations": 0,
+    "major_violations": 0
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "PASS",
+  "oracle_verdict_reason": "ALL_CHECKS_PASSED",
+  "final_status": "PASS",
+  "steps": [
+    {
+      "step_id": "pre_reset_on",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Reset del ciclo.",
+      "started_at": "2026-10-26T21:23:54.1334543-05:00",
+      "completed_at": "2026-10-26T21:23:54.440",
+      "t_start_ms": 8.7,
+      "t_end_ms": 312.0,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "START": false,
+        "RESET": true,
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "pre_reset_off",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Reposo (IDLE).",
+      "started_at": "2026-10-26T21:23:54.4482670-05:00",
+      "completed_at": "2026-10-26T21:23:54.764",
+      "t_start_ms": 312.8,
+      "t_end_ms": 629.1,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "RESET": false,
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "pre_reset_off",
+          "role": "RUN_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 316.3,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "pre_reset_off",
+          "role": "COMPLETE_STATE",
+          "expected": false,
+          "actual": false,
+          "t_ms": 316.3,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "s1_start",
+      "phase": "test",
+      "executed": true,
+      "description": "START: ejecucion (RUNNING).",
+      "started_at": "2026-10-26T21:23:54.7663272-05:00",
+      "completed_at": "2026-10-26T21:23:55.081",
+      "t_start_ms": 630.6,
+      "t_end_ms": 945.5,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "RUN_OUTPUT": true,
+        "COMPLETE_STATE": false
+      },
+      "actual_outputs": {
+        "START": true,
+        "RESET": false,
+        "RUN_OUTPUT": true,
+        "COMPLETE_STATE": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "s1_start",
+          "role": "RUN_OUTPUT",
+          "expected": true,
+          "actual": true,
+          "t_ms": 314.9,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "s1_start",
+          "role": "COMPLETE_STATE",
+          "expected": false,
+          "actual": false,
+          "t_ms": 314.9,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "s2_run",
+      "phase": "test",
+      "executed": true,
+      "description": "Ejecucion de ~3 s y paso a COMPLETE.",
+      "started_at": "2026-10-26T21:23:55.0828843-05:00",
+      "completed_at": "2026-10-26T21:23:59.598",
+      "t_start_ms": 630.6,
+      "t_end_ms": 5461.9,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": true
+      },
+      "actual_outputs": {
+        "START": false,
+        "RESET": false,
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "s2_run",
+          "role": "RUN_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 4831.4,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "s2_run",
+          "role": "COMPLETE_STATE",
+          "expected": true,
+          "actual": true,
+          "t_ms": 4831.4,
+          "passed": true
+        },
+        {
+          "type": "timeline",
+          "step_id": "s2_run",
+          "role": "RUN_OUTPUT",
+          "expected": true,
+          "expected_time": {
+            "from_ms": 300,
+            "to_ms": 2700
+          },
+          "samples_in_window": 48,
+          "passed": true,
+          "actual_observation_time": 2666.2,
+          "actual": true
+        },
+        {
+          "type": "timeline",
+          "step_id": "s2_run",
+          "role": "COMPLETE_STATE",
+          "expected": false,
+          "expected_time": {
+            "from_ms": 300,
+            "to_ms": 2700
+          },
+          "samples_in_window": 48,
+          "passed": true,
+          "actual_observation_time": 2666.2,
+          "actual": false
+        },
+        {
+          "type": "timeline",
+          "step_id": "s2_run",
+          "role": "RUN_OUTPUT",
+          "expected": false,
+          "expected_time": {
+            "from_ms": 3700,
+            "to_ms": 4800
+          },
+          "samples_in_window": 22,
+          "passed": true,
+          "actual_observation_time": 4781.7,
+          "actual": false
+        },
+        {
+          "type": "timeline",
+          "step_id": "s2_run",
+          "role": "COMPLETE_STATE",
+          "expected": true,
+          "expected_time": {
+            "from_ms": 3700,
+            "to_ms": 4800
+          },
+          "samples_in_window": 22,
+          "passed": true,
+          "actual_observation_time": 4781.7,
+          "actual": true
+        },
+        {
+          "type": "transition",
+          "step_id": "s2_run",
+          "role": "RUN_OUTPUT",
+          "expected": false,
+          "expected_time": {
+            "nominal_ms": 3000,
+            "from_ms": 2700,
+            "to_ms": 3700
+          },
+          "actual_observation_time": 3131.2,
+          "tolerance": {
+            "early": 300,
+            "late": 700
+          },
+          "passed": true,
+          "sample_period_ms": 50
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 91
+    },
+    {
+      "step_id": "s3_reset",
+      "phase": "test",
+      "executed": true,
+      "description": "RESET: vuelve a IDLE.",
+      "started_at": "2026-10-26T21:23:59.5981178-05:00",
+      "completed_at": "2026-10-26T21:23:59.915",
+      "t_start_ms": 5462.5,
+      "t_end_ms": 5779.1,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "RESET": true,
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "s3_reset",
+          "role": "RUN_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 316.6,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "s3_reset",
+          "role": "COMPLETE_STATE",
+          "expected": false,
+          "actual": false,
+          "t_ms": 316.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "s4_idle",
+      "phase": "test",
+      "executed": true,
+      "description": "RESET soltado: permanece en IDLE (no rearranca sin START).",
+      "started_at": "2026-10-26T21:23:59.9160398-05:00",
+      "completed_at": "2026-10-26T21:24:00.431",
+      "t_start_ms": 5779.8,
+      "t_end_ms": 6295.2,
+      "inputs_applied": {
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "RESET": false,
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "s4_idle",
+          "role": "RUN_OUTPUT",
+          "expected": false,
+          "actual": false,
+          "t_ms": 515.4,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "s4_idle",
+          "role": "COMPLETE_STATE",
+          "expected": false,
+          "actual": false,
+          "t_ms": 515.4,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "cleanup_inputs",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Entradas a OFF.",
+      "started_at": "2026-10-26T21:24:00.4330141-05:00",
+      "completed_at": "2026-10-26T21:24:00.649",
+      "t_start_ms": 6296.5,
+      "t_end_ms": 6512.0,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "RESET": {
+          "name": "I_Reset",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "START": false,
+        "RESET": false,
+        "RUN_OUTPUT": false,
+        "COMPLETE_STATE": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    }
+  ],
+  "cleanup": {
+    "performed": true,
+    "success": true,
+    "inputs": [
+      {
+        "name": "I_Start",
+        "address": "%I16.0",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Reset",
+        "address": "%I16.3",
+        "readback": false,
+        "restored": true
+      }
+    ],
+    "process_variables": []
+  },
+  "sequence": {
+    "planned_ms": 6400,
+    "sample_period_ms": 50,
+    "watched": [
+      "I_Start",
+      "I_Reset",
+      "Q_Motor_Enable",
+      "Q_Cycle_Complete"
+    ],
+    "skipped_steps": [],
+    "bridge_status": "PLCSIM_IO_PASSED",
+    "failed_step": null,
+    "sequence_duration_ms": 6512.0515000000005,
+    "cpu_state": "RUN"
+  },
+  "errors": [],
+  "warnings": [
+    "Entradas ligadas ['I_Start', 'I_Emergency', 'I_Reset'] superan las esperadas (2)."
+  ],
+  "timings": {
+    "generation_ms": 11175,
+    "compile_ms": 38072,
+    "download_ms": null,
+    "functional_test_ms": 8465,
+    "end_to_end_ms": 59442,
+    "semantic_ms": 10698,
+    "runtime_ms": 854,
+    "oracle_ms": 8465,
+    "total_ms": 59442,
+    "generation_total_ms": 11175,
+    "evaluation_ms": 48267
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:24:01"
+}

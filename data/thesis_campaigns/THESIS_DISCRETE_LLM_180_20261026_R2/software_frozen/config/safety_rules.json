@@ -1,0 +1,22 @@
+{
+  "critical_outputs": [
+    "Q_Motor_Enable",
+    "Q_Contactor_A",
+    "Q_Contactor_B"
+  ],
+  "priority_rules": [
+    "I_Emergency tiene prioridad absoluta sobre salidas criticas.",
+    "I_Stop tiene prioridad sobre I_Start.",
+    "Al liberar I_Emergency no debe existir autoarranque."
+  ],
+  "forbidden_conditions": [
+    "No se permite usar tags fuera de io_map.json.",
+    "No se permite activar Q_Contactor_A y Q_Contactor_B al mismo tiempo."
+  ],
+  "validation_requirements": [
+    "Los temporizadores deben tener valores TIME validos.",
+    "Toda logica generada debe incluir comentarios.",
+    "Todo caso debe generar test cases basicos.",
+    "Un fallback seguro no se considera una implementacion funcional valida."
+  ]
+}

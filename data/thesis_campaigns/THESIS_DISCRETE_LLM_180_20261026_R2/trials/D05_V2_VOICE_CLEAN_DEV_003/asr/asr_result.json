@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "67df21b06ad71aa5f5a2b079831ac2206ee16781bbe160d71a681be664b0b620",
+  "transcript_raw": "Quiero que el motor arranque con Start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 5977,
+  "frozen_at": "2026-10-26T20:43:44"
+}

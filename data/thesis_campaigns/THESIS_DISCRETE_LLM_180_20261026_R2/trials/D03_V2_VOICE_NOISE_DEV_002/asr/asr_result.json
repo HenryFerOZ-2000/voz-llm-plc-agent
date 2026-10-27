@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "8a92851c2e290dbb765b58b746c8d41310b6f4e1d2e9097f977b9e0faa55231a",
+  "transcript_raw": "Quiero encender el motor con Start y que siga encendido aunque suelte el botón y con Stop se apaga.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 4485,
+  "frozen_at": "2026-10-26T21:32:06"
+}

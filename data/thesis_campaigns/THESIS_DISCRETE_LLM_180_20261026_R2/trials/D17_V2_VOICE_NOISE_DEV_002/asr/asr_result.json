@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "72d33b4ce8c66ac98817d8b25aaba690f8af4aa214a0db7475ffaf161f9cca4e",
+  "transcript_raw": "Quiero que, después de dar Start, salte una alarma si el sensor pasa cinco segundos seguidos sin cambiar de estado.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1767,
+  "frozen_at": "2026-10-26T22:10:23"
+}

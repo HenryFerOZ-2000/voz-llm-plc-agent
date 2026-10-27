@@ -1,0 +1,701 @@
+{
+  "schema_version": 1,
+  "trial_id": "D14_V2_TEXT_DEV_001",
+  "case_id": "D14",
+  "variant_id": "V2",
+  "input_mode": "TEXT",
+  "trial_number": 1,
+  "experiment_family": "DISCRETE",
+  "domain": "DISCRETE",
+  "complexity": "HIGH",
+  "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+  "created_at": "2026-10-26T20:08:22",
+  "semantic": {
+    "intent_id": "INT_SPEED_SELECTION",
+    "case_id": null,
+    "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+    "normalized_command": "seleccionar velocidad baja, media o alta mediante tres entradas, manteniendo activa exclusivamente la salida de la velocidad seleccionada",
+    "parameters": {
+      "speed_low_input": "I_Speed_Low",
+      "speed_medium_input": "I_Speed_Medium",
+      "speed_high_input": "I_Speed_High",
+      "emergency_input": "I_Emergency",
+      "speed_low_output": "Q_Speed_Low",
+      "speed_medium_output": "Q_Speed_Medium",
+      "speed_high_output": "Q_Speed_High"
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Las tres entradas representan órdenes de selección de velocidad mutuamente excluyentes.",
+      "I_Emergency desactiva las salidas de velocidad mientras permanezca activa."
+    ],
+    "recognized_tags": [
+      "I_Speed_Low",
+      "I_Speed_Medium",
+      "I_Speed_High",
+      "I_Emergency",
+      "Q_Speed_Low",
+      "Q_Speed_Medium",
+      "Q_Speed_High"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "never_together",
+        "outputs": [
+          "Q_Speed_Low",
+          "Q_Speed_Medium",
+          "Q_Speed_High"
+        ]
+      }
+    ],
+    "operation_type": "speed_selection",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "speed_low_input": {
+        "source": "LLM"
+      },
+      "speed_medium_input": {
+        "source": "LLM"
+      },
+      "speed_high_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "speed_low_output": {
+        "source": "LLM"
+      },
+      "speed_medium_output": {
+        "source": "LLM"
+      },
+      "speed_high_output": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_SPEED_SELECTION",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    },
+    "parser_mode_requested": "llm",
+    "parser_mode_used": "llm",
+    "rule_result": {
+      "intent_id": "INT_UNKNOWN",
+      "case_id": null,
+      "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+      "normalized_command": "quiero elegir entre velocidad baja media y alta con tres entradas y que solo quede enciende la que elija",
+      "parameters": {},
+      "confidence": 0.0,
+      "ambiguities": [
+        "No se reconocieron variables o senales autorizadas en el comando.",
+        "No se reconoce el elemento industrial objetivo."
+      ],
+      "requires_clarification": true,
+      "clarification_question": "Aclare la accion industrial requerida, las variables involucradas y el tiempo si corresponde.",
+      "assumptions": [],
+      "recognized_tags": [],
+      "unrecognized_terms": [],
+      "functional_requirements": [],
+      "parameter_provenance": {},
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "NOT_APPLICABLE",
+        "intent_id": "INT_UNKNOWN",
+        "origin": "RULES",
+        "interpreted_parameters": {},
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "llm_result": {
+      "intent_id": "INT_SPEED_SELECTION",
+      "case_id": null,
+      "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+      "normalized_command": "seleccionar velocidad baja, media o alta mediante tres entradas, manteniendo activa exclusivamente la salida de la velocidad seleccionada",
+      "parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Las tres entradas representan órdenes de selección de velocidad mutuamente excluyentes.",
+        "I_Emergency desactiva las salidas de velocidad mientras permanezca activa."
+      ],
+      "recognized_tags": [
+        "I_Speed_Low",
+        "I_Speed_Medium",
+        "I_Speed_High",
+        "I_Emergency",
+        "Q_Speed_Low",
+        "Q_Speed_Medium",
+        "Q_Speed_High"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "never_together",
+          "outputs": [
+            "Q_Speed_Low",
+            "Q_Speed_Medium",
+            "Q_Speed_High"
+          ]
+        }
+      ],
+      "operation_type": "speed_selection",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "speed_low_input": {
+          "source": "LLM"
+        },
+        "speed_medium_input": {
+          "source": "LLM"
+        },
+        "speed_high_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "speed_low_output": {
+          "source": "LLM"
+        },
+        "speed_medium_output": {
+          "source": "LLM"
+        },
+        "speed_high_output": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_SPEED_SELECTION",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "speed_low_input": "I_Speed_Low",
+          "speed_medium_input": "I_Speed_Medium",
+          "speed_high_input": "I_Speed_High",
+          "emergency_input": "I_Emergency",
+          "speed_low_output": "Q_Speed_Low",
+          "speed_medium_output": "Q_Speed_Medium",
+          "speed_high_output": "Q_Speed_High"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "agreement": false,
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "llm_usage": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "request_id": "resp_0ee554b9f07dc772006adff988747887d2a1c18fc9379f9acd",
+      "prompt_tokens": 19137,
+      "completion_tokens": 842,
+      "total_tokens": 19979,
+      "latency_ms": 8094.52,
+      "retries_used": 0,
+      "used_fallback": false,
+      "structured_output": true,
+      "error": null
+    },
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "retrieved_context": [
+      {
+        "source": "iec61131_rules.md",
+        "score": 9,
+        "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+      },
+      {
+        "source": "openplc_conventions.md",
+        "score": 9,
+        "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+      },
+      {
+        "source": "README.md",
+        "score": 6,
+        "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+      },
+      {
+        "source": "codesys_conventions.md",
+        "score": 6,
+        "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+      },
+      {
+        "source": "structured_text_rules.md",
+        "score": 6,
+        "excerpt": "# Reglas de Structured Text\n- Un programa típico contiene `PROGRAM`, un bloque `VAR ... END_VAR` y luego la implementación.\n- Las asignaciones usan `:=`.\n- Las estructuras condicionales usan `IF ... THEN ... END_IF;`.\n- Las implementaciones generadas en este proyecto deben incluir comentarios `(* ... *)`."
+      }
+    ],
+    "parser_mode": "llm",
+    "semantic_coverage": {
+      "detected_types": [],
+      "covered_by_intent": [
+        "emergency_priority",
+        "enable_pid"
+      ],
+      "explicit_types": [
+        "interlock",
+        "never_together"
+      ],
+      "missing_types": [],
+      "complete": true
+    },
+    "first_pass_interpretation": {
+      "intent_id": "INT_SPEED_SELECTION",
+      "case_id": null,
+      "command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+      "normalized_command": "seleccionar velocidad baja, media o alta mediante tres entradas, manteniendo activa exclusivamente la salida de la velocidad seleccionada",
+      "parameters": {
+        "speed_low_input": "I_Speed_Low",
+        "speed_medium_input": "I_Speed_Medium",
+        "speed_high_input": "I_Speed_High",
+        "emergency_input": "I_Emergency",
+        "speed_low_output": "Q_Speed_Low",
+        "speed_medium_output": "Q_Speed_Medium",
+        "speed_high_output": "Q_Speed_High"
+      },
+      "confidence": 0.98,
+      "ambiguities": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "assumptions": [
+        "Las tres entradas representan órdenes de selección de velocidad mutuamente excluyentes.",
+        "I_Emergency desactiva las salidas de velocidad mientras permanezca activa."
+      ],
+      "recognized_tags": [
+        "I_Speed_Low",
+        "I_Speed_Medium",
+        "I_Speed_High",
+        "I_Emergency",
+        "Q_Speed_Low",
+        "Q_Speed_Medium",
+        "Q_Speed_High"
+      ],
+      "unrecognized_terms": [],
+      "functional_requirements": [
+        {
+          "type": "never_together",
+          "outputs": [
+            "Q_Speed_Low",
+            "Q_Speed_Medium",
+            "Q_Speed_High"
+          ]
+        }
+      ],
+      "operation_type": "speed_selection",
+      "requested_io_assignments": [],
+      "interaction_profile": "normal",
+      "parameter_provenance": {
+        "speed_low_input": {
+          "source": "LLM"
+        },
+        "speed_medium_input": {
+          "source": "LLM"
+        },
+        "speed_high_input": {
+          "source": "LLM"
+        },
+        "emergency_input": {
+          "source": "LLM"
+        },
+        "speed_low_output": {
+          "source": "LLM"
+        },
+        "speed_medium_output": {
+          "source": "LLM"
+        },
+        "speed_high_output": {
+          "source": "LLM"
+        }
+      },
+      "effective_semantics": {
+        "schema_version": 1,
+        "status": "RESOLVED",
+        "intent_id": "INT_SPEED_SELECTION",
+        "origin": "LLM",
+        "interpreted_parameters": {
+          "speed_low_input": "I_Speed_Low",
+          "speed_medium_input": "I_Speed_Medium",
+          "speed_high_input": "I_Speed_High",
+          "emergency_input": "I_Emergency",
+          "speed_low_output": "Q_Speed_Low",
+          "speed_medium_output": "Q_Speed_Medium",
+          "speed_high_output": "Q_Speed_High"
+        },
+        "defaulted_keys": [],
+        "internal_technical_defaults": {},
+        "functional_value_defaults": {},
+        "errors": []
+      }
+    },
+    "second_pass_interpretation": null,
+    "reason_for_retry": null,
+    "parser_metadata": {
+      "requested_mode": "llm",
+      "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+      "agreement": false,
+      "retrieved_context_count": 5
+    },
+    "product_engine": {
+      "schema_version": 1,
+      "engine_id": "PRODUCT_SHARED_V1"
+    }
+  },
+  "io": {},
+  "verification": {
+    "is_valid": true,
+    "semantic_validation": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "missing_parameters": [],
+      "unauthorized_tags": [],
+      "requires_clarification": false,
+      "clarification_question": null,
+      "functional_requirement_conflicts": [],
+      "io_assignment_proposals": []
+    },
+    "generation_errors": [],
+    "ir_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "package_verification": {
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "composition": {
+        "valid": true,
+        "conflicts": []
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "generation_status": "GENERATED",
+    "semantic_status": "SEMANTIC_VALIDATED",
+    "verification_status": "STATICALLY_VERIFIED",
+    "compilation_status": "COMPILATION_NOT_EXECUTED",
+    "simulation_status": "SIMULATION_NOT_EXECUTED",
+    "physical_deployment_status": "HARDWARE_DEPLOYMENT_NOT_EXECUTED",
+    "automatic_deployment_policy": "NOT_ALLOWED_AUTOMATICALLY"
+  },
+  "compile": {
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0,
+    "classification": {
+      "category": "COMPILE_PASSED",
+      "reason": "TIA_COMPILATION_PASSED",
+      "tia_operational": true
+    },
+    "result_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V2\\D14_V2_TEXT_DEV_001\\evaluation\\attempt_001\\compile_report.json"
+  },
+  "download": {
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "physical_channel_count": 24,
+    "working_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V2\\D14_V2_TEXT_DEV_001\\working_io_map.json",
+    "snapshot_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V2\\D14_V2_TEXT_DEV_001\\io_map_snapshot.json",
+    "frozen": true,
+    "created_at": "2026-10-26T20:08:22",
+    "resolved_at": "2026-10-26T20:08:31",
+    "bound_channels": 7,
+    "discarded": null,
+    "error": null,
+    "base_map_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\frozen\\mapa_comun_8x8.json",
+    "map_policy": "PRODUCT_DECLARED_V2"
+  },
+  "lifecycle_state": "EVALUATED",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "attempt": 1,
+  "retry_reason": null,
+  "reference_command_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+  "generated_code_id": "2026-10-26_20-08-31_NOCASE_INT_SPEED_SELECTION",
+  "parser_mode": "llm",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra"
+  },
+  "asr": {
+    "audio_reference": null,
+    "asr_transcript": null,
+    "wer": null,
+    "noise_profile": null,
+    "snr_db": null
+  },
+  "clarification_requested": false,
+  "failure_category": "SUCCESS",
+  "failure_stage": null,
+  "infrastructure_error": false,
+  "final_verdict": "PASS",
+  "git_commit": null,
+  "benchmark_version": 3,
+  "canonical_case_hash": "8d0538b64aa0d42d79079685a83d81685a274140e8e4e9ca9a2f2c68a68bebe2",
+  "variant_hash": "c5f7be33854511d80b5ff42acb3675638bfd9c429bf843d249025413f447e950",
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "runtime_io": null,
+  "oracle": {
+    "verdict": "PASS",
+    "verdict_reason": "ALL_CHECKS_PASSED",
+    "roles": {
+      "SPEED_LOW_CMD": "I_Speed_Low",
+      "SPEED_MEDIUM_CMD": "I_Speed_Medium",
+      "SPEED_HIGH_CMD": "I_Speed_High",
+      "SPEED_LOW": "Q_Speed_Low",
+      "SPEED_MEDIUM": "Q_Speed_Medium",
+      "SPEED_HIGH": "Q_Speed_High"
+    },
+    "role_issues": [],
+    "preconditions_success": true,
+    "cleanup_success": true,
+    "duration_ms": 3752,
+    "evaluation_report": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V2\\D14_V2_TEXT_DEV_001\\evaluation\\attempt_001\\evaluation_report.json"
+  },
+  "oracle_reference": {
+    "oracle_id": "D14",
+    "oracle_version": 2,
+    "oracle_hash": "1cefcbee200446e9b600678754d21cc13781b9e8cb083379b2ec6643663d98b1",
+    "oracle_status": "FROZEN"
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 9,
+    "total_checks": 9,
+    "pass_rate": 1.0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "critical_violations": 0,
+    "samples_checked": 40
+  },
+  "stages": {
+    "semantic_success": true,
+    "verification_success": true,
+    "compile_success": true,
+    "download_success": true,
+    "start_module_success": true,
+    "runtime_connection_success": true,
+    "functional_success": true,
+    "safety_success": true,
+    "io_allocation_success": true,
+    "ir_success": true,
+    "semantic_benchmark_match": true
+  },
+  "timing": {
+    "generation_ms": 8504,
+    "compile_ms": 39565,
+    "download_ms": null,
+    "functional_test_ms": 3752,
+    "end_to_end_ms": 53553,
+    "semantic_ms": 8131,
+    "runtime_ms": 853,
+    "oracle_ms": 3752,
+    "total_ms": 53553,
+    "generation_total_ms": 8504,
+    "evaluation_ms": 45049
+  },
+  "errors": [],
+  "final_status": "PASS",
+  "completed_at": "2026-10-26T20:09:16",
+  "canonical_command": "Selecciona velocidad baja, media o alta mediante tres entradas digitales, activando únicamente la velocidad seleccionada.",
+  "batch_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "round_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "trial_flow": "COMPLETE",
+  "interaction_policy": "UNANSWERED_CLARIFICATION",
+  "reference_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+  "reference_text_hash": "c5f7be33854511d80b5ff42acb3675638bfd9c429bf843d249025413f447e950",
+  "speaker_id": null,
+  "repeat_of_trial_id": "D14_V2_TEXT_003",
+  "repeat_reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados.",
+  "amendment_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  },
+  "input_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+  "effective_input_text": "Quiero elegir entre velocidad baja, media y alta con tres entradas, y que solo quede activa la que elija.",
+  "effective_input_text_hash": "c5f7be33854511d80b5ff42acb3675638bfd9c429bf843d249025413f447e950",
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 3,
+      "digital_outputs": 3,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "clarification_question": null,
+  "resource_check": {
+    "policy": "WORKING_MAP_BINDING",
+    "success": true,
+    "checked_external_resources": [
+      "I_Speed_Low",
+      "I_Speed_Medium",
+      "I_Speed_High",
+      "I_Emergency",
+      "Q_Speed_Low",
+      "Q_Speed_Medium",
+      "Q_Speed_High"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "generation": {
+    "status": "SUCCESS",
+    "completed_at": "2026-10-26T20:08:31",
+    "generated_code_id": "2026-10-26_20-08-31_NOCASE_INT_SPEED_SELECTION"
+  },
+  "evaluation": {
+    "status": "COMPLETED",
+    "attempt": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_dir": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V2\\D14_V2_TEXT_DEV_001\\evaluation\\attempt_001",
+        "tia_workspace_id": "T0499",
+        "tia_workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0499",
+        "tia_workspace_cleaned": true,
+        "started_at": "2026-10-26T20:08:31",
+        "completed_at": "2026-10-26T20:09:16",
+        "retry_reason": null,
+        "final_status": "PASS",
+        "compile": "COMPILE_PASSED",
+        "tia_archive": "CREATED",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "evidence_copied_ok": true,
+        "download_success": true,
+        "cpu_run": true,
+        "oracle_verdict": "PASS",
+        "master_intact": true,
+        "max_tia_path_length": 78,
+        "memory": {
+          "available": true,
+          "total_physical_mb": 65088,
+          "available_physical_mb": 46038,
+          "commit_limit_mb": 69184,
+          "committed_mb": 22409,
+          "commit_headroom_mb": 46774
+        },
+        "tia_last_completed_checkpoint": "download_completed",
+        "tia_first_failed_checkpoint": null,
+        "errors": [],
+        "workspace_cleanup": {
+          "status": "CLEANED",
+          "workspace_id": "T0499",
+          "workspace_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0499",
+          "timestamp": "2026-10-26T20:09:16",
+          "reason": null,
+          "error_code": null,
+          "error_type": null,
+          "error_message": null,
+          "probe_attempts": 1
+        }
+      }
+    ],
+    "final_verdict": "PASS",
+    "capability": {
+      "supported": true,
+      "code": null,
+      "reason": null
+    },
+    "started_at": "2026-10-26T20:08:31",
+    "tia_workspace_id": "T0499",
+    "completed_at": "2026-10-26T20:09:16"
+  },
+  "campaign_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "software_freeze_id": "THESIS_DISCRETE_LLM_180_20261026_R2",
+  "campaign_protocol": {
+    "path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "sha256": "014ca774fe65589658b958a90bc19c4b33442b973776ca8cd6a5e88dd0002ea3"
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "zap18_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\results\\development_validation_v2\\D14\\V2\\D14_V2_TEXT_DEV_001\\evaluation\\attempt_001\\tia\\D14_V2_TEXT_DEV_001.zap18",
+    "zap18_hash": "854ebece3fc17bfd9a9b1f1e33b06710729b1ecb1474e0cdf173ae7c5e5dd264",
+    "tia_workspace_id": "T0499",
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "semantic_benchmark": {
+    "match": true,
+    "intent_actual": "INT_SPEED_SELECTION",
+    "intent_expected": [],
+    "intent_match": null,
+    "failed_checks": []
+  },
+  "system_failure": false
+}

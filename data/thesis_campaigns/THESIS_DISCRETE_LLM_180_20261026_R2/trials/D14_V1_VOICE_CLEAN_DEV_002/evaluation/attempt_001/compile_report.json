@@ -1,0 +1,195 @@
+{
+  "status": "TIA_COMPILATION_PASSED",
+  "timestamp": "2026-10-26T21:06:56",
+  "tia_version": "V18",
+  "errors": [],
+  "warnings": [],
+  "stages": [
+    {
+      "stage": "start_tia",
+      "ok": true
+    },
+    {
+      "stage": "retrieve_master_copy",
+      "ok": true
+    },
+    {
+      "stage": "minimal_identity",
+      "ok": true
+    },
+    {
+      "stage": "sync_tags",
+      "ok": true
+    },
+    {
+      "stage": "remove_managed_blocks",
+      "ok": true
+    },
+    {
+      "stage": "generate_blocks",
+      "ok": true
+    },
+    {
+      "stage": "list_blocks",
+      "ok": true
+    },
+    {
+      "stage": "archive",
+      "ok": true
+    },
+    {
+      "stage": "download",
+      "ok": true
+    }
+  ],
+  "archive_status": "CREATED",
+  "physical_download_executed": false,
+  "checkpoint_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557\\tia_checkpoints.log",
+  "working_project_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557\\p\\S71500_MASTER\\S71500_MASTER.ap18",
+  "plc_name": "PLC_1",
+  "copy_identity": {
+    "project_name": "S71500_MASTER",
+    "expected_project_name": "S71500_MASTER",
+    "plc_name": "PLC_1"
+  },
+  "tag_reconciliation": {
+    "table": "PLC_Agent_IO",
+    "desired": 9,
+    "requested": 9,
+    "created": 9,
+    "updated": 0,
+    "existing": 0,
+    "kept": 0,
+    "removed": 0,
+    "final_count": 9
+  },
+  "removed_managed_blocks": [],
+  "imported_source_sha256": "23f99fd076ed480128fed80259c71b64be425ed12b8dd10523f0690994d70472",
+  "generated_blocks_count": 3,
+  "error_count": 0,
+  "warning_count": 0,
+  "compiler_state": "Success",
+  "compiler_messages": [
+    {
+      "state": "Success",
+      "description": "",
+      "path": "PLC_1",
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "state": "Success",
+      "description": "",
+      "path": "Program blocks",
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "state": "Success",
+      "description": "Block was successfully compiled.",
+      "path": "Main (OB1)",
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "state": "Success",
+      "description": "Block was successfully compiled.",
+      "path": "PLC_PRG (FB1)",
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "state": "Success",
+      "description": "Compiling finished (errors: 0; warnings: 0)",
+      "path": null,
+      "error_count": 0,
+      "warning_count": 0
+    }
+  ],
+  "blocks_after_compile": [
+    {
+      "name": "PLC_PRG",
+      "type": "FB",
+      "group": ""
+    },
+    {
+      "name": "DB_PLC_PRG",
+      "type": "InstanceDB",
+      "group": ""
+    },
+    {
+      "name": "Main",
+      "type": "OB",
+      "group": ""
+    }
+  ],
+  "project_saved": true,
+  "archive_settle_ms": 2000,
+  "archive_source_project": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557\\p\\S71500_MASTER\\S71500_MASTER.ap18",
+  "archive_target_directory": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557",
+  "archive_target_name": "T0557.zap18",
+  "archive_expected_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557\\T0557.zap18",
+  "archive_mode": "Compressed",
+  "archive_attempts": [
+    {
+      "attempt_number": 1,
+      "started_at": "2026-10-26T21:07:22.689",
+      "completed_at": "2026-10-26T21:07:23.150",
+      "duration_ms": 467,
+      "status": "CREATED",
+      "exception_type": null,
+      "error_message": null,
+      "transient": false
+    }
+  ],
+  "archive_attempt_count": 1,
+  "archive_max_attempts": 3,
+  "archive_retry_backoff_ms": [
+    2000,
+    3000
+  ],
+  "archive_recovered_after_retry": false,
+  "archive_actual_files_created": [
+    "T0557.zap18"
+  ],
+  "archive_size_bytes": 468660,
+  "archive_path": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557\\T0557.zap18",
+  "archive_sha256": "b6f86b921b59e2c31d1ce4e9bac9ee3b5281d7183d20ea037a446a23e3f6c504",
+  "archive_result": "CREATED",
+  "handshake": {
+    "download": true,
+    "reason": "EVIDENCE_VERIFIED"
+  },
+  "success": true,
+  "bridge_return_code": 0,
+  "bridge_stderr": "[TIA TAGS] Desired tags: 9\n[TIA TAGS] Existing managed tags: 0\n[TIA TAGS] Creating I_Speed_Low at %I16.3\n[TIA TAGS] I_Speed_Low synchronized\n[TIA TAGS] Creating I_Speed_Medium at %I16.4\n[TIA TAGS] I_Speed_Medium synchronized\n[TIA TAGS] Creating I_Speed_High at %I16.5\n[TIA TAGS] I_Speed_High synchronized\n[TIA TAGS] Creating I_Emergency at %I16.2\n[TIA TAGS] I_Emergency synchronized\n[TIA TAGS] Creating Q_Speed_Low at %Q8.0\n[TIA TAGS] Q_Speed_Low synchronized\n[TIA TAGS] Creating Q_Speed_Medium at %Q8.1\n[TIA TAGS] Q_Speed_Medium synchronized\n[TIA TAGS] Creating Q_Speed_High at %Q8.2\n[TIA TAGS] Q_Speed_High synchronized\n[TIA TAGS] Creating I_Start at %I16.0\n[TIA TAGS] I_Start synchronized\n[TIA TAGS] Creating I_Stop at %I16.1\n[TIA TAGS] I_Stop synchronized\n[TIA TAGS] Reconciliation completed\n[TIA TAGS] Final managed tags: 9\n[TIA ARCHIVE] source=C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557\\p\\S71500_MASTER\\S71500_MASTER.ap18 target_dir=C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557 target_name=T0557.zap18 expected=C:\\TESIS_HENRY\\voz-llm-plc-agent\\tiaw\\T0557\\T0557.zap18 mode=Compressed max_attempts=3\n[TIA HANDSHAKE] archived.json escrito; esperando proceed.json\n[TIA DOWNLOAD] Target validation\n[TIA DOWNLOAD] PLCSIM Advanced confirmed (Siemens PLCSIM Virtual Ethernet Adapter)\n[TIA DOWNLOAD] Starting\n[TIA DOWNLOAD] Configuration StopModules -> StopAll\n[TIA DOWNLOAD] Configuration ConsistentBlocksDownload -> ConsistentDownload\n[TIA DOWNLOAD] Configuration AlarmTextLibrariesDownload -> ConsistentDownload\n[TIA DOWNLOAD] Configuration StartModules -> StartModule\n[TIA DOWNLOAD] Download completed\n[TIA DOWNLOAD] Start module requested\n[TIA DOWNLOAD] Completed",
+  "checkpoints": {
+    "last_completed": "download_completed",
+    "first_failed": null,
+    "first_failed_detail": null,
+    "unfinished": []
+  },
+  "archive": {
+    "attempt_count": 1,
+    "max_attempts": 3,
+    "settle_ms": 2000,
+    "retry_backoff_ms": [
+      2000,
+      3000
+    ],
+    "recovered_after_retry": false,
+    "attempts": [
+      {
+        "attempt_number": 1,
+        "started_at": "2026-10-26T21:07:22.689",
+        "completed_at": "2026-10-26T21:07:23.150",
+        "duration_ms": 467,
+        "status": "CREATED",
+        "exception_type": null,
+        "error_message": null,
+        "transient": false
+      }
+    ]
+  },
+  "duration_ms": 36587
+}

@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "85b8a4366e6b761a17b3dd4536a8573c43ba4120486e042c710d63547183e95b",
+  "transcript_raw": "Tras recibir Start, activa la salida principal, espera tres segundos y luego activa la salida auxiliar.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1422,
+  "frozen_at": "2026-10-26T21:14:17"
+}

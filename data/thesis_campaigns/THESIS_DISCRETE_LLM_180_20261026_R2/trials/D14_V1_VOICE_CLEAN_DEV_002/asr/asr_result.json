@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "11624ce205d10377e6f6bf2032b094df58f46deb727d0b2eccfda90ee2c21cb5",
+  "transcript_raw": "Selecciona velocidad baja, media o alta con tres entradas digitales y activa sólo la velocidad seleccionada.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2306,
+  "frozen_at": "2026-10-26T21:06:51"
+}

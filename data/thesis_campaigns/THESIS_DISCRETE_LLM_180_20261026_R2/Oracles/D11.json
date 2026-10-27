@@ -1,0 +1,232 @@
+{
+  "schema_version": "oracle-1.0",
+  "oracle_id": "D11",
+  "case_id": "D11",
+  "title": "D11 - Contactor con enclavamiento logico y proteccion de emergencia",
+  "description": "Start activa el contactor, que queda enclavado al soltar Start; Stop lo desactiva.",
+  "complexity": "HIGH",
+  "approval": {
+    "status": "FROZEN",
+    "approved_by": "Henry Ochoa",
+    "approved_at": "2026-10-12T15:13:10",
+    "version": 2,
+    "hash": "57c93841ac371edbf38e6042a13310e8c3185b8fa795aab20db7bc39b78a6160",
+    "previous_hash": "29fcc4038f503bb73bcfec55df8478e28a09340cb9bdf10432c0fd2090367292",
+    "change_scope": "BENCHMARK_V3_METADATA",
+    "benchmark_version": 3,
+    "change_note": "Nueva version para benchmark v3 (FORMAL): source_definition (comando y hash canonico v3) y textos de convenciones; test_sequence, invariantes, tiempos, cleanup, roles y reglas identicos.",
+    "decision": "Decisiones humanas aprobadas 2026-10-12 (auditorias de ambiguedad D01-D20 y P01-P12).",
+    "generated_by": "Claude (asistido) a partir de las decisiones aprobadas por el investigador",
+    "ai_review": {
+      "generated": true,
+      "schema_validated": true,
+      "semantic_reviewed": true,
+      "second_pass_reviewed": true,
+      "reviewed_at": "2026-09-29T22:42:01",
+      "notes": [
+        "Segunda pasada: schema, roles, precondiciones (solo establecen estado), secuencia, invariantes y cleanup revisados.",
+        "Control positivo: un programa correcto segun la definicion obtiene PASS en PLC simulado.",
+        "Barrido de programas triviales (todo OFF/ON, salidas copiando o enclavando una entrada): ninguno pasa salvo lo indicado.",
+        "Benchmark v2: alineado con el comando canonico (Eliminada la emergencia opcional (solo la pedia la antigua V3; el comando canonico no la menciona).).",
+        "Benchmark v3: contenido funcional identico al revisado; solo cambian source_definition y textos de convenciones. Alineacion v3 verificada por scripts/build_benchmark_v3.py (32/32, 0 requisitos ocultos)."
+      ],
+      "carried_from_version": 1,
+      "v3_alignment_verified": true,
+      "v3_verified_at": "2026-10-12T12:27:04"
+    },
+    "technical_validation": {
+      "status": "PASSED",
+      "validated_by": "scripts/build_benchmark_v3.py (validacion automatica; no es una aprobacion humana)",
+      "validated_at": "2026-10-12T12:21:55",
+      "content_hash": "57c93841ac371edbf38e6042a13310e8c3185b8fa795aab20db7bc39b78a6160",
+      "checks": [
+        "schema valido",
+        "claves funcionales identicas a la version previa",
+        "source_definition.canonical_case_hash = hash canonico v3",
+        "alineacion 32/32 sin requisitos ocultos",
+        "96/96 variantes consistentes"
+      ]
+    },
+    "human_formal_approval": "APPROVED",
+    "approval_correction": "2026-10-12: se retiro approved_by escrito automaticamente por scripts/build_benchmark_v3.py; la aprobacion formal humana queda pendiente (accion explicita del investigador)."
+  },
+  "source_definition": {
+    "benchmark_version": 3,
+    "catalog": "data/experiment_cases/canonical_cases.json",
+    "case_title": "Contactor con enclavamiento de marcha",
+    "original_requirement": "Control de contactor con enclavamiento electrico/logico.",
+    "canonical_command": "Controla un contactor con Start y Stop usando enclavamiento de marcha.",
+    "canonical_case_hash": "643a54627eaadeb546335aa4948590004db1a2e96b2aaaf4f302b656c851e369",
+    "legacy_reference_intent": "INT_MOTOR_START_STOP"
+  },
+  "runtime_support": "EXECUTABLE_NOW",
+  "runtime_requirements": [
+    "BOOL"
+  ],
+  "semantic_expectations": {
+    "forbidden_intents": [],
+    "required_parameters": {},
+    "accepted_intents": [
+      "INT_MOTOR_START_STOP",
+      "INT_MOTOR_LATCH"
+    ],
+    "required_functions": [
+      "contactor_latch"
+    ],
+    "required_roles": [
+      "START",
+      "STOP",
+      "CONTACTOR"
+    ]
+  },
+  "roles": {
+    "START": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de marcha.",
+      "semantic_paths": [
+        "start_input",
+        "trigger_input"
+      ]
+    },
+    "STOP": {
+      "kind": "INPUT",
+      "required": true,
+      "description": "Orden de paro.",
+      "semantic_paths": [
+        "stop_input"
+      ]
+    },
+    "CONTACTOR": {
+      "kind": "OUTPUT",
+      "required": true,
+      "description": "Contactor controlado.",
+      "semantic_paths": [
+        "contactor_output",
+        "contactor_a",
+        "motor_output",
+        "output"
+      ]
+    }
+  },
+  "resource_expectations": {
+    "policy": "ADVISORY",
+    "expected_bound_inputs": 3,
+    "expected_bound_outputs": 1,
+    "notes": "Recursos adicionales no solicitados se reportan como aviso; no cambian el veredicto."
+  },
+  "experimental_conventions": [
+    {
+      "id": "REQ-ORIGINAL",
+      "text": "REQUISITO ORIGINAL: Control de contactor con enclavamiento electrico/logico."
+    },
+    {
+      "id": "CMD-CANONICAL",
+      "text": "COMANDO CANONICO (benchmark v3): Controla un contactor con Start y Stop usando enclavamiento de marcha."
+    },
+    {
+      "id": "C-PULSE",
+      "text": "Un 'pulsador' se modela como un pulso de 300 ms (ON y luego OFF)."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "pre_stop",
+      "description": "STOP activo apaga cualquier enclavamiento previo.",
+      "set": {
+        "START": false,
+        "STOP": true
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR": false
+      }
+    },
+    {
+      "id": "pre_release",
+      "description": "Soltar STOP.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": false
+      }
+    }
+  ],
+  "test_sequence": [
+    {
+      "id": "step_1",
+      "description": "START pulsado: el contactor se activa.",
+      "set": {
+        "START": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": true
+      }
+    },
+    {
+      "id": "step_2",
+      "description": "START soltado: el contactor queda enclavado.",
+      "set": {
+        "START": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR": true
+      }
+    },
+    {
+      "id": "step_3",
+      "description": "STOP pulsado: el contactor se desactiva.",
+      "set": {
+        "STOP": true
+      },
+      "wait_ms": 300,
+      "expect": {
+        "CONTACTOR": false
+      }
+    },
+    {
+      "id": "step_4",
+      "description": "STOP soltado: sigue desactivado.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 500,
+      "expect": {
+        "CONTACTOR": false
+      }
+    }
+  ],
+  "invariants": [],
+  "cleanup": [
+    {
+      "id": "cleanup_stop",
+      "description": "Dejar el contactor desactivado.",
+      "set": {
+        "START": false,
+        "STOP": true
+      },
+      "wait_ms": 300
+    },
+    {
+      "id": "cleanup_release",
+      "description": "Entradas a OFF.",
+      "set": {
+        "STOP": false
+      },
+      "wait_ms": 200
+    }
+  ],
+  "evaluation": {
+    "sample_period_ms": 50,
+    "expect_mode": "END_OF_WAIT",
+    "functional_rule": "Todas las expectativas evaluables de test_sequence (incluidas ventanas temporales) deben cumplirse.",
+    "safety_rule": "Ninguna invariante CRITICAL puede violarse en ninguna muestra.",
+    "final_rule": "PASS requiere semantica, compilacion, descarga, runtime RUN, funcional y seguridad correctos."
+  },
+  "review_items": [],
+  "system_capability_gaps": []
+}

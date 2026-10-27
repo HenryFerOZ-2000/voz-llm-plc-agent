@@ -1,0 +1,692 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D14_V3_VOICE_CLEAN_DEV_002",
+  "case_id": "D14",
+  "variant_id": "V3",
+  "input_mode": "VOICE_CLEAN",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "8d0538b64aa0d42d79079685a83d81685a274140e8e4e9ca9a2f2c68a68bebe2",
+    "variant_hash": "fe7bbd732c5d16e378c0fa8ca5fb12f636f55d2da0447938b4027b4731023a67"
+  },
+  "oracle": {
+    "oracle_id": "D14",
+    "oracle_version": 2,
+    "oracle_hash": "1cefcbee200446e9b600678754d21cc13781b9e8cb083379b2ec6643663d98b1",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": true,
+    "intent_expected": [],
+    "intent_match": null,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": true,
+      "intent_id": "INT_SPEED_SELECTION",
+      "intent_expected": [],
+      "intent_match": null,
+      "failed_checks": [],
+      "checks": [
+        {
+          "check": "role:SPEED_LOW_CMD",
+          "expected": "resuelto",
+          "actual": "I_Speed_Low",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:SPEED_MEDIUM_CMD",
+          "expected": "resuelto",
+          "actual": "I_Speed_Medium",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:SPEED_HIGH_CMD",
+          "expected": "resuelto",
+          "actual": "I_Speed_High",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:SPEED_LOW",
+          "expected": "resuelto",
+          "actual": "Q_Speed_Low",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:SPEED_MEDIUM",
+          "expected": "resuelto",
+          "actual": "Q_Speed_Medium",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:SPEED_HIGH",
+          "expected": "resuelto",
+          "actual": "Q_Speed_High",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_SPEED_SELECTION"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "PASS",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "PASS",
+    "safety": "PASS",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "PASS",
+    "status": "PASS / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "PASS",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 3,
+      "digital_outputs": 3,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "RESOLVED",
+    "roles": {
+      "SPEED_LOW_CMD": {
+        "role": "SPEED_LOW_CMD",
+        "kind": "INPUT",
+        "functional_name": "I_Speed_Low",
+        "address": "%IX16.3",
+        "matched_paths": [
+          "speed_low_input"
+        ]
+      },
+      "SPEED_MEDIUM_CMD": {
+        "role": "SPEED_MEDIUM_CMD",
+        "kind": "INPUT",
+        "functional_name": "I_Speed_Medium",
+        "address": "%IX16.4",
+        "matched_paths": [
+          "speed_medium_input"
+        ]
+      },
+      "SPEED_HIGH_CMD": {
+        "role": "SPEED_HIGH_CMD",
+        "kind": "INPUT",
+        "functional_name": "I_Speed_High",
+        "address": "%IX16.5",
+        "matched_paths": [
+          "speed_high_input"
+        ]
+      },
+      "SPEED_LOW": {
+        "role": "SPEED_LOW",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Speed_Low",
+        "address": "%QX8.0",
+        "matched_paths": [
+          "speed_low_output"
+        ]
+      },
+      "SPEED_MEDIUM": {
+        "role": "SPEED_MEDIUM",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Speed_Medium",
+        "address": "%QX8.1",
+        "matched_paths": [
+          "speed_medium_output"
+        ]
+      },
+      "SPEED_HIGH": {
+        "role": "SPEED_HIGH",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Speed_High",
+        "address": "%QX8.2",
+        "matched_paths": [
+          "speed_high_output"
+        ]
+      }
+    },
+    "issues": []
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Emergency",
+      "I_Speed_Low",
+      "I_Speed_Medium",
+      "I_Speed_High"
+    ],
+    "bound_outputs": [
+      "Q_Speed_Low",
+      "Q_Speed_Medium",
+      "Q_Speed_High"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Emergency', 'I_Speed_Low', 'I_Speed_Medium', 'I_Speed_High'] superan las esperadas (3)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": true,
+    "checks": []
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 9,
+    "total_checks": 9,
+    "pass_rate": 1.0,
+    "failed_checks": [],
+    "major_invariant_violations": 0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 1,
+    "samples_checked": 40,
+    "violations": [],
+    "critical_violations": 0,
+    "major_violations": 0
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "PASS",
+  "oracle_verdict_reason": "ALL_CHECKS_PASSED",
+  "final_status": "PASS",
+  "steps": [
+    {
+      "step_id": "pre_idle",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Sin seleccion.",
+      "started_at": "2026-10-26T21:09:14.8523922-05:00",
+      "completed_at": "2026-10-26T21:09:15.159",
+      "t_start_ms": 8.9,
+      "t_end_ms": 312.7,
+      "inputs_applied": {
+        "SPEED_LOW_CMD": {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SPEED_MEDIUM_CMD": {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SPEED_HIGH_CMD": {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "SPEED_LOW_CMD": false,
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": false,
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_low",
+      "phase": "test",
+      "executed": true,
+      "description": "Baja: solo SPEED_LOW.",
+      "started_at": "2026-10-26T21:09:15.1593054-05:00",
+      "completed_at": "2026-10-26T21:09:15.472",
+      "t_start_ms": 313.1,
+      "t_end_ms": 626.1,
+      "inputs_applied": {
+        "SPEED_LOW_CMD": {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "SPEED_LOW": true,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": false
+      },
+      "actual_outputs": {
+        "SPEED_LOW_CMD": true,
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": false,
+        "SPEED_LOW": true,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_low",
+          "role": "SPEED_LOW",
+          "expected": true,
+          "actual": true,
+          "t_ms": 313.0,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "step_low",
+          "role": "SPEED_MEDIUM",
+          "expected": false,
+          "actual": false,
+          "t_ms": 313.0,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "step_low",
+          "role": "SPEED_HIGH",
+          "expected": false,
+          "actual": false,
+          "t_ms": 313.0,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_medium",
+      "phase": "test",
+      "executed": true,
+      "description": "Media: solo SPEED_MEDIUM.",
+      "started_at": "2026-10-26T21:09:15.4734232-05:00",
+      "completed_at": "2026-10-26T21:09:15.788",
+      "t_start_ms": 627.3,
+      "t_end_ms": 941.4,
+      "inputs_applied": {
+        "SPEED_LOW_CMD": {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SPEED_MEDIUM_CMD": {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": true,
+        "SPEED_HIGH": false
+      },
+      "actual_outputs": {
+        "SPEED_LOW_CMD": false,
+        "SPEED_MEDIUM_CMD": true,
+        "SPEED_HIGH_CMD": false,
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": true,
+        "SPEED_HIGH": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_medium",
+          "role": "SPEED_LOW",
+          "expected": false,
+          "actual": false,
+          "t_ms": 314.0,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "step_medium",
+          "role": "SPEED_MEDIUM",
+          "expected": true,
+          "actual": true,
+          "t_ms": 314.0,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "step_medium",
+          "role": "SPEED_HIGH",
+          "expected": false,
+          "actual": false,
+          "t_ms": 314.0,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_high",
+      "phase": "test",
+      "executed": true,
+      "description": "Alta: solo SPEED_HIGH.",
+      "started_at": "2026-10-26T21:09:15.7875654-05:00",
+      "completed_at": "2026-10-26T21:09:16.089",
+      "t_start_ms": 942.1,
+      "t_end_ms": 1243.8,
+      "inputs_applied": {
+        "SPEED_MEDIUM_CMD": {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SPEED_HIGH_CMD": {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": true
+      },
+      "actual_outputs": {
+        "SPEED_LOW_CMD": false,
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": true,
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_high",
+          "role": "SPEED_LOW",
+          "expected": false,
+          "actual": false,
+          "t_ms": 301.6,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "step_high",
+          "role": "SPEED_MEDIUM",
+          "expected": false,
+          "actual": false,
+          "t_ms": 301.6,
+          "passed": true
+        },
+        {
+          "type": "expect",
+          "step_id": "step_high",
+          "role": "SPEED_HIGH",
+          "expected": true,
+          "actual": true,
+          "t_ms": 301.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_double",
+      "phase": "test",
+      "executed": true,
+      "description": "Dos comandos a la vez: sin ganador definido; solo el invariante one-hot.",
+      "started_at": "2026-10-26T21:09:16.0906248-05:00",
+      "completed_at": "2026-10-26T21:09:16.407",
+      "t_start_ms": 1244.7,
+      "t_end_ms": 1560.3,
+      "inputs_applied": {
+        "SPEED_LOW_CMD": {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        "SPEED_HIGH_CMD": {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "SPEED_LOW_CMD": true,
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": true,
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": false
+      },
+      "unspecified": [
+        "SPEED_LOW",
+        "SPEED_MEDIUM",
+        "SPEED_HIGH"
+      ],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "cleanup_inputs",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Comandos a OFF.",
+      "started_at": "2026-10-26T21:09:16.4074797-05:00",
+      "completed_at": "2026-10-26T21:09:16.624",
+      "t_start_ms": 1561.9,
+      "t_end_ms": 1778.0,
+      "inputs_applied": {
+        "SPEED_LOW_CMD": {
+          "name": "I_Speed_Low",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SPEED_MEDIUM_CMD": {
+          "name": "I_Speed_Medium",
+          "address": "%I16.4",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "SPEED_HIGH_CMD": {
+          "name": "I_Speed_High",
+          "address": "%I16.5",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "SPEED_LOW_CMD": false,
+        "SPEED_MEDIUM_CMD": false,
+        "SPEED_HIGH_CMD": false,
+        "SPEED_LOW": false,
+        "SPEED_MEDIUM": false,
+        "SPEED_HIGH": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    }
+  ],
+  "cleanup": {
+    "performed": true,
+    "success": true,
+    "inputs": [
+      {
+        "name": "I_Speed_Low",
+        "address": "%I16.3",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Speed_Medium",
+        "address": "%I16.4",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Speed_High",
+        "address": "%I16.5",
+        "readback": false,
+        "restored": true
+      }
+    ],
+    "process_variables": []
+  },
+  "sequence": {
+    "planned_ms": 1700,
+    "sample_period_ms": 50,
+    "watched": [
+      "I_Speed_Low",
+      "I_Speed_Medium",
+      "I_Speed_High",
+      "Q_Speed_Low",
+      "Q_Speed_Medium",
+      "Q_Speed_High"
+    ],
+    "skipped_steps": [],
+    "bridge_status": "PLCSIM_IO_PASSED",
+    "failed_step": null,
+    "sequence_duration_ms": 1778.5195,
+    "cpu_state": "RUN"
+  },
+  "errors": [],
+  "warnings": [
+    "Entradas ligadas ['I_Emergency', 'I_Speed_Low', 'I_Speed_Medium', 'I_Speed_High'] superan las esperadas (3)."
+  ],
+  "timings": {
+    "generation_ms": 5978,
+    "compile_ms": 36574,
+    "download_ms": null,
+    "functional_test_ms": 3750,
+    "end_to_end_ms": 48061,
+    "semantic_ms": 5523,
+    "runtime_ms": 842,
+    "oracle_ms": 3750,
+    "total_ms": 48061,
+    "generation_total_ms": 5978,
+    "evaluation_ms": 42083
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:09:17"
+}

@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "a4a8f273e5b0918f11711c9a44752ce32fa61973a02d19707849960e058fffe8",
+  "transcript_raw": "Desactivar Start, vigile el sensor y active una alarma si transcurren cinco segundos sin ningún cambio. Cada cambio reinicia la cuenta.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 2901,
+  "frozen_at": "2026-10-26T21:15:11"
+}

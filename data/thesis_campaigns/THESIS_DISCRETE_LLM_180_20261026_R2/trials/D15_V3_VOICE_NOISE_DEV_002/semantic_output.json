@@ -1,0 +1,467 @@
+{
+  "intent_id": "INT_UNKNOWN",
+  "case_id": null,
+  "command_text": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+  "normalized_command": "según la posición del selector manual o automático, el motor sigue la orden correspondiente al modo seleccionado e ignora la orden del otro modo",
+  "parameters": {},
+  "confidence": 0.91,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: I_Mode_Manual en TRUE selecciona modo Manual y en FALSE selecciona modo Automático, por tratarse de un selector de dos posiciones.",
+    "INFERRED: Las órdenes manual y automática son mantenidas; Q_Motor_Enable permanece activa únicamente mientras esté activa la orden correspondiente al modo seleccionado.",
+    "La parada de emergencia tiene prioridad sobre la habilitación del motor y se aplica la política de no rearranque automático tras liberarla."
+  ],
+  "recognized_tags": [
+    "I_Mode_Manual",
+    "I_Manual_Motor_Command",
+    "I_Automatic_Motor_Command",
+    "I_Emergency",
+    "Q_Motor_Enable"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "conditional_output",
+      "condition": "I_Mode_Manual AND I_Manual_Motor_Command",
+      "outputs": [
+        "Q_Motor_Enable"
+      ]
+    },
+    {
+      "type": "conditional_output",
+      "condition": "NOT I_Mode_Manual AND I_Automatic_Motor_Command",
+      "outputs": [
+        "Q_Motor_Enable"
+      ]
+    },
+    {
+      "type": "force_off",
+      "condition": "I_Emergency",
+      "outputs": [
+        "Q_Motor_Enable"
+      ]
+    }
+  ],
+  "operation_type": "PROGRAM",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {},
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "NOT_APPLICABLE",
+    "intent_id": "INT_UNKNOWN",
+    "origin": "LLM",
+    "interpreted_parameters": {},
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_MANUAL_AUTO_MODE",
+    "case_id": null,
+    "command_text": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+    "normalized_command": "segun la posicion del selector manual o auto el motor atiende la orden manual o la orden auto respectivamente e ignora la del otro modo",
+    "parameters": {
+      "manual_input": "I_Mode_Manual",
+      "auto_input": "I_Mode_Auto",
+      "emergency_input": "I_Emergency",
+      "trigger_input": "I_Start",
+      "stop_input": "I_Stop",
+      "motor_output": "Q_Motor_Enable",
+      "manual_mode_memory": "M_ManualMode",
+      "auto_mode_memory": "M_AutoMode"
+    },
+    "confidence": 0.93,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "Se agrega I_Emergency por seguridad industrial obligatoria."
+    ],
+    "recognized_tags": [
+      "I_Emergency",
+      "I_Mode_Auto",
+      "I_Mode_Manual",
+      "I_Start",
+      "I_Stop",
+      "M_AutoMode",
+      "M_ManualMode",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [],
+    "parameter_provenance": {
+      "manual_input": {
+        "source": "RULES"
+      },
+      "auto_input": {
+        "source": "RULES"
+      },
+      "emergency_input": {
+        "source": "RULES"
+      },
+      "trigger_input": {
+        "source": "RULES"
+      },
+      "stop_input": {
+        "source": "RULES"
+      },
+      "motor_output": {
+        "source": "RULES"
+      },
+      "manual_mode_memory": {
+        "source": "RULES"
+      },
+      "auto_mode_memory": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "manual_input": "I_Mode_Manual",
+        "auto_input": "I_Mode_Auto",
+        "emergency_input": "I_Emergency",
+        "trigger_input": "I_Start",
+        "stop_input": "I_Stop",
+        "motor_output": "Q_Motor_Enable",
+        "manual_mode_memory": "M_ManualMode",
+        "auto_mode_memory": "M_AutoMode"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+    "normalized_command": "según la posición del selector manual o automático, el motor sigue la orden correspondiente al modo seleccionado e ignora la orden del otro modo",
+    "parameters": {},
+    "confidence": 0.91,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: I_Mode_Manual en TRUE selecciona modo Manual y en FALSE selecciona modo Automático, por tratarse de un selector de dos posiciones.",
+      "INFERRED: Las órdenes manual y automática son mantenidas; Q_Motor_Enable permanece activa únicamente mientras esté activa la orden correspondiente al modo seleccionado.",
+      "La parada de emergencia tiene prioridad sobre la habilitación del motor y se aplica la política de no rearranque automático tras liberarla."
+    ],
+    "recognized_tags": [
+      "I_Mode_Manual",
+      "I_Manual_Motor_Command",
+      "I_Automatic_Motor_Command",
+      "I_Emergency",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "conditional_output",
+        "condition": "I_Mode_Manual AND I_Manual_Motor_Command",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      },
+      {
+        "type": "conditional_output",
+        "condition": "NOT I_Mode_Manual AND I_Automatic_Motor_Command",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      },
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      }
+    ],
+    "operation_type": "PROGRAM",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {},
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "LLM",
+      "interpreted_parameters": {},
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_03c2cb79fed5cce6006ae014ecd47087d28b28f7c918616898",
+    "prompt_tokens": 19283,
+    "completion_tokens": 1872,
+    "total_tokens": 21155,
+    "latency_ms": 18526.81,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "La intencion es INT_UNKNOWN."
+    ],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "openplc_conventions.md",
+      "score": 18,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 12,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "iec61131_rules.md",
+      "score": 12,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "README.md",
+      "score": 9,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "plc_safety_rules.md",
+      "score": 9,
+      "excerpt": "# Reglas de seguridad PLC\n- `I_Emergency` tiene prioridad absoluta sobre salidas críticas.\n- `I_Stop` tiene prioridad sobre `I_Start`.\n- Al liberar emergencia no debe existir autoarranque.\n- No deben activarse `Q_Contactor_A` y `Q_Contactor_B` al mismo tiempo.\n- Ningún tag fuera del mapa I/O puede entrar al flujo válido."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [],
+    "covered_by_intent": [
+      "automatic_mode",
+      "emergency_priority",
+      "enable_pid"
+    ],
+    "explicit_types": [
+      "automatic_mode",
+      "conditional_output",
+      "force_off",
+      "manual_mode"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_MANUAL_AUTO_MODE",
+    "case_id": null,
+    "command_text": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+    "normalized_command": "según la posición del selector manual o automático, el motor atiende la orden manual o la orden automática respectivamente e ignora la del otro modo",
+    "parameters": {
+      "manual_input": "I_Mode_Manual",
+      "auto_input": "NOT I_Mode_Manual",
+      "emergency_input": "I_Emergency",
+      "motor_output": "Q_Motor_Enable",
+      "manual_mode_memory": "M_ManualMode",
+      "auto_mode_memory": "M_AutoMode",
+      "manual_command_input": "I_Manual_Motor_Command",
+      "auto_command_input": "I_Auto_Motor_Command"
+    },
+    "confidence": 0.93,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: I_Mode_Manual activo selecciona Manual y su estado inverso selecciona Automático.",
+      "INFERRED: Las órdenes manual y automática controlan el motor de forma mantenida mientras su respectivo modo está seleccionado.",
+      "Se utiliza I_Emergency con prioridad absoluta para deshabilitar Q_Motor_Enable."
+    ],
+    "recognized_tags": [
+      "I_Mode_Manual",
+      "I_Manual_Motor_Command",
+      "I_Auto_Motor_Command",
+      "I_Emergency",
+      "Q_Motor_Enable",
+      "M_ManualMode",
+      "M_AutoMode"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "manual_mode",
+        "mode_input": "I_Mode_Manual",
+        "commands": [
+          {
+            "input": "I_Manual_Motor_Command",
+            "output": "Q_Motor_Enable",
+            "behavior": "maintained"
+          }
+        ]
+      },
+      {
+        "type": "automatic_mode",
+        "mode_input": "NOT I_Mode_Manual"
+      },
+      {
+        "type": "conditional_output",
+        "condition": "(NOT I_Mode_Manual) AND I_Auto_Motor_Command AND (NOT I_Emergency)",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      },
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      }
+    ],
+    "operation_type": "manual_automatic_mode_selection",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "manual_input": {
+        "source": "LLM"
+      },
+      "auto_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "motor_output": {
+        "source": "LLM"
+      },
+      "manual_mode_memory": {
+        "source": "LLM"
+      },
+      "auto_mode_memory": {
+        "source": "LLM"
+      },
+      "manual_command_input": {
+        "source": "LLM"
+      },
+      "auto_command_input": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_MANUAL_AUTO_MODE",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "manual_input": "I_Mode_Manual",
+        "auto_input": "NOT I_Mode_Manual",
+        "emergency_input": "I_Emergency",
+        "motor_output": "Q_Motor_Enable",
+        "manual_mode_memory": "M_ManualMode",
+        "auto_mode_memory": "M_AutoMode",
+        "manual_command_input": "I_Manual_Motor_Command",
+        "auto_command_input": "I_Auto_Motor_Command"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": {
+    "intent_id": "INT_UNKNOWN",
+    "case_id": null,
+    "command_text": "Según la posición del selector, manual o automático, el motor atiende la orden manual o la orden automática respectivamente, e ignora la del otro modo.",
+    "normalized_command": "según la posición del selector manual o automático, el motor sigue la orden correspondiente al modo seleccionado e ignora la orden del otro modo",
+    "parameters": {},
+    "confidence": 0.91,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: I_Mode_Manual en TRUE selecciona modo Manual y en FALSE selecciona modo Automático, por tratarse de un selector de dos posiciones.",
+      "INFERRED: Las órdenes manual y automática son mantenidas; Q_Motor_Enable permanece activa únicamente mientras esté activa la orden correspondiente al modo seleccionado.",
+      "La parada de emergencia tiene prioridad sobre la habilitación del motor y se aplica la política de no rearranque automático tras liberarla."
+    ],
+    "recognized_tags": [
+      "I_Mode_Manual",
+      "I_Manual_Motor_Command",
+      "I_Automatic_Motor_Command",
+      "I_Emergency",
+      "Q_Motor_Enable"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "conditional_output",
+        "condition": "I_Mode_Manual AND I_Manual_Motor_Command",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      },
+      {
+        "type": "conditional_output",
+        "condition": "NOT I_Mode_Manual AND I_Automatic_Motor_Command",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      },
+      {
+        "type": "force_off",
+        "condition": "I_Emergency",
+        "outputs": [
+          "Q_Motor_Enable"
+        ]
+      }
+    ],
+    "operation_type": "PROGRAM",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {},
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "NOT_APPLICABLE",
+      "intent_id": "INT_UNKNOWN",
+      "origin": "LLM",
+      "interpreted_parameters": {},
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "reason_for_retry": "normal_invalid_interpretation: ",
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

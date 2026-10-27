@@ -1,0 +1,411 @@
+{
+  "intent_id": "INT_COUNTER_PULSES",
+  "case_id": null,
+  "command_text": "Quiero contar cinco pulsos para activar la salida y que, al pulsar reset, el contador vuelva a cero y la salida se apague.",
+  "normalized_command": "contar cinco pulsos, activar una salida al alcanzar el conteo y reiniciar el contador y apagar la salida al pulsar reset",
+  "parameters": {
+    "pulse_input": "I_Piece_Sensor",
+    "emergency_input": "I_Emergency",
+    "output": "Q_Alarm",
+    "counter": "C_PulseCount",
+    "edge_detector": "R_SensorPulse",
+    "reset_input": "I_Reset",
+    "preset": 5
+  },
+  "confidence": 0.98,
+  "ambiguities": [],
+  "requires_clarification": false,
+  "clarification_question": null,
+  "assumptions": [
+    "INFERRED: Los pulsos se reciben desde I_Piece_Sensor.",
+    "INFERRED: La salida que se activa al alcanzar cinco pulsos es Q_Alarm.",
+    "El reset tiene prioridad: reinicia C_PulseCount a cero y desactiva Q_Alarm.",
+    "I_Emergency inhibe la activación de la salida."
+  ],
+  "recognized_tags": [
+    "I_Piece_Sensor",
+    "I_Reset",
+    "I_Emergency",
+    "Q_Alarm",
+    "C_PulseCount",
+    "R_SensorPulse"
+  ],
+  "unrecognized_terms": [],
+  "functional_requirements": [
+    {
+      "type": "counter_requirement"
+    },
+    {
+      "type": "reset_behavior",
+      "target": "Q_Alarm"
+    },
+    {
+      "type": "emergency_priority"
+    }
+  ],
+  "operation_type": "pulse_counting",
+  "requested_io_assignments": [],
+  "interaction_profile": "normal",
+  "parameter_provenance": {
+    "pulse_input": {
+      "source": "LLM"
+    },
+    "emergency_input": {
+      "source": "LLM"
+    },
+    "output": {
+      "source": "LLM"
+    },
+    "counter": {
+      "source": "LLM"
+    },
+    "edge_detector": {
+      "source": "LLM"
+    },
+    "reset_input": {
+      "source": "LLM"
+    },
+    "preset": {
+      "source": "LLM"
+    }
+  },
+  "effective_semantics": {
+    "schema_version": 1,
+    "status": "RESOLVED",
+    "intent_id": "INT_COUNTER_PULSES",
+    "origin": "LLM",
+    "interpreted_parameters": {
+      "pulse_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Alarm",
+      "counter": "C_PulseCount",
+      "edge_detector": "R_SensorPulse",
+      "reset_input": "I_Reset",
+      "preset": 5
+    },
+    "defaulted_keys": [],
+    "internal_technical_defaults": {},
+    "functional_value_defaults": {},
+    "errors": []
+  },
+  "parser_mode_requested": "llm",
+  "parser_mode_used": "llm",
+  "rule_result": {
+    "intent_id": "INT_COUNTER_RESET",
+    "case_id": null,
+    "command_text": "Quiero contar cinco pulsos para activar la salida y que, al pulsar reset, el contador vuelva a cero y la salida se apague.",
+    "normalized_command": "quiero contar 5 pulsos para enciende la salida y que al pulsar reset el contador vuelva a cero y la salida se apague",
+    "parameters": {
+      "reset_input": "I_Reset",
+      "counter": "C_PulseCount"
+    },
+    "confidence": 0.93,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [],
+    "recognized_tags": [
+      "C_PulseCount",
+      "I_Reset",
+      "Q_Aux_Output"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "counter_requirement"
+      }
+    ],
+    "parameter_provenance": {
+      "reset_input": {
+        "source": "RULES"
+      },
+      "counter": {
+        "source": "RULES"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_COUNTER_RESET",
+      "origin": "RULES",
+      "interpreted_parameters": {
+        "reset_input": "I_Reset",
+        "counter": "C_PulseCount"
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "llm_result": {
+    "intent_id": "INT_COUNTER_PULSES",
+    "case_id": null,
+    "command_text": "Quiero contar cinco pulsos para activar la salida y que, al pulsar reset, el contador vuelva a cero y la salida se apague.",
+    "normalized_command": "contar cinco pulsos, activar una salida al alcanzar el conteo y reiniciar el contador y apagar la salida al pulsar reset",
+    "parameters": {
+      "pulse_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Alarm",
+      "counter": "C_PulseCount",
+      "edge_detector": "R_SensorPulse",
+      "reset_input": "I_Reset",
+      "preset": 5
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: Los pulsos se reciben desde I_Piece_Sensor.",
+      "INFERRED: La salida que se activa al alcanzar cinco pulsos es Q_Alarm.",
+      "El reset tiene prioridad: reinicia C_PulseCount a cero y desactiva Q_Alarm.",
+      "I_Emergency inhibe la activación de la salida."
+    ],
+    "recognized_tags": [
+      "I_Piece_Sensor",
+      "I_Reset",
+      "I_Emergency",
+      "Q_Alarm",
+      "C_PulseCount",
+      "R_SensorPulse"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "counter_requirement"
+      },
+      {
+        "type": "reset_behavior",
+        "target": "Q_Alarm"
+      },
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "pulse_counting",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "pulse_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "output": {
+        "source": "LLM"
+      },
+      "counter": {
+        "source": "LLM"
+      },
+      "edge_detector": {
+        "source": "LLM"
+      },
+      "reset_input": {
+        "source": "LLM"
+      },
+      "preset": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_COUNTER_PULSES",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "pulse_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Alarm",
+        "counter": "C_PulseCount",
+        "edge_detector": "R_SensorPulse",
+        "reset_input": "I_Reset",
+        "preset": 5
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "agreement": false,
+  "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+  "llm_usage": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "request_id": "resp_0eaeb77f426cc9c0006ae0050020c887d2bada26ca808fc896",
+    "prompt_tokens": 19163,
+    "completion_tokens": 418,
+    "total_tokens": 19581,
+    "latency_ms": 3597.39,
+    "retries_used": 0,
+    "used_fallback": false,
+    "structured_output": true,
+    "error": null
+  },
+  "semantic_validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "missing_parameters": [],
+    "unauthorized_tags": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "functional_requirement_conflicts": [],
+    "io_assignment_proposals": []
+  },
+  "retrieved_context": [
+    {
+      "source": "README.md",
+      "score": 15,
+      "excerpt": "# Base de conocimiento local\nEsta carpeta contiene resúmenes técnicos propios usados como apoyo para la interpretación semántica del agente.\nPrincipios:\n- No sustituye la validación determinística.\n- No autoriza la creación de variables nuevas.\n- No contiene secretos ni claves.\n- Sirve únicamente para apoyar al parser LLM y a la trazabilidad experimental."
+    },
+    {
+      "source": "codesys_conventions.md",
+      "score": 15,
+      "excerpt": "# Convenciones CODESYS\n- Para simulación local se omiten ubicaciones `AT` por defecto.\n- Se usa una POU principal `PLC_PRG`.\n- La tarea principal del proyecto es `MainTask`.\n- El resultado generado es un paquete listo para inspección y automatización futura."
+    },
+    {
+      "source": "iec61131_rules.md",
+      "score": 15,
+      "excerpt": "# Reglas IEC 61131-3\n- El lenguaje Structured Text se usa para expresar lógica secuencial, temporizadores, contadores y asignaciones.\n- Los temporizadores deben usar literales TIME con formato IEC como `T#5s`, `T#1m` o `T#100ms`.\n- Los programas PLC deben declarar variables antes de usarlas.\n- Las funciones de seguridad deben tener precedencia explícita sobre la lógica de operación."
+    },
+    {
+      "source": "openplc_conventions.md",
+      "score": 12,
+      "excerpt": "# Convenciones OpenPLC\n- Se permiten declaraciones con `AT` para asociar entradas y salidas físicas.\n- Las entradas digitales suelen declararse con ubicaciones `%IX...`.\n- Las salidas digitales suelen declararse con ubicaciones `%QX...`.\n- El paquete generado es para revisión o importación manual, no para despliegue automático."
+    },
+    {
+      "source": "timer_counter_examples.md",
+      "score": 12,
+      "excerpt": "# Ejemplos de temporizadores y contadores\n- Pulso temporizado: salida activa por `T#5s` mediante un bloque `TP`.\n- Arranque retardado: un bloque `TON` espera `T#3s` antes de energizar el motor.\n- Conteo de pulsos: un `R_TRIG` detecta flancos y un `CTU` cuenta hasta un preset positivo."
+    }
+  ],
+  "parser_mode": "llm",
+  "semantic_coverage": {
+    "detected_types": [
+      "counter_requirement"
+    ],
+    "covered_by_intent": [
+      "alarm_output",
+      "conditional_alarm_reset",
+      "counter_requirement",
+      "emergency_priority",
+      "enable_pid",
+      "high_level_alarm",
+      "low_level_alarm",
+      "reset_behavior"
+    ],
+    "explicit_types": [
+      "counter_requirement",
+      "emergency_priority",
+      "reset_behavior"
+    ],
+    "missing_types": [],
+    "complete": true
+  },
+  "first_pass_interpretation": {
+    "intent_id": "INT_COUNTER_PULSES",
+    "case_id": null,
+    "command_text": "Quiero contar cinco pulsos para activar la salida y que, al pulsar reset, el contador vuelva a cero y la salida se apague.",
+    "normalized_command": "contar cinco pulsos, activar una salida al alcanzar el conteo y reiniciar el contador y apagar la salida al pulsar reset",
+    "parameters": {
+      "pulse_input": "I_Piece_Sensor",
+      "emergency_input": "I_Emergency",
+      "output": "Q_Alarm",
+      "counter": "C_PulseCount",
+      "edge_detector": "R_SensorPulse",
+      "reset_input": "I_Reset",
+      "preset": 5
+    },
+    "confidence": 0.98,
+    "ambiguities": [],
+    "requires_clarification": false,
+    "clarification_question": null,
+    "assumptions": [
+      "INFERRED: Los pulsos se reciben desde I_Piece_Sensor.",
+      "INFERRED: La salida que se activa al alcanzar cinco pulsos es Q_Alarm.",
+      "El reset tiene prioridad: reinicia C_PulseCount a cero y desactiva Q_Alarm.",
+      "I_Emergency inhibe la activación de la salida."
+    ],
+    "recognized_tags": [
+      "I_Piece_Sensor",
+      "I_Reset",
+      "I_Emergency",
+      "Q_Alarm",
+      "C_PulseCount",
+      "R_SensorPulse"
+    ],
+    "unrecognized_terms": [],
+    "functional_requirements": [
+      {
+        "type": "counter_requirement"
+      },
+      {
+        "type": "reset_behavior",
+        "target": "Q_Alarm"
+      },
+      {
+        "type": "emergency_priority"
+      }
+    ],
+    "operation_type": "pulse_counting",
+    "requested_io_assignments": [],
+    "interaction_profile": "normal",
+    "parameter_provenance": {
+      "pulse_input": {
+        "source": "LLM"
+      },
+      "emergency_input": {
+        "source": "LLM"
+      },
+      "output": {
+        "source": "LLM"
+      },
+      "counter": {
+        "source": "LLM"
+      },
+      "edge_detector": {
+        "source": "LLM"
+      },
+      "reset_input": {
+        "source": "LLM"
+      },
+      "preset": {
+        "source": "LLM"
+      }
+    },
+    "effective_semantics": {
+      "schema_version": 1,
+      "status": "RESOLVED",
+      "intent_id": "INT_COUNTER_PULSES",
+      "origin": "LLM",
+      "interpreted_parameters": {
+        "pulse_input": "I_Piece_Sensor",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Alarm",
+        "counter": "C_PulseCount",
+        "edge_detector": "R_SensorPulse",
+        "reset_input": "I_Reset",
+        "preset": 5
+      },
+      "defaulted_keys": [],
+      "internal_technical_defaults": {},
+      "functional_value_defaults": {},
+      "errors": []
+    }
+  },
+  "second_pass_interpretation": null,
+  "reason_for_retry": null,
+  "parser_metadata": {
+    "requested_mode": "llm",
+    "decision_reason": "Modo LLM solicitado y respuesta semantica estructurada obtenida.",
+    "agreement": false,
+    "retrieved_context_count": 5
+  },
+  "product_engine": {
+    "schema_version": 1,
+    "engine_id": "PRODUCT_SHARED_V1"
+  }
+}

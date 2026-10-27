@@ -1,0 +1,10 @@
+{
+  "audio_file": "clean_audio.wav",
+  "audio_hash": "af9d87123c56c686f418b5a38e2724bbbb3989256286a3479e542b6cd3c9d0f5",
+  "transcript_raw": "Con Start activo, espera tres segundos y luego enciende el motor.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 1768,
+  "frozen_at": "2026-10-26T20:47:27"
+}

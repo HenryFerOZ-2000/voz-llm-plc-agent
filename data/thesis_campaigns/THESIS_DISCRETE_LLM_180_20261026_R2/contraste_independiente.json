@@ -1,0 +1,49 @@
+{
+  "status": "PASSED",
+  "trial_records": 180,
+  "separate_ASR_edit_distance_checks": 120,
+  "io_snapshot_channel_checks": 4224,
+  "protected_channels_unchanged": true,
+  "verified_map_snapshots": 176,
+  "bound_digital_signals_checked": 755,
+  "map_inventory": {
+    "DI": 8,
+    "DO": 8,
+    "AI_unused": 4,
+    "AO_unused": 4
+  },
+  "counts_from_raw_trial_stages": {
+    "TEXT": {
+      "PASS": 55,
+      "compile_pass": 58,
+      "REVIEW": 2,
+      "FAIL": 3
+    },
+    "VOICE_CLEAN": {
+      "PASS": 55,
+      "compile_pass": 59,
+      "FAIL": 1,
+      "REVIEW": 4
+    },
+    "VOICE_NOISE": {
+      "PASS": 55,
+      "compile_pass": 57,
+      "FAIL": 3,
+      "REVIEW": 2
+    }
+  },
+  "WER_from_raw_transcripts": {
+    "VOICE_CLEAN": {
+      "edits": 52,
+      "N": 1085,
+      "files": 60
+    },
+    "VOICE_NOISE": {
+      "edits": 75,
+      "N": 1085,
+      "files": 60
+    }
+  },
+  "paired_transitions_recomputed": true,
+  "Wilson_separate_formula_checked": true
+}

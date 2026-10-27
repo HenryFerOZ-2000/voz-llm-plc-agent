@@ -1,0 +1,512 @@
+{
+  "events": [
+    {
+      "type": "set",
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 5.079400000000001,
+      "t_done_ms": 9.2575,
+      "timestamp": "2026-10-26T20:05:43.8646590-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 627.6957,
+      "t_done_ms": 628.8191,
+      "timestamp": "2026-10-26T20:05:44.4856429-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        },
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1142.3970000000002,
+      "t_done_ms": 1143.0831,
+      "timestamp": "2026-10-26T20:05:45.0004053-05:00",
+      "writes": [
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      ]
+    },
+    {
+      "type": "set",
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1644.5810000000001,
+      "t_done_ms": 1645.0601000000001,
+      "timestamp": "2026-10-26T20:05:45.5021483-05:00",
+      "writes": [
+        {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        {
+          "name": "I_Alarm_Active",
+          "address": "%I16.3",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 11.194600000000001,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 61.8089,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 127.1157,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 162.3232,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 227.7194,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 277.3909,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "pre_idle",
+      "phase": "precondition",
+      "t_ms": 311.95930000000004,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 312.0239,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 364.5647,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 427.33950000000004,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 476.4819,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 513.1811,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 562.677,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_0",
+      "phase": "test",
+      "t_ms": 627.5552,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 629.1954000000001,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 691.3023000000001,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 742.6367,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 792.3449,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 844.2241,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 893.0857000000001,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 943.6196,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 994.2464,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1043.6948,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1094.2832,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_1",
+      "phase": "test",
+      "t_ms": 1142.2991,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1143.2634,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": true
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1194.0326,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1244.7229,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1294.7681,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1360.9254,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1394.3008,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1443.7462,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1494.1992,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1545.1057,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1594.4505000000001,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "step_2",
+      "phase": "test",
+      "t_ms": 1644.5194000000001,
+      "values": {
+        "I_Start": true,
+        "I_Alarm_Active": true,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1645.1788000000001,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1710.1490000000001,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1760.7481,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1807.3033,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    },
+    {
+      "id": "cleanup_inputs",
+      "phase": "cleanup",
+      "t_ms": 1860.5436000000002,
+      "values": {
+        "I_Start": false,
+        "I_Alarm_Active": false,
+        "Q_VFD_Enable": false
+      }
+    }
+  ]
+}

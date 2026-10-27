@@ -1,0 +1,10 @@
+{
+  "audio_file": "voice_noise.wav",
+  "audio_hash": "830f7011a4108860360a99587cea543d0879300eb5c15372f038b4a8e53e0006",
+  "transcript_raw": "Con memoria de marcha, Start enciende el motor, que permanece encendido al soltar el pulsador, y Stop lo apaga.",
+  "model": "gpt-4o-mini-transcribe",
+  "language": "es",
+  "error": null,
+  "latency_ms": 3617,
+  "frozen_at": "2026-10-26T21:32:59"
+}

@@ -1,0 +1,722 @@
+{
+  "report_schema_version": 1,
+  "trial_id": "D04_V2_VOICE_NOISE_DEV_002",
+  "case_id": "D04",
+  "variant_id": "V2",
+  "input_mode": "VOICE_NOISE",
+  "trial_kind": "DEVELOPMENT_TRIAL",
+  "experiment_phase": "DEVELOPMENT_VALIDATION",
+  "benchmark": {
+    "benchmark_version": 3,
+    "canonical_case_hash": "8e8a4e33468385bb8ee6ee01622edfe75f250dac1437d9c4627ce02a273c6984",
+    "variant_hash": "a7171dcf2564d6c77a16592b038ecb5b9900e84924f5925d6204f7793c1747a4"
+  },
+  "oracle": {
+    "oracle_id": "D04",
+    "oracle_version": 2,
+    "oracle_hash": "a299ff8d88e2a30733032466d461a12b32d9c66930448eb2710fcbcdd92d3ca3",
+    "oracle_status": "FROZEN"
+  },
+  "semantic": {
+    "stage_success": true,
+    "pipeline_success": true,
+    "benchmark_match": true,
+    "intent_expected": [
+      "INT_MOTOR_LATCH",
+      "INT_MOTOR_START_STOP"
+    ],
+    "intent_match": true,
+    "oracle_evaluation": {
+      "evaluable": true,
+      "success": true,
+      "intent_id": "INT_MOTOR_LATCH",
+      "intent_expected": [
+        "INT_MOTOR_LATCH",
+        "INT_MOTOR_START_STOP"
+      ],
+      "intent_match": true,
+      "failed_checks": [],
+      "checks": [
+        {
+          "check": "intent_accepted",
+          "expected": [
+            "INT_MOTOR_LATCH",
+            "INT_MOTOR_START_STOP"
+          ],
+          "actual": "INT_MOTOR_LATCH",
+          "passed": true
+        },
+        {
+          "check": "role:START",
+          "expected": "resuelto",
+          "actual": "I_Start",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:STOP",
+          "expected": "resuelto",
+          "actual": "I_Stop",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        },
+        {
+          "check": "role:MOTOR_MAIN",
+          "expected": "resuelto",
+          "actual": "Q_Motor_Enable",
+          "passed": true,
+          "provenance": [
+            "LLM"
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    "intent_id": "INT_MOTOR_LATCH"
+  },
+  "stage_summary": {
+    "semantic": "PASS",
+    "semantic_benchmark": "PASS",
+    "io_allocation": "PASS",
+    "ir": "PASS",
+    "compilation": "PASS",
+    "tia_archive": "PASS",
+    "download": "PASS",
+    "runtime": "PASS",
+    "functional": "PASS",
+    "safety": "PASS",
+    "archive_attempt_count": 1,
+    "archive_recovered_after_retry": false,
+    "final_verdict": "PASS",
+    "status": "PASS / COMPLETADO",
+    "cpu_start": "PASS",
+    "oracle": "PASS",
+    "infrastructure_status": "OK"
+  },
+  "experiment_map": {
+    "map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "map_hash": "493c36381175444be82530b4746c4aa07a1c6341118ee519425cf636fb35e362",
+    "source": "C:\\TESIS_HENRY\\voz-llm-plc-agent\\runtime\\campana_180_llm_20261026\\protocolo_previo.json",
+    "simulation_only": true,
+    "harness_signals": {
+      "SAFETY_TRIP": "I_Emergency"
+    },
+    "requirements": {
+      "digital_inputs": 2,
+      "digital_outputs": 1,
+      "restricted_signals": []
+    },
+    "reason": "Campaña completa nueva de 180 comandos: mapa único simulado 8+8 con emergencia autorizada, interpretación exclusiva LLM, audios originales pareados y reintentos técnicos acotados."
+  },
+  "io_map": {
+    "base_map_id": "mapa_comun_simulacion_8x8_d05_r1",
+    "base_map_hash": "d1db326517da6f5a44c8ca15bf8e0e552e978721b8245299aea1ef394b4b6ffc",
+    "base_source_hash": "34b193169a2ff88f7a68f12819c7fec01aad549f0ece30181ab93c43bf6f13d2"
+  },
+  "roles": {
+    "status": "RESOLVED",
+    "roles": {
+      "START": {
+        "role": "START",
+        "kind": "INPUT",
+        "functional_name": "I_Start",
+        "address": "%IX16.0",
+        "matched_paths": [
+          "trigger_input"
+        ]
+      },
+      "STOP": {
+        "role": "STOP",
+        "kind": "INPUT",
+        "functional_name": "I_Stop",
+        "address": "%IX16.1",
+        "matched_paths": [
+          "stop_input"
+        ]
+      },
+      "MOTOR_MAIN": {
+        "role": "MOTOR_MAIN",
+        "kind": "OUTPUT",
+        "functional_name": "Q_Motor_Enable",
+        "address": "%QX8.4",
+        "matched_paths": [
+          "motor_output"
+        ]
+      }
+    },
+    "issues": []
+  },
+  "resources": {
+    "policy": "ADVISORY",
+    "bound_inputs": [
+      "I_Start",
+      "I_Stop",
+      "I_Emergency"
+    ],
+    "bound_outputs": [
+      "Q_Motor_Enable"
+    ],
+    "warnings": [
+      "Entradas ligadas ['I_Start', 'I_Stop', 'I_Emergency'] superan las esperadas (2)."
+    ]
+  },
+  "compile": {
+    "success": true,
+    "status": "TIA_COMPILATION_PASSED",
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "download": {
+    "success": true,
+    "status": "SUCCESS",
+    "target_type": "PLCSIM_ADVANCED",
+    "start_module_success": true,
+    "cpu_run_confirmed": true
+  },
+  "tia_archive": {
+    "status": "CREATED",
+    "reason": null,
+    "attempt_count": 1,
+    "recovered_after_retry": false
+  },
+  "runtime": {
+    "connected": true,
+    "instance_name": "TESIS_PLC_SIM",
+    "cpu_state": "RUN",
+    "controller_ip": "192.168.0.1",
+    "adapter_ip": "192.168.0.12",
+    "network_match": true
+  },
+  "preconditions": {
+    "success": true,
+    "checks": [
+      {
+        "type": "expect",
+        "step_id": "pre_stop",
+        "role": "MOTOR_MAIN",
+        "expected": false,
+        "actual": false,
+        "t_ms": 511.1,
+        "passed": true
+      },
+      {
+        "type": "expect",
+        "step_id": "pre_release",
+        "role": "MOTOR_MAIN",
+        "expected": false,
+        "actual": false,
+        "t_ms": 315.8,
+        "passed": true
+      }
+    ]
+  },
+  "functional": {
+    "evaluated": true,
+    "success": true,
+    "passed_checks": 6,
+    "total_checks": 6,
+    "pass_rate": 1.0,
+    "failed_checks": [],
+    "major_invariant_violations": 0
+  },
+  "safety": {
+    "evaluated": true,
+    "success": true,
+    "invariants_defined": 0,
+    "samples_checked": 84,
+    "violations": [],
+    "critical_violations": 0,
+    "major_violations": 0
+  },
+  "harness_input_overwrites": [],
+  "oracle_verdict": "PASS",
+  "oracle_verdict_reason": "ALL_CHECKS_PASSED",
+  "final_status": "PASS",
+  "steps": [
+    {
+      "step_id": "pre_stop",
+      "phase": "precondition",
+      "executed": true,
+      "description": "STOP activo apaga cualquier marcha enclavada previa.",
+      "started_at": "2026-10-26T21:35:26.9545887-05:00",
+      "completed_at": "2026-10-26T21:35:27.469",
+      "t_start_ms": 8.7,
+      "t_end_ms": 519.8,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "STOP": {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "STOP": true,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "pre_stop",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 511.1,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "pre_release",
+      "phase": "precondition",
+      "executed": true,
+      "description": "Soltar STOP: el motor sigue apagado.",
+      "started_at": "2026-10-26T21:35:27.4664356-05:00",
+      "completed_at": "2026-10-26T21:35:27.782",
+      "t_start_ms": 521.2,
+      "t_end_ms": 837.1,
+      "inputs_applied": {
+        "STOP": {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "STOP": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "pre_release",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 315.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_1",
+      "phase": "test",
+      "executed": true,
+      "description": "START pulsado: el motor arranca.",
+      "started_at": "2026-10-26T21:35:27.7834964-05:00",
+      "completed_at": "2026-10-26T21:35:28.084",
+      "t_start_ms": 837.5,
+      "t_end_ms": 1138.4,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": true
+      },
+      "actual_outputs": {
+        "START": true,
+        "STOP": false,
+        "MOTOR_MAIN": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_1",
+          "role": "MOTOR_MAIN",
+          "expected": true,
+          "actual": true,
+          "t_ms": 300.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_2",
+      "phase": "test",
+      "executed": true,
+      "description": "START soltado: el motor sigue en marcha (memoria).",
+      "started_at": "2026-10-26T21:35:28.0841718-05:00",
+      "completed_at": "2026-10-26T21:35:28.599",
+      "t_start_ms": 1138.7,
+      "t_end_ms": 1653.3,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": true
+      },
+      "actual_outputs": {
+        "START": false,
+        "STOP": false,
+        "MOTOR_MAIN": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_2",
+          "role": "MOTOR_MAIN",
+          "expected": true,
+          "actual": true,
+          "t_ms": 514.6,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "step_3",
+      "phase": "test",
+      "executed": true,
+      "description": "STOP pulsado: el motor se detiene.",
+      "started_at": "2026-10-26T21:35:28.5991584-05:00",
+      "completed_at": "2026-10-26T21:35:28.900",
+      "t_start_ms": 1653.8,
+      "t_end_ms": 1954.6,
+      "inputs_applied": {
+        "STOP": {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "STOP": true,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_3",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 300.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_4",
+      "phase": "test",
+      "executed": true,
+      "description": "STOP soltado: el motor sigue detenido.",
+      "started_at": "2026-10-26T21:35:28.9011109-05:00",
+      "completed_at": "2026-10-26T21:35:29.412",
+      "t_start_ms": 1955.6,
+      "t_end_ms": 2466.4,
+      "inputs_applied": {
+        "STOP": {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": false
+      },
+      "actual_outputs": {
+        "START": false,
+        "STOP": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_4",
+          "role": "MOTOR_MAIN",
+          "expected": false,
+          "actual": false,
+          "t_ms": 510.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "step_5",
+      "phase": "test",
+      "executed": true,
+      "description": "Segundo ciclo: START vuelve a enclavar.",
+      "started_at": "2026-10-26T21:35:29.4122127-05:00",
+      "completed_at": "2026-10-26T21:35:29.716",
+      "t_start_ms": 2467.0,
+      "t_end_ms": 2770.8,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": true
+      },
+      "actual_outputs": {
+        "START": true,
+        "STOP": false,
+        "MOTOR_MAIN": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_5",
+          "role": "MOTOR_MAIN",
+          "expected": true,
+          "actual": true,
+          "t_ms": 303.8,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "step_6",
+      "phase": "test",
+      "executed": true,
+      "description": "START soltado: la memoria se mantiene de nuevo.",
+      "started_at": "2026-10-26T21:35:29.7171099-05:00",
+      "completed_at": "2026-10-26T21:35:30.232",
+      "t_start_ms": 2771.4,
+      "t_end_ms": 3286.5,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {
+        "MOTOR_MAIN": true
+      },
+      "actual_outputs": {
+        "START": false,
+        "STOP": false,
+        "MOTOR_MAIN": true
+      },
+      "unspecified": [],
+      "checks": [
+        {
+          "type": "expect",
+          "step_id": "step_6",
+          "role": "MOTOR_MAIN",
+          "expected": true,
+          "actual": true,
+          "t_ms": 515.1,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "errors": [],
+      "samples": 11
+    },
+    {
+      "step_id": "cleanup_stop",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Dejar el motor detenido.",
+      "started_at": "2026-10-26T21:35:30.2332747-05:00",
+      "completed_at": "2026-10-26T21:35:30.550",
+      "t_start_ms": 3287.5,
+      "t_end_ms": 3603.7,
+      "inputs_applied": {
+        "START": {
+          "name": "I_Start",
+          "address": "%I16.0",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        },
+        "STOP": {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": true,
+          "actual_readback": true,
+          "readback_tag": true,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "START": false,
+        "STOP": true,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 7
+    },
+    {
+      "step_id": "cleanup_release",
+      "phase": "cleanup",
+      "executed": true,
+      "description": "Entradas a OFF.",
+      "started_at": "2026-10-26T21:35:30.5503981-05:00",
+      "completed_at": "2026-10-26T21:35:30.766",
+      "t_start_ms": 3604.5,
+      "t_end_ms": 3819.8,
+      "inputs_applied": {
+        "STOP": {
+          "name": "I_Stop",
+          "address": "%I16.1",
+          "requested_value": false,
+          "actual_readback": false,
+          "readback_tag": false,
+          "match": true
+        }
+      },
+      "expected_outputs": {},
+      "actual_outputs": {
+        "START": false,
+        "STOP": false,
+        "MOTOR_MAIN": false
+      },
+      "unspecified": [],
+      "checks": [],
+      "passed": null,
+      "errors": [],
+      "samples": 5
+    }
+  ],
+  "cleanup": {
+    "performed": true,
+    "success": true,
+    "inputs": [
+      {
+        "name": "I_Start",
+        "address": "%I16.0",
+        "readback": false,
+        "restored": true
+      },
+      {
+        "name": "I_Stop",
+        "address": "%I16.1",
+        "readback": false,
+        "restored": true
+      }
+    ],
+    "process_variables": []
+  },
+  "sequence": {
+    "planned_ms": 3700,
+    "sample_period_ms": 50,
+    "watched": [
+      "I_Start",
+      "I_Stop",
+      "Q_Motor_Enable"
+    ],
+    "skipped_steps": [],
+    "bridge_status": "PLCSIM_IO_PASSED",
+    "failed_step": null,
+    "sequence_duration_ms": 3819.8403000000003,
+    "cpu_state": "RUN"
+  },
+  "errors": [],
+  "warnings": [
+    "Entradas ligadas ['I_Start', 'I_Stop', 'I_Emergency'] superan las esperadas (2)."
+  ],
+  "timings": {
+    "generation_ms": 6473,
+    "compile_ms": 36062,
+    "download_ms": null,
+    "functional_test_ms": 5784,
+    "end_to_end_ms": 50087,
+    "semantic_ms": 5925,
+    "runtime_ms": 867,
+    "oracle_ms": 5784,
+    "total_ms": 50087,
+    "generation_total_ms": 6473,
+    "evaluation_ms": 43614
+  },
+  "manual_audit": {
+    "selected": false,
+    "reviewer": null,
+    "automated_result": null,
+    "manual_result": null,
+    "agreement": null,
+    "notes": null
+  },
+  "generated_at": "2026-10-26T21:35:31"
+}
