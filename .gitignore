@@ -82,8 +82,10 @@ audio/
 menu_input_clear.txt
 menu_input_archive.txt
 
-# --- Audio FORMAL v1.1 (nunca en Git) ------------------------------------------
+# --- Audio local; excepción explícita para el corpus publicado ---------------
 # Corpus pareado clean/noisy (results/formal_audio, results/development_audio: ya bajo results/) y el ruido
 # maestro industrial (su SHA-256 aprobado SI se versiona en config/formal_audio_config.json).
 formal_assets/
 *.wav
+# Corpus pareado cuya publicación autorizó el primer autor y locutor.
+!data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/corpus/**/*.wav

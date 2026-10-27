@@ -6,7 +6,7 @@
 
 La evaluación final empleó interpretación LLM exclusiva, un mapa I/O común y 180 comandos: 165 PASS, siete FAIL y ocho REVIEW. El [archivo de la campaña final](data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/README.md) incluye los veinte Oracles, el prompt, los mapas y la configuración, los registros originales disponibles por etapa, el código conservado de la campaña y los scripts para recalcular las estadísticas. La comparación preliminar se conserva por separado.
 
-Las grabaciones y los proyectos binarios TIA permanecen locales. Los modos y las tareas históricas descritos en otras secciones de este README no implican que se utilizaran en los resultados de la campaña final.
+El [corpus pareado de voz](data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/corpus/README.md) contiene las 60 grabaciones limpias y sus 60 versiones con ruido, autorizadas para compartir por el primer autor y locutor. Los proyectos binarios TIA y el ruido maestro permanecen locales. Los modos y las tareas históricas descritos en otras secciones de este README no implican que se utilizaran en los resultados de la campaña final.
 
 ## Objetivo
 

@@ -6,6 +6,6 @@ Los ZIP para transferir el artículo a Overleaf se conservan únicamente en el e
 
 La evaluación principal corresponde exclusivamente a `THESIS_DISCRETE_LLM_180_20261026_R2`: 180 celdas caso–variante–modalidad, 174 compilaciones y 165 PASS, siete FAIL y ocho REVIEW. La comparación preliminar está archivada por separado.
 
-Los datos tabulares, las plantillas y los cálculos reproducibles se conservan en el archivo experimental del proyecto. Los WAV, las credenciales, los proyectos TIA y los registros completos permanecen locales conforme a `.gitignore`.
+Los [datos y registros de la campaña](../data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/README.md) incluyen las plantillas, los cálculos reproducibles y el corpus de 120 WAV autorizado por el primer autor y locutor. Las credenciales, los proyectos binarios TIA y el ruido maestro permanecen locales.
 
 La [revisión integral](../docs/revision_integral_articulo_20261027.md) documenta la coherencia entre resultados y registros y sus límites. La fuente principal coincide con la versión auditada.

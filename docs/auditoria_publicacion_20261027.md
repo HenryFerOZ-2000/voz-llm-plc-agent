@@ -37,7 +37,7 @@ Los Oracles y prompts generales ya estaban versionados. Faltaban la selección f
 | Protocolo y rectificación documentada | `Auditoria/` |
 | Identidad e integridad de los archivos publicados | `manifest_publication.json` |
 
-Se conservaron 180 `trial.json`, 176 programas SCL y 174 informes conductuales con sus trazas. Las 120 transcripciones originales se distribuyen en `trials/<trial_id>/asr/asr_result.json`; la ruta original se conserva como procedencia en el manifiesto. No se incluyen WAV, ruido maestro, credenciales, archivos ZIP ni proyectos binarios TIA.
+Se conservaron 180 `trial.json`, 176 programas SCL y 174 informes conductuales con sus trazas. Las 120 transcripciones originales se distribuyen en `trials/<trial_id>/asr/asr_result.json`; la ruta original se conserva como procedencia en el manifiesto. La incorporación inicial excluyó los WAV; posteriormente el primer autor y locutor autorizó compartir el corpus pareado en `corpus/`, como documenta [la actualización de audios](publicacion_audios_20261027.md). El ruido maestro, las credenciales, los archivos ZIP y los proyectos binarios TIA permanecen excluidos.
 
 Los archivos se copiaron sin modificar sus contenidos; el manifiesto registra sus SHA-256. La regla `data/thesis_campaigns/** -text` conserva esos bytes al pasar por Git, incluso entre Windows y otros sistemas. Los 126 archivos de código, esquemas, prompts y conocimiento congelados se contrastaron con las huellas del protocolo.
 

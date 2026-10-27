@@ -10498,19 +10498,638 @@
     },
     {
       "path": "README.md",
-      "sha256": "944450317e03ed89eac6d2e1620d2c5e8902035b049c75e4ab327360f30ada8c",
+      "sha256": "e5c2c130f85931192779085de4a3b798f0e6076f82097972f599ced7ce3cd4a7",
       "source": "publication documentation"
     },
     {
       "path": "audit_publication.json",
       "sha256": "9ab0367182083f557b0b20ee316c5c624bc6dba988c391a8bb66824c44e34948",
       "source": "local audit without secret values"
+    },
+    {
+      "path": "corpus/D01/V1/voice_clean.wav",
+      "sha256": "2abcde9b14d78f47e8d5f5a01dacd8cf7248a59b76506491c4baeff8cd94bcb3",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D01/V1/voice_noise.wav",
+      "sha256": "6f7d5c5df003fbbf05814b6bfc724552cbbf9940f6c69129ed50928fd6c0a998",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D01/V2/voice_clean.wav",
+      "sha256": "fa484249fbaa1abf2ca6f0f263105a3f1a4237b5055cb726e194587d42fc85e7",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D01/V2/voice_noise.wav",
+      "sha256": "3bf034fc97bc984b687f89f829d26e8df218eaa14308be81b13c5c574a29e401",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D01/V3/voice_clean.wav",
+      "sha256": "d6874616d56ed82a25c751aa830dbe8ef9939db5240c5f70ee5ab3adbef7b1cb",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D01/V3/voice_noise.wav",
+      "sha256": "726d2b91d5e1dfec33be473dcf94a086260924b32493ecdb3285fe0f22402374",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D02/V1/voice_clean.wav",
+      "sha256": "39935d186aef6fd09ea914adb7aa6633c6a3d4f4bb893fa3e49cde8df388f7db",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D02/V1/voice_noise.wav",
+      "sha256": "ceeea7a93d33ff0ead476319757d84663e7a332e2c1f1b99d9bb6ec8015a0d07",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D02/V2/voice_clean.wav",
+      "sha256": "089f066a6b6bfe633cf70c8dc8686b4f1a76ad344eba0f400ef24f524d42d002",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D02/V2/voice_noise.wav",
+      "sha256": "fc2a81c994ece55b8a9a2e29d80fb5b35453a83c458529902b7f608ad82619b3",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D02/V3/voice_clean.wav",
+      "sha256": "942b12a004a04bcd2d5d44ab24bd7c0a115a6637f0d6a3ce20f96999402865b5",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D02/V3/voice_noise.wav",
+      "sha256": "88c97d2b5b6d5a171dfbddf171dfa0bc6f31e1a83680e9fba6336f7550972698",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D03/V1/voice_clean.wav",
+      "sha256": "2e4e80369035f237714df7197d07e6e9e2c4ba642a914974c1a47fc16fef8b39",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D03/V1/voice_noise.wav",
+      "sha256": "730b5b93fc6f5ecd1a8d745b82fb296bd47974cc978183f6869a855c7e22c475",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D03/V2/voice_clean.wav",
+      "sha256": "a8b3f3ffb070b2258da915407654bc624db2c3c533c8779c793eff5ba432d070",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D03/V2/voice_noise.wav",
+      "sha256": "8a92851c2e290dbb765b58b746c8d41310b6f4e1d2e9097f977b9e0faa55231a",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D03/V3/voice_clean.wav",
+      "sha256": "d2f5228e054c0c79588fddb83625fef269a94170a563cee1c0bc6fddea142b04",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D03/V3/voice_noise.wav",
+      "sha256": "830f7011a4108860360a99587cea543d0879300eb5c15372f038b4a8e53e0006",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D04/V1/voice_clean.wav",
+      "sha256": "4683aff40924e72f06d0fd3d29b1bdd46fe50101a736ce89e4bf314a0e8c1ce0",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D04/V1/voice_noise.wav",
+      "sha256": "29cf889744ac72ac38b99548d058c736234bf7e643325e7f0bbadc330d7eca6f",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D04/V2/voice_clean.wav",
+      "sha256": "d041b3ebd3dad23ce20d5136ea43b820547d784b062c02b02276f561176711b6",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D04/V2/voice_noise.wav",
+      "sha256": "5f5f54f5151bb3c844b60aadff36f8b8c89e005a8cf9f2e6d27d3db2be25a17a",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D04/V3/voice_clean.wav",
+      "sha256": "16fc1796501e283ea105b4800293fc53b810327c16a15b93a4ec0290303fdd26",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D04/V3/voice_noise.wav",
+      "sha256": "cef7e8383427d12db5bc23421e132af810b099a3e08ca0d291deb82bf78042bf",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D05/V1/voice_clean.wav",
+      "sha256": "81050367980b69c6beee7e542256113453fdbc83138a4cbf4e750af3a2857fff",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D05/V1/voice_noise.wav",
+      "sha256": "857e11dd2235f4c8429f8553a6a642188c3d0284d892a804efaac6a1ff2a34cd",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D05/V2/voice_clean.wav",
+      "sha256": "67df21b06ad71aa5f5a2b079831ac2206ee16781bbe160d71a681be664b0b620",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D05/V2/voice_noise.wav",
+      "sha256": "de081a021a61a0688e6e677d7c28efb341dd2d81da57070c5b8e38646eb2c821",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D05/V3/voice_clean.wav",
+      "sha256": "1b72811ca17275faa27e74204c3a13dddb64ba815695dfa89a3aef974172b139",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D05/V3/voice_noise.wav",
+      "sha256": "7cfd1ae0286f16f8e26d37f8116e42e804025eacb1cc2f5cbe7b37e34b80382c",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D06/V1/voice_clean.wav",
+      "sha256": "4781f1a094cc9a73867748ec13f93644e369e3f0a921c9297d5f5bad7c238d12",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D06/V1/voice_noise.wav",
+      "sha256": "d31322ff352cedc4e4f8f5e5b0d91b137ec083eaed7249123513ad05b1f4ad43",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D06/V2/voice_clean.wav",
+      "sha256": "c96784147b14d1dea2489ec0718f36a93fd992826f986a3362164584ca99338e",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D06/V2/voice_noise.wav",
+      "sha256": "c35910bab8f75688e351bd05a3120e12e698cc1ed37cf677abbdcd986dc9961d",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D06/V3/voice_clean.wav",
+      "sha256": "d31a29aa175def4c8cdbdeeab2c91d620f23b72284f119d4bd02de9a8faf3d0c",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D06/V3/voice_noise.wav",
+      "sha256": "d744bab4d345f3d83bcf2be6799bce31f4f8917951ae546f95f7df6347d83157",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D07/V1/voice_clean.wav",
+      "sha256": "af9d87123c56c686f418b5a38e2724bbbb3989256286a3479e542b6cd3c9d0f5",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D07/V1/voice_noise.wav",
+      "sha256": "24856300d83f8b36b66009e453ec49fb5cd8c30a0bef6d861717cd2b3208a4a8",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D07/V2/voice_clean.wav",
+      "sha256": "514627c7f118b6298c6bb01ae70f780b6b0f546a3371756faff9ede5930667f0",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D07/V2/voice_noise.wav",
+      "sha256": "4b1340c39358561dede7d1a28a7417d29ecd84bd50116bdcf53e1f1077d5488a",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D07/V3/voice_clean.wav",
+      "sha256": "78aba3b3366db51172576d6a182816253d9eca3ca47e5463d13770f484274b8f",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D07/V3/voice_noise.wav",
+      "sha256": "15e4a005b1a3bf7bdccf5bdb0217c0b2c23c8f667b433eca3968b52074aaebe2",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D08/V1/voice_clean.wav",
+      "sha256": "51e2a19e6ab0711f2fa646527bdbc7b6dc3359a88ef19af31cd16eb41c9beaf1",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D08/V1/voice_noise.wav",
+      "sha256": "c8fdaeaa0ca7c282bf1992ac55e8b833369b7bb419128dea2c15c51abb32eec2",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D08/V2/voice_clean.wav",
+      "sha256": "0545dfee9aaf0b328830ac9aad4c0661ea06bdf263ad7561df5bf3df12d3ee51",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D08/V2/voice_noise.wav",
+      "sha256": "87eb30b8696464919663b54a743127139939af6606726acf92422f6bf784de42",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D08/V3/voice_clean.wav",
+      "sha256": "74f7ea164d1eade264f8620a59dd2b916b2611f2713e75f21d7eb1093766da92",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D08/V3/voice_noise.wav",
+      "sha256": "7810a9daa54dcc3e94afd397f1bdfda611e6d6143255c15de2a87366a7f50d60",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D09/V1/voice_clean.wav",
+      "sha256": "d4a8523d222edbeba3e3644d1fb397649a074afc450d6ccadc1b18fac3a25e51",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D09/V1/voice_noise.wav",
+      "sha256": "26cb513170703c5019453bf86a24fa0b4c1212d3521393e5dbc4e462d411639e",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D09/V2/voice_clean.wav",
+      "sha256": "2d61cf9d956745492c152f3a1a04abd906d6ea62d0290667d3d3410ea5c07410",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D09/V2/voice_noise.wav",
+      "sha256": "71c906306ee68dee63d97a23058a773d0d340549e57be9fde8b89540cb2e816d",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D09/V3/voice_clean.wav",
+      "sha256": "33e0992c904db007546983aad3d03c194679f830b2344f71fee5837092c41c1d",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D09/V3/voice_noise.wav",
+      "sha256": "597348adaddc6518138e0e162bfd78e26c2707ae4d637163be0fdcc131a488ad",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D10/V1/voice_clean.wav",
+      "sha256": "18f0175169336b21307487e964fb07c6d766941b336c42120448f5297004141d",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D10/V1/voice_noise.wav",
+      "sha256": "7a26dcc6622596100c603cb14bf454709f2841a323043fb0075cdc9f6147dfad",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D10/V2/voice_clean.wav",
+      "sha256": "4f1e0133ba4fbfc105a01cf8b4e8333c1af4ec7e5ec3535666ce495f7466c6f9",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D10/V2/voice_noise.wav",
+      "sha256": "3339579cd641a87780db8d84dde1e64ef6586aadcca6eee9fd303c1e01383311",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D10/V3/voice_clean.wav",
+      "sha256": "f613c88766392a791dc476c3976d58f10f0634ca72e92d090536a42461abf95a",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D10/V3/voice_noise.wav",
+      "sha256": "0b1a7032da74140f7c5e6fcac9498637f2716f3907b5216063c758ab2db782a2",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D11/V1/voice_clean.wav",
+      "sha256": "127347a6545b717db2dbdc52f659fd63642edf214482cd29f10afa95931fa3a1",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D11/V1/voice_noise.wav",
+      "sha256": "fe6cdc30e65a91b9fea90cbef3b562336f81b4bb0cd33b0e1b15707ce5a12c68",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D11/V2/voice_clean.wav",
+      "sha256": "f77f5a0f24936bed06f05ef84b89bc17621d4f34ed48c16fbf967a0f04168474",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D11/V2/voice_noise.wav",
+      "sha256": "7c0a906c61e6e6973792bc26ea27867780b2d39016f98fdbe9b736f06481625d",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D11/V3/voice_clean.wav",
+      "sha256": "942f8431a0316ded11d09103f5e6ed7479cc8a52de283e631e4359604799e16f",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D11/V3/voice_noise.wav",
+      "sha256": "322b25f4d0bb26a3c4d2cc71514dc1f3bcbdcd87e60b44eab63d45534dc4cde9",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D12/V1/voice_clean.wav",
+      "sha256": "9ab4e8dcd1b63cf8b655bb3d2ce3f6b6ecd96a4ce8b088aced9b2872e5711aa2",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D12/V1/voice_noise.wav",
+      "sha256": "cca539c13d7dfb2e00a1a1105320a1aaab542ce020108178d3bd59091575bacd",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D12/V2/voice_clean.wav",
+      "sha256": "b8918df1b47a9f4d814a5366c523e1ff3174d589d0c3ed4d699d254a9a42083f",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D12/V2/voice_noise.wav",
+      "sha256": "122de287ca237309a4f013c1df6aa52d0f52093cfa5038af7f449ece69aca91f",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D12/V3/voice_clean.wav",
+      "sha256": "582322d4fe01a756ab76862740ff4b300881ad0e83511f04225bdb5e197a2a59",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D12/V3/voice_noise.wav",
+      "sha256": "c15540b8e5d9b64eee96790b2d57f5477b4b83111036f66d757568adcfe1762e",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D13/V1/voice_clean.wav",
+      "sha256": "b1280ad20d8fa1fdccbeaebc641d0337920ac11b0ebb4dd78983e35363b29515",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D13/V1/voice_noise.wav",
+      "sha256": "68f23a36c221990d1d369dee809a8e99f483e0bf31c549af942688f97a1d97b7",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D13/V2/voice_clean.wav",
+      "sha256": "f66a78c59b4ad90d2e3756fa9d5e1c2dab36559ebf19ac9dc881bce49511773f",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D13/V2/voice_noise.wav",
+      "sha256": "61d242b9a9d5a0794666468f74bd3cc5cf43b28d5961f4f5e6bfc47c16359a41",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D13/V3/voice_clean.wav",
+      "sha256": "cfefa6972b967f6477ca5a5a996075c72141b0ec1065eed4e5618edf7bd8109d",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D13/V3/voice_noise.wav",
+      "sha256": "ed3d9a0e1a7b27a2b900a099b742191634b336cd428142e32c2593b42649a8ba",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D14/V1/voice_clean.wav",
+      "sha256": "11624ce205d10377e6f6bf2032b094df58f46deb727d0b2eccfda90ee2c21cb5",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D14/V1/voice_noise.wav",
+      "sha256": "8c24c1a54d91848bf59e739742df0c6097a14ab3dfdfc8a32ac2ceeb608092b2",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D14/V2/voice_clean.wav",
+      "sha256": "6abc5fffb3c25cf36c970c8560c8a64b16e958a0e518f79a0a9e54629c347db5",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D14/V2/voice_noise.wav",
+      "sha256": "f1d900f123bad3029d2d1c89b08cb91810db70eef677501391dfb84dbf0e2fc8",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D14/V3/voice_clean.wav",
+      "sha256": "8a6ec6ed0758b0e1e99e585208189107ae8fd6580fa0add6c820fa6b9240c131",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D14/V3/voice_noise.wav",
+      "sha256": "6f57bfb0aa45384455d0f69d4e163e9a7edfd31c1b099081122304b575d4c9a6",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D15/V1/voice_clean.wav",
+      "sha256": "6daeccbc86d6a2b3f206210f9e587239e340fa6f34ef775252ffb2d8d37ebdd1",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D15/V1/voice_noise.wav",
+      "sha256": "f938dd4cd5094649566aa4477ecac42bf2623c78f9b16632d2a68b3e9b24de27",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D15/V2/voice_clean.wav",
+      "sha256": "d75d35c1576008a7e62e93234eeac651211bcece98c1d811667f0a1a65d60b0b",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D15/V2/voice_noise.wav",
+      "sha256": "69f0e0b535459ab7bc93a5b48c6151a9841384b25151282bfba914fdd7d0a0aa",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D15/V3/voice_clean.wav",
+      "sha256": "d5ed170b333992d2d97d39b49636f90cfbf7292a7a509cc20943bd16087478d9",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D15/V3/voice_noise.wav",
+      "sha256": "c1b3d53138109a50bb8e9e04fb49ff17a7896044b446531ecc0f33feef7d2154",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D16/V1/voice_clean.wav",
+      "sha256": "064a35cb1a33351f87e2f9fdae69c3eafa2e522634400be2c5c211cce6fade11",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D16/V1/voice_noise.wav",
+      "sha256": "6f8207ad9e390ae0d927d214f893dc8c915e5d16d11cf51acdf275772a3092f4",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D16/V2/voice_clean.wav",
+      "sha256": "bdc39c5ff238831c0b18716ba59a5fd22f1d77c9e33f008c8491515765ade025",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D16/V2/voice_noise.wav",
+      "sha256": "beaad5cc309186b01d75869736ce067d8d0324dea1b92842ffb145b176097177",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D16/V3/voice_clean.wav",
+      "sha256": "85b8a4366e6b761a17b3dd4536a8573c43ba4120486e042c710d63547183e95b",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D16/V3/voice_noise.wav",
+      "sha256": "955bd8810306eb47b7144d360d709eee2576d94868183193f615e2fa1771c15b",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D17/V1/voice_clean.wav",
+      "sha256": "a4a8f273e5b0918f11711c9a44752ce32fa61973a02d19707849960e058fffe8",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D17/V1/voice_noise.wav",
+      "sha256": "bae03fcfe2f97082d197a63463975671d5c25493f017ad005847cfe7d5e90d2c",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D17/V2/voice_clean.wav",
+      "sha256": "e15d3d8f05192f0449f15030ad8ad31768ef2496ea5553914a5fd19ad4f8e7ec",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D17/V2/voice_noise.wav",
+      "sha256": "72d33b4ce8c66ac98817d8b25aaba690f8af4aa214a0db7475ffaf161f9cca4e",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D17/V3/voice_clean.wav",
+      "sha256": "f6c816ddd975e8336a7884d8b230fdf7d3a88cd7c04178caaeaebb1040dcae0a",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D17/V3/voice_noise.wav",
+      "sha256": "fe058537c06499ab24b0fc14e7d1fb0cbb1632bb5414dc11b50cfea90fe8d3ba",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D18/V1/voice_clean.wav",
+      "sha256": "3bbd0302d4b2a999500c19c16b67f9a483bf92e4f1f493bb06ae38a3933c2f14",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D18/V1/voice_noise.wav",
+      "sha256": "d97bfe9917af0fd5e7649344070909b4a01eaa59a2caf78d1c41d8df3a592815",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D18/V2/voice_clean.wav",
+      "sha256": "41e62f539daeada2729ae7871110e98b0359fc66ab530ffab3c70181c1097351",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D18/V2/voice_noise.wav",
+      "sha256": "f96afb3edc22d72112f9b9a0a0d91064c824e934b98b8bd3c56073062b6a4c26",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D18/V3/voice_clean.wav",
+      "sha256": "ade7bc3653d7af115265236370dae8fdd198c9669f22d468eaabc3ea09eaaeb6",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D18/V3/voice_noise.wav",
+      "sha256": "1b0432e8f4f5047e1bc55e478276405b39b08a22f347c197b4276d2de661f76f",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D19/V1/voice_clean.wav",
+      "sha256": "1b34e9ae4edefad902995d712a070f5cd6e57ba14d1a88db423300940a74771c",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D19/V1/voice_noise.wav",
+      "sha256": "33e021a12350a482cf6fdd37997e7f09da657df5e1dfe095a8bf37c9ded543db",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D19/V2/voice_clean.wav",
+      "sha256": "467b72cdb46c7bb7cb9f0d78b1c7179913250a896a286aabf813d1943b707ba0",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D19/V2/voice_noise.wav",
+      "sha256": "969437ea125ea45ab3c7a00443a59f08d5e3742f5b5d0f8ddb5f4793bb488ed6",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D19/V3/voice_clean.wav",
+      "sha256": "15bec310992b737f5c77a284c9a9ae135b9cf4926f20fff308f5fd9c1c0b8faf",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D19/V3/voice_noise.wav",
+      "sha256": "c06bfea58fbc7df9e9ddcb1447c6beda13e990a0208345ac7b6ab6b231fc5a7c",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D20/V1/voice_clean.wav",
+      "sha256": "8c535e8b07c86d3a255827e41c1bf4ba10a510c0980b6a5eab12c34ef882b754",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D20/V1/voice_noise.wav",
+      "sha256": "2417046da351db1cc0d9826ade92e9b1fa62439e8fe75f2ba9377b1fdc54fe3a",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D20/V2/voice_clean.wav",
+      "sha256": "8866b5a087db44d2017e221da4743f50df3122500b53aeb130307bda5d538661",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D20/V2/voice_noise.wav",
+      "sha256": "d60ee6c62f7dba69575b9146720c376c584dc77a5974a916f36456ca0be7749d",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D20/V3/voice_clean.wav",
+      "sha256": "54be1118dd27b7bd84e502d4bac9f348ec53681b0f59e81e4a8863bd2f2eee01",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/D20/V3/voice_noise.wav",
+      "sha256": "60d4e110dc21a49d62bb57fed6de2fb10c38a8d9c318dd08be912d8fb4e2a84e",
+      "source": "Selected final-campaign stimulus"
+    },
+    {
+      "path": "corpus/index.json",
+      "sha256": "e954549a7ef28b34a1085104c339df1ce6e8f5e941194537ceebdfd44f2b0e81",
+      "source": "Publication index"
+    },
+    {
+      "path": "corpus/README.md",
+      "sha256": "5e8406f8945ae0778933cae0d288433e774b02daddbf08ac230080861cd68f2b",
+      "source": "Publication index"
+    },
+    {
+      "path": "corpus/validar.py",
+      "sha256": "4f931dcfe676c6e3ecdd7b4215154b75b59edecffb0b91c2b2ed91bd4f0351dc",
+      "source": "Offline published corpus validation"
     }
   ],
   "exclusions": [
-    "WAV recordings",
     "noise master",
     "TIA binary projects",
     "credentials"
-  ]
+  ],
+  "authorized_corpus": {
+    "path": "corpus/index.json",
+    "recordings": 120,
+    "paired_utterances": 60
+  }
 }
