@@ -8,6 +8,17 @@ La evaluación final empleó interpretación LLM exclusiva, un mapa I/O común y
 
 El [corpus pareado de voz](data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/corpus/README.md) contiene las 60 grabaciones limpias y sus 60 versiones con ruido, autorizadas para compartir por el primer autor y locutor. Los proyectos binarios TIA y el ruido maestro permanecen locales. Los modos y las tareas históricas descritos en otras secciones de este README no implican que se utilizaran en los resultados de la campaña final.
 
+## Requisitos y licencia de la versión de tesis
+
+La campaña del artículo utilizó TIA Portal V18 con TIA Openness, S7-PLCSIM Advanced V5 y Python 3.13. El código original se distribuye bajo la [licencia MIT](LICENSE). Las librerías de Siemens son propietarias y no se incluyen en este repositorio; deben obtenerse de una instalación autorizada de sus productos.
+
+Para recalcular los resultados sin invocar servicios de IA ni conectarse a un PLC:
+
+```text
+python data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/recalcular.py
+python data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/comparar_campanas.py
+```
+
 ## Objetivo
 
 Demostrar una arquitectura segura donde el modelo de lenguaje solo interpreta el requerimiento y nunca genera ni despliega directamente el codigo final del PLC.

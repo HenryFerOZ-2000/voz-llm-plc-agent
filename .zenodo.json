@@ -1,0 +1,28 @@
+{
+  "upload_type": "software",
+  "title": "Arquitectura voz–LLM–PLC: código, Oracles y registros experimentales",
+  "creators": [
+    {
+      "name": "Ochoa Zea, Henry Fernando",
+      "affiliation": "Universidad Politécnica Salesiana",
+      "orcid": "0009-0006-7344-3680"
+    },
+    {
+      "name": "Chasi Pesantez, Paul Andres",
+      "affiliation": "Universidad Politécnica Salesiana",
+      "orcid": "0000-0002-4364-7483"
+    }
+  ],
+  "description": "Este repositorio contiene el código de una arquitectura de programación automática de controladores lógicos programables mediante comandos de voz y modelos de lenguaje de gran tamaño, los Oracles de evaluación, el prompt, los mapas I/O, los registros y el corpus de voz de la campaña THESIS_DISCRETE_LLM_180_20261026_R2, y los scripts de análisis del artículo de la Maestría en Automatización para la Industria 4.0 de la Universidad Politécnica Salesiana.",
+  "license": "MIT",
+  "keywords": [
+    "PLC",
+    "IEC 61131-3",
+    "LLM",
+    "reconocimiento de voz",
+    "SCL",
+    "TIA Openness",
+    "PLCSIM Advanced"
+  ],
+  "language": "spa"
+}
