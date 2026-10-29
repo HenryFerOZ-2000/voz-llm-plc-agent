@@ -1,0 +1,387 @@
+{
+  "review_date": "2026-10-29",
+  "scope": "Revisión documental de registros, programas y contratos; no constituye una nueva prueba en PLCSIM ni validación humana de audios.",
+  "original_counts": {
+    "PASS": 165,
+    "FAIL": 7,
+    "REVIEW": 8
+  },
+  "reclassified_cells": 0,
+  "frozen_files_compared_to_preprotocol": 163,
+  "snapshot_publication_revision": "7fa49e1503408b7cbbc1943b04ce1350d42e58a3",
+  "manifest_sha256": "a6a9842a2159abd821f6e678626adc8fc7d960e4b622d72b4440c08cbc32c604",
+  "reviews": [
+    {
+      "trial_id": "D05_V2_TEXT_DEV_002",
+      "case_id": "D05",
+      "variant": "V2",
+      "mode": "TEXT",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "DISCREPANCIA_DE_ETIQUETA_SEMANTICA",
+      "evidence": "INT_DIRECT_OUTPUT frente a INT_EMERGENCY_PRIORITY; roles resueltos y comprobaciones conductuales satisfactorias.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "intent_accepted"
+      ],
+      "program_sha256": "117715fe3818f99748795e273a336c063f12bedc1e03f3f7fff5461871b09628",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D05_V2_TEXT_DEV_002/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D05_V2_TEXT_DEV_002/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D05_V2_TEXT_DEV_002/evaluation/attempt_001/evaluation_report.json"
+      ]
+    },
+    {
+      "trial_id": "D15_V3_TEXT_DEV_001",
+      "case_id": "D15",
+      "variant": "V3",
+      "mode": "TEXT",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "CORRESPONDENCIA_DEL_SELECTOR_PENDIENTE",
+      "evidence": "El programa contiene ambas órdenes; I_Mode_Manual=TRUE habilita Automático. Falta el enlace MODE_AUTO y no se ejecutó la prueba conductual.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "role:MODE_AUTO"
+      ],
+      "program_sha256": "aa1abfabbb60d5211d511a71acf611ac765bc6dc044b6906463b7596dc596e0a",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_TEXT_DEV_001/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_TEXT_DEV_001/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_TEXT_DEV_001/evaluation/attempt_001/evaluation_report.json"
+      ]
+    },
+    {
+      "trial_id": "D15_V2_VOICE_CLEAN_DEV_002",
+      "case_id": "D15",
+      "variant": "V2",
+      "mode": "VOICE_CLEAN",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "DEFECTO_FUNCIONAL_POR_INSPECCION",
+      "evidence": "El SCL declara solo selector y orden manual, además de emergencia; la salida no contiene una contribución de la orden automática.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "role:MODE_AUTO"
+      ],
+      "program_sha256": "e13b872bf251d008c9b3810678e7a67dfc4384f1cacebcb63fd73b2fc9db0998",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V2_VOICE_CLEAN_DEV_002/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V2_VOICE_CLEAN_DEV_002/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V2_VOICE_CLEAN_DEV_002/evaluation/attempt_001/evaluation_report.json"
+      ]
+    },
+    {
+      "trial_id": "D15_V3_VOICE_CLEAN_DEV_002",
+      "case_id": "D15",
+      "variant": "V3",
+      "mode": "VOICE_CLEAN",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "DEFECTO_FUNCIONAL_POR_INSPECCION",
+      "evidence": "El SCL declara solo selector y orden manual, además de emergencia; la salida no contiene una contribución de la orden automática.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "role:MODE_AUTO"
+      ],
+      "program_sha256": "9cca73668f90fc7d3d2f79a1e65cbf5cba8e39a97244a741547492b8b111b061",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_VOICE_CLEAN_DEV_002/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_VOICE_CLEAN_DEV_002/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_VOICE_CLEAN_DEV_002/evaluation/attempt_001/evaluation_report.json"
+      ]
+    },
+    {
+      "trial_id": "D17_V1_VOICE_CLEAN_DEV_002",
+      "case_id": "D17",
+      "variant": "V1",
+      "mode": "VOICE_CLEAN",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "DEFECTO_FUNCIONAL_POR_INSPECCION",
+      "evidence": "No declara ni consulta Start; el TON se habilita con el sensor estable sin una orden de arranque.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "role:START"
+      ],
+      "program_sha256": "92a1427dfe6032c0953a2624a26b439ca6afb3fc8b8e5091c14334d8bb12de89",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D17_V1_VOICE_CLEAN_DEV_002/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D17_V1_VOICE_CLEAN_DEV_002/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D17_V1_VOICE_CLEAN_DEV_002/evaluation/attempt_001/evaluation_report.json"
+      ]
+    },
+    {
+      "trial_id": "D17_V3_VOICE_CLEAN_DEV_002",
+      "case_id": "D17",
+      "variant": "V3",
+      "mode": "VOICE_CLEAN",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "DEFECTO_FUNCIONAL_POR_INSPECCION",
+      "evidence": "No declara ni consulta Start; el TON se habilita con el sensor estable sin una orden de arranque.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "role:START"
+      ],
+      "program_sha256": "92a1427dfe6032c0953a2624a26b439ca6afb3fc8b8e5091c14334d8bb12de89",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D17_V3_VOICE_CLEAN_DEV_002/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D17_V3_VOICE_CLEAN_DEV_002/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D17_V3_VOICE_CLEAN_DEV_002/evaluation/attempt_001/evaluation_report.json"
+      ]
+    },
+    {
+      "trial_id": "D15_V1_VOICE_NOISE_DEV_002",
+      "case_id": "D15",
+      "variant": "V1",
+      "mode": "VOICE_NOISE",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "DEFECTO_FUNCIONAL_POR_INSPECCION",
+      "evidence": "El registro semántico menciona una orden automática que no se declara ni se usa en el SCL emitido.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "role:MODE_AUTO"
+      ],
+      "program_sha256": "730dd4c5da91a76a46789e4c6cc5efab350f23725d6c6e630410d2a779fc8a1e",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V1_VOICE_NOISE_DEV_002/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V1_VOICE_NOISE_DEV_002/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V1_VOICE_NOISE_DEV_002/evaluation/attempt_001/evaluation_report.json"
+      ]
+    },
+    {
+      "trial_id": "D15_V3_VOICE_NOISE_DEV_002",
+      "case_id": "D15",
+      "variant": "V3",
+      "mode": "VOICE_NOISE",
+      "original_verdict": "REVIEW",
+      "documentary_finding": "CONTRATO_SEMANTICO_Y_POLARIDAD_PENDIENTES",
+      "evidence": "INT_UNKNOWN y roles no resueltos; el SCL contiene ambas órdenes, con I_Mode_Manual=TRUE para Manual. No hubo evaluación conductual.",
+      "decision": "Conservar REVIEW original; sin reclasificación de la matriz ni nueva ejecución en PLC.",
+      "failed_semantic_checks": [
+        "intent_accepted",
+        "role:MODE_AUTO",
+        "role:MANUAL_COMMAND",
+        "role:AUTO_COMMAND",
+        "role:MOTOR_MAIN"
+      ],
+      "program_sha256": "f58ef803c31027be07fecd44e5896cb4f30ce0e9ffb88e1e211ad403a0908e7d",
+      "source_paths": [
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_VOICE_NOISE_DEV_002/program.scl",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_VOICE_NOISE_DEV_002/semantic_output.json",
+        "data/thesis_campaigns/THESIS_DISCRETE_LLM_180_20261026_R2/trials/D15_V3_VOICE_NOISE_DEV_002/evaluation/attempt_001/evaluation_report.json"
+      ]
+    }
+  ],
+  "d05_v2": [
+    {
+      "trial_id": "D05_V2_TEXT_DEV_002",
+      "mode": "TEXT",
+      "verdict": "REVIEW",
+      "reference_text": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+      "effective_input_text": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+      "intent_id": "INT_DIRECT_OUTPUT",
+      "clarification_question": null,
+      "semantic_parameters": {
+        "trigger_input": "I_Start",
+        "emergency_input": "I_Emergency",
+        "output": "Q_Motor_Enable"
+      },
+      "stages": {
+        "semantic": "PASS",
+        "semantic_benchmark": "FAIL",
+        "io_allocation": "PASS",
+        "ir": "PASS",
+        "compilation": "PASS",
+        "tia_archive": "PASS",
+        "download": "PASS",
+        "runtime": "PASS",
+        "functional": "PASS",
+        "safety": "PASS",
+        "archive_attempt_count": 1,
+        "archive_recovered_after_retry": false,
+        "final_verdict": "REVIEW",
+        "status": "REVIEW / COMPLETADO",
+        "voice": [],
+        "cpu_start": "PASS",
+        "oracle": "REVIEW",
+        "infrastructure_status": "OK"
+      }
+    },
+    {
+      "trial_id": "D05_V2_VOICE_CLEAN_DEV_003",
+      "mode": "VOICE_CLEAN",
+      "verdict": "FAIL",
+      "reference_text": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+      "effective_input_text": "Quiero que el motor arranque con Start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure.",
+      "intent_id": "INT_UNKNOWN",
+      "clarification_question": "Durante una emergencia, ¿el motor debe permanecer apagado y bloqueado hasta que la emergencia desaparezca, o debe permanecer arrancado?",
+      "semantic_parameters": {},
+      "stages": {
+        "semantic": "FAIL",
+        "semantic_benchmark": "-",
+        "io_allocation": "-",
+        "ir": "-",
+        "compilation": "-",
+        "tia_archive": "-",
+        "download": "-",
+        "runtime": "-",
+        "functional": "-",
+        "safety": "-",
+        "archive_attempt_count": null,
+        "archive_recovered_after_retry": null,
+        "final_verdict": "FAIL",
+        "status": "FAIL / COMPLETADO",
+        "voice": [
+          [
+            "Voice Capture",
+            "PASS"
+          ],
+          [
+            "ASR",
+            "PASS"
+          ],
+          [
+            "WER",
+            "0.091"
+          ]
+        ],
+        "cpu_start": "-",
+        "oracle": "-",
+        "infrastructure_status": "OK"
+      }
+    },
+    {
+      "trial_id": "D05_V2_VOICE_NOISE_DEV_003",
+      "mode": "VOICE_NOISE",
+      "verdict": "FAIL",
+      "reference_text": "Quiero que el motor arranque con Start solo sin emergencia, y que una emergencia lo apague y no deje arrancarlo mientras dure.",
+      "effective_input_text": "Quiero que el motor arranque con el start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure.",
+      "intent_id": "INT_UNKNOWN",
+      "clarification_question": "Durante una emergencia, ¿el motor debe permanecer apagado y bloqueado hasta que la emergencia se libere?",
+      "semantic_parameters": {},
+      "stages": {
+        "semantic": "FAIL",
+        "semantic_benchmark": "-",
+        "io_allocation": "-",
+        "ir": "-",
+        "compilation": "-",
+        "tia_archive": "-",
+        "download": "-",
+        "runtime": "-",
+        "functional": "-",
+        "safety": "-",
+        "archive_attempt_count": null,
+        "archive_recovered_after_retry": null,
+        "final_verdict": "FAIL",
+        "status": "FAIL / COMPLETADO",
+        "voice": [
+          [
+            "Voice Capture",
+            "PASS"
+          ],
+          [
+            "ASR",
+            "PASS"
+          ],
+          [
+            "WER",
+            "0.136"
+          ]
+        ],
+        "cpu_start": "-",
+        "oracle": "-",
+        "infrastructure_status": "OK"
+      }
+    }
+  ],
+  "timings": [
+    {
+      "mode": "TEXT",
+      "field": "compile_ms",
+      "n": 59,
+      "mean_s": 40.56315254237288,
+      "sd_s": 7.753312904402286,
+      "median_s": 39.565,
+      "q1_s": 37.0945,
+      "q3_s": 41.1
+    },
+    {
+      "mode": "TEXT",
+      "field": "total_ms",
+      "n": 59,
+      "mean_s": 55.18884745762712,
+      "sd_s": 9.938349246841334,
+      "median_s": 53.172,
+      "q1_s": 49.8425,
+      "q3_s": 56.917500000000004
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "field": "compile_ms",
+      "n": 59,
+      "mean_s": 37.29123728813559,
+      "sd_s": 1.1111307434008164,
+      "median_s": 36.622,
+      "q1_s": 36.57,
+      "q3_s": 38.5715
+    },
+    {
+      "mode": "VOICE_CLEAN",
+      "field": "total_ms",
+      "n": 59,
+      "mean_s": 52.22505084745763,
+      "sd_s": 5.86673539432495,
+      "median_s": 50.335,
+      "q1_s": 48.516000000000005,
+      "q3_s": 54.5145
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "field": "compile_ms",
+      "n": 58,
+      "mean_s": 37.051051724137935,
+      "sd_s": 1.9361481241581662,
+      "median_s": 36.59,
+      "q1_s": 36.22449999999999,
+      "q3_s": 38.08425
+    },
+    {
+      "mode": "VOICE_NOISE",
+      "field": "total_ms",
+      "n": 58,
+      "mean_s": 52.780224137931036,
+      "sd_s": 7.19601213646691,
+      "median_s": 50.4955,
+      "q1_s": 48.53325,
+      "q3_s": 55.16975
+    }
+  ],
+  "missing_total_times": [
+    {
+      "trial_id": "D14_V3_TEXT_DEV_001",
+      "mode": "TEXT",
+      "failure_stage": "io_allocation",
+      "reason": "Rechazo de asignación antes de construir el paquete"
+    },
+    {
+      "trial_id": "D05_V2_VOICE_CLEAN_DEV_003",
+      "mode": "VOICE_CLEAN",
+      "failure_stage": "semantic",
+      "reason": "Aclaración sin generación"
+    },
+    {
+      "trial_id": "D05_V2_VOICE_NOISE_DEV_003",
+      "mode": "VOICE_NOISE",
+      "failure_stage": "semantic",
+      "reason": "Aclaración sin generación"
+    },
+    {
+      "trial_id": "D17_V3_VOICE_NOISE_DEV_002",
+      "mode": "VOICE_NOISE",
+      "failure_stage": "semantic",
+      "reason": "Aclaración sin generación"
+    }
+  ],
+  "human_audio_reference": "No se ha aportado una transcripción humana verificada de las 60 locuciones; se conserva el WER respecto del guion.",
+  "bibliography_checks": {
+    "NIST": "La sección citada no declara fecha; usar s. f.",
+    "Ren": "DOI y página editorial ScienceDirect S1568494625009846 verificados.",
+    "Obermeier": "URL institucional TUM y DOI verificados."
+  }
+}
