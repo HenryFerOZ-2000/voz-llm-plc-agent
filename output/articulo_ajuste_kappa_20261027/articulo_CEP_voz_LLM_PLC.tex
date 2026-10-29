@@ -170,7 +170,7 @@ city={Cuenca},country={Ecuador}}
 \cortext[1]{Autor de correspondencia.}
 
 \begin{abstract}
-La programación de PLC requiere conservar los requisitos al interpretar instrucciones, asignar señales y generar código. Se presenta una arquitectura que recibe voz o texto en español, obtiene una interpretación estructurada mediante un modelo de lenguaje de gran tamaño (LLM) y construye localmente una representación intermedia y código SCL, con integración mediante TIA Openness. Se definió un catálogo de veinte casos discretos, D01--D20, con tres variantes lingüísticas y tres modalidades: 180 ensayos con interpretación LLM y un mapa I/O común. Las condiciones acústicas se construyeron a partir de 60 locuciones de un único participante y sus derivados con ruido a 10 dB. La evaluación utilizó TIA Portal V18 y S7-PLCSIM Advanced V5, con expectativas separadas del generador. Compilaron 58, 59 y 57 programas en texto, voz limpia y voz con ruido, respectivamente. Cada modalidad obtuvo 55/60 PASS (91,67\,\%); el ejecutor registró siete FAIL y ocho REVIEW; la inspección posterior identificó omisiones funcionales en cinco REVIEW, sin modificar la matriz original. El WER global respecto del guion verificado fue 4,79\,\% en voz limpia y 6,91\,\% con ruido. La igualdad de las tasas globales coexistió con diferencias entre comandos y no demuestra equivalencia entre modalidades. La trazabilidad permitió distinguir discrepancias de interpretación, asignación, tipado y comportamiento. La evidencia se limita al catálogo discreto y a las condiciones de simulación evaluadas.
+La programación de PLC requiere conservar los requisitos al interpretar instrucciones, asignar señales y generar código. Se presenta una arquitectura que recibe voz o texto en español, obtiene una interpretación estructurada mediante un modelo de lenguaje de gran tamaño (LLM) y construye localmente una representación intermedia y código SCL, con integración mediante TIA Openness. Se definió un catálogo de veinte casos discretos, D01--D20, con tres variantes lingüísticas y tres modalidades: 180 ensayos con interpretación LLM y un mapa I/O común. Las condiciones acústicas se construyeron a partir de 60 locuciones de un único participante y sus derivados con ruido a 10 dB. La evaluación utilizó TIA Portal V18 y S7-PLCSIM Advanced V5, con expectativas separadas del generador. Compilaron 58, 59 y 57 programas en texto, voz limpia y voz con ruido, respectivamente. Cada modalidad obtuvo 55/60 PASS (91,67\,\%); el ejecutor registró siete FAIL y ocho REVIEW; la inspección posterior identificó omisiones funcionales en cinco REVIEW, sin modificar la matriz original. El WER global respecto del guion fue 4,79\,\% en voz limpia y 6,91\,\% con ruido. La igualdad de las tasas globales coexistió con diferencias entre ensayos y no demuestra equivalencia entre modalidades. La trazabilidad permitió distinguir discrepancias de interpretación, asignación, tipado y comportamiento. La evidencia se limita al catálogo discreto y a las condiciones de simulación evaluadas.
 \end{abstract}
 \begin{highlights}[\TituloDestacados]
 
@@ -274,8 +274,20 @@ La cadena comprende entrada, reconocimiento de voz cuando corresponde, interpret
 \end{figure*}
 \begin{figure*}[!tp]
 \centering
-\includegraphics[width=.98\textwidth]{Graficos/Interfaz_Tesis.png}
-\caption{Interfaz en su estado inicial: configuración, comando industrial, resultados y consola.}
+\begin{minipage}[t]{.48\textwidth}
+\centering
+\textbf{(a) Configuración}\par\smallskip
+\includegraphics[width=\linewidth,trim=13.20bp 223.22bp 813.07bp 30.60bp,clip]{Graficos/Interfaz_Tesis.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{.48\textwidth}
+\centering
+\textbf{(b) Comando industrial}\par\smallskip
+\includegraphics[width=\linewidth,trim=352.83bp 223.22bp 466.24bp 30.60bp,clip]{Graficos/Interfaz_Tesis.png}
+\end{minipage}
+\par\medskip
+\textbf{(c) Resultados: extracto del registro}\par\smallskip
+\includegraphics[width=.90\textwidth,trim=730.86bp 418.24bp 55.80bp 168.01bp,clip]{Graficos/Interfaz_Tesis.png}
+\caption{Tres paneles de la interfaz en su estado inicial: (a) configuración; (b) entrada y ejecución del comando; (c) extracto ampliado del registro mostrado en Resultados. Se omite la consola para mejorar la legibilidad. Los recortes proceden de la captura original y no alteran sus valores.}
 \label{fig:interfaz_usuario}
 \end{figure*}
 
@@ -296,7 +308,7 @@ Los 180 ensayos utilizaron copias independientes de un mismo mapa de simulación
 
 La reutilización de canales \texttt{ASSIGNED} corresponde al funcionamiento general de la aplicación; no modifica el estado inicial \texttt{LOCKED}/\texttt{FREE} de esta campaña. Las asignaciones de un ensayo no se heredaron al siguiente. Cada registro conserva el mapa inicial, su huella y la instantánea de los recursos resueltos. El contexto del LLM contiene nombres, alias, estados y descripciones; los canales digitales disponibles tenían descripciones vacías y conservaron sus nombres y alias de inventario.
 \begin{table*}[t]
-\caption{Mapa digital común al inicio de cada ensayo. DI: entrada digital; DO: salida digital. La asignación efectiva de los canales disponibles se conserva por comando.}
+\caption{Mapa digital común al inicio de cada ensayo. DI: entrada digital; DO: salida digital. La asignación efectiva de los canales disponibles se conserva por ensayo.}
 \label{tab:mapa_io}
 \centering\footnotesize
 \begin{tabularx}{\textwidth}{@{}l l l l >{\raggedright\arraybackslash}X@{}}
@@ -357,12 +369,12 @@ donde $x$ es la voz limpia, $n$ el ruido y $P_x$ y $P_n$ sus potencias medidas. 
 \subsection{Casos y diseño experimental}
 \label{sec:casos}
 \label{sec:condiciones}
-Se evaluó la versión final mediante veinte requisitos discretos del catálogo del proyecto, con tres variantes lingüísticas por caso: tres casos de complejidad baja, diez media y siete alta (Apéndice~\ref{app:casos}). La unidad experimental es cada comando caso--variante--modalidad; los lotes automatizan su ejecución y archivo. El diseño comprende $20\times3\times3=180$ celdas, ejecutadas en el orden texto, voz limpia y voz con ruido. Las dos condiciones acústicas comparten la locución de origen.
+Se evaluó la versión final mediante veinte requisitos discretos del catálogo del proyecto, con tres variantes lingüísticas por caso: tres casos de complejidad baja, diez media y siete alta (Apéndice~\ref{app:casos}). La unidad experimental es cada ensayo, definido por caso--variante--modalidad; los lotes automatizan su ejecución y archivo. El diseño comprende $20\times3\times3=180$ celdas, ejecutadas en el orden texto, voz limpia y voz con ruido. Las dos condiciones acústicas comparten la locución de origen.
 
 La configuración empleó exclusivamente interpretación LLM, con el respaldo por reglas desactivado. Se seleccionó un resultado por celda, independientemente de su veredicto. Las aclaraciones finalizaron sin respuesta del usuario. Los errores técnicos admitían hasta dos reintentos automáticos con esperas de 5 y 15 s y conservación del intento y su motivo; los fallos de interpretación funcional, asignación, compilación o comportamiento no autorizaban repetir hasta obtener éxito. Se excluyó un reintento improcedente de D14--V3 textual y se mantuvo el resultado original; su rectificación de clasificación, justificación y registros se detallan en el Apéndice~\ref{app:reproducibilidad}. Hubo un único reintento total y ninguno por una incidencia técnica real.
 
 
-El motor de interpretación y generación, el prompt, el mapa, las plantillas de prueba y los archivos de audio se identificaron mediante huellas antes de ejecutar la campaña. Cada comando utilizó un proyecto aislado y conservó los artefactos disponibles de sus etapas. El Apéndice~\ref{app:reproducibilidad} identifica la campaña y su documentación reproducible.
+El motor de interpretación y generación, el prompt, el mapa, las plantillas de prueba y los archivos de audio se identificaron mediante huellas antes de ejecutar la campaña. Cada ensayo utilizó un proyecto aislado y conservó los artefactos disponibles de sus etapas. El Apéndice~\ref{app:reproducibilidad} identifica la campaña y su documentación reproducible.
 
 Una campaña preliminar con la misma matriz identificó el respaldo por reglas activo y un mapa distinto del previsto en D05. Para la evaluación final se fijaron la interpretación LLM exclusiva y el mapa común y se ejecutaron nuevamente los 180 ensayos, conservando el prompt, el reconocimiento de voz, los oráculos y los archivos de audio. Los resultados principales corresponden a esta campaña final. Las versiones de código y configuración se identifican por separado: no se presupone identidad del generador entre campañas.
 
@@ -395,7 +407,7 @@ En voz, la tasa de error de palabras (WER, por sus siglas en inglés) cuantifica
 \mathrm{WER}=\frac{S+D+I}{N_{\mathrm{palabras}}},
 \label{eq:wer}
 \end{equation}
-donde $S$ cuenta las sustituciones de palabras, $D$ las palabras omitidas, $I$ las palabras añadidas y $N_{\mathrm{palabras}}$ las palabras de referencia. El resultado se expresa como porcentaje: una sustitución en una referencia de diez palabras equivale a 10\,\%. La normalización aplica Unicode NFC, \texttt{casefold}, sustitución de caracteres no alfanuméricos por espacios y colapso de espacios; conserva tildes y distingue palabras numéricas de dígitos, como ``cinco'' y ``5''. El WER global se obtiene sumando los errores de las 60 transcripciones y dividiendo por el total de palabras de referencia; no se promedian sus tasas individuales. El primer autor cotejó por escucha las 60 grabaciones limpias con el guion y confirmó su coincidencia palabra por palabra. El guion constituye así la referencia textual verificada para estas locuciones y sus derivados ruidosos pareados. Esta comprobación no modificó la referencia ni los WER registrados; fue realizada por el propio investigador; no se documentó una segunda revisión humana independiente. La métrica conserva las convenciones de normalización declaradas y describe coincidencia textual, mientras que la conservación del requisito se contrasta mediante la evaluación semántica y el oráculo.
+donde $S$ cuenta las sustituciones de palabras, $D$ las palabras omitidas, $I$ las palabras añadidas y $N_{\mathrm{palabras}}$ las palabras de referencia. El resultado se expresa como porcentaje: una sustitución en una referencia de diez palabras equivale a 10\,\%. La normalización aplica Unicode NFC, \texttt{casefold}, sustitución de caracteres no alfanuméricos por espacios y colapso de espacios; conserva tildes y distingue palabras numéricas de dígitos, como ``cinco'' y ``5''. El WER global se obtiene sumando los errores de las 60 transcripciones y dividiendo por el total de palabras de referencia; no se promedian sus tasas individuales. El WER compara la transcripción automática con el guion previsto y puede incluir diferencias de lectura; por tanto, no representa exclusivamente errores del ASR. No se realizó el cotejo auditivo de las 60 grabaciones ni se dispone de una transcripción humana verificada para separar ambas fuentes. Se conservan los valores originales respecto del guion y las convenciones de normalización declaradas; la conservación del requisito se contrasta mediante la evaluación semántica y el oráculo.
 
 Las duraciones se resumen con media, desviación estándar muestral, mediana y cuartiles inclusivos; los campos ausentes no se imputan. El total registrado incluye la instrumentación del ensayo, excluye captura previa y pausas entre comandos. Los hitos acumulados de semántica y generación no se suman como etapas independientes.
 
@@ -408,7 +420,7 @@ Como análisis complementario, se compararon los veredictos PASS, FAIL y REVIEW 
 
 \section{\TituloResultados}
 \label{sec:resultados}
-La campaña final completó las 180 celdas previstas, sin ausencias ni duplicados: 165 PASS, siete FAIL y ocho REVIEW. La Tabla~\ref{tab:resultados_modalidad} resume los resultados por modalidad. Las tres obtuvieron la misma conformidad global, aunque difirieron los comandos aceptados y la etapa de detención.
+La campaña final completó las 180 celdas previstas, sin ausencias ni duplicados: 165 PASS, siete FAIL y ocho REVIEW. La Tabla~\ref{tab:resultados_modalidad} resume los resultados por modalidad. Las tres obtuvieron la misma conformidad global, aunque difirieron los ensayos aceptados y la etapa de detención.
 \begin{table*}[t]
 \caption{Resultados de la versión final. El IC Wilson al 95\,\% es una referencia descriptiva; la comparación pareada se presenta en la Tabla~\ref{tab:pareadas}.}
 \label{tab:resultados_modalidad}
@@ -573,8 +585,8 @@ El recorrido de D05--V2 se presenta en la Tabla~\ref{tab:d05_v2_trazabilidad}. E
 \begin{tabularx}{\textwidth}{@{}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{.14\textwidth} l@{}}
 \toprule Modalidad & Entrada efectiva o transcripción & Interpretación registrada & Etapa alcanzada & Veredicto\\ \midrule
 Texto & Guion común; ASR no aplicable. & \path{INT_DIRECT_OUTPUT}; Start, emergencia y motor resueltos. & Ejecución y comprobaciones funcionales aprobadas. & REVIEW\\
-Voz limpia & Quiero que el motor arranque con Start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure. & \path{INT_UNKNOWN}. \guillemotleft{}Durante una emergencia, ¿el motor debe permanecer apagado y bloqueado hasta que la emergencia desaparezca, o debe permanecer arrancado?\guillemotright{} & Aclaración; generación, TIA y ejecución: no ejecutado. & FAIL\\
-Voz con ruido & Quiero que el motor arranque con el start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure. & \path{INT_UNKNOWN}. \guillemotleft{}Durante una emergencia, ¿el motor debe permanecer apagado y bloqueado hasta que la emergencia se libere?\guillemotright{} & Aclaración; generación, TIA y ejecución: no ejecutado. & FAIL\\
+Voz limpia & Quiero que el motor arranque con Start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure. & \path{INT_UNKNOWN}. \guillemotleft{}Durante una emergencia, \textquestiondown{}el motor debe permanecer apagado y bloqueado hasta que la emergencia desaparezca, o debe permanecer arrancado?\guillemotright{} & Aclaración; generación, TIA y ejecución: no ejecutado. & FAIL\\
+Voz con ruido & Quiero que el motor arranque con el start solo sin emergencia y que una emergencia lo apague y lo deje arrancado mientras dure. & \path{INT_UNKNOWN}. \guillemotleft{}Durante una emergencia, \textquestiondown{}el motor debe permanecer apagado y bloqueado hasta que la emergencia se libere?\guillemotright{} & Aclaración; generación, TIA y ejecución: no ejecutado. & FAIL\\
 \bottomrule
 \end{tabularx}
 \end{table*}
@@ -596,7 +608,7 @@ La Tabla~\ref{tab:objetivos_evidencia} relaciona los cuatro objetivos específic
 \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{.22\textwidth} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
 \toprule Objetivo & Evidencia & Resultado\\ \midrule
 OE1. Analizar requisitos & Tabla~\ref{tab:requisitos_arquitectura} y mapa de la Tabla~\ref{tab:mapa_io}. & Requisitos funcionales y operativos definidos con comprobaciones observables.\\
-OE2. Diseñar la interpretación de voz & Secciones~\ref{sec:arquitectura} y \ref{sec:asr}; Tabla~\ref{tab:wer_modalidades}. & Captura, reconocimiento e interpretación estructurada implementados; WER respecto del guion corroborado mediante escucha por el primer autor.\\
+OE2. Diseñar la interpretación de voz & Secciones~\ref{sec:arquitectura} y \ref{sec:asr}; Tabla~\ref{tab:wer_modalidades}. & Captura, reconocimiento e interpretación estructurada implementados; WER respecto del guion previsto, sin cotejo auditivo ni referencia humana verificada.\\
 OE3. Implementar generación y ejecución & Tabla~\ref{tab:etapas_modalidades} e integración Siemens. & 176 paquetes; 174 programas compilados, descargados y con conexión RUN.\\
 OE4. Validar desempeño & Tablas~\ref{tab:resultados_modalidad}, \ref{tab:pareadas} y \ref{tab:revision_review}. & 180 ensayos: 165 PASS, siete FAIL y ocho REVIEW, con revisión documental separada.\\
 \bottomrule
@@ -610,7 +622,7 @@ La propuesta comparte con LLM4PLC la interacción y las comprobaciones externas,
 Los fallos se distribuyeron entre interpretación, asignación, tipado y comportamiento. En D14--V3 textual se rechazó una propuesta de asignación incompatible con los recursos; en D20--V1 textual y D20--V3 con ruido, TIA detectó incompatibilidades de tipos después de la verificación local. D07--V2 textual superó la compilación pero confundió duración de pulso y retardo de arranque. Estas observaciones justifican conservar los artefactos intermedios y los diagnósticos de cada etapa.
 
 % Cita literal contrastada con los dos audio/asr_result.json de D05--V2: comienza con "lo apague", no con "no apague".
-Las transcripciones de D05--V2 en ambas condiciones acústicas incluyeron \guillemotleft{}lo apague y lo deje arrancado mientras dure\guillemotright{}, y el intérprete pidió aclaración. Frente a la restricción prevista \guillemotleft{}no deje arrancarlo\guillemotright{}, la transcripción \guillemotleft{}lo deje arrancado\guillemotright{} invierte el sentido de la negación y contradice el bloqueo del arranque durante la emergencia. El cotejo auditivo del primer autor confirmó que la locución limpia coincidía con el guion; la contradicción se localiza, por tanto, entre la locución de referencia y la transcripción del ASR, y se conserva en el derivado ruidoso pareado. En D17--V3 con ruido, la aclaración distinguió ausencia de detección y ausencia de cambios del sensor. Los REVIEW por roles ausentes muestran, además, que disponer de código compilable no garantiza compatibilidad entre la interpretación obtenida y el contrato de prueba.
+Las transcripciones de D05--V2 en ambas condiciones acústicas incluyeron \guillemotleft{}lo apague y lo deje arrancado mientras dure\guillemotright{}, y el intérprete pidió aclaración. Frente a la restricción prevista \guillemotleft{}no deje arrancarlo\guillemotright{}, la transcripción \guillemotleft{}lo deje arrancado\guillemotright{} invierte el sentido de la negación y contradice el bloqueo del arranque durante la emergencia. Sin cotejar la lectura real con el audio no puede determinarse si la negación se alteró al pronunciar la orden, durante el reconocimiento o por una combinación de ambas fuentes. La discrepancia observada corresponde al contraste entre el guion y la transcripción registrada, y no se atribuye exclusivamente al ASR. En D17--V3 con ruido, la aclaración distinguió ausencia de detección y ausencia de cambios del sensor. Los REVIEW por roles ausentes muestran, además, que disponer de código compilable no garantiza compatibilidad entre la interpretación obtenida y el contrato de prueba.
 
 La revisión de los ocho REVIEW distinguió omisiones del programa de discrepancias del contrato de evaluación (Tabla~\ref{tab:revision_review}). En D17--V1/V3 de voz limpia no se declaró Start y el TON quedó habilitado por la estabilidad del sensor sin orden de arranque. En D15--V2/V3 de voz limpia y D15--V1 con ruido faltó la contribución automática a la salida. Son defectos funcionales identificados por inspección, aunque el ejecutor los detuvo por roles ausentes y registró REVIEW. En D05--V2 textual queda pendiente admitir o rechazar la equivalencia de la etiqueta de intención; en los otros dos D15 debe conciliarse la polaridad del selector con los roles. Mantener el resultado original preserva la trazabilidad, pero no convierte las cinco omisiones identificadas en incertidumbre sobre su existencia.
 
@@ -631,7 +643,7 @@ La trazabilidad facilita revisar el paso de la instrucción a las señales, el c
 \label{sec:conclusiones}
 Se identificaron los requisitos funcionales y operativos y sus comprobaciones, y se diseñó la cadena de captura, reconocimiento e interpretación semántica de voz. Se implementó una arquitectura voz/texto--LLM--PLC que transforma localmente la interpretación en IR y SCL, con integración Siemens y ejecución en PLCSIM Advanced. La validación comprendió 180 ensayos correspondientes a veinte casos, tres variantes lingüísticas y tres modalidades, con un mapa I/O común y expectativas separadas del generador. Compilaron 174 programas y 165 obtuvieron PASS: 55/60 (91,67\,\%) por modalidad. Se registraron siete FAIL y ocho REVIEW; la revisión documental posterior identificó cinco omisiones funcionales entre estos últimos, manteniendo los veredictos originales. Estos resultados caracterizan el catálogo discreto y las condiciones de simulación evaluadas.
 
-El WER global respecto del guion verificado fue 4,79\,\% en voz limpia y 6,91\,\% con ruido. La diferencia de conformidad ruido menos limpia fue 0,00 puntos porcentuales, con IC exploratorio por caso $[-5,00;\ 5,00]$. La igualdad de las tasas no demuestra equivalencia entre modalidades. Los resultados sustentan la viabilidad de la cadena para el catálogo discreto evaluado en simulación y muestran la necesidad de comprobar el programa más allá de su compilación.
+El WER global respecto del guion fue 4,79\,\% en voz limpia y 6,91\,\% con ruido. La diferencia de conformidad ruido menos limpia fue 0,00 puntos porcentuales, con IC exploratorio por caso $[-5,00;\ 5,00]$. La igualdad de las tasas no demuestra equivalencia entre modalidades. Los resultados sustentan la viabilidad de la cadena para el catálogo discreto evaluado en simulación y muestran la necesidad de comprobar el programa más allá de su compilación.
 \ifdefined\FloatBarrier\FloatBarrier\fi
 
 
@@ -770,7 +782,7 @@ La campaña analizada se identifica como \path{THESIS_DISCRETE_LLM_180_20261026_
 
 En D14--V3 textual, el primer intento se clasificó inicialmente como \texttt{INFRASTRUCTURE\_ERROR}, aunque el rechazo correspondía a asignación I/O; se rectificó a FAIL. Esa clasificación inicial había generado un reintento improcedente con PASS, que se archivó y excluyó: se conservó el primer resultado, sin seleccionar el éxito posterior. La enmienda y ambos registros están en \path{Auditoria/}. La revisión documental del 29-10-2026, sin nuevas ejecuciones ni reclasificación de celdas, se detalla en \path{revision_documental_20261029.json}, junto al fuente del artículo.
 
-Para recalcular las tablas, ejecutar con Python \path{recalcular.py} y \path{comparar_campanas.py} dentro de la carpeta de campaña. La matriz de entrada es \path{matriz_180_celdas.json}; las estadísticas originales están en \path{estadistica.json}. Las tres figuras de WER y trazas se regeneran con \path{reproducir_figuras.py}, junto a este fuente, usando Matplotlib y NumPy y los mismos registros. El diagrama de arquitectura, el esquema de evaluación y las capturas de la interfaz se conservan como ilustraciones, no como mediciones recalculables.
+Para recalcular las tablas, ejecutar con Python \path{recalcular.py} y \path{comparar_campanas.py} dentro de la carpeta de campaña. La matriz de entrada es \path{matriz_180_celdas.json}; las estadísticas originales están en \path{estadistica.json}. Las tres figuras de WER y trazas se regeneran con \path{reproducir_figuras.py}, junto a este fuente, usando Matplotlib y NumPy y los mismos registros. Los diagramas explicativos se regeneran con \path{reproducir_diagramas.py}; la interfaz se presenta mediante recortes LaTeX de la captura original. Estas ilustraciones no representan nuevas mediciones.
 
 \clearpage
 \addtocounter{page}{-1}

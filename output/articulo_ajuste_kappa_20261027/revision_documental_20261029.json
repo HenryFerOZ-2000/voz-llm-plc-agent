@@ -378,7 +378,7 @@
       "reason": "Aclaración sin generación"
     }
   ],
-  "human_audio_reference": "El primer autor confirmó que escuchó las 60 grabaciones limpias y que la transcripción humana coincide palabra por palabra con los guiones originales. La referencia textual y los WER no cambian.",
+  "human_audio_reference": "El primer autor aclaró que no realizó el cotejo auditivo de las 60 grabaciones. Se retira la confirmación anterior; la referencia sigue siendo el guion previsto, sin validación humana del habla real. No se modifican referencias ni WER.",
   "bibliography_checks": {
     "NIST": "La sección citada no declara fecha; usar s. f.",
     "Ren": "DOI y página editorial ScienceDirect S1568494625009846 verificados.",
@@ -387,14 +387,21 @@
   "author_confirmations": {
     "date": "2026-10-29",
     "author_name_spelling": "Paul Andrés Chasi Pesantez",
-    "clean_recordings_reviewed": 60,
-    "reference_matches_script": true,
-    "source": "Confirmación explícita del primer autor en la conversación de revisión.",
-    "reviewer": "Henry Fernando Ochoa Zea",
-    "independent_second_human_review": "No documentada",
+    "clean_recordings_reviewed": 0,
+    "reference_matches_script": null,
+    "source": "Rectificación explícita del primer autor: la escucha no se realizó.",
+    "reviewer": null,
+    "independent_second_human_review": "No realizada",
     "assistant_claims_to_have_listened": false,
     "ASR_reinvoked": false,
     "reference_files_modified": false,
     "WER_values_modified": false
+  },
+  "confirmation_correction": {
+    "date": "2026-10-29",
+    "previous_listening_claim_withdrawn": true,
+    "reason": "El primer autor aclaró que no efectuó la escucha previamente confirmada.",
+    "WER_reference": "Guion previsto, sin cotejo auditivo",
+    "results_changed": false
   }
 }

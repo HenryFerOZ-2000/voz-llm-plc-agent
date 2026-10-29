@@ -4,7 +4,7 @@ Se aplicaron las recomendaciones de `Cambios_integrados_tesis_Henry_Ochoa.docx` 
 
 ## Aplicación en Overleaf
 
-Reemplazar `articulo_CEP_voz_LLM_PLC.tex` y `referencias.bib` por los archivos de `output/articulo_ajuste_kappa_20261027/`. Las siete imágenes utilizadas por el artículo conservan sus nombres y contenido. El script `reproducir_figuras.py` y el registro `revision_documental_20261029.json` documentan la reproducción y la revisión; no son necesarios para compilar en Overleaf.
+Reemplazar `articulo_CEP_voz_LLM_PLC.tex` y `referencias.bib` por los archivos de `output/articulo_ajuste_kappa_20261027/`. Las siete imágenes conservan sus nombres. Los diagramas de arquitectura y evaluación se regeneran con «Oráculo»; la captura de interfaz conserva sus píxeles y se presenta mediante recortes LaTeX de tres paneles, omitiendo la consola. El script `reproducir_figuras.py` y el registro `revision_documental_20261029.json` documentan la reproducción y la revisión; no son necesarios para compilar en Overleaf.
 
 ## Correspondencia con las recomendaciones
 
@@ -15,7 +15,7 @@ Reemplazar `articulo_CEP_voz_LLM_PLC.tex` y `referencias.bib` por los archivos d
 | 3 | Se distingue la política general ASSIGNED del estado LOCKED/FREE al inicio de cada ensayo. |
 | 4 | PASS, FAIL y REVIEW se definen en métodos; el indicador pareado es 1 para PASS y 0 para los demás, sin equiparar causas. |
 | 5 | Se documentan los ocho REVIEW con evidencia, causa y decisión. Se identificaron cinco omisiones funcionales por inspección; se preservó el resultado original de cada ensayo y no se afirmó una nueva ejecución. |
-| 6 | El WER queda referido al guion verificado. El primer autor confirmó la escucha de las 60 grabaciones limpias y su coincidencia palabra por palabra con el guion; la comprobación no cambió las referencias ni las cifras, y no se presenta como una segunda revisión independiente. |
+| 6 | El WER queda referido al guion previsto. El primer autor rectificó su confirmación anterior y aclaró que no realizó la escucha de las 60 grabaciones. Se retira la atribución exclusiva al ASR en D05–V2 y se conserva la limitación por posibles diferencias de lectura, sin cambiar las cifras. |
 | 7 | Se incorpora la matriz de cuatro objetivos, evidencia y resultado, complementaria a la de requisitos. |
 | 8 | D05–V2 se documenta en las tres modalidades con transcripciones y preguntas exactas; las etapas posteriores a las aclaraciones constan como no ejecutadas. |
 | 9 | La selección del ASR se describe por costo e integración, sin comparación previa de superioridad; la valoración de los resultados pasa a discusión. |
@@ -44,5 +44,9 @@ En la comprobación del 29-10-2026, los tres PNG regenerados fueron idénticos b
 ## Confirmaciones recibidas y alcance institucional
 
 - Confirmación recibida: se utiliza «Paul Andrés Chasi Pesantez», con tilde.
-- Confirmación recibida: el primer autor cotejó por escucha las 60 locuciones limpias y confirmó la coincidencia palabra por palabra con el guion. Las referencias y los WER se conservan; la revisión no se atribuye a un segundo especialista.
+- Rectificación recibida: el primer autor no realizó la escucha de las 60 locuciones. No se considera verificada la correspondencia entre habla real y guion; los WER siguen midiendo discrepancia respecto del texto previsto.
 - Las correcciones de portada y página institucional de derechos deberán aplicarse en el documento institucional cuando se facilite su fuente. No se añadieron ni se supusieron esos preliminares al artículo CAS.
+
+## Ajustes finales de presentación y referencia WER
+
+Se corrigieron los dos signos de apertura de las preguntas de D05–V2 mediante `\textquestiondown{}`. Se unificó «ensayo» al describir la unidad experimental y los resultados aceptados. Se regeneraron los dos diagramas desde sus fuentes para sustituir «Oracle del caso» por «Oráculo del caso», sin cambiar el flujo representado. La captura se recorta en LaTeX y amplía el registro de Resultados; no se manipulan sus píxeles ni valores. La bibliografía, las tres figuras experimentales y los datos originales no cambian.
