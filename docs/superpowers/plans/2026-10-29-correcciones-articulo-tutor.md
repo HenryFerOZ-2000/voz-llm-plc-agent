@@ -29,4 +29,4 @@
 
 ## Cierre
 
-Verificación: 18 páginas físicas; cero advertencias de LaTeX; 2221 archivos experimentales con huellas intactas; tres figuras regeneradas idénticas; ningún veredicto reclasificado. Se realizó una revisión documental independiente, sin defectos materiales. Los pendientes de audio humano, grafía de Paul y portada institucional quedan documentados en docs/atencion_correcciones_tutor_20261029.md.
+Verificación: 18 páginas físicas; cero advertencias de LaTeX; 2221 archivos experimentales con huellas intactas; tres figuras regeneradas idénticas; ningún veredicto reclasificado. Se realizó una revisión documental independiente, sin defectos materiales. Las confirmaciones recibidas sobre audio humano y grafía de Paul, y el alcance pendiente de la portada institucional, quedan documentados en docs/atencion_correcciones_tutor_20261029.md.

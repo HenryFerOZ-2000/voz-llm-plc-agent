@@ -378,10 +378,23 @@
       "reason": "Aclaración sin generación"
     }
   ],
-  "human_audio_reference": "No se ha aportado una transcripción humana verificada de las 60 locuciones; se conserva el WER respecto del guion.",
+  "human_audio_reference": "El primer autor confirmó que escuchó las 60 grabaciones limpias y que la transcripción humana coincide palabra por palabra con los guiones originales. La referencia textual y los WER no cambian.",
   "bibliography_checks": {
     "NIST": "La sección citada no declara fecha; usar s. f.",
     "Ren": "DOI y página editorial ScienceDirect S1568494625009846 verificados.",
     "Obermeier": "URL institucional TUM y DOI verificados."
+  },
+  "author_confirmations": {
+    "date": "2026-10-29",
+    "author_name_spelling": "Paul Andrés Chasi Pesantez",
+    "clean_recordings_reviewed": 60,
+    "reference_matches_script": true,
+    "source": "Confirmación explícita del primer autor en la conversación de revisión.",
+    "reviewer": "Henry Fernando Ochoa Zea",
+    "independent_second_human_review": "No documentada",
+    "assistant_claims_to_have_listened": false,
+    "ASR_reinvoked": false,
+    "reference_files_modified": false,
+    "WER_values_modified": false
   }
 }

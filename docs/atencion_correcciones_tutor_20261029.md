@@ -15,7 +15,7 @@ Reemplazar `articulo_CEP_voz_LLM_PLC.tex` y `referencias.bib` por los archivos d
 | 3 | Se distingue la política general ASSIGNED del estado LOCKED/FREE al inicio de cada ensayo. |
 | 4 | PASS, FAIL y REVIEW se definen en métodos; el indicador pareado es 1 para PASS y 0 para los demás, sin equiparar causas. |
 | 5 | Se documentan los ocho REVIEW con evidencia, causa y decisión. Se identificaron cinco omisiones funcionales por inspección; se preservó el resultado original de cada ensayo y no se afirmó una nueva ejecución. |
-| 6 | El WER queda referido al guion. Se declara que puede incluir diferencias de lectura y que no existe una transcripción humana verificada aportada para separar ese componente. |
+| 6 | El WER queda referido al guion verificado. El primer autor confirmó la escucha de las 60 grabaciones limpias y su coincidencia palabra por palabra con el guion; la comprobación no cambió las referencias ni las cifras, y no se presenta como una segunda revisión independiente. |
 | 7 | Se incorpora la matriz de cuatro objetivos, evidencia y resultado, complementaria a la de requisitos. |
 | 8 | D05–V2 se documenta en las tres modalidades con transcripciones y preguntas exactas; las etapas posteriores a las aclaraciones constan como no ejecutadas. |
 | 9 | La selección del ASR se describe por costo e integración, sin comparación previa de superioridad; la valoración de los resultados pasa a discusión. |
@@ -24,7 +24,7 @@ Reemplazar `articulo_CEP_voz_LLM_PLC.tex` y `referencias.bib` por los archivos d
 | 12 | Se explicita el locutor único en resumen y el posible sesgo de familiaridad en limitaciones. |
 | 13 | Las conclusiones se vinculan a análisis de requisitos, diseño, implementación y validación, conservando las cifras. |
 | 14 | Se aclara el carácter automatizado del contraste separado. El apéndice identifica la instantánea por huellas, la revisión de publicación, los archivos y los scripts; la rectificación D14 se traslada allí. |
-| 15 | Se conserva «modelos de lenguaje de gran tamaño». La sección NIST citada no muestra fecha, por lo que se añade «s. f.»; se verifican TUM/Obermeier y la página editorial de Ren. La tilde de «Andrés» queda pendiente de confirmación del autor. |
+| 15 | Se conserva «modelos de lenguaje de gran tamaño». La sección NIST citada no muestra fecha, por lo que se añade «s. f.»; se verifican TUM/Obermeier y la página editorial de Ren. El autor confirmó la grafía «Paul Andrés Chasi Pesantez», aplicada en la autoría y CRediT. |
 | 16 | Se compila y renderiza el PDF completo: 18 páginas físicas, sin advertencias de LaTeX, referencias indefinidas ni fallos al decodificar los flujos del PDF. Las tablas de tiempos y errores quedan junto al texto correspondiente y fuera de las conclusiones. Se conserva la clase CAS y su pie editorial: no se recibió la portada institucional ni una orden de sustituirlo. |
 
 ## Revisión documental de REVIEW
@@ -41,8 +41,8 @@ python output/articulo_ajuste_kappa_20261027/reproducir_figuras.py --output figu
 
 En la comprobación del 29-10-2026, los tres PNG regenerados fueron idénticos byte a byte a los utilizados en el manuscrito. No se realizaron llamadas al ASR/LLM ni nuevas pruebas en PLC. La instantánea de campaña y los registros permanecen sin cambios.
 
-## Pendientes que requieren evidencia o confirmación humana
+## Confirmaciones recibidas y alcance institucional
 
-- Confirmar si Paul utiliza la grafía «Andrés». Hasta recibir respuesta se conserva «Paul Andres Chasi Pesantez».
-- Si se desea un WER que mida exclusivamente la discrepancia del ASR respecto del habla real, escuchar las 60 locuciones y fijar una transcripción humana fiel antes de recalcular. Los valores actuales siguen siendo válidos como discrepancia respecto del guion y están identificados así.
+- Confirmación recibida: se utiliza «Paul Andrés Chasi Pesantez», con tilde.
+- Confirmación recibida: el primer autor cotejó por escucha las 60 locuciones limpias y confirmó la coincidencia palabra por palabra con el guion. Las referencias y los WER se conservan; la revisión no se atribuye a un segundo especialista.
 - Las correcciones de portada y página institucional de derechos deberán aplicarse en el documento institucional cuando se facilite su fuente. No se añadieron ni se supusieron esos preliminares al artículo CAS.
